@@ -6,7 +6,7 @@ const fs = require("node:fs");
 
 const root = "ChatMachines/GeminiSupervisor";
 const streamPath = `${root}/MessageStream/messages.json`;
-const nextPath = `${root}/nextmessage.json`;
+const nextPath = `${root}/nextmessage/nextmessage.json`;
 const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
