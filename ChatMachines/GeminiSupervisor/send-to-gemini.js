@@ -1,11 +1,11 @@
 /**
  * Adds the next user turn, calls Gemini with the full conversation,
- * then appends the model reply to MessageStream/messages.json.
+ * then appends the model reply to messages.json.
  */
 const fs = require("node:fs");
 
 const root = "ChatMachines/GeminiSupervisor";
-const streamPath = `${root}/MessageStream/messages.json`;
+const streamPath = `${root}/messages.json`;
 const nextPath = `${root}/nextmessage/nextmessage.json`;
 const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
