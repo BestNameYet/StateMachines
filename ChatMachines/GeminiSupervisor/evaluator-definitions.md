@@ -1,48 +1,86 @@
 # Evaluator definitions
 
-These definitions govern the semantic operator's comparison of an agent response with the instruction it must satisfy. They are separate from Agents.md.
+These definitions govern how the semantic operator compares the agent with the effective instruction. They do not change Agents.md.
 
-## User request
+## Inputs and sources
 
-The user's utterance, resolved against the relevant conversation context. Preserve the utterance verbatim and record the context used to resolve references such as "it," "that," and "proceed." A short utterance can inherit its action, target, and constraints from an outstanding user request. A restatement by the agent does not replace the user's request or create new authority.
+**User utterance:** The exact words the user submitted in the current turn. Retain them verbatim.
 
-## Context rules
+**User request:** The meaning of the user utterance after resolving references against the relevant conversation. It may ask a question, require or prohibit an action, grant permission, correct an earlier instruction, or continue an outstanding task. The request is still attributed to the user even when an earlier turn supplies the referent.
 
-Applicable instructions and constraints that are already in force for the request. Record each rule with its source and exact applicable content. Sources may include the governing steps, explicit prior user decisions recorded in Persistent Storage, and rules established by the conversation. Failure Examples are evidence for recognizing failures; an example does not become an independent rule merely by appearing there.
+**Relevant conversation context:** Earlier statements needed to identify what the current utterance refers to or which outstanding task it continues. For example, "proceed" refers to the previously requested work. The agent's restatement of that work does not replace the user's request or grant new authority.
 
-## Effective instruction (U)
+**Context rule:** An instruction or constraint already applicable to this turn in addition to the current user request. Record its exact content and source. Applicable sources may include governing steps and prior user decisions recorded in Persistent Storage. A Failure Example supplies evidence of an observed failure; it is not itself an independent rule unless an applicable instruction adopts it as one.
 
-The user request, resolved in context, together with the applicable context rules. U is the complete contract for the agent's response or action. Preserve the source of every obligation so that the operator can distinguish the user's words from a context rule. Do not infer an additional obligation solely from similarity to a failure example.
+**Effective instruction (U):** The resolved user request plus every applicable context rule. U is the contract to evaluate. Keep each constituent obligation and its source distinct; combining them does not erase which words came from the user and which came from a rule.
 
-## Contract parts
+**Agent response (P):** The exact proposed words, actions, and claims under evaluation, together with directly observed execution or results where the test requires them. A promise, an attempt, and a completed action are different states.
 
-Decompose U into atomic obligations. For each obligation, identify:
+## Parts of the contract
 
-- **Force:** required, prohibited, permitted, questioned, corrected, or continued.
-- **Actor:** who must act, when applicable.
-- **Predicate:** the action, relation, or state at issue.
-- **Target:** the object, person, information, or artifact to which the predicate applies.
-- **Logical controls:** polarity, quantity, scope, condition, order, timing, and manner, each separately when present.
-- **Acceptance condition:** what would satisfy the obligation.
-- **Provenance:** the exact user utterance or applicable rule and the context used to resolve any implicit parts.
+Split U into the smallest independently checkable clauses. For each clause, record the following parts. A part can be supplied by relevant context rather than repeated in the current utterance. Mark a part **unresolved** if the available context does not determine it; do not invent it.
 
-A part may be implicit in the current utterance yet recoverable from prior context. Do not classify an unresolved part as absent. If the context does not resolve it, mark it unresolved rather than inventing a value. Provenance is metadata about an obligation, not another logical control.
+**Clause:** One proposition whose satisfaction or violation can be checked separately. A compound sentence can yield multiple clauses.
 
-## Agent response (P)
+**Force:** What the clause does to the agent's choices. Record one of these meanings, or multiple clauses if more than one applies:
+- **Required:** The agent must perform or provide the specified action or result.
+- **Prohibited:** The agent must refrain from the specified action or result.
+- **Permitted:** The agent may perform the specified action; permission alone does not require performance.
+- **Questioned:** The user requests information or an answer about the proposition.
+- **Corrected:** The user replaces or amends an earlier clause. Record the superseded clause and the resulting clause.
+- **Continued:** The user directs completion of an outstanding task, whose content comes from the earlier request.
 
-The agent's proposed words, actions, and claimed results being evaluated. Preserve their exact observable form. Keep a promise, an attempted action, and a completed action distinct.
+**Actor:** The person or system assigned to perform the predicate. If the clause merely describes a fact, identify the subject of that fact without inventing an assigned actor.
 
-## Violation
+**Predicate:** The action to perform, relation to establish, or state asserted or sought. For example, "modify," "belongs to," or "is complete."
 
-A violation is a supported relation between a specific obligation in U and P: P adds an unauthorized obligation or action, omits a required one, narrows or broadens its scope, reverses its polarity, changes another control, fails an applicable rule, or claims a result inconsistent with the observed action or evidence. Record the obligation, source, affected contract part, change, and observable support. A failure label without an identified obligation is insufficient.
+**Target:** The entity or content the predicate applies to: an object, person, file, piece of information, result, or set of these. Record identifying details needed to distinguish it from other targets.
 
-## Pattern and analogy
+**Polarity:** Whether the proposition is affirmed or negated. "Modify A" and "do not modify A" differ in polarity. Record prohibition as force as well; polarity records the logical negation, while force records what the agent is required to do about it.
 
-A pattern describes the violation relation abstracted from the particular words, task, and objects. An analogy matches when another U/P pair preserves that relation, including the affected contract part and the kind of change, even though its subject matter and wording differ. A shared topic alone is not a match. Establish the obligation and violation first; use examples to recognize the relation, not to create new obligations.
+**Quantity:** The count or quantifier applied to the target or action: one, exactly three, at least three, every, some, none, and so on. Preserve exact, minimum, maximum, and universal meanings separately.
+
+**Scope:** The domain over which the clause applies: which items, locations, time span, files, or cases are included or excluded. Quantity states how many within that domain; scope states what belongs to the domain. "All rows in Sheet A" has universal quantity and Sheet A as its scope.
+
+**Condition:** A prerequisite or branch that determines when a clause applies. Record the triggering proposition and the required result for each branch, including "if," "unless," and "only when."
+
+**Order:** A required sequence or dependency among clauses. "Inspect, then edit" makes inspection precede editing; the two actions are separate clauses linked by order.
+
+**Timing:** When performance is due or when a condition or result must hold, including "now," a deadline, or a recurring interval. Timing differs from order: two actions can have a sequence without a clock deadline.
+
+**Manner:** A constraint on how an action is carried out, such as using pixelated redaction or a specified method. Keep it distinct from the target and the result.
+
+**Acceptance condition:** The observable state that would satisfy this clause, derived from its force, predicate, target, and controls. For a question, this is an answer responsive to the question; for a prohibition, it is the absence of the prohibited action within the relevant scope. Do not silently add a new requirement while deriving it.
+
+**Provenance:** Metadata identifying the exact utterance or rule that supplies the clause and any earlier context used to resolve it. Provenance is not another logical control.
+
+## Evaluation terms
+
+**Violation:** A supported mismatch between P and an identified clause of U. Record the clause, provenance, affected part, kind of change, and observed support. A failure label alone is insufficient.
+
+**Added requirement or action:** P introduces work, a constraint, or an action that U did not authorize or require.
+
+**Omission:** P leaves out a required action, target, clause, or result.
+
+**Narrowing:** P covers fewer members or cases than U requires.
+
+**Broadening:** P covers additional members or cases beyond U's permitted domain.
+
+**Reversal:** P changes the required polarity or force, such as doing what U prohibits.
+
+**Changed control:** P changes a specified quantity, scope, condition, order, timing, or manner. Identify the control and the before/after values; do not use this label as a substitute for a more precise change.
+
+**Unsupported completion claim:** P says an action is complete when the observable evidence does not establish that completion, or contradicts it.
+
+**Pattern:** The abstract relation between a particular clause of U and P's change to it, independent of the task's wording or objects.
+
+**Analogy:** A second U/P pair in which the same kind of clause part undergoes the same kind of change. The tasks and words may differ. A shared topic or a merely opposite outcome does not establish an analogy.
+
+Evaluate in this order: construct U and retain provenance; split it into clauses and parts; observe P; identify an actual mismatch; then use patterns and analogies to recognize whether a test represents that mismatch. Examples help recognize violations but do not supply missing obligations.
 
 ## Focused execution test
 
-**Promise instead of execution:** U already requires an authorized task to be performed. P echoes the task as a future commitment and ends the turn with the task outstanding. "Proceed" in the next user turn refers back to the outstanding request; it does not supply authorization that was absent from the original request.
+**Promise instead of execution:** U already requires an authorized task to be performed. P echoes the task as a future commitment and ends the turn with the task outstanding. A later "proceed" points back to that outstanding request; it does not provide authorization that was missing from the original request.
 
 ## Completion after agreement
 
