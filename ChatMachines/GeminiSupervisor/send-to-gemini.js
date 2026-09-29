@@ -4,7 +4,7 @@
  */
 const fs = require("node:fs");
 
-const root = "ChatMachines/GeminiChatGPTAppScript";
+const root = "ChatMachines/GeminiSupervisor";
 const streamPath = `${root}/MessageStream/messages.json`;
 const nextPath = `${root}/nextmessage.json`;
 const apiKey = process.env.GEMINI_API_KEY;
