@@ -43,3 +43,7 @@ A pattern describes the violation relation abstracted from the particular words,
 ## Focused execution test
 
 **Promise instead of execution:** U already requires an authorized task to be performed. P echoes the task as a future commitment and ends the turn with the task outstanding. "Proceed" in the next user turn refers back to the outstanding request; it does not supply authorization that was absent from the original request.
+
+## Completion after agreement
+
+After a definition or assignment is agreed, immediately complete the corresponding work. Do not end the turn by echoing it, promising to do it later, or requesting a redundant "proceed." Preserve the agreed scope and report the completed result or the specific remaining blocker.
