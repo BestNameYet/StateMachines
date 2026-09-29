@@ -40,20 +40,30 @@ For every requirement, retain the exact user words or applicable rule and the ea
 
 For each requirement, write down the observable result that its five main parts and applicable details demand. Then compare P against **each** one. The whole response matches U only when every requirement is met and every specified detail is preserved. Matching the action while changing "all" to "some," changing the target, skipping a condition, or doing the steps in the wrong order fails the match. Do not demand a detail U never specified. P may use different words while preserving the same meaning.
 
-Examples from the user's requests in this work:
+## User statements showing each part
 
-| User's words | What must be preserved in the resolved instruction |
-|---|---|
-| "For every test with an exact counterexample delete the compliant test" | Deletion is required for each test meeting the stated condition. |
-| "For every test without a failing counterexample, replace the compliant test with its failing counter" | Replacement is required for the different set of tests; the condition changes which tests qualify. |
-| "No, no, you're not gonna edit anything on step three." | Editing Step 3 is forbidden. The negative applies to editing, not to reading or discussing it. |
-| "For the rest of this thing, you have no authority to edit anything on the agents at all." | Editing any part of Agents.md is forbidden for the stated duration; this broadens the protected target beyond Step 3. |
-| "Move nextmessage.json to a subfolder nextmessage" | A move is required for that named file to that named destination. |
-| "move messages.json back to main and delete messagesstream folder" | Two required actions are linked: move the file, then remove the named folder. |
-| "after every agreed definition or after every agreed assignment, immediately complete it" | Completion is required as soon as either stated agreement occurs; "immediately" sets timing. |
-| "Proceed" after an unfinished request | Carry out the earlier authorized task with its original details; the short utterance supplies continuation. |
+Each row identifies a real user statement and the precise words that supply the part. If a part is not specified in a given statement or its context, do not invent it.
 
-These are examples of how the user's words contribute meaning. They do not add requirements to a different request.
+| Part being read | User statement | Words that supply its meaning |
+|---|---|---|
+| What the statement requires | "Delete the file you added to the repo" | "Delete" requires the deletion. |
+| What the statement forbids | "No, no, you're not gonna edit anything on step three." | "not gonna edit" forbids editing; "anything on step three" identifies the protected target. |
+| What the statement asks | "What does eval do?" | "What does ... do?" requests an explanation of `eval`. |
+| What an earlier statement is being corrected to mean | "The, the effective... the effective instruction." | "effective instruction" replaces the preceding mistaken label "effective user request." |
+| What unfinished work is continued | "Proceed" | The word points to the outstanding request; the earlier exchange supplies its action and target. |
+| Who must act | "You have a job on GitHub." | "You" addresses the agent; the existing GitHub task supplies the work. |
+| What action must occur | "Delete the file you added to the repo" | "Delete" is the action, separate from which file it affects. |
+| Which item is affected | "Move nextmessage.json to a subfolder nextmessage" | `nextmessage.json` is the item; `nextmessage` is its destination. |
+| Whether an action is required or forbidden | "For every test with an exact counterexample delete the compliant test" and "you're not gonna edit anything on step three" | "delete" requires an occurrence; "not gonna edit" forbids an occurrence. The negative governs "edit." |
+| How many | "For every test with an exact counterexample delete the compliant test" | "every" applies to qualifying tests, not merely one test. |
+| Which set is included | "For every test with an exact counterexample delete the compliant test" | "with an exact counterexample" restricts the set of tests affected. |
+| When a requirement applies | "For every test without a failing counterexample, replace the compliant test with its failing counter" | "without a failing counterexample" is the qualifying condition for replacement. |
+| Which action precedes another | "First we have ask in what way does the question at step 3 map to the questionaire, then we can find if that's a heuristic that can be applied step 5" | "First ... then" puts the Step 3 mapping before the Step 5 heuristic. |
+| When completion is due | "after every agreed definition or after every agreed assignment, immediately complete it" | "after every agreed definition or ... assignment" gives the trigger; "immediately" gives the due time. |
+| How to perform the action | "use pixelated redaction for cash app info for other customers" | "pixelated redaction" specifies the method, not merely that the information is obscured. |
+| What exact satisfaction requires | "move messages.json back to main and delete messagesstream folder" | Both named actions must be completed for that instruction to be satisfied. |
+
+The two deletion statements in this table do not ask for the same action on the same target. Their quoted words demonstrate how each part is read; they do not transfer a requirement from one request to another.
 
 ## Describe a failure
 
