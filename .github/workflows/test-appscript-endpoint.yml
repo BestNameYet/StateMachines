@@ -1,0 +1,23 @@
+name: Test Apps Script endpoint
+
+on:
+  push:
+    paths:
+      - .github/workflows/test-appscript-endpoint.yml
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST sourcecode and arguments
+        run: |
+          curl --location --silent --show-error --fail-with-body --max-time 60 \
+            --header 'Content-Type: application/json' \
+            --data '{"sourcecode":"(input) => ({ok: true, received: input, total: input.price * input.quantity})","arguments":{"name":"endpoint-test","price":5,"quantity":3}}' \
+            --output response.json \
+            'https://script.google.com/macros/s/AKfycbxz7tkba4wl-wWzDn90iuh0us2l2EUD3AYV9HyVJckETKGjhPKFthnqPyYmcOPOk_g5FA/exec'
+          cat response.json
+          node -e 'const fs = require("fs"); const r = JSON.parse(fs.readFileSync("response.json", "utf8")); if (r.ok !== true || r.total !== 15 || r.received.name !== "endpoint-test") throw new Error("Unexpected response"); console.log("\\nPASS: function executed and arguments were received.");'
