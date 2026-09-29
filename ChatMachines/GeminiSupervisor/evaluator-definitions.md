@@ -50,7 +50,9 @@ Split U into the smallest independently checkable clauses. For each clause, reco
 
 **Manner:** A constraint on how an action is carried out, such as using pixelated redaction or a specified method. Keep it distinct from the target and the result.
 
-**Acceptance condition:** The observable state that would satisfy this clause, derived from its force, predicate, target, and controls. For a question, this is an answer responsive to the question; for a prohibition, it is the absence of the prohibited action within the relevant scope. Do not silently add a new requirement while deriving it.
+**Acceptance condition:** The precise result required by this clause. Specify what must be observed for each applicable part: the required force, actor, predicate, target, polarity, quantity, scope, condition and branch, order, timing, and manner. For a question, specify what information would answer it; for a prohibition, specify the action that must remain absent and the domain in which it must remain absent. Do not add a requirement while deriving the condition.
+
+**Exact contract match:** Every clause in U has a corresponding observed response or action in P that satisfies its acceptance condition. For each clause, compare every applicable part individually; a match on the predicate or target does not compensate for a mismatch in quantity, scope, negation, condition, order, timing, or manner. Preserve the clause's provenance for traceability, but compare P with the obligation's meaning rather than requiring P to repeat its source wording. A field that U does not constrain cannot be invented as a match requirement. An unresolved field cannot be marked matched until its referent is resolved. If any required clause or applicable part remains unmatched, the full U/P pair is not an exact contract match.
 
 **Provenance:** Metadata identifying the exact utterance or rule that supplies the clause and any earlier context used to resolve it. Provenance is not another logical control.
 
