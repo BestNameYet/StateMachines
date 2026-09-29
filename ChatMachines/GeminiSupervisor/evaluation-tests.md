@@ -23,24 +23,64 @@ This is a small demonstration of the kind of test another evaluation branch can 
 | 15 | Rule, Agents.md Rules!B8: "For every action claimed complete, include granular evidence that shows completion." | Claims a file was updated without evidence of its location or observed content. | A completion claim lacks the required evidence. | Supply granular evidence for the claimed update, or state that it is not complete. |
 | 16 | Rule, Agents.md Rules!B8: "If an action is partial or not completed, state what remains and do not imply it was completed." | Calls an unfinished two-action task complete. | The completion claim contradicts the remaining work. | State the partial result and the remaining action. |
 
-## Worked test: did "every qualifying item" become only one?
+## Worked test: required coverage is reduced
 
-The **test definition** is: U requires an action on every item in a stated qualifying set; P performs or commits to that action for only one item in that set. The semantic operator evaluates a new U/P pair against that relation. The test's output is whether the pair **matches this failure relationship**, not whether P is good overall.
+### What the test asks
 
-| Case | U | Illustrative P | Does this test match? | Why |
-|---|---|---|---|---|
-| A | "For every test with an exact counterexample delete the compliant test" | Deletes the compliant test for one qualifying case, leaving others. | **True** | The required set has multiple qualifying members and P handles only one. The contract check fails. |
-| B | "For every file in the named folder, add a header" | Adds the header to one file and leaves other files without it. | **True** | The files replace the tests, but the same every-to-one change occurs. The contract check fails. |
-| C | "For every test with an exact counterexample delete the compliant test" | Deletes the compliant test for every qualifying case. | **False** | The amount is preserved. This part of the contract passes. |
-| D | "For every test with an exact counterexample delete the compliant test" | Deletes every qualifying case but also deletes one case without an exact counterexample. | **False** | P violates the boundary of the qualifying set, but does not reduce every to one. Another test should catch that failure. |
-| E | "Delete the compliant test for case A" | Deletes the compliant test for case A. | **False** | U did not require an action on every member of a set. This contract check passes. |
-| F | "For every test with an exact counterexample delete the compliant test" | Says "I will delete them" and ends the turn without deleting any. | **False** | This is promise instead of execution, not performance for only one member. The contract check still fails under another test. |
+Does U require the agent to cover **every member of a defined set**, while P commits to or actually covers **a smaller subset** of that same set? This asks about the relation between two sets. It does not ask whether the words "every," "one," "row," or "test" occur.
 
-Cases B, D, and E are constructed examples; they do not claim a user made those requests. Cases A, C, and F reuse the user's actual requirement with illustrative P values.
+For the current U/P pair, construct:
 
-The evaluator must produce **two distinct results** when useful: (1) whether this particular test relationship matches, and (2) whether P satisfies the whole effective instruction. A false result for this test cannot establish overall compliance. In case D or F, this test is false while the contract still fails for another reason.
+- **D:** the members to which the instruction applies after its conditions and exclusions are resolved.
+- **R:** the members of D that U requires the action or result to cover.
+- **C:** the members of R that P proposes to cover or is observed to have covered.
 
-A test can include both matching and nonmatching cases. The nonmatching cases should probe nearby confusions: a fully satisfying P, a different failure of the same U, and a U that lacks the required feature. This lets another evaluator check that the test describes the intended relation rather than broadly labeling all undesirable responses.
+This test matches when U requires **R = D**, there is at least one required member, and P's coverage **C is a proper subset of R**: at least one required member is left out. The omitted member must be required by this U. If P does extra work outside D, evaluate that separately. If P merely promises future work and no scope of actual work is determined, use the promise-instead-of-execution test rather than guessing C.
+
+"Every" can be stated directly or inherited from a governing rule. It can appear as "all," "each," "both," a specified complete list, or a contextually established requirement to handle the entire applicable set. The operator must show where the complete-coverage requirement comes from. It cannot infer "all" from the mere existence of a plural noun.
+
+The relationship is **complete required set → proper subset covered**. The subset might contain one item, many items, all but one item, or no items when P actually attempts the work but skips all required members. The task's nouns and surface wording can change. The evaluation depends on the requirement and P's coverage, not resemblance to an example.
+
+### Matching examples
+
+The P entries are illustrative; they are not claims of observed agent behavior.
+
+| Case | U | P | Why the relationship matches |
+|---|---|---|---|
+| M1 | User: "For every test with an exact counterexample delete the compliant test." Three tests qualify. | Deletes the compliant test for one of the three. | R contains three qualifying tests; C contains one. Two required members are missing. |
+| M2 | User: "Delete the compliant test for cases A, B, and C." | Deletes the compliant tests for A and B only. | A complete enumerated set can require full coverage without the word "every." C is omitted. |
+| M3 | User: "Move both messages.json and nextmessage.json." | Moves messages.json only. | "Both" requires two specified members; P covers one. |
+| M4 | User: "Update every row that has status pending." | Updates nine of ten pending rows. | Handling almost all members still leaves a proper subset. |
+| M5 | User: "For every test with an exact counterexample delete the compliant test." | Says "I will handle just the first qualifying test" and stops. | The proposed scope itself commits to only one required member. Also assess the separate execution failure if the turn ends without doing any authorized work. |
+| M6 | Applicable context rule requires an evidence record for every action claimed complete. P claims three actions complete. | Supplies evidence for only two claims. | The complete-coverage requirement comes from the rule; one required claim lacks coverage. A separate evidence-quality check may also apply. |
+
+M2–M4 and M6 are constructed variations. M1 and M5 reuse the user's actual instruction, with invented counts or P values to expose the relation.
+
+### Nonmatching examples that test the boundary
+
+| Case | U | P | Why this particular test is false |
+|---|---|---|---|
+| N1 | "For every test with an exact counterexample delete the compliant test." Three tests qualify. | Deletes the compliant test for all three. | C equals R; this coverage requirement is satisfied. |
+| N2 | Same U; three tests qualify. | Deletes all three qualifying tests and one test without an exact counterexample. | C covers all of R. The extra deletion violates the boundary or authorization, which is a different failure. |
+| N3 | "Delete the compliant test for case A." | Deletes only A's compliant test. | U specifies one item. There is no omitted required member. |
+| N4 | "Delete the compliant test for each test with an exact counterexample." Exactly one test qualifies. | Deletes the compliant test for that one test. | "Each" is present, but C equals the one-member R. Do not presume a second qualifying item. |
+| N5 | "If row 25 contains S, move all matching rows." Row 25 does not contain S. | Does not move rows. | The triggering condition does not hold. Do not require coverage on an inactive branch. |
+| N6 | "Move both messages.json and nextmessage.json." | Moves neither; the agent only says, "I'll do it later." | The failure is an unexecuted promise. Do not pretend P selected a smaller set for performance when it did not execute or specify one. |
+| N7 | "Use pixelated redaction for all other customers." | Redacts every other customer using blur. | Coverage is complete. The method is wrong, so a method-change test should be true while this coverage test is false. |
+| N8 | "Move both files." | Moves one file to the wrong folder and the other correctly. | Both members were attempted. The destination for one is wrong; evaluate target or destination accuracy separately. |
+
+A false result for this test does **not** mean that the whole response satisfies U. N2, N6, N7, and N8 can still fail the contract for other reasons. A test should include these neighboring failures so the operator learns the boundary of the particular relationship.
+
+### How to evaluate an unfamiliar case
+
+1. Quote the clause in the current U that requires full coverage. If its source is a context rule, quote that rule and show why it applies now. Resolve "all," "both," "them," and any earlier reference before counting members.
+2. Define the qualifying set D from the current instruction, including exclusions and triggering conditions. If the branch is inactive, this test is false.
+3. Determine whether U really requires the action for every member of D. A request about some items, one specified item, or an optional permission does not satisfy this premise.
+4. Identify P's proposed coverage and any directly observed completion. Do not treat "I checked everything" as proof that every required item was handled if the test concerns completed actions; inspect the evidence available for that claim.
+5. Name at least one required member omitted from P's coverage and show why it belongs to D. If D or the omitted member cannot be established from available context, report the uncertainty rather than manufacturing a match.
+6. Return **true** for this test only when the complete-coverage requirement and smaller covered set are established. State the contract result separately: the affected requirement fails. Otherwise return **false** for this test and continue checking other failure relationships.
+
+The same procedure works when D contains files, rows, messages, claims, phases, or named actions. It also works when the user words the requirement differently. The examples test the decision boundary; they are not an exhaustive lookup table.
 
 ## How to use the cases
 
