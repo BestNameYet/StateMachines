@@ -1,0 +1,45 @@
+name: Gemini ChatGPT App Script message stream
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiChatGPTAppScript/nextmessage.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gemini-chatgpt-appscript-message-stream
+  cancel-in-progress: false
+
+jobs:
+  respond:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Send conversation to Gemini and append reply
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-2.5-flash
+        run: node ChatMachines/GeminiChatGPTAppScript/send-to-gemini.js
+
+      - name: Commit updated message stream
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ChatMachines/GeminiChatGPTAppScript/MessageStream/messages.json
+          if git diff --cached --quiet; then
+            echo "No message stream change."
+            exit 0
+          fi
+          git commit -m "Append Gemini response to message stream"
+          git push origin HEAD:main
