@@ -24,7 +24,7 @@ A sentence can contain more than one requirement. Split it so each required acti
 
 The fifth question has these **subquestions**. They are not extra main parts:
 
-- **Does the statement say to do something or not do it?** "Edit A" requires an edit. "Do not edit A" forbids that edit. Preserve the word "not" and what it applies to. A prohibition is the first question's instruction type; this subquestion captures the difference between the described action occurring and not occurring.
+- **Does the user direct the action to happen, or forbid it? What exactly does "no" or "not" apply to?** Compare the user's own statements: "For every test with an exact counterexample delete the compliant test" directs deletion for a specified set; "No, no, you're not gonna edit anything on step three" forbids edits to that step; "For the rest of this thing, you have no authority to edit anything on the agents at all" forbids edits across the larger Agents.md target and duration. The evaluator must retain the action and the reach of the negative word. A prohibition is the first main question's instruction type; this subquestion records what occurrence is being forbidden.
 - **How many?** "Edit one row," "edit exactly three rows," "edit at least three rows," and "edit every row" specify different amounts. "Every" must not become "some."
 - **Which items are included?** "Edit every row in Sheet A" applies to rows in Sheet A, not rows in every sheet. The amount is "every"; the included set is "rows in Sheet A."
 - **When does it apply?** "If the last row contains S, send it" requires the send only when that condition holds. "Send only if the last row contains S" additionally forbids sending when it does not hold. Preserve both sides of a stated branch.
@@ -40,19 +40,20 @@ For every requirement, retain the exact user words or applicable rule and the ea
 
 For each requirement, write down the observable result that its five main parts and applicable details demand. Then compare P against **each** one. The whole response matches U only when every requirement is met and every specified detail is preserved. Matching the action while changing "all" to "some," changing the target, skipping a condition, or doing the steps in the wrong order fails the match. Do not demand a detail U never specified. P may use different words while preserving the same meaning.
 
-Examples:
+Examples from the user's requests in this work:
 
-| U | P or observed result | Match? | Why |
-|---|---|---|---|
-| "Edit every row in Sheet A." | Edits every row in Sheet A. | Yes | Action, item, included set, and amount are satisfied. |
-| "Edit every row in Sheet A." | Edits one row in Sheet A. | No | "Every" became "one." |
-| "Do not edit Sheet A." | Edits Sheet A. | No | The forbidden action occurred. |
-| "If row 25 contains S, send S." | Sends S when row 25 is empty. | No | The required triggering condition did not hold. |
-| "Read the file, then edit it." | Edits before reading. | No | The required sequence changed. |
-| "Pixelate the other customers' details." | Blurs those details. | No | The requested method changed. |
-| "Proceed," following an unfinished request to perform X, Y, and Z. | Says "I'll do X, Y, and Z" and stops. | No | The earlier task remains undone. |
+| User's words | What must be preserved in the resolved instruction |
+|---|---|
+| "For every test with an exact counterexample delete the compliant test" | Deletion is required for each test meeting the stated condition. |
+| "For every test without a failing counterexample, replace the compliant test with its failing counter" | Replacement is required for the different set of tests; the condition changes which tests qualify. |
+| "No, no, you're not gonna edit anything on step three." | Editing Step 3 is forbidden. The negative applies to editing, not to reading or discussing it. |
+| "For the rest of this thing, you have no authority to edit anything on the agents at all." | Editing any part of Agents.md is forbidden for the stated duration; this broadens the protected target beyond Step 3. |
+| "Move nextmessage.json to a subfolder nextmessage" | A move is required for that named file to that named destination. |
+| "move messages.json back to main and delete messagesstream folder" | Two required actions are linked: move the file, then remove the named folder. |
+| "after every agreed definition or after every agreed assignment, immediately complete it" | Completion is required as soon as either stated agreement occurs; "immediately" sets timing. |
+| "Proceed" after an unfinished request | Carry out the earlier authorized task with its original details; the short utterance supplies continuation. |
 
-These examples demonstrate relationships. They do not add requirements to a different user's request.
+These are examples of how the user's words contribute meaning. They do not add requirements to a different request.
 
 ## Describe a failure
 
