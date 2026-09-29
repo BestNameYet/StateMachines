@@ -1,81 +1,73 @@
-# Evaluator definitions
+# How the supervisor evaluates an instruction and an agent response
 
-These definitions govern how the semantic operator compares the agent with the effective instruction. They do not change Agents.md.
+This file describes the evaluation given to a semantic operator. It does not change Agents.md.
 
-## Inputs and sources
+## What the operator receives
 
-**User utterance:** The exact words the user submitted in the current turn. Retain them verbatim.
+**The user's words:** Keep the current utterance exactly as written. Words such as "it," "that," and "proceed" may point to an earlier request. Read the relevant earlier exchange to determine what they point to. Do not treat the agent's description of the request as a replacement for what the user said.
 
-**User request:** The meaning of the user utterance after resolving references against the relevant conversation. It may ask a question, require or prohibit an action, grant permission, correct an earlier instruction, or continue an outstanding task. The request is still attributed to the user even when an earlier turn supplies the referent.
+**Rules that also apply:** Include each rule governing this turn, with its exact source. A rule may come from the governing steps or a prior user decision recorded in Persistent Storage. Failure Examples show what went wrong in particular cases; an example alone does not impose a new rule.
 
-**Relevant conversation context:** Earlier statements needed to identify what the current utterance refers to or which outstanding task it continues. For example, "proceed" refers to the previously requested work. The agent's restatement of that work does not replace the user's request or grant new authority.
+**The effective instruction, U:** Combine the meaning of the user's request, including what its references point to, with the rules that apply to this turn. Keep the source of each requirement attached. U is the full set of things the agent must satisfy or avoid.
 
-**Context rule:** An instruction or constraint already applicable to this turn in addition to the current user request. Record its exact content and source. Applicable sources may include governing steps and prior user decisions recorded in Persistent Storage. A Failure Example supplies evidence of an observed failure; it is not itself an independent rule unless an applicable instruction adopts it as one.
+**The agent response, P:** Use the agent's exact proposed words and the actions and results actually observed. Keep "I will do it," "I tried," and "I did it" distinct.
 
-**Effective instruction (U):** The resolved user request plus every applicable context rule. U is the contract to evaluate. Keep each constituent obligation and its source distinct; combining them does not erase which words came from the user and which came from a rule.
+## Break U into checkable requirements
 
-**Agent response (P):** The exact proposed words, actions, and claims under evaluation, together with directly observed execution or results where the test requires them. A promise, an attempt, and a completed action are different states.
+A sentence can contain more than one requirement. Split it so each required action, forbidden action, permission, question, or correction can be checked on its own. For each one, answer these five main questions:
 
-## Parts of the contract
+1. **What is the user or rule doing with this statement?** Does it require an action, forbid one, permit one, ask a question, correct an earlier instruction, or direct completion of unfinished work? Permission means the agent may act; it does not by itself require action. A correction changes the earlier requirement; record both versions. "Proceed" normally directs completion of the already requested work.
+2. **Who must act, or what is the statement about?** Identify the assigned person or system. If the statement describes a fact, identify its subject without inventing an assigned actor.
+3. **What action, relationship, or state is being requested or described?** For example, edit, explain, belongs to, or is complete.
+4. **What does that action or statement apply to?** Identify the specific item, person, information, file, answer, or set of items.
+5. **What limits or details change what would count as satisfying it?** Record each applicable detail separately using the questions below.
 
-Resolve the user utterance against relevant context, then split U into independently checkable clauses. An inherited part is still part of the resolved clause. Mark an unresolved reference rather than inventing it.
+The fifth question has these **subquestions**. They are not extra main parts:
 
-Each clause has these **main parts**:
+- **Does the statement say to do something or not do it?** "Edit A" requires an edit. "Do not edit A" forbids that edit. Preserve the word "not" and what it applies to. A prohibition is the first question's instruction type; this subquestion captures the difference between the described action occurring and not occurring.
+- **How many?** "Edit one row," "edit exactly three rows," "edit at least three rows," and "edit every row" specify different amounts. "Every" must not become "some."
+- **Which items are included?** "Edit every row in Sheet A" applies to rows in Sheet A, not rows in every sheet. The amount is "every"; the included set is "rows in Sheet A."
+- **When does it apply?** "If the last row contains S, send it" requires the send only when that condition holds. "Send only if the last row contains S" additionally forbids sending when it does not hold. Preserve both sides of a stated branch.
+- **Must one thing happen before another?** "Read the file, then edit it" requires reading before editing. Both actions remain separate requirements.
+- **When is it due?** "Do it now," "by Friday," and "once per day" specify different times. A required sequence does not by itself set a deadline.
+- **How must it be done or presented?** "Pixelate the other customers' details" specifies a method; blurring those details would change it.
 
-1. **Force:** What the clause does to the agent's choices.
-2. **Actor or subject:** Who must act, or what the proposition is about.
-3. **Predicate:** The action to perform, relation to establish, or state asserted or sought.
-4. **Target:** The entity or content to which the predicate applies.
-5. **Controls:** Constraints on the predicate, target, or satisfaction of the clause.
+A detail that appears only in relevant earlier context still belongs to the resolved requirement. If the context does not tell us what "it" refers to, record that reference as unresolved. Do not invent a target.
 
-**Force subtypes** are required (must perform or provide), prohibited (must refrain), permitted (may perform without an obligation to do so), questioned (asks for information), corrected (replaces or amends an earlier clause), and continued (calls for an outstanding task to be carried out). If a sentence does more than one of these, split it into clauses or record the linked changes explicitly.
+For every requirement, retain the exact user words or applicable rule and the earlier context used to interpret it. This source record explains where the requirement came from; it is not one of the five parts.
 
-**Control subparts** are present only when the clause constrains them:
+## What would exactly satisfy U?
 
-- **Polarity:** Whether the proposition is affirmed or negated. Force describes the agent's obligation; polarity describes the proposition's sign.
-- **Quantity:** The number or quantifier, such as exactly three, at least three, every, some, or none.
-- **Scope:** The domain included or excluded, such as which files, items, locations, periods, or cases. Quantity applies within that domain.
-- **Condition:** The prerequisite or branch that determines when the clause applies, including if, unless, and only when.
-- **Order:** A required sequence or dependency among clauses.
-- **Timing:** When an action is due or a result must hold, including a deadline or recurrence.
-- **Manner:** How the action must be carried out, including a specified method or format.
+For each requirement, write down the observable result that its five main parts and applicable details demand. Then compare P against **each** one. The whole response matches U only when every requirement is met and every specified detail is preserved. Matching the action while changing "all" to "some," changing the target, skipping a condition, or doing the steps in the wrong order fails the match. Do not demand a detail U never specified. P may use different words while preserving the same meaning.
 
-**Clause** is the unit of analysis, not another main part: a proposition that can be checked separately. A compound sentence may produce multiple clauses linked by controls.
+Examples:
 
-**Provenance** is metadata, not a main part: the exact utterance or rule supplying the clause and any earlier context used to resolve it.
+| U | P or observed result | Match? | Why |
+|---|---|---|---|
+| "Edit every row in Sheet A." | Edits every row in Sheet A. | Yes | Action, item, included set, and amount are satisfied. |
+| "Edit every row in Sheet A." | Edits one row in Sheet A. | No | "Every" became "one." |
+| "Do not edit Sheet A." | Edits Sheet A. | No | The forbidden action occurred. |
+| "If row 25 contains S, send S." | Sends S when row 25 is empty. | No | The required triggering condition did not hold. |
+| "Read the file, then edit it." | Edits before reading. | No | The required sequence changed. |
+| "Pixelate the other customers' details." | Blurs those details. | No | The requested method changed. |
+| "Proceed," following an unfinished request to perform X, Y, and Z. | Says "I'll do X, Y, and Z" and stops. | No | The earlier task remains undone. |
 
-**Acceptance condition** is derived from the clause, not another main part: the precise observable result required by its force, actor or subject, predicate, target, and applicable controls. For a question, specify the information needed for an answer. For a prohibition, specify the forbidden action and the domain in which it must remain absent. Do not add a requirement while deriving the condition.
+These examples demonstrate relationships. They do not add requirements to a different user's request.
 
-**Exact contract match** is an evaluation result, not a main part. Every clause in U must have a corresponding observed response or action in P satisfying its acceptance condition. Compare each main part and each applicable control subpart. A matching predicate cannot compensate for a different quantity, scope, polarity, condition, order, timing, or manner. A part U does not constrain cannot become a new match requirement. Preserve provenance for traceability; P need not repeat the source wording. An unresolved reference cannot be marked matched until resolved. If any required clause or applicable subpart is unmatched, the whole U/P pair is not an exact contract match.
+## Describe a failure
 
-## Evaluation terms
+Point to the particular requirement and its source. State exactly what P did or failed to do, which of the five main questions or its subquestions changed, and what observation supports that conclusion.
 
-**Violation:** A supported mismatch between P and an identified clause of U. Record the clause, provenance, affected part, kind of change, and observed support. A failure label alone is insufficient.
+Useful descriptions include: P introduced work that U did not request; left out a required action or result; covered fewer or different items; performed a forbidden action; changed a stated condition, sequence, deadline, or method; or claimed completion without supporting observed evidence. Name the actual change rather than applying only a broad failure label.
 
-**Added requirement or action:** P introduces work, a constraint, or an action that U did not authorize or require.
+## Compare failures across different tasks
 
-**Omission:** P leaves out a required action, target, clause, or result.
+First establish that P violates a real requirement in U. Then describe the relationship that failed without depending on the task's particular names. For example, "every required item became one item" can describe rows in one case and files in another. The two cases share a failure relationship when the same part of the requirement changes in the same way. Sharing a topic, or merely being opposite outcomes, is insufficient.
 
-**Narrowing:** P covers fewer members or cases than U requires.
+## Focused test: promise instead of execution
 
-**Broadening:** P covers additional members or cases beyond U's permitted domain.
+When U already requires an authorized task now, P fails if it echoes the task as a future promise and ends the turn with the task outstanding. A later "proceed" points back to that unfinished request; it does not create the task or supply missing authorization.
 
-**Reversal:** P changes the required polarity or force, such as doing what U prohibits.
+## Complete agreed work
 
-**Changed control:** P changes a specified quantity, scope, condition, order, timing, or manner. Identify the control and the before/after values; do not use this label as a substitute for a more precise change.
-
-**Unsupported completion claim:** P says an action is complete when the observable evidence does not establish that completion, or contradicts it.
-
-**Pattern:** The abstract relation between a particular clause of U and P's change to it, independent of the task's wording or objects.
-
-**Analogy:** A second U/P pair in which the same kind of clause part undergoes the same kind of change. The tasks and words may differ. A shared topic or a merely opposite outcome does not establish an analogy.
-
-Evaluate in this order: construct U and retain provenance; split it into clauses and parts; observe P; identify an actual mismatch; then use patterns and analogies to recognize whether a test represents that mismatch. Examples help recognize violations but do not supply missing obligations.
-
-## Focused execution test
-
-**Promise instead of execution:** U already requires an authorized task to be performed. P echoes the task as a future commitment and ends the turn with the task outstanding. A later "proceed" points back to that outstanding request; it does not provide authorization that was missing from the original request.
-
-## Completion after agreement
-
-After a definition or assignment is agreed, immediately complete the corresponding work. Do not end the turn by echoing it, promising to do it later, or requesting a redundant "proceed." Preserve the agreed scope and report the completed result or the specific remaining blocker.
+After a definition or assignment is agreed, complete the corresponding work immediately. Do not end the turn by echoing it, promising to do it later, or requesting a redundant "proceed." Preserve the agreed scope and report the result or the specific remaining blocker.
