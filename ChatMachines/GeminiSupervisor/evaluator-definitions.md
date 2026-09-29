@@ -18,43 +18,35 @@ These definitions govern how the semantic operator compares the agent with the e
 
 ## Parts of the contract
 
-Split U into the smallest independently checkable clauses. For each clause, record the following parts. A part can be supplied by relevant context rather than repeated in the current utterance. Mark a part **unresolved** if the available context does not determine it; do not invent it.
+Resolve the user utterance against relevant context, then split U into independently checkable clauses. An inherited part is still part of the resolved clause. Mark an unresolved reference rather than inventing it.
 
-**Clause:** One proposition whose satisfaction or violation can be checked separately. A compound sentence can yield multiple clauses.
+Each clause has these **main parts**:
 
-**Force:** What the clause does to the agent's choices. Record one of these meanings, or multiple clauses if more than one applies:
-- **Required:** The agent must perform or provide the specified action or result.
-- **Prohibited:** The agent must refrain from the specified action or result.
-- **Permitted:** The agent may perform the specified action; permission alone does not require performance.
-- **Questioned:** The user requests information or an answer about the proposition.
-- **Corrected:** The user replaces or amends an earlier clause. Record the superseded clause and the resulting clause.
-- **Continued:** The user directs completion of an outstanding task, whose content comes from the earlier request.
+1. **Force:** What the clause does to the agent's choices.
+2. **Actor or subject:** Who must act, or what the proposition is about.
+3. **Predicate:** The action to perform, relation to establish, or state asserted or sought.
+4. **Target:** The entity or content to which the predicate applies.
+5. **Controls:** Constraints on the predicate, target, or satisfaction of the clause.
 
-**Actor:** The person or system assigned to perform the predicate. If the clause merely describes a fact, identify the subject of that fact without inventing an assigned actor.
+**Force subtypes** are required (must perform or provide), prohibited (must refrain), permitted (may perform without an obligation to do so), questioned (asks for information), corrected (replaces or amends an earlier clause), and continued (calls for an outstanding task to be carried out). If a sentence does more than one of these, split it into clauses or record the linked changes explicitly.
 
-**Predicate:** The action to perform, relation to establish, or state asserted or sought. For example, "modify," "belongs to," or "is complete."
+**Control subparts** are present only when the clause constrains them:
 
-**Target:** The entity or content the predicate applies to: an object, person, file, piece of information, result, or set of these. Record identifying details needed to distinguish it from other targets.
+- **Polarity:** Whether the proposition is affirmed or negated. Force describes the agent's obligation; polarity describes the proposition's sign.
+- **Quantity:** The number or quantifier, such as exactly three, at least three, every, some, or none.
+- **Scope:** The domain included or excluded, such as which files, items, locations, periods, or cases. Quantity applies within that domain.
+- **Condition:** The prerequisite or branch that determines when the clause applies, including if, unless, and only when.
+- **Order:** A required sequence or dependency among clauses.
+- **Timing:** When an action is due or a result must hold, including a deadline or recurrence.
+- **Manner:** How the action must be carried out, including a specified method or format.
 
-**Polarity:** Whether the proposition is affirmed or negated. "Modify A" and "do not modify A" differ in polarity. Record prohibition as force as well; polarity records the logical negation, while force records what the agent is required to do about it.
+**Clause** is the unit of analysis, not another main part: a proposition that can be checked separately. A compound sentence may produce multiple clauses linked by controls.
 
-**Quantity:** The count or quantifier applied to the target or action: one, exactly three, at least three, every, some, none, and so on. Preserve exact, minimum, maximum, and universal meanings separately.
+**Provenance** is metadata, not a main part: the exact utterance or rule supplying the clause and any earlier context used to resolve it.
 
-**Scope:** The domain over which the clause applies: which items, locations, time span, files, or cases are included or excluded. Quantity states how many within that domain; scope states what belongs to the domain. "All rows in Sheet A" has universal quantity and Sheet A as its scope.
+**Acceptance condition** is derived from the clause, not another main part: the precise observable result required by its force, actor or subject, predicate, target, and applicable controls. For a question, specify the information needed for an answer. For a prohibition, specify the forbidden action and the domain in which it must remain absent. Do not add a requirement while deriving the condition.
 
-**Condition:** A prerequisite or branch that determines when a clause applies. Record the triggering proposition and the required result for each branch, including "if," "unless," and "only when."
-
-**Order:** A required sequence or dependency among clauses. "Inspect, then edit" makes inspection precede editing; the two actions are separate clauses linked by order.
-
-**Timing:** When performance is due or when a condition or result must hold, including "now," a deadline, or a recurring interval. Timing differs from order: two actions can have a sequence without a clock deadline.
-
-**Manner:** A constraint on how an action is carried out, such as using pixelated redaction or a specified method. Keep it distinct from the target and the result.
-
-**Acceptance condition:** The precise result required by this clause. Specify what must be observed for each applicable part: the required force, actor, predicate, target, polarity, quantity, scope, condition and branch, order, timing, and manner. For a question, specify what information would answer it; for a prohibition, specify the action that must remain absent and the domain in which it must remain absent. Do not add a requirement while deriving the condition.
-
-**Exact contract match:** Every clause in U has a corresponding observed response or action in P that satisfies its acceptance condition. For each clause, compare every applicable part individually; a match on the predicate or target does not compensate for a mismatch in quantity, scope, negation, condition, order, timing, or manner. Preserve the clause's provenance for traceability, but compare P with the obligation's meaning rather than requiring P to repeat its source wording. A field that U does not constrain cannot be invented as a match requirement. An unresolved field cannot be marked matched until its referent is resolved. If any required clause or applicable part remains unmatched, the full U/P pair is not an exact contract match.
-
-**Provenance:** Metadata identifying the exact utterance or rule that supplies the clause and any earlier context used to resolve it. Provenance is not another logical control.
+**Exact contract match** is an evaluation result, not a main part. Every clause in U must have a corresponding observed response or action in P satisfying its acceptance condition. Compare each main part and each applicable control subpart. A matching predicate cannot compensate for a different quantity, scope, polarity, condition, order, timing, or manner. A part U does not constrain cannot become a new match requirement. Preserve provenance for traceability; P need not repeat the source wording. An unresolved reference cannot be marked matched until resolved. If any required clause or applicable subpart is unmatched, the whole U/P pair is not an exact contract match.
 
 ## Evaluation terms
 
