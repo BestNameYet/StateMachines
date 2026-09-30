@@ -44,9 +44,24 @@ function numbered(text) {
 }
 
 function extractJson(text) {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1].trim() : text.trim();
-  return JSON.parse(candidate);
+  const trimmed = text.trim();
+
+  try {
+    return JSON.parse(trimmed);
+  } catch (directError) {
+    const outerFence = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    if (!outerFence) {
+      throw directError;
+    }
+    return JSON.parse(outerFence[1].trim());
+  }
+}
+
+function normalizeRevisedProgram(program) {
+  const trimmed = program.trim();
+  const fenced = trimmed.match(/^```(?:javascript|js)?\s*([\s\S]*?)\s*```$/i);
+  const source = fenced ? fenced[1] : program;
+  return source.trimEnd() + "\n";
 }
 
 function appendNextMessage(messages, nextmessage) {
@@ -237,9 +252,7 @@ async function main() {
     if (typeof result.payload.revised_program !== "string" || result.payload.revised_program.trim() === "") {
       throw new Error("Revision response did not contain a complete revised_program string.");
     }
-    fs.writeFileSync(revisionOutputPath, result.payload.revised_program.endsWith("\n")
-      ? result.payload.revised_program
-      : result.payload.revised_program + "\n");
+    fs.writeFileSync(revisionOutputPath, normalizeRevisedProgram(result.payload.revised_program));
     writeJson(evaluationOutputPath, result.payload);
   } else {
     writeJson(evaluationOutputPath, result.payload);
