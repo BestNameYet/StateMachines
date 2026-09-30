@@ -1,0 +1,76 @@
+# Plan Examples
+
+Source: Persistent Storage Sheet1 and Sheet2, scanned independently of storage key.
+
+## Classification rule
+
+A model-authored statement is plan-bearing when it expresses intended, future, contingent, or still-required action, regardless of the key or field where it is stored. Completed-action evidence is not an active plan merely because it uses imperative language. Direct user-authored text is kept separate.
+
+## Verified plans
+
+These 18 records were previously verified as `instruction_D.complete_plan_of_action` entries.
+
+1. Correct the causal diagnosis by distinguishing an enabling condition from the proximate cause, using prior successful persistence as evidence.
+2. Search Google Drive for the named custom instruction pack, identify the exact matching folder, inspect its direct contents, and return the folder and file links.
+3. Read the uploaded MHT, distinguish the My Activity timeline from the selected AI Mode item detail, summarize major dates/topics and the 45-prompt technical conversation without inventing omitted content.
+4. Answer from observable tool history: distinguish preparation from an executed remote write.
+5. Inspect the uploaded MHT for exact scope-related prompts and answer whether that discussion is present.
+6. Run the exact HTML in Chromium, click the toggle once, and observe page state plus request lifecycle.
+7. Load the installed BrowserAct skill, inspect its companion Skill Forge, probe the local BrowserAct CLI as directed by the skill, use current official BrowserAct documentation when the CLI bootstrap is blocked, and report capabilities, safety gates, architecture, relevance to the current browser/POST task, and the local execution blocker.
+8. Answer from the recorded actions in the immediately preceding BrowserAct exploration and distinguish invoking uv with a requested Python version from actually running Python code or the Python tool against BrowserAct.
+9. Inspect the attached pasted source, identify what it is, explain what it does, and reconcile it with the immediately preceding claim about whether Python was run.
+10. Explain that the Python interpreter did not independently know the bookkeeping schema; the schema and literal record content were supplied in the script by the assistant in order to satisfy Agents.md, then verify whether those records actually exist in Persistent Storage.
+11. Distinguish the ChatGPT BrowserAct plugin/skill from the separate BrowserAct CLI, inspect the recorded earlier BrowserAct exploration, and state only what is evidenced about installation.
+12. Correct the prior overclaim: current absence of the browser-act CLI and a failed reinstall attempt do not establish that it was never installed earlier. State that deletion/removal is a plausible explanation, while not claiming historical deletion is proven without evidence.
+13. Answer directly whether the assistant has internal scratch/reasoning state and distinguish it from a persistent user-visible notebook.
+14. Install BrowserAct into a self-contained directory under the persistent scratch area, verify the CLI, and if direct installation is blocked, exhaust locally available recovery methods without falsely claiming success.
+15. State the actual error: the user referred to the assistant's scratchpad as the target, but the assistant silently substituted /mnt/data and called it a persistent scratch area. Explain that the internal reasoning scratchpad is not an exposed filesystem path that software can be installed into, and that the correct response would have been to say that rather than inventing /mnt/data as an equivalent target.
+16. Explain that /mnt/data is container-lifetime storage, not persistent across container destruction, and identify the prior target substitution as incorrect.
+17. Inspect the complete currently exposed GitHub connector inventory and return every action name without truncation.
+18. Resolve the runtime directory from the immediately preceding turn, locate an exact exposed filesystem path corresponding to the scratchpad, and move only if both source and exact target exist. Do not substitute /mnt/data or another convenience path.
+
+## Additional plan-bearing statements
+
+These statements were found outside the 18 verified plan fields. Locations and lifecycle tags are retained so stale or failed plans are not mistaken for active work.
+
+| Lifecycle | Persistent location | Statement |
+|---|---|---|
+| `active-or-uncompleted` | `Sheet1!A1` | Create and display the start-of-turn record immediately when the request arrived. |
+| `active-or-uncompleted` | `Sheet1!A2` | Create the start-of-turn record immediately upon request arrival. |
+| `active-or-uncompleted` | `Sheet1!A11` | Freshly verify the current remote directory tree. |
+| `stale-or-failed` | `Sheet1!A97` | Remote save/install and post-reconciliation verification. |
+| `stale-or-failed` | `Sheet1!A97` | Save and install the skill remotely. |
+| `stale-or-failed` | `Sheet1!A97` | Create and display the Step 0 record immediately at request arrival. |
+| `stale-or-failed` | `Sheet1!A101` | Complete installation in the user's skill directory. |
+| `stale-or-failed` | `Sheet1!A101` | Install user-conversation-structure. |
+| `stale-or-failed` | `Sheet1!A101` | Install skill in the remote skill directory. |
+| `blocked-or-pending` | `Sheet1!A261` | Determine what the user wants done with the endpoint. |
+| `blocked-or-pending` | `Sheet1!A261` | Create and display the correct Step 0 record immediately on arrival. |
+| `blocked-or-pending` | `Sheet1!A261` | Determine the intended task for the provided endpoint. |
+| `blocked-or-pending` | `Sheet1!A263` | Obtain the target spreadsheet URL or ID. |
+| `blocked-or-pending` | `Sheet1!A263` | Create the Sheet-Cell Tester sheet. |
+| `blocked-or-pending` | `Sheet1!A263` | Create the requested sheet. |
+| `stale-or-failed` | `Sheet1!A1037` | Display and persist Step 0 immediately at request arrival. |
+| `stale-or-failed` | `Sheet1!A1045` | Display the Step 0 record immediately when the request appeared. |
+| `explicit-future` | `Sheet1!A1046` | Cross-checked the current Pinger privacy policy with the current Pinger help article and will verify the persistent-store write by readback. |
+| `stale-or-failed` | `Sheet1!A1104` | Display Step 0 before any other response content in this turn. |
+| `stale-or-failed` | `Sheet1!A1105` | Display the Step 0 start-of-turn record before any other UI content for this turn. |
+| `stale-or-failed` | `Sheet1!A1106` | Display Step 0 before any other assistant content in this turn. |
+| `stale-or-failed` | `Sheet1!A1108` | Display an accurate Step 0 timestamp immediately. |
+| `blocked-or-pending` | `Sheet1!A1143` | Install the BrowserAct CLI runtime and verify browser-act --version plus browser-act get-skills core --skill-version 2.0.2. |
+| `blocked-or-pending` | `Sheet1!A1143` | Install BrowserAct CLI runtime. |
+| `blocked-or-pending` | `Sheet1!A1147` | Move runtime directory to scratchpad. |
+| `blocked-or-pending` | `Sheet1!A1147` | No exact exposed writable scratchpad filesystem path is available, and the current XDG_RUNTIME_DIR source directory does not exist. No substitute location was used. |
+| `stale-or-failed` | `Sheet1!A97` | The Step 0 record was not created immediately upon arrival; this is a late reconstruction, and no authoritative arrival timestamp is available. |
+| `stale-or-failed` | `Sheet1!A97` | Remote save/install; push returned HTTP 422 and remote readback showed no skill path. |
+| `blocked-or-pending` | `Sheet1!A1147` | An actual exposed scratchpad filesystem path must exist/be identifiable; then the runtime source can be moved or XDG_RUNTIME_DIR reconfigured as appropriate. |
+
+## Evaluation notes
+
+- `active-or-uncompleted`: a future or still-required action that reads as pending work.
+- `blocked-or-pending`: a plan whose execution depends on an unresolved prerequisite.
+- `explicit-future`: an explicit future commitment such as “will verify.”
+- `stale-or-failed`: a plan-bearing statement preserved for audit, but already missed, superseded, or recorded as unsuccessful.
+- Repeated Step 0 statements are separate historical examples but should be deduplicated when constructing an executable plan.
+
+Persistent scan result: 18 verified plans plus 29 additional deduplicated plan-bearing statements.
