@@ -1,11 +1,14 @@
 /**
  * Evaluates the current Gemini Supervisor implementation against Agents.md.
  *
- * Runs directly in GitHub Actions / Node.js 22 and uses the repository
- * variable GEMINI_API_KEY. The evaluation basis is deliberately limited to:
- *   1. ChatMachines/GeminiSupervisor/Agents.md
- *   2. ChatMachines/GeminiSupervisor/send-to-gemini.js
+ * Runs directly in GitHub Actions / Node.js 22.
+ * This evaluator has its own trigger message and its own conversation stream,
+ * separate from the Gemini Supervisor runtime conversation.
  *
+ * Trigger:
+ *   ChatMachines/GeminiSupervisor/evaluator-nextmessage/nextmessage.json
+ * Conversation:
+ *   ChatMachines/GeminiSupervisor/evaluator-messages.json
  * Output:
  *   ChatMachines/GeminiSupervisor/program-evaluation.json
  */
@@ -14,6 +17,8 @@ const fs = require("node:fs");
 const root = "ChatMachines/GeminiSupervisor";
 const agentsPath = `${root}/Agents.md`;
 const programPath = `${root}/send-to-gemini.js`;
+const nextPath = `${root}/evaluator-nextmessage/nextmessage.json`;
+const messagesPath = `${root}/evaluator-messages.json`;
 const outputPath = `${root}/program-evaluation.json`;
 
 const apiKey = process.env.GEMINI_API_KEY;
@@ -21,6 +26,14 @@ const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
 function readText(path) {
   return fs.readFileSync(path, "utf8");
+}
+
+function readJson(path) {
+  return JSON.parse(fs.readFileSync(path, "utf8"));
+}
+
+function writeJson(path, value) {
+  fs.writeFileSync(path, JSON.stringify(value, null, 2) + "\n");
 }
 
 function numbered(text) {
@@ -36,68 +49,33 @@ function extractJson(text) {
   return JSON.parse(candidate);
 }
 
-async function callGemini(prompt) {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }]
-          }
-        ],
-        generationConfig: {
-          responseMimeType: "application/json"
-        }
-      }),
-      signal: AbortSignal.timeout(180000)
-    }
-  );
-
-  const text = await response.text();
-  let body;
-  try {
-    body = JSON.parse(text);
-  } catch (_) {
-    throw new Error(`Gemini returned non-JSON HTTP ${response.status}: ${text}`);
+function appendNextMessage(messages, nextmessage) {
+  if (!Array.isArray(messages.contents)) {
+    throw new Error("evaluator-messages.json must contain contents[].");
+  }
+  if (
+    !nextmessage ||
+    nextmessage.role !== "user" ||
+    !Array.isArray(nextmessage.parts) ||
+    !nextmessage.parts.some(part => typeof part.text === "string")
+  ) {
+    throw new Error("evaluator-nextmessage/nextmessage.json must contain a Gemini user content object with text.");
   }
 
-  if (!response.ok) {
-    throw new Error(`Gemini HTTP ${response.status}: ${JSON.stringify(body.error || body)}`);
+  const last = messages.contents[messages.contents.length - 1];
+  if (JSON.stringify(last) !== JSON.stringify(nextmessage)) {
+    messages.contents.push(nextmessage);
   }
-
-  const reply = body.candidates?.[0]?.content?.parts
-    ?.map(part => part.text || "")
-    .join("\n")
-    .trim();
-
-  if (!reply) {
-    throw new Error(`Gemini returned no evaluation content: ${JSON.stringify(body)}`);
-  }
-
-  return extractJson(reply);
+  return messages;
 }
 
-async function main() {
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is missing from the GitHub Actions environment.");
-  }
-
-  const agents = readText(agentsPath);
-  const program = readText(programPath);
-
-  const prompt = [
-    "Evaluate the supplied Gemini Supervisor JavaScript implementation against the supplied Agents.md procedure.",
+function buildSystemInstruction(agents, program) {
+  return [
+    "You are evaluating the supplied Gemini Supervisor JavaScript implementation against the supplied Agents.md procedure.",
     "Agents.md is the authoritative specification for this evaluation. Do not replace, normalize, reinterpret, or supplement its requirements with general best practices unless you explicitly label that material as non-authoritative commentary.",
     "Evaluate what the program actually does, not what its comments claim it does.",
     "Inspect control flow, procedure sequencing, semantic-operator inputs, semantic-operator returns, supervisory-gate handoff, transition-key handling, PASS/FAIL branching, restart behavior, missing-key repair behavior, persistence/state updates, conversation/context handling, and termination behavior.",
-    "For every material Agents.md requirement that is relevant to this runtime, identify whether the program implements it. Do not stop after finding the first failure.",
+    "For every material Agents.md requirement relevant to this runtime, identify whether the program implements it. Do not stop after finding the first failure.",
     "Pay particular attention to whether transitions are driven by the exact key:value returned by the semantic operators and whether every step's supervisory PASS/FAIL result correctly determines restart versus advance.",
     "When the required transition key:value is absent, evaluate whether the program correctly echoes the relevant context and the responder's preceding response back to that responder and appends a system instruction identifying the missing key:value and requesting a corrected response.",
     "Use the provided line numbers when citing evidence from either source.",
@@ -163,18 +141,85 @@ async function main() {
     "===== SEND-TO-GEMINI.JS (IMPLEMENTATION UNDER TEST) =====",
     numbered(program)
   ].join("\n\n");
+}
 
-  const evaluation = await callGemini(prompt);
-  fs.writeFileSync(outputPath, JSON.stringify(evaluation, null, 2) + "\n");
+async function callGemini(messages, systemInstruction) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: systemInstruction }]
+        },
+        contents: messages.contents,
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
+      }),
+      signal: AbortSignal.timeout(180000)
+    }
+  );
+
+  const text = await response.text();
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch (_) {
+    throw new Error(`Gemini returned non-JSON HTTP ${response.status}: ${text}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(`Gemini HTTP ${response.status}: ${JSON.stringify(body.error || body)}`);
+  }
+
+  const reply = body.candidates?.[0]?.content;
+  if (reply?.role !== "model" || !Array.isArray(reply.parts) || reply.parts.length === 0) {
+    throw new Error(`Gemini returned no evaluation content: ${JSON.stringify(body)}`);
+  }
+
+  const replyText = reply.parts.map(part => part.text || "").join("\n").trim();
+  return {
+    reply,
+    evaluation: extractJson(replyText)
+  };
+}
+
+async function main() {
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is missing from the GitHub Actions environment.");
+  }
+
+  const agents = readText(agentsPath);
+  const program = readText(programPath);
+  const messages = appendNextMessage(
+    readJson(messagesPath),
+    readJson(nextPath).nextmessage
+  );
+
+  const result = await callGemini(
+    messages,
+    buildSystemInstruction(agents, program)
+  );
+
+  messages.contents.push(result.reply);
+  writeJson(messagesPath, messages);
+  writeJson(outputPath, result.evaluation);
 
   console.log(JSON.stringify({
     runtime: "Node.js",
     node_version: process.version,
     model,
+    trigger: nextPath,
+    message_stream: messagesPath,
     evaluated_program: programPath,
     authoritative_specification: agentsPath,
     output: outputPath,
-    overall_result: evaluation.overall_result ?? null
+    overall_result: result.evaluation.overall_result ?? null
   }, null, 2));
 }
 
