@@ -1,0 +1,18 @@
+name: GitHub Node test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GitHubNodeTest/run.js
+
+jobs:
+  run-node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run JavaScript on GitHub Node
+        run: node ChatMachines/GitHubNodeTest/run.js
