@@ -156,16 +156,27 @@ For any procedure with N defined steps (Steps 0 through N-1):
 
 ## Supervisory Gate Protocol and Unevaluated Templates
 
-Immediately after a step returns its execution schema, the supervisor evaluates that return. To ensure objective, unbiased evaluation:
+Immediately after a step returns its execution schema, the supervisor evaluates that return. `Agents.md` is the canonical semantic contract for the supervisor and the runtime-generated gate template must instantiate this contract exactly.
 
 1. The supervisor receives an **unevaluated supervisory gate template** alongside the execution return.
-2. In this unevaluated template, all terminal evaluation fields, comments, step-level evaluations, and `gate_result` start as `null`.
-3. The supervisor must fill out this template by replacing each `null` with its evaluation ("PASS" or "FAIL") and specific substantive comment.
-4. For every granular or step-level FAIL, a detailed entry must be added to `failures`.
-5. `gate_result` must be set to `PASS` only when every granular evaluation is PASS, the step-level evaluation is PASS, all required deliverable contents are verified, and the server-verified role fields satisfy the Model Role Separation and Server-Verified Identity Protocol. Otherwise `gate_result` must be `FAIL`.
-6. If `gate_result` is `FAIL`, the procedure must restart the SAME execution step. Advancing to the next step on FAIL is strictly prohibited.
-7. If the supervisory return is malformed, not valid JSON, omits `supervisory_gate.gate_result`, or omits its required role identity fields, the runtime must invoke the supervisory repair branch, returning the prior output and an appended system correction to repair the response.
-8. A supervisory gate performed by ChatGPT is invalid even if the returned JSON would otherwise pass. A non-supervisory execution step performed by Gemini is invalid even if the returned JSON would otherwise pass.
+2. For every terminal execution key `K` with execution value `V`, the granular evaluation must contain a key named `K_eval` at the same logical schema path. That evaluation record must preserve the original execution pair exactly and add only the supervisor fields:
+   ```json
+   {
+     "K_eval": {
+       "K": "<exact original execution value V>",
+       "supervisor_eval_result": null,
+       "supervisor_eval_comment": null
+     }
+   }
+   ```
+3. The original execution key and value inside every `K_eval` record are evidence and must not be rewritten, normalized, summarized, corrected, stripped, or replaced by the supervisor. Objects retain their hierarchy. Arrays retain their order and every entry is evaluated; a terminal array entry uses its array index as `K`.
+4. The supervisor fills every `supervisor_eval_result` with exactly `"PASS"` or `"FAIL"` and every `supervisor_eval_comment` with a specific substantive evaluation of that preserved execution key/value.
+5. `step_level_evaluation` uses the same supervisor fields: `supervisor_eval_result` and `supervisor_eval_comment`.
+6. For every granular or step-level FAIL, a detailed entry must be added to `failures`. Independent failures must remain separate.
+7. `gate_result` must be `"PASS"` only when every `supervisor_eval_result` in `granular_evaluation` is PASS, `step_level_evaluation.supervisor_eval_result` is PASS, all required deliverable contents are verified, and the server-verified role fields satisfy the Model Role Separation and Server-Verified Identity Protocol. Otherwise `gate_result` must be `"FAIL"`.
+8. If `gate_result` is `"FAIL"`, the procedure must restart the SAME execution step. Advancing to the next step on FAIL is strictly prohibited.
+9. If the supervisory return is malformed, not valid JSON, omits `supervisory_gate.gate_result`, omits its required role identity fields, omits any required `K_eval` record, changes any preserved execution key/value, or leaves a required supervisor evaluation field unpopulated, the runtime must invoke the supervisory repair branch. Repair may modify only the Supervisory Gate response; it may not execute or repair the ChatGPT-owned execution step.
+10. A supervisory gate performed by ChatGPT is invalid even if the returned JSON would otherwise pass. A non-supervisory execution step performed by Gemini is invalid even if the returned JSON would otherwise pass.
 
 ## Step 0
 
@@ -199,55 +210,40 @@ All responses to user requests use a return schema. As soon as a user request ap
 
 ### Supervisory Gate
 
+Before evaluating Step 0, the Gemini supervisor must read `evaluator-definitions.md` completely and use it throughout the gate. In particular, the user's words must be treated as user-authored evidence exactly as received. A phrase such as `User prompt:` is not an internal runner string merely because it resembles a label; it is pollution only when evidence shows that the controller, runtime, or another non-user source inserted it into the preserved user utterance.
+
 ```json
 {
   "supervisory_gate": {
+    "evaluation_documents_read": null,
     "role_required": "Gemini model",
     "role_forbidden": "ChatGPT model",
-    "role_completed": "<server/container-verified role that actually completed this Supervisory Gate>",
+    "role_completed": null,
     "role_verification": {
-      "method": "<container/server inspection method>",
-      "evidence": "<directly observed server/runtime evidence>"
+      "method": null,
+      "evidence": null
     },
-    "instruction": "Immediately after this step returns its execution schema, the Gemini supervisor must evaluate that returned schema before the next execution step may begin. Verify the execution return was actually completed by the ChatGPT model from server/container evidence; a Gemini-generated execution return must FAIL. Recursively mirror every returned key and every array entry at the same schema path. For every terminal returned value, replace the execution value with an evaluation and supervisor comment. Evaluate the step as a whole after completing the granular mirror. Every failed granular or step-level evaluation must be entered separately in failures. The next execution step is permitted only when gate_result is PASS.",
+    "instruction": "Read evaluator-definitions.md completely before evaluating Step 0. Evaluate only the supplied execution return. For every terminal execution key K, use K_eval, preserve K and its execution value exactly, then populate supervisor_eval_result and supervisor_eval_comment. Verify the execution return was actually completed by ChatGPT from server/container evidence. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step. Record every failure separately. The next execution step is permitted only when gate_result is PASS.",
     "granular_evaluation": {
-      "instruction": "Create an exact key-for-key, entry-by-entry evaluative mirror of this step's returned schema, including role_required, role_forbidden, role_completed, and role_verification. No returned key, terminal value, or array entry may be omitted.",
-      "value": "<required: exact evaluative mirror of this step's returned schema using the terminal_entry_template>",
-      "terminal_entry_template": {
-        "evaluation": {
-          "select": ["PASS", "FAIL"]
-        },
-        "comment": "<required supervisor evaluation of this exact returned entry>"
+      "<execution_schema_path>": {
+        "<execution_key>_eval": {
+          "<execution_key>": "<exact original execution value>",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
+        }
       }
     },
     "step_level_evaluation": {
-      "instruction": "After completing the granular evaluation, evaluate the complete step as a unit, including server-verified model role, relationships among returned entries, governing instructions, the user request, authorization context, and applicable Failure Examples.",
-      "evaluation": {
-        "select": ["PASS", "FAIL"]
-      },
-      "comment": "<required supervisor explanation>"
+      "supervisor_eval_result": null,
+      "supervisor_eval_comment": null
     },
-    "failures": {
-      "instruction": "Create one list entry for every FAIL in granular_evaluation or step_level_evaluation. Do not combine independent failures.",
-      "value": [
-        {
-          "schema_path": "<exact path to failed evaluation>",
-          "evaluation": "FAIL",
-          "comment": "<required supervisor explanation specifying why the evaluation failed>",
-          "failure_example_relationship": {
-            "select": ["DIRECT", "PATTERN", "ANALOGY", "NONE"],
-            "comment": "<required when DIRECT, PATTERN, or ANALOGY is selected>"
-          }
-        }
-      ]
-    },
-    "gate_result": {
-      "instruction": "Select PASS only when every granular evaluation and the step-level evaluation are PASS, the execution step was server-verified as ChatGPT model, this Supervisory Gate was server-verified as Gemini model, and every identified failure has been recorded. Select FAIL otherwise. Do not begin the next execution step when this value is FAIL.",
-      "select": ["PASS", "FAIL"]
-    }
+    "failures": [],
+    "gate_result": null
   }
 }
 ```
+
+For a completed Step 0 Supervisory Gate, `evaluation_documents_read` must be `["evaluator-definitions.md"]`.
 
 ## Step 1
 
@@ -284,37 +280,27 @@ Preserve the request as received. Print this step's record to persistent storage
   "supervisory_gate": {
     "role_required": "Gemini model",
     "role_forbidden": "ChatGPT model",
-    "role_completed": "<server/container-verified role that actually completed this Supervisory Gate>",
+    "role_completed": null,
     "role_verification": {
-      "method": "<container/server inspection method>",
-      "evidence": "<directly observed server/runtime evidence>"
+      "method": null,
+      "evidence": null
     },
-    "instruction": "Immediately after this step returns its execution schema, the Gemini supervisor must evaluate that returned schema before the next execution step may begin. Verify the execution return was actually completed by the ChatGPT model from server/container evidence; a Gemini-generated execution return must FAIL. Recursively mirror every returned key and every array entry at the same schema path. For every terminal returned value, replace the execution value with an evaluation and supervisor comment. Evaluate the step as a whole after completing the granular mirror. Every failed granular or step-level evaluation must be entered separately in failures. The next execution step is permitted only when gate_result is PASS.",
+    "instruction": "Evaluate only the supplied Step 1 execution return. For every terminal execution key K, use K_eval, preserve K and its execution value exactly, then populate supervisor_eval_result and supervisor_eval_comment. Verify the execution return was actually completed by ChatGPT from server/container evidence. Evaluate the complete step against its governing instructions, the user request, authorization context, and applicable Failure Examples. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step. The next execution step is permitted only when gate_result is PASS.",
     "granular_evaluation": {
-      "instruction": "Create an exact key-for-key, entry-by-entry evaluative mirror of this step's returned schema, including the role identity fields. No returned key, terminal value, or array entry may be omitted.",
-      "value": "<required: exact evaluative mirror of this step's returned schema using the terminal_entry_template>",
-      "terminal_entry_template": {
-        "evaluation": {
-          "select": ["PASS", "FAIL"]
-        },
-        "comment": "<required supervisor evaluation of this exact returned entry>"
+      "<execution_schema_path>": {
+        "<execution_key>_eval": {
+          "<execution_key>": "<exact original execution value>",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
+        }
       }
     },
     "step_level_evaluation": {
-      "instruction": "After completing the granular evaluation, evaluate the complete step as a unit, including server-verified model role, relationships among its returned entries, its governing instructions, the user request, authorization context, and applicable Failure Examples.",
-      "evaluation": {
-        "select": ["PASS", "FAIL"]
-      },
-      "comment": "<required supervisor explanation>"
+      "supervisor_eval_result": null,
+      "supervisor_eval_comment": null
     },
-    "failures": {
-      "instruction": "Create one list entry for every FAIL in granular_evaluation or step_level_evaluation. Do not combine independent failures.",
-      "value": []
-    },
-    "gate_result": {
-      "instruction": "Select PASS only when every granular evaluation and the step-level evaluation are PASS, the execution role is server-verified as ChatGPT model, the Supervisory Gate role is server-verified as Gemini model, and every identified failure has been recorded. Select FAIL otherwise. Do not begin the next execution step when this value is FAIL.",
-      "select": ["PASS", "FAIL"]
-    }
+    "failures": [],
+    "gate_result": null
   }
 }
 ```
@@ -357,37 +343,27 @@ Extract only requirements stated by the user. Preserve each requirement verbatim
   "supervisory_gate": {
     "role_required": "Gemini model",
     "role_forbidden": "ChatGPT model",
-    "role_completed": "<server/container-verified role that actually completed this Supervisory Gate>",
+    "role_completed": null,
     "role_verification": {
-      "method": "<container/server inspection method>",
-      "evidence": "<directly observed server/runtime evidence>"
+      "method": null,
+      "evidence": null
     },
-    "instruction": "Immediately after this step returns its execution schema, the Gemini supervisor must evaluate that returned schema before the next execution step may begin. Verify the execution return was actually completed by the ChatGPT model from server/container evidence; a Gemini-generated execution return must FAIL. Recursively mirror every returned key and every array entry at the same schema path. For every terminal returned value, replace the execution value with an evaluation and supervisor comment. Evaluate the step as a whole after completing the granular mirror. Every failed granular or step-level evaluation must be entered separately in failures. The next execution step is permitted only when gate_result is PASS.",
+    "instruction": "Evaluate only the supplied Step 2 execution return. For every terminal execution key K, use K_eval, preserve K and its execution value exactly, then populate supervisor_eval_result and supervisor_eval_comment. Verify the execution return was actually completed by ChatGPT from server/container evidence. Verify every stated requirement is verbatim from the user request and that none were invented or omitted. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step. The next execution step is permitted only when gate_result is PASS.",
     "granular_evaluation": {
-      "instruction": "Create an exact key-for-key, entry-by-entry evaluative mirror of this step's returned schema, including the role identity fields. No returned key, terminal value, or array entry may be omitted.",
-      "value": "<required: exact evaluative mirror of this step's returned schema using the terminal_entry_template>",
-      "terminal_entry_template": {
-        "evaluation": {
-          "select": ["PASS", "FAIL"]
-        },
-        "comment": "<required supervisor evaluation of this exact returned entry>"
+      "<execution_schema_path>": {
+        "<execution_key>_eval": {
+          "<execution_key>": "<exact original execution value>",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
+        }
       }
     },
     "step_level_evaluation": {
-      "instruction": "After completing the granular evaluation, evaluate the complete step as a unit, including server-verified model role and verifying that extracted requirements are verbatim from user request and none were invented or omitted.",
-      "evaluation": {
-        "select": ["PASS", "FAIL"]
-      },
-      "comment": "<required supervisor explanation>"
+      "supervisor_eval_result": null,
+      "supervisor_eval_comment": null
     },
-    "failures": {
-      "instruction": "Create one list entry for every FAIL in granular_evaluation or step_level_evaluation. Do not combine independent failures.",
-      "value": []
-    },
-    "gate_result": {
-      "instruction": "Select PASS only when every granular evaluation and the step-level evaluation are PASS, the execution role is server-verified as ChatGPT model, the Supervisory Gate role is server-verified as Gemini model, and every identified failure has been recorded. Select FAIL otherwise. Do not begin the next execution step when this value is FAIL.",
-      "select": ["PASS", "FAIL"]
-    }
+    "failures": [],
+    "gate_result": null
   }
 }
 ```
@@ -518,46 +494,35 @@ Extract only requirements stated by the user. Preserve each requirement verbatim
 ```json
 {
   "supervisory_gate": {
+    "evaluation_documents_read": null,
     "role_required": "Gemini model",
     "role_forbidden": "ChatGPT model",
-    "role_completed": "<server/container-verified role that actually completed this Supervisory Gate>",
+    "role_completed": null,
     "role_verification": {
-      "method": "<container/server inspection method>",
-      "evidence": "<directly observed server/runtime evidence>"
+      "method": null,
+      "evidence": null
     },
-    "evaluation_documents_read": {
-      "instruction": "Before any other Step 3 supervisory action, the Gemini supervisor must read evaluation-tests.md and evaluator-definitions.md completely and use both documents as evaluation context for the Step 3 Supervisory Gate.",
-      "value": "evaluation-tests.md and evaluator-definitions.md read completely"
-    },
-    "instruction": "Immediately after this step returns its execution schema, the Gemini supervisor must evaluate that returned schema before the next execution step may begin. Verify from server/container evidence that Step 3 was actually completed by ChatGPT; a Step 3 payload generated inside send-to-gemini.js or through the Gemini API must FAIL. Recursively mirror every returned key and every array entry at the same schema path. For every terminal returned value, replace the execution value with an evaluation and supervisor comment. Evaluate the step as a whole after completing the granular mirror. Check that proposed plan P and UI_output satisfy ALL Step 2 stated requirements. Every failed granular or step-level evaluation must be entered separately in failures. The next execution step is permitted only when gate_result is PASS.",
+    "instruction": "Before any other Step 3 supervisory action, read evaluation-tests.md and evaluator-definitions.md completely and use both throughout the gate. Evaluate only the supplied Step 3 execution return. For every terminal execution key K, use K_eval, preserve K and its execution value exactly, then populate supervisor_eval_result and supervisor_eval_comment. Verify from server/container evidence that Step 3 was actually completed by ChatGPT. Check that P and UI_output satisfy every Step 2 stated requirement. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step. Record every failure separately. The next execution step is permitted only when gate_result is PASS.",
     "granular_evaluation": {
-      "instruction": "Create an exact key-for-key, entry-by-entry evaluative mirror of this step's returned schema, including role identity fields. No returned key, terminal value, or array entry may be omitted.",
-      "value": "<required: exact evaluative mirror of this step's returned schema using the terminal_entry_template>",
-      "terminal_entry_template": {
-        "evaluation": {
-          "select": ["PASS", "FAIL"]
-        },
-        "comment": "<required supervisor evaluation of this exact returned entry>"
+      "<execution_schema_path>": {
+        "<execution_key>_eval": {
+          "<execution_key>": "<exact original execution value>",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
+        }
       }
     },
     "step_level_evaluation": {
-      "instruction": "After completing the granular evaluation, evaluate the complete step as a unit, including server-verified role separation and verifying deliverable satisfaction against Step 2 stated requirements.",
-      "evaluation": {
-        "select": ["PASS", "FAIL"]
-      },
-      "comment": "<required supervisor explanation>"
+      "supervisor_eval_result": null,
+      "supervisor_eval_comment": null
     },
-    "failures": {
-      "instruction": "Create one list entry for every FAIL in granular_evaluation or step_level_evaluation. Do not combine independent failures.",
-      "value": []
-    },
-    "gate_result": {
-      "instruction": "Select PASS only when every granular evaluation and the step-level evaluation are PASS, return_schema_completed is true, the execution role is server-verified as ChatGPT model, this Supervisory Gate is server-verified as Gemini model, and every identified failure has been recorded. Select FAIL otherwise. Do not begin the next execution step when this value is FAIL.",
-      "select": ["PASS", "FAIL"]
-    }
+    "failures": [],
+    "gate_result": null
   }
 }
 ```
+
+For a completed Step 3 Supervisory Gate, `evaluation_documents_read` must be `["evaluation-tests.md", "evaluator-definitions.md"]`.
 
 ## Step 4
 
@@ -664,37 +629,27 @@ Extract only requirements stated by the user. Preserve each requirement verbatim
   "supervisory_gate": {
     "role_required": "Gemini model",
     "role_forbidden": "ChatGPT model",
-    "role_completed": "<server/container-verified role that actually completed this Supervisory Gate>",
+    "role_completed": null,
     "role_verification": {
-      "method": "<container/server inspection method>",
-      "evidence": "<directly observed server/runtime evidence>"
+      "method": null,
+      "evidence": null
     },
-    "instruction": "Immediately after this step returns its execution schema, the Gemini supervisor must evaluate that returned schema before the procedure may complete. Verify from server/container evidence that Step 4 was completed by ChatGPT; a Gemini-generated Step 4 return must FAIL. Recursively mirror every returned key and every array entry at the same schema path. For every terminal returned value, replace the execution value with an evaluation and supervisor comment. Evaluate the step as a whole after completing the granular mirror. Every failed granular or step-level evaluation must be entered separately in failures. Procedure completion is permitted only when gate_result is PASS.",
+    "instruction": "Evaluate only the supplied Step 4 execution return. For every terminal execution key K, use K_eval, preserve K and its execution value exactly, then populate supervisor_eval_result and supervisor_eval_comment. Verify from server/container evidence that Step 4 was completed by ChatGPT. Evaluate evidence fidelity, user-request traceability, failure-reporting hierarchy, and all Step 2 stated requirements. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step. Procedure completion is permitted only when gate_result is PASS.",
     "granular_evaluation": {
-      "instruction": "Create an exact key-for-key, entry-by-entry evaluative mirror of this step's returned schema, including role identity fields. No returned key, terminal value, or array entry may be omitted.",
-      "value": "<required: exact evaluative mirror of this step's returned schema using the terminal_entry_template>",
-      "terminal_entry_template": {
-        "evaluation": {
-          "select": ["PASS", "FAIL"]
-        },
-        "comment": "<required supervisor evaluation of this exact returned entry>"
+      "<execution_schema_path>": {
+        "<execution_key>_eval": {
+          "<execution_key>": "<exact original execution value>",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
+        }
       }
     },
     "step_level_evaluation": {
-      "instruction": "After completing the granular evaluation, evaluate the complete step as a unit, including server-verified role separation, evidence fidelity, user request traceability, and compliance with failure reporting hierarchy.",
-      "evaluation": {
-        "select": ["PASS", "FAIL"]
-      },
-      "comment": "<required supervisor explanation>"
+      "supervisor_eval_result": null,
+      "supervisor_eval_comment": null
     },
-    "failures": {
-      "instruction": "Create one list entry for every FAIL in granular_evaluation or step_level_evaluation. Do not combine independent failures.",
-      "value": []
-    },
-    "gate_result": {
-      "instruction": "Select PASS only when every granular evaluation and the step-level evaluation are PASS, return_schema_completed is true, the execution role is server-verified as ChatGPT model, this Supervisory Gate is server-verified as Gemini model, and every identified failure has been recorded. Select FAIL otherwise.",
-      "select": ["PASS", "FAIL"]
-    }
+    "failures": [],
+    "gate_result": null
   }
 }
 ```
@@ -752,6 +707,7 @@ The schema is structurally populated but must still FAIL because `role_completed
 ```json
 {
   "supervisory_gate": {
+    "evaluation_documents_read": null,
     "role_required": "Gemini model",
     "role_forbidden": "ChatGPT model",
     "role_completed": null,
@@ -761,57 +717,68 @@ The schema is structurally populated but must still FAIL because `role_completed
     },
     "granular_evaluation": {
       "start_of_turn": {
-        "role_required": {
-          "evaluation": null,
-          "comment": null
+        "role_required_eval": {
+          "role_required": "ChatGPT model",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
         },
-        "role_forbidden": {
-          "evaluation": null,
-          "comment": null
+        "role_forbidden_eval": {
+          "role_forbidden": "Gemini model",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
         },
-        "role_completed": {
-          "evaluation": null,
-          "comment": null
+        "role_completed_eval": {
+          "role_completed": "ChatGPT model",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
         },
         "role_verification": {
-          "method": {
-            "evaluation": null,
-            "comment": null
+          "method_eval": {
+            "method": "server/container inspection",
+            "supervisor_eval_result": null,
+            "supervisor_eval_comment": null
           },
-          "evidence": {
-            "evaluation": null,
-            "comment": null
+          "evidence_eval": {
+            "evidence": "Execution originated on ChatGPT side of the GitHub boundary and not from send-to-gemini.js/Gemini API.",
+            "supervisor_eval_result": null,
+            "supervisor_eval_comment": null
           }
         },
-        "run_nonce": {
-          "evaluation": null,
-          "comment": null
+        "run_nonce_eval": {
+          "run_nonce": "run_20260330_abc123",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
         },
-        "user_request": {
-          "evaluation": null,
-          "comment": null
+        "user_request_eval": {
+          "user_request": "Create a new skill implementing Step 3 tests.",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
         },
-        "current_timestamp": {
-          "evaluation": null,
-          "comment": null
+        "current_timestamp_eval": {
+          "current_timestamp": "2026-03-30T10:00:00.000Z",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
         },
-        "return_schema_completed": {
-          "evaluation": null,
-          "comment": null
+        "return_schema_completed_eval": {
+          "return_schema_completed": true,
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
         },
-        "return_schema_completed_timestamp": {
-          "evaluation": null,
-          "comment": null
+        "return_schema_completed_timestamp_eval": {
+          "return_schema_completed_timestamp": "2026-03-30T10:00:00.100Z",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
         },
-        "nonce": {
-          "evaluation": null,
-          "comment": null
+        "nonce_eval": {
+          "nonce": "req_xyz_789",
+          "supervisor_eval_result": null,
+          "supervisor_eval_comment": null
         }
       }
     },
     "step_level_evaluation": {
-      "evaluation": null,
-      "comment": null
+      "supervisor_eval_result": null,
+      "supervisor_eval_comment": null
     },
     "failures": [],
     "gate_result": null
@@ -824,6 +791,7 @@ The schema is structurally populated but must still FAIL because `role_completed
 ```json
 {
   "supervisory_gate": {
+    "evaluation_documents_read": ["evaluator-definitions.md"],
     "role_required": "Gemini model",
     "role_forbidden": "ChatGPT model",
     "role_completed": "Gemini model",
@@ -833,57 +801,68 @@ The schema is structurally populated but must still FAIL because `role_completed
     },
     "granular_evaluation": {
       "start_of_turn": {
-        "role_required": {
-          "evaluation": "PASS",
-          "comment": "Execution step requires ChatGPT model."
+        "role_required_eval": {
+          "role_required": "ChatGPT model",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Execution step requires ChatGPT model."
         },
-        "role_forbidden": {
-          "evaluation": "PASS",
-          "comment": "Execution step forbids Gemini model."
+        "role_forbidden_eval": {
+          "role_forbidden": "Gemini model",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Execution step forbids Gemini model."
         },
-        "role_completed": {
-          "evaluation": "PASS",
-          "comment": "Server evidence establishes ChatGPT actually completed the execution step."
+        "role_completed_eval": {
+          "role_completed": "ChatGPT model",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Server evidence establishes ChatGPT actually completed the execution step."
         },
         "role_verification": {
-          "method": {
-            "evaluation": "PASS",
-            "comment": "A server/container inspection method is recorded."
+          "method_eval": {
+            "method": "server/container inspection",
+            "supervisor_eval_result": "PASS",
+            "supervisor_eval_comment": "A server/container inspection method is recorded."
           },
-          "evidence": {
-            "evaluation": "PASS",
-            "comment": "Evidence supports the actual ChatGPT execution role."
+          "evidence_eval": {
+            "evidence": "Execution originated on ChatGPT side of the GitHub boundary and not from send-to-gemini.js/Gemini API.",
+            "supervisor_eval_result": "PASS",
+            "supervisor_eval_comment": "Evidence supports the actual ChatGPT execution role."
           }
         },
-        "run_nonce": {
-          "evaluation": "PASS",
-          "comment": "Matches active bootstrap run_nonce."
+        "run_nonce_eval": {
+          "run_nonce": "run_20260330_abc123",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Matches active bootstrap run_nonce."
         },
-        "user_request": {
-          "evaluation": "PASS",
-          "comment": "Matches verbatim user utterance without controller directives."
+        "user_request_eval": {
+          "user_request": "Create a new skill implementing Step 3 tests.",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Matches the verbatim user utterance. No non-user controller text was inserted into this preserved value."
         },
-        "current_timestamp": {
-          "evaluation": "PASS",
-          "comment": "Valid ISO 8601 timestamp."
+        "current_timestamp_eval": {
+          "current_timestamp": "2026-03-30T10:00:00.000Z",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Valid ISO 8601 timestamp."
         },
-        "return_schema_completed": {
-          "evaluation": "PASS",
-          "comment": "Correctly true for completed Step 0 return schema."
+        "return_schema_completed_eval": {
+          "return_schema_completed": true,
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Correctly true for completed Step 0 return schema."
         },
-        "return_schema_completed_timestamp": {
-          "evaluation": "PASS",
-          "comment": "Valid timestamp recorded."
+        "return_schema_completed_timestamp_eval": {
+          "return_schema_completed_timestamp": "2026-03-30T10:00:00.100Z",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Valid completion timestamp recorded."
         },
-        "nonce": {
-          "evaluation": "PASS",
-          "comment": "Non-empty valid nonce string."
+        "nonce_eval": {
+          "nonce": "req_xyz_789",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Non-empty request nonce is present."
         }
       }
     },
     "step_level_evaluation": {
-      "evaluation": "PASS",
-      "comment": "Step 0 return schema is complete, server-verified as ChatGPT execution, verbatim, and fully compliant."
+      "supervisor_eval_result": "PASS",
+      "supervisor_eval_comment": "Step 0 return schema is complete, server-verified as ChatGPT execution, verbatim, and fully compliant."
     },
     "failures": [],
     "gate_result": "PASS"
@@ -896,6 +875,7 @@ The schema is structurally populated but must still FAIL because `role_completed
 ```json
 {
   "supervisory_gate": {
+    "evaluation_documents_read": ["evaluator-definitions.md"],
     "role_required": "Gemini model",
     "role_forbidden": "ChatGPT model",
     "role_completed": "Gemini model",
@@ -905,33 +885,68 @@ The schema is structurally populated but must still FAIL because `role_completed
     },
     "granular_evaluation": {
       "start_of_turn": {
-        "role_required": {
-          "evaluation": "PASS",
-          "comment": "Step 0 requires ChatGPT model."
+        "role_required_eval": {
+          "role_required": "ChatGPT model",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Step 0 requires ChatGPT model."
         },
-        "role_forbidden": {
-          "evaluation": "PASS",
-          "comment": "Step 0 forbids Gemini model."
+        "role_forbidden_eval": {
+          "role_forbidden": "Gemini model",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Step 0 forbids Gemini model."
         },
-        "role_completed": {
-          "evaluation": "FAIL",
-          "comment": "Server/runtime evidence establishes Gemini model completed the ChatGPT-owned Step 0."
+        "role_completed_eval": {
+          "role_completed": "Gemini model",
+          "supervisor_eval_result": "FAIL",
+          "supervisor_eval_comment": "Server/runtime evidence establishes Gemini completed the ChatGPT-owned Step 0."
         },
         "role_verification": {
-          "method": {
-            "evaluation": "PASS",
-            "comment": "Server/runtime inspection was used."
+          "method_eval": {
+            "method": "server/runtime inspection",
+            "supervisor_eval_result": "PASS",
+            "supervisor_eval_comment": "Server/runtime inspection was used."
           },
-          "evidence": {
-            "evaluation": "FAIL",
-            "comment": "The evidence proves execution occurred through Gemini inside send-to-gemini.js, which is forbidden for Step 0."
+          "evidence_eval": {
+            "evidence": "Response was generated by the Gemini API from inside send-to-gemini.js.",
+            "supervisor_eval_result": "FAIL",
+            "supervisor_eval_comment": "The evidence proves execution occurred through Gemini inside send-to-gemini.js, which is forbidden for Step 0."
           }
+        },
+        "run_nonce_eval": {
+          "run_nonce": "run_20260330_abc123",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Matches the active run nonce."
+        },
+        "user_request_eval": {
+          "user_request": "Create a new skill implementing Step 3 tests.",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Preserves the verbatim user request."
+        },
+        "current_timestamp_eval": {
+          "current_timestamp": "2026-03-30T10:00:00.000Z",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Valid timestamp."
+        },
+        "return_schema_completed_eval": {
+          "return_schema_completed": true,
+          "supervisor_eval_result": "FAIL",
+          "supervisor_eval_comment": "The field is true, but Step 0 cannot be accepted as complete because the forbidden role executed it."
+        },
+        "return_schema_completed_timestamp_eval": {
+          "return_schema_completed_timestamp": "2026-03-30T10:00:00.100Z",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "A completion timestamp is present."
+        },
+        "nonce_eval": {
+          "nonce": "req_xyz_789",
+          "supervisor_eval_result": "PASS",
+          "supervisor_eval_comment": "Non-empty request nonce is present."
         }
       }
     },
     "step_level_evaluation": {
-      "evaluation": "FAIL",
-      "comment": "Step 0 failed because the forbidden Gemini role completed a ChatGPT-owned execution step."
+      "supervisor_eval_result": "FAIL",
+      "supervisor_eval_comment": "Step 0 failed because the forbidden Gemini role completed a ChatGPT-owned execution step."
     },
     "failures": [
       {
@@ -941,6 +956,24 @@ The schema is structurally populated but must still FAIL because `role_completed
         "failure_example_relationship": {
           "select": "DIRECT",
           "comment": "Direct violation of the Model Role Separation and Server-Verified Identity Protocol."
+        }
+      },
+      {
+        "schema_path": "start_of_turn.role_verification.evidence",
+        "evaluation": "FAIL",
+        "comment": "The execution evidence identifies a Gemini API call inside send-to-gemini.js as the execution locus for a ChatGPT-owned step.",
+        "failure_example_relationship": {
+          "select": "DIRECT",
+          "comment": "Direct violation of the Model Role Separation and Server-Verified Identity Protocol."
+        }
+      },
+      {
+        "schema_path": "start_of_turn.return_schema_completed",
+        "evaluation": "FAIL",
+        "comment": "return_schema_completed cannot be accepted as true when the execution role fails the required-role control.",
+        "failure_example_relationship": {
+          "select": "DIRECT",
+          "comment": "Direct consequence of the mechanical role-failure rule."
         }
       }
     ],
