@@ -26,20 +26,29 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Run Gemini Supervisor on GitHub Node
+      - name: Run Gemini on GitHub Node
         env:
           GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
-        run: node ChatMachines/GeminiSupervisor/send-to-gemini.js
+        run: |
+          if node -e "const x=require('./ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json'); process.exit(x.operation === 'gemini_edit_agents' ? 0 : 1)"; then
+            node ChatMachines/GeminiSupervisor/gemini-edit-agents.js
+          else
+            node ChatMachines/GeminiSupervisor/send-to-gemini.js
+          fi
 
-      - name: Commit returned run state, context, and store
+      - name: Commit returned changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ChatMachines/GeminiSupervisor/runs
+          git add ChatMachines/GeminiSupervisor/runs ChatMachines/GeminiSupervisor/Agents.md
           if git diff --cached --quiet; then
-            echo "No run state/context/store change."
+            echo "No returned change."
             exit 0
           fi
-          git commit -m "Advance Gemini Supervisor run"
+          if node -e "const x=require('./ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json'); process.exit(x.operation === 'gemini_edit_agents' ? 0 : 1)"; then
+            git commit -m "Apply Gemini turn-continuation rules to Agents.md"
+          else
+            git commit -m "Advance Gemini Supervisor run"
+          fi
           git push origin HEAD:main
