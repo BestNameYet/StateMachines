@@ -1,13 +1,18 @@
 /**
  * Gemini Supervisor runner for GitHub Actions / Node.js 22.
  *
- * This file runs the supervisor directly in the GitHub Actions Node runtime.
- * Apps Script is not part of this execution path.
+ * The procedure in Agents.md controls execution. Each execution step returns
+ * its schema, that exact return becomes input to that step's Supervisory Gate,
+ * and the supervisor's required key:value controls whether the execution step
+ * repeats or the procedure advances.
  *
- * One invocation performs exactly one persisted machine substep:
- *   EXECUTION   -> run the current Agents.md step
- *   SUPERVISION -> evaluate that step's returned schema
- *   TRANSITION  -> apply PASS/FAIL and prepare the next step
+ * Required supervisory transition key for every step:
+ *   supervisory_gate.gate_result = "PASS" | "FAIL"
+ *
+ * If that exact key:value is missing or invalid, the complete request context
+ * plus the responder's own prior response is sent back to the same semantic
+ * operator with an appended system correction instructing it to revise the
+ * response and include the required key:value.
  */
 const fs = require("node:fs");
 
@@ -21,6 +26,8 @@ const definitionsPath = `${root}/evaluator-definitions.md`;
 
 const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+const transitionPath = ["supervisory_gate", "gate_result"];
+const transitionValues = new Set(["PASS", "FAIL"]);
 
 function readJson(path) {
   return JSON.parse(fs.readFileSync(path, "utf8"));
@@ -36,14 +43,6 @@ function writeJson(path, value) {
 
 function now() {
   return new Date().toISOString();
-}
-
-function systemInstruction() {
-  return [
-    readText(testsPath),
-    readText(definitionsPath),
-    readText(agentsPath)
-  ].join("\n\n");
 }
 
 function appendNextMessage(messages, nextmessage) {
@@ -66,69 +65,41 @@ function appendNextMessage(messages, nextmessage) {
   return messages;
 }
 
-function ensureMachineState(state) {
-  state.procedure = state.procedure || {};
-  if (!Number.isInteger(state.procedure.current_step)) {
-    state.procedure.current_step = 0;
+function extractProcedureSteps(agentsText) {
+  const found = [];
+  const seen = new Set();
+  const pattern = /^## Step\s+(\d+)\s*$/gm;
+  let match;
+  while ((match = pattern.exec(agentsText)) !== null) {
+    const step = Number(match[1]);
+    if (!seen.has(step)) {
+      seen.add(step);
+      found.push(step);
+    }
   }
-  state.procedure.completed_steps = state.procedure.completed_steps || [];
-  state.procedure.remaining_steps = state.procedure.remaining_steps || [];
-
-  if (!state.machine) {
-    state.machine = {
-      phase: "EXECUTION",
-      iteration: 0,
-      execution: {
-        step: state.procedure.current_step,
-        started: false,
-        completed: false,
-        return_schema_received: false,
-        result: null
-      },
-      supervision: {
-        step: state.procedure.current_step,
-        required: false,
-        started: false,
-        completed: false,
-        return_schema_received: false,
-        gate_result: null,
-        result: null
-      },
-      transition: {
-        ready: false,
-        decision: null,
-        from_step: state.procedure.current_step,
-        to_step: null
-      }
-    };
+  if (found.length === 0) {
+    throw new Error("Agents.md contains no procedure steps matching '## Step N'.");
   }
-  return state;
+  return found.sort((a, b) => a - b);
 }
 
-function resetForExecution(state, step) {
-  state.machine.phase = "EXECUTION";
-  state.machine.execution = {
-    step,
-    started: false,
-    completed: false,
-    return_schema_received: false,
-    result: null
-  };
-  state.machine.supervision = {
-    step,
-    required: false,
-    started: false,
-    completed: false,
-    return_schema_received: false,
-    gate_result: null,
-    result: null
-  };
-  state.machine.transition = {
-    ready: false,
-    decision: null,
-    from_step: step,
-    to_step: null
-  };
+function ensureProcedureState(state, steps) {
+  state.procedure = state.procedure || {};
+  state.procedure.completed_steps = Array.isArray(state.procedure.completed_steps)
+    ? state.procedure.completed_steps
+    : [];
+  state.procedure.step_records = state.procedure.step_records || {};
+
+  if (!Number.isInteger(state.procedure.current_step) || !steps.includes(state.procedure.current_step)) {
+    const firstRemaining = steps.find(step => !state.procedure.completed_steps.includes(step));
+    state.procedure.current_step = firstRemaining ?? null;
+  }
+
+  state.procedure.remaining_steps = steps.filter(
+    step => !state.procedure.completed_steps.includes(step)
+  );
+
+  return state;
 }
 
 function replyText(reply) {
@@ -139,38 +110,41 @@ function parseReturnedSchema(reply) {
   const text = replyText(reply);
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const candidate = fenced ? fenced[1].trim() : text;
-  try {
-    return JSON.parse(candidate);
-  } catch (error) {
-    throw new Error(`Gemini return schema was not valid JSON: ${error.message}`);
-  }
+  return JSON.parse(candidate);
 }
 
-function findGateResult(value) {
-  if (!value || typeof value !== "object") return null;
-
-  if (typeof value.gate_result === "string") {
-    return value.gate_result.toUpperCase();
+function valueAtExactPath(value, path) {
+  let current = value;
+  for (const key of path) {
+    if (!current || typeof current !== "object" || !Object.prototype.hasOwnProperty.call(current, key)) {
+      return { found: false, value: undefined };
+    }
+    current = current[key];
   }
-
-  if (value.gate_result && typeof value.gate_result === "object") {
-    const direct =
-      value.gate_result.value ||
-      value.gate_result.result ||
-      value.gate_result.evaluation;
-    if (typeof direct === "string") return direct.toUpperCase();
-  }
-
-  for (const child of Object.values(value)) {
-    const result = findGateResult(child);
-    if (result) return result;
-  }
-  return null;
+  return { found: true, value: current };
 }
 
-async function callGemini(messages, prompt) {
-  const contents = messages.contents.slice();
-  contents.push({ role: "user", parts: [{ text: prompt }] });
+function normalizedGateValue(schema) {
+  const result = valueAtExactPath(schema, transitionPath);
+  if (!result.found || typeof result.value !== "string") {
+    return { valid: false, value: result.value };
+  }
+  const value = result.value.toUpperCase();
+  return { valid: transitionValues.has(value), value };
+}
+
+function baseSystemInstruction() {
+  return [
+    readText(testsPath),
+    readText(definitionsPath),
+    readText(agentsPath)
+  ].join("\n\n");
+}
+
+async function generate(contents, appendedSystemInstruction = "") {
+  const systemText = [baseSystemInstruction(), appendedSystemInstruction]
+    .filter(Boolean)
+    .join("\n\n");
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -181,9 +155,7 @@ async function callGemini(messages, prompt) {
         "x-goog-api-key": apiKey
       },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: systemInstruction() }]
-        },
+        system_instruction: { parts: [{ text: systemText }] },
         contents
       }),
       signal: AbortSignal.timeout(180000)
@@ -209,88 +181,154 @@ async function callGemini(messages, prompt) {
   return reply;
 }
 
-async function runExecution(state, messages) {
-  const step = state.procedure.current_step;
+async function requestExecutionSchema(messages, step, previousFailure) {
+  const promptParts = [
+    `Perform exactly Step ${step} from Agents.md.`,
+    "Return only the complete execution return schema required by that step as valid JSON.",
+    "Do not perform the Supervisory Gate yourself. The returned execution schema will be supplied to the supervisor as its input."
+  ];
 
-  state.machine.execution.started = true;
-  state.machine.execution.step = step;
-
-  const reply = await callGemini(
-    messages,
-    [
-      `Perform exactly Step ${step} from Agents.md.`,
-      "Do not perform the supervisory gate and do not begin the next step.",
-      "Return only the complete execution return schema required by that step as valid JSON.",
-      "Current persisted state:",
-      JSON.stringify(state, null, 2)
-    ].join("\n\n")
-  );
-
-  state.machine.execution.result = parseReturnedSchema(reply);
-  state.machine.execution.return_schema_received = true;
-  state.machine.execution.completed = true;
-  state.machine.supervision.required = true;
-  state.machine.phase = "SUPERVISION";
-  state.machine.iteration += 1;
-}
-
-async function runSupervision(state, messages) {
-  const step = state.procedure.current_step;
-
-  state.machine.supervision.started = true;
-  state.machine.supervision.step = step;
-
-  const reply = await callGemini(
-    messages,
-    [
-      `Perform only the Supervisory Gate for Step ${step} from Agents.md.`,
-      "Evaluate the execution return schema entry by entry at matching schema paths and then perform the step-level evaluation.",
-      "Return only the complete supervisory return schema as valid JSON, including gate_result PASS or FAIL.",
-      "Execution return schema:",
-      JSON.stringify(state.machine.execution.result, null, 2),
-      "Current persisted state:",
-      JSON.stringify(state, null, 2)
-    ].join("\n\n")
-  );
-
-  const schema = parseReturnedSchema(reply);
-  const gate = findGateResult(schema);
-  if (gate !== "PASS" && gate !== "FAIL") {
-    throw new Error("Supervisory return schema must contain gate_result PASS or FAIL.");
+  if (previousFailure) {
+    promptParts.push(
+      "This execution step is being restarted because its preceding Supervisory Gate returned FAIL.",
+      "Previous execution return:",
+      JSON.stringify(previousFailure.execution_return, null, 2),
+      "Supervisory return that caused the restart:",
+      JSON.stringify(previousFailure.supervisory_return, null, 2),
+      "Revise the execution so the current attempt satisfies the governing step and supervisory findings."
+    );
   }
 
-  state.machine.supervision.result = schema;
-  state.machine.supervision.return_schema_received = true;
-  state.machine.supervision.completed = true;
-  state.machine.supervision.required = false;
-  state.machine.supervision.gate_result = gate;
-  state.machine.transition.ready = true;
-  state.machine.transition.decision = gate === "PASS" ? "CONTINUE" : "REPEAT";
-  state.machine.transition.from_step = step;
-  state.machine.transition.to_step = gate === "PASS" ? step + 1 : step;
-  state.machine.phase = "TRANSITION";
-}
+  const requestContents = messages.contents.concat({
+    role: "user",
+    parts: [{ text: promptParts.join("\n\n") }]
+  });
 
-function applyTransition(state) {
-  const transition = state.machine.transition;
-  if (!transition.ready) {
-    throw new Error("Transition phase reached without a ready transition.");
-  }
+  let reply = await generate(requestContents);
+  let repairContents = requestContents;
 
-  const from = transition.from_step;
+  while (true) {
+    try {
+      return { reply, schema: parseReturnedSchema(reply) };
+    } catch (error) {
+      repairContents = repairContents.concat(
+        reply,
+        {
+          role: "user",
+          parts: [{ text: "Revise the immediately preceding response according to the appended system instruction. Return only the complete corrected JSON." }]
+        }
+      );
 
-  if (transition.decision === "CONTINUE") {
-    if (!state.procedure.completed_steps.includes(from)) {
-      state.procedure.completed_steps.push(from);
+      reply = await generate(
+        repairContents,
+        [
+          "SYSTEM CORRECTION FOR THIS RESPONSE:",
+          `The Step ${step} semantic-operator response was not valid JSON and therefore cannot serve as the required execution return schema.`,
+          `Parser error: ${error.message}`,
+          "Revise your immediately preceding response into complete valid JSON matching the exact Step return schema. Do not omit required fields."
+        ].join("\n")
+      );
     }
-    state.procedure.current_step = transition.to_step;
-  } else if (transition.decision === "REPEAT") {
-    state.procedure.current_step = from;
-  } else {
-    throw new Error(`Unknown transition decision: ${transition.decision}`);
+  }
+}
+
+async function requestSupervisorySchema(messages, step, executionReturn) {
+  const supervisorPrompt = [
+    `Perform only the Supervisory Gate for Step ${step} from Agents.md.`,
+    "The execution return below is the input to this Supervisory Gate.",
+    "Evaluate it exactly as required by the Step's Supervisory Gate.",
+    "Return only the complete supervisory return schema as valid JSON.",
+    `The transition controller requires the exact key:value at ${transitionPath.join(".")} with value PASS or FAIL.`,
+    "Execution return schema:",
+    JSON.stringify(executionReturn, null, 2)
+  ].join("\n\n");
+
+  const originalContext = messages.contents.concat({
+    role: "user",
+    parts: [{ text: supervisorPrompt }]
+  });
+
+  let context = originalContext;
+  let reply = await generate(context);
+
+  while (true) {
+    let schema = null;
+    let parseError = null;
+
+    try {
+      schema = parseReturnedSchema(reply);
+    } catch (error) {
+      parseError = error;
+    }
+
+    if (schema) {
+      const gate = normalizedGateValue(schema);
+      if (gate.valid) {
+        return { reply, schema, gate_result: gate.value };
+      }
+    }
+
+    const exactPath = transitionPath.join(".");
+    const correction = parseError
+      ? [
+          "SYSTEM CORRECTION FOR THIS RESPONSE:",
+          "Your immediately preceding supervisory response could not be parsed as valid JSON.",
+          `Parser error: ${parseError.message}`,
+          `The transition controller also requires the exact key:value ${exactPath}: \"PASS\" or ${exactPath}: \"FAIL\".`,
+          "Revise the complete response as valid JSON and include that exact transition key:value."
+        ].join("\n")
+      : [
+          "SYSTEM CORRECTION FOR THIS RESPONSE:",
+          `The required transition key:value was not found at the exact JSON path ${exactPath}, or its value was not PASS or FAIL.`,
+          `Revise your immediately preceding response to include exactly ${exactPath}: \"PASS\" or ${exactPath}: \"FAIL\", according to your evaluation.`,
+          "Preserve and correct the rest of the complete supervisory schema; do not replace it with only the transition key."
+        ].join("\n");
+
+    // Echo the complete request context back to the responder, including its own
+    // immediately preceding response, then append the correction as system text.
+    context = context.concat(
+      reply,
+      {
+        role: "user",
+        parts: [{ text: "Revise the immediately preceding response according to the appended system instruction. Return only the complete corrected JSON." }]
+      }
+    );
+
+    reply = await generate(context, correction);
+  }
+}
+
+function recordAttempt(state, step, attempt, executionReturn, supervisoryReturn, gateResult) {
+  state.procedure.step_records[String(step)] = {
+    attempt,
+    execution_return: executionReturn,
+    supervisory_return: supervisoryReturn,
+    transition_key: transitionPath.join("."),
+    transition_value: gateResult,
+    updated_at: now()
+  };
+}
+
+function advanceProcedure(state, steps, step) {
+  if (!state.procedure.completed_steps.includes(step)) {
+    state.procedure.completed_steps.push(step);
   }
 
-  resetForExecution(state, state.procedure.current_step);
+  const index = steps.indexOf(step);
+  const nextStep = index >= 0 ? steps[index + 1] : undefined;
+
+  if (nextStep === undefined) {
+    state.procedure.current_step = null;
+    state.procedure.remaining_steps = [];
+    state.status = "completed";
+    return false;
+  }
+
+  state.procedure.current_step = nextStep;
+  state.procedure.remaining_steps = steps.filter(
+    candidate => !state.procedure.completed_steps.includes(candidate)
+  );
+  return true;
 }
 
 async function main() {
@@ -298,6 +336,8 @@ async function main() {
     throw new Error("GEMINI_API_KEY is missing from the GitHub Actions environment.");
   }
 
+  const agentsText = readText(agentsPath);
+  const steps = extractProcedureSteps(agentsText);
   const messages = appendNextMessage(
     readJson(messagesPath),
     readJson(nextPath).nextmessage
@@ -308,17 +348,44 @@ async function main() {
     throw new Error("current_state.json must contain current_state.");
   }
 
-  const state = ensureMachineState(stateWrapper.current_state);
-  const phase = state.machine.phase;
+  const state = ensureProcedureState(stateWrapper.current_state, steps);
+  state.status = "running";
 
-  if (phase === "EXECUTION") {
-    await runExecution(state, messages);
-  } else if (phase === "SUPERVISION") {
-    await runSupervision(state, messages);
-  } else if (phase === "TRANSITION") {
-    applyTransition(state);
-  } else {
-    throw new Error(`Unknown machine phase: ${phase}`);
+  while (state.procedure.current_step !== null) {
+    const step = state.procedure.current_step;
+    let attempt = 0;
+    let previousFailure = null;
+
+    while (true) {
+      attempt += 1;
+
+      const execution = await requestExecutionSchema(messages, step, previousFailure);
+      const supervision = await requestSupervisorySchema(messages, step, execution.schema);
+
+      recordAttempt(
+        state,
+        step,
+        attempt,
+        execution.schema,
+        supervision.schema,
+        supervision.gate_result
+      );
+
+      state.updated_at = now();
+      writeJson(statePath, { current_state: state });
+      writeJson(messagesPath, messages);
+
+      if (supervision.gate_result === "FAIL") {
+        previousFailure = {
+          execution_return: execution.schema,
+          supervisory_return: supervision.schema
+        };
+        continue;
+      }
+
+      advanceProcedure(state, steps, step);
+      break;
+    }
   }
 
   state.updated_at = now();
@@ -329,9 +396,9 @@ async function main() {
     runtime: "Node.js",
     node_version: process.version,
     model,
-    completed_substep: phase,
-    next_phase: state.machine.phase,
-    current_step: state.procedure.current_step
+    transition_key: transitionPath.join("."),
+    completed_steps: state.procedure.completed_steps,
+    status: state.status
   }, null, 2));
 }
 
