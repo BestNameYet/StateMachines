@@ -8,7 +8,8 @@
  *   ChatMachines/GeminiSupervisor/evaluator-messages.json
  * Evaluation output:
  *   ChatMachines/GeminiSupervisor/program-evaluation.json
- * Revision output:
+ * Revision outputs:
+ *   ChatMachines/GeminiSupervisor/revised-Agents.md
  *   ChatMachines/GeminiSupervisor/revised-send-to-gemini.js
  */
 const fs = require("node:fs");
@@ -19,7 +20,8 @@ const programPath = `${root}/send-to-gemini.js`;
 const nextPath = `${root}/evaluator-nextmessage/nextmessage.json`;
 const messagesPath = `${root}/evaluator-messages.json`;
 const evaluationOutputPath = `${root}/program-evaluation.json`;
-const revisionOutputPath = `${root}/revised-send-to-gemini.js`;
+const revisionAgentsOutputPath = `${root}/revised-Agents.md`;
+const revisionProgramOutputPath = `${root}/revised-send-to-gemini.js`;
 
 const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
@@ -45,23 +47,31 @@ function numbered(text) {
 
 function extractJson(text) {
   const trimmed = text.trim();
-
   try {
     return JSON.parse(trimmed);
   } catch (directError) {
     const outerFence = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-    if (!outerFence) {
-      throw directError;
-    }
+    if (!outerFence) throw directError;
     return JSON.parse(outerFence[1].trim());
   }
+}
+
+function normalizeTextFile(text) {
+  return text.trimEnd() + "\n";
 }
 
 function normalizeRevisedProgram(program) {
   const trimmed = program.trim();
   const fenced = trimmed.match(/^```(?:javascript|js)?\s*([\s\S]*?)\s*```$/i);
   const source = fenced ? fenced[1] : program;
-  return source.trimEnd() + "\n";
+  return normalizeTextFile(source);
+}
+
+function normalizeRevisedAgents(agents) {
+  const trimmed = agents.trim();
+  const fenced = trimmed.match(/^```(?:markdown|md)?\s*([\s\S]*?)\s*```$/i);
+  const source = fenced ? fenced[1] : agents;
+  return normalizeTextFile(source);
 }
 
 function appendNextMessage(messages, nextmessage) {
@@ -96,14 +106,8 @@ function buildSystemInstruction(agents, program) {
     requirement_evaluations: [
       {
         requirement_id: "string",
-        agents_md_reference: {
-          lines: "string",
-          requirement: "string"
-        },
-        program_reference: {
-          lines: "string | null",
-          behavior: "string"
-        },
+        agents_md_reference: { lines: "string", requirement: "string" },
+        program_reference: { lines: "string | null", behavior: "string" },
         result: "PASS | FAIL | PARTIAL | NOT_APPLICABLE | INDETERMINATE",
         explanation: "string",
         required_change: "string | null"
@@ -119,62 +123,56 @@ function buildSystemInstruction(agents, program) {
       explanation: "string"
     },
     unauthorized_or_invented_control_logic: [
-      {
-        program_lines: "string",
-        behavior: "string",
-        conflict_with_agents_md: "string"
-      }
+      { program_lines: "string", behavior: "string", conflict_with_agents_md: "string" }
     ],
     omissions: [
-      {
-        agents_md_lines: "string",
-        missing_behavior: "string",
-        consequence: "string"
-      }
+      { agents_md_lines: "string", missing_behavior: "string", consequence: "string" }
     ],
     recommended_changes: [
-      {
-        priority: "REQUIRED | OPTIONAL",
-        change: "string",
-        reason: "string"
-      }
+      { priority: "REQUIRED | OPTIONAL", change: "string", reason: "string" }
     ]
   };
 
-  const revisionSchema = {
-    response_type: "revision",
+  const pairedRevisionSchema = {
+    response_type: "paired_revision",
     revision_basis: {
-      agents_md: "authoritative",
+      agents_md: "specification_being_revised",
       prior_evaluator_context: "used",
       current_program: "implementation_being_revised"
     },
     corrections_applied: [
       {
         issue: "string",
-        change: "string",
-        agents_md_basis: "string"
+        agents_change: "string",
+        program_change: "string",
+        rationale: "string"
       }
     ],
     unresolved_requirements: ["string"],
+    revised_agents_md: "<complete, non-truncated contents of Agents.md>",
     revised_program: "<complete, non-truncated contents of send-to-gemini.js>"
   };
 
   return [
     "You are the independent Gemini Supervisor evaluator/reviser.",
-    "The latest user message in the evaluator conversation controls whether you evaluate the program or produce a corrected revision.",
-    "Agents.md is the authoritative specification. Preserve its actual procedure, return schemas, branches, loops, and supervisory gates. Do not invent substitute control logic.",
-    "Use prior evaluator conversation messages as context, including previously identified failures and corrections, but re-check them against the CURRENT Agents.md because Agents.md may have changed since the prior evaluation.",
+    "The latest user message in the evaluator conversation controls whether you evaluate or produce a paired revision.",
+    "When revising gating semantics, revise Agents.md and send-to-gemini.js together so the specification and runtime are mutually consistent. Do not revise only one side when the latest request requires a paired correction.",
+    "Use prior evaluator conversation messages as context, including previously identified failures and corrections, but re-check them against the CURRENT Agents.md and CURRENT send-to-gemini.js.",
     "Evaluate or revise what the JavaScript actually does, not what comments claim it does.",
-    "For Step 3, honor the current Agents.md requirements for the executor and the supervisor to read evaluation-tests.md and evaluator-definitions.md at the beginning of their respective Step 3 work. Do not inject those documents into unrelated steps unless Agents.md requires it.",
-    "Transitions must be driven by the exact semantic-operator return key:value required by Agents.md. Missing required transition keys must follow the repair branch defined by the runtime contract and user instructions.",
+    "Preserve the intended procedure, per-step return schemas, branches, loops, supervisory gates, run isolation, persistence, and user-request semantics. Do not invent substitute control logic.",
+    "The per-step return schema is the central communication/control surface for that step. A step does not communicate completion, advancement, or a valid execution result outside its required return schema. The supervisor evaluates that exact step return schema; if it is missing, malformed, incomplete, inconsistent with the user request or governing step, or not persisted as required, the gate must fail and the procedure must not advance.",
+    "A field named return_schema_completed refers to completion of the specific return schema for that step, not completion of the entire multi-step procedure. Where a step requires return_schema_completed, successful completion of that step's return schema must be represented as true; false means that step's required return schema is incomplete and cannot support successful advancement.",
+    "For Step 3, honor the current requirements for the executor and the supervisor to read evaluation-tests.md and evaluator-definitions.md at the beginning of their respective Step 3 work.",
+    "Transitions must be driven by the exact semantic-operator return key:value required by the governing step. Missing required transition keys must follow the repair branch; no later step may cure or bypass an earlier failed gate.",
     "If the latest user message asks for an evaluation, return only one JSON object matching this evaluation schema:",
     JSON.stringify(evaluationSchema, null, 2),
-    "If the latest user message asks for a revised/corrected JavaScript program, return only one JSON object matching this revision schema:",
-    JSON.stringify(revisionSchema, null, 2),
-    "For a revision request, revised_program MUST contain the entire replacement send-to-gemini.js file. Do not truncate it, use ellipses, omit unchanged sections, or provide a patch. Apply every correction supported by current Agents.md and the prior evaluator findings. If a requirement cannot be implemented from the available repository/runtime context without inventing an unspecified external interface, list it in unresolved_requirements instead of fabricating one.",
-    "Use the provided line numbers when citing source evidence in evaluation or correction metadata.",
+    "If the latest user message asks to revise Agents.md and source code together, return only one JSON object matching this paired revision schema:",
+    JSON.stringify(pairedRevisionSchema, null, 2),
+    "For a paired revision, revised_agents_md MUST contain the entire replacement Agents.md and revised_program MUST contain the entire replacement send-to-gemini.js. Do not truncate, use ellipses, omit unchanged sections, or provide patches.",
+    "Apply every correction required to make the specification and runtime enforce the user's intended gating semantics together. If anything remains impossible without inventing an unspecified external interface, list it in unresolved_requirements rather than fabricating it.",
+    "Use the provided line numbers when citing source evidence in evaluation/correction metadata.",
     "",
-    "===== CURRENT AGENTS.MD (AUTHORITATIVE) =====",
+    "===== CURRENT AGENTS.MD =====",
     numbered(agents),
     "",
     "===== CURRENT SEND-TO-GEMINI.JS =====",
@@ -192,13 +190,9 @@ async function callGemini(messages, systemInstruction) {
         "x-goog-api-key": apiKey
       },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: systemInstruction }]
-        },
+        system_instruction: { parts: [{ text: systemInstruction }] },
         contents: messages.contents,
-        generationConfig: {
-          responseMimeType: "application/json"
-        }
+        generationConfig: { responseMimeType: "application/json" }
       }),
       signal: AbortSignal.timeout(180000)
     }
@@ -211,7 +205,6 @@ async function callGemini(messages, systemInstruction) {
   } catch (_) {
     throw new Error(`Gemini returned non-JSON HTTP ${response.status}: ${text}`);
   }
-
   if (!response.ok) {
     throw new Error(`Gemini HTTP ${response.status}: ${JSON.stringify(body.error || body)}`);
   }
@@ -222,10 +215,7 @@ async function callGemini(messages, systemInstruction) {
   }
 
   const replyText = reply.parts.map(part => part.text || "").join("\n").trim();
-  return {
-    reply,
-    payload: extractJson(replyText)
-  };
+  return { reply, payload: extractJson(replyText) };
 }
 
 async function main() {
@@ -235,24 +225,21 @@ async function main() {
 
   const agents = readText(agentsPath);
   const program = readText(programPath);
-  const messages = appendNextMessage(
-    readJson(messagesPath),
-    readJson(nextPath).nextmessage
-  );
-
-  const result = await callGemini(
-    messages,
-    buildSystemInstruction(agents, program)
-  );
+  const messages = appendNextMessage(readJson(messagesPath), readJson(nextPath).nextmessage);
+  const result = await callGemini(messages, buildSystemInstruction(agents, program));
 
   messages.contents.push(result.reply);
   writeJson(messagesPath, messages);
 
-  if (result.payload.response_type === "revision") {
-    if (typeof result.payload.revised_program !== "string" || result.payload.revised_program.trim() === "") {
-      throw new Error("Revision response did not contain a complete revised_program string.");
+  if (result.payload.response_type === "paired_revision") {
+    if (typeof result.payload.revised_agents_md !== "string" || result.payload.revised_agents_md.trim() === "") {
+      throw new Error("Paired revision did not contain complete revised_agents_md.");
     }
-    fs.writeFileSync(revisionOutputPath, normalizeRevisedProgram(result.payload.revised_program));
+    if (typeof result.payload.revised_program !== "string" || result.payload.revised_program.trim() === "") {
+      throw new Error("Paired revision did not contain complete revised_program.");
+    }
+    fs.writeFileSync(revisionAgentsOutputPath, normalizeRevisedAgents(result.payload.revised_agents_md));
+    fs.writeFileSync(revisionProgramOutputPath, normalizeRevisedProgram(result.payload.revised_program));
     writeJson(evaluationOutputPath, result.payload);
   } else {
     writeJson(evaluationOutputPath, result.payload);
@@ -265,10 +252,11 @@ async function main() {
     trigger: nextPath,
     message_stream: messagesPath,
     evaluated_program: programPath,
-    authoritative_specification: agentsPath,
+    specification: agentsPath,
     output: evaluationOutputPath,
     response_type: result.payload.response_type ?? null,
-    revision_output: result.payload.response_type === "revision" ? revisionOutputPath : null
+    revision_agents_output: result.payload.response_type === "paired_revision" ? revisionAgentsOutputPath : null,
+    revision_program_output: result.payload.response_type === "paired_revision" ? revisionProgramOutputPath : null
   }, null, 2));
 }
 
