@@ -294,6 +294,10 @@ persistent storage.
 "Step_3": {
     "descriptor": "Decompose U, construct P and the proposed UI output, evaluate P against every Step3_TSR test, and determine whether Step 3 repeats or completes.",
 
+    "evaluation_documents_read": {
+      "instruction": "Before Step 3.A or any other Step 3 execution action, the executor must read evaluation-tests.md and evaluator-definitions.md completely and use both documents as evaluation context throughout Step 3.",
+      "value": "<evaluation-tests.md and evaluator-definitions.md read completely>"
+    },
     "user_request_nonce": "<request nonce>",
 
     "A": {
@@ -745,6 +749,10 @@ persistent storage.
 ```json
 {
   "supervisory_gate": {
+    "evaluation_documents_read": {
+      "instruction": "Before any other Step 3 supervisory action, the supervisor must read evaluation-tests.md and evaluator-definitions.md completely and use both documents as evaluation context for the Step 3 Supervisory Gate.",
+      "value": "<evaluation-tests.md and evaluator-definitions.md read completely>"
+    },
     "instruction": "Immediately after this step returns its execution schema, the supervisor must evaluate that returned schema before the next execution step may begin. Recursively mirror every returned key and every array entry at the same schema path. For every terminal returned value, replace the execution value with an evaluation and supervisor comment. Evaluate the step as a whole after completing the granular mirror. Every failed granular or step-level evaluation must be entered separately in failures. The next execution step is permitted only when gate_result is PASS.",
 
     "granular_evaluation": {
