@@ -1,0 +1,38 @@
+name: Patch Step 3 evaluation docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiSupervisor/patch-trigger/trigger.json
+
+permissions:
+  contents: write
+
+jobs:
+  patch-agents:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Patch Agents.md
+        run: node ChatMachines/GeminiSupervisor/patch-step3-evaluation-docs.js
+
+      - name: Commit Agents.md
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ChatMachines/GeminiSupervisor/Agents.md
+          if git diff --cached --quiet; then
+            echo "No Agents.md change."
+            exit 0
+          fi
+          git commit -m "Require Step 3 evaluation document reads"
+          git push origin HEAD:main
