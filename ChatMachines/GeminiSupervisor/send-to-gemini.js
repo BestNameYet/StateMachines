@@ -1,11 +1,26 @@
 /**
- * Gemini Supervisor runner for GitHub Actions / Node.js 22.
+ * Gemini Supervisor controller for GitHub Actions / Node.js 22.
  *
- * Exact supervisory transition key: supervisory_gate.gate_result = "PASS" | "FAIL"
+ * Architectural contract:
+ * - ChatGPT owns every non-supervisory execution step.
+ * - Node.js deterministically validates and transitions state.
+ * - Gemini owns only the Supervisory Gate.
+ * - A supervisory FAIL never executes or retries a step inside this runtime.
+ *   It leaves the same step active and waits for a new ChatGPT execution event.
+ *
+ * Accepted trigger shape:
+ * {
+ *   "run_nonce": "<path-safe run id>",
+ *   "execution": {
+ *     "source_role": "ChatGPT model",
+ *     "step": 0,
+ *     "return_schema": { ...the exact Agents.md return schema for Step 0... }
+ *   }
+ * }
  */
+
 const fs = require("node:fs");
 const path = require("node:path");
-const { execFileSync } = require("node:child_process");
 
 const root = "ChatMachines/GeminiSupervisor";
 const triggerPath = `${root}/nextmessage/nextmessage.json`;
@@ -17,6 +32,10 @@ const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const transitionPath = ["supervisory_gate", "gate_result"];
 const transitionValues = new Set(["PASS", "FAIL"]);
+const executionRoleRequired = "ChatGPT model";
+const executionRoleForbidden = "Gemini model";
+const supervisorRoleRequired = "Gemini model";
+const supervisorRoleForbidden = "ChatGPT model";
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -28,9 +47,7 @@ function readText(filePath) {
 
 function writeJson(filePath, value) {
   const dir = path.dirname(filePath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + "\n");
 }
 
@@ -63,129 +80,135 @@ function extractProcedureSteps(agentsText) {
   return found.sort((a, b) => a - b);
 }
 
-function initializeOrValidateRunContainer(runNonce, nextmessage, steps) {
+function extractStepBlock(agentsText, step) {
+  const heading = new RegExp(`^## Step\\s+${step}\\s*$`, "m");
+  const match = heading.exec(agentsText);
+  if (!match) throw new Error(`Agents.md does not contain Step ${step}.`);
+  const start = match.index;
+  const remainder = agentsText.slice(start + match[0].length);
+  const next = /^## Step\s+\d+\s*$/m.exec(remainder);
+  const end = next ? start + match[0].length + next.index : agentsText.length;
+  return agentsText.slice(start, end).trim();
+}
+
+function contextFilesForStep(step) {
+  return step === 3
+    ? ["Agents.md", "evaluation-tests.md", "evaluator-definitions.md"]
+    : ["Agents.md"];
+}
+
+function initializeOrValidateRunContainer(runNonce, steps) {
   const runDir = path.join(root, "runs", runNonce);
   const stateFile = path.join(runDir, "state.json");
   const messagesFile = path.join(runDir, "messages.json");
   const storeFile = path.join(runDir, "store", "store.json");
 
-  let stateWrapper;
-  let messages;
-  let store;
+  const anyExists = fs.existsSync(stateFile) || fs.existsSync(messagesFile) || fs.existsSync(storeFile);
 
-  const isNewRun = !fs.existsSync(stateFile) && !fs.existsSync(messagesFile);
-
-  if (isNewRun) {
+  if (!anyExists) {
     fs.mkdirSync(path.join(runDir, "store"), { recursive: true });
 
-    const initialState = {
+    const stateWrapper = {
       current_state: {
         run_nonce: runNonce,
-        status: "running",
+        status: "awaiting_chatgpt_execution",
         created_at: now(),
         updated_at: now(),
-        git_commits: [],
+        event_count: 0,
         procedure: {
           current_step: steps[0],
           completed_steps: [],
           remaining_steps: [...steps],
-          step_records: {}
+          step_records: {},
+          awaiting: {
+            type: "chatgpt_execution",
+            step: steps[0]
+          }
         }
       }
     };
 
-    const initialMessages = {
+    const messages = {
       run_nonce: runNonce,
-      contents: [nextmessage]
+      contents: []
     };
 
-    const initialStore = {
+    const store = {
       run_nonce: runNonce,
       created_at: now(),
-      initial_user_message: nextmessage,
+      initial_user_message: null,
       records: []
     };
 
-    writeJson(stateFile, initialState);
-    writeJson(messagesFile, initialMessages);
-    writeJson(storeFile, initialStore);
+    writeJson(stateFile, stateWrapper);
+    writeJson(messagesFile, messages);
+    writeJson(storeFile, store);
 
-    stateWrapper = initialState;
-    messages = initialMessages;
-    store = initialStore;
-  } else {
-    if (!fs.existsSync(stateFile) || !fs.existsSync(messagesFile) || !fs.existsSync(storeFile)) {
-      throw new Error(`Incomplete run container at ${runDir}. Required files missing.`);
-    }
-
-    stateWrapper = readJson(stateFile);
-    messages = readJson(messagesFile);
-    store = readJson(storeFile);
-
-    if (stateWrapper?.current_state?.run_nonce !== runNonce) {
-      throw new Error(`Mismatched run_nonce in state.json: expected ${runNonce}, found ${stateWrapper?.current_state?.run_nonce}`);
-    }
-    if (messages?.run_nonce !== runNonce) {
-      throw new Error(`Mismatched run_nonce in messages.json: expected ${runNonce}, found ${messages?.run_nonce}`);
-    }
-    if (store?.run_nonce !== runNonce) {
-      throw new Error(`Mismatched run_nonce in store.json: expected ${runNonce}, found ${store?.run_nonce}`);
-    }
-
-    if (!Array.isArray(messages.contents)) {
-      messages.contents = [];
-    }
-    const lastMessage = messages.contents[messages.contents.length - 1];
-    if (JSON.stringify(lastMessage) !== JSON.stringify(nextmessage)) {
-      messages.contents.push(nextmessage);
-      writeJson(messagesFile, messages);
-    }
+    return { runDir, stateFile, messagesFile, storeFile, stateWrapper, state: stateWrapper.current_state, messages, store };
   }
 
+  if (!fs.existsSync(stateFile) || !fs.existsSync(messagesFile) || !fs.existsSync(storeFile)) {
+    throw new Error(`Incomplete run container at ${runDir}. Required files missing.`);
+  }
+
+  const stateWrapper = readJson(stateFile);
+  const messages = readJson(messagesFile);
+  const store = readJson(storeFile);
   const state = stateWrapper.current_state;
+
+  if (state?.run_nonce !== runNonce) {
+    throw new Error(`Mismatched run_nonce in state.json: expected ${runNonce}, found ${state?.run_nonce}`);
+  }
+  if (messages?.run_nonce !== runNonce) {
+    throw new Error(`Mismatched run_nonce in messages.json: expected ${runNonce}, found ${messages?.run_nonce}`);
+  }
+  if (store?.run_nonce !== runNonce) {
+    throw new Error(`Mismatched run_nonce in store.json: expected ${runNonce}, found ${store?.run_nonce}`);
+  }
+
   state.procedure = state.procedure || {};
   state.procedure.completed_steps = Array.isArray(state.procedure.completed_steps)
     ? state.procedure.completed_steps
     : [];
   state.procedure.step_records = state.procedure.step_records || {};
-  state.git_commits = Array.isArray(state.git_commits) ? state.git_commits : [];
+  state.event_count = Number.isInteger(state.event_count) ? state.event_count : 0;
 
-  if (!Number.isInteger(state.procedure.current_step) || !steps.includes(state.procedure.current_step)) {
+  if (state.procedure.current_step !== null && !steps.includes(state.procedure.current_step)) {
     const firstRemaining = steps.find(step => !state.procedure.completed_steps.includes(step));
-    state.procedure.current_step = firstRemaining !== undefined ? firstRemaining : steps[0];
+    state.procedure.current_step = firstRemaining === undefined ? null : firstRemaining;
   }
 
   state.procedure.remaining_steps = steps.filter(
     step => !state.procedure.completed_steps.includes(step)
   );
 
-  return {
-    runDir,
-    stateFile,
-    messagesFile,
-    storeFile,
-    stateWrapper,
-    state,
-    messages,
-    store
-  };
-}
-
-function replyText(reply) {
-  return reply.parts.map(part => part.text || "").join("\n").trim();
-}
-
-function parseReturnedSchema(reply) {
-  const text = replyText(reply);
-  try {
-    return JSON.parse(text);
-  } catch (_) {
-    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (fenced) {
-      return JSON.parse(fenced[1].trim());
-    }
-    throw _;
+  if (state.procedure.current_step === null && state.procedure.remaining_steps.length > 0) {
+    state.procedure.current_step = state.procedure.remaining_steps[0];
   }
+
+  state.procedure.awaiting = state.procedure.current_step === null
+    ? null
+    : { type: "chatgpt_execution", step: state.procedure.current_step };
+
+  return { runDir, stateFile, messagesFile, storeFile, stateWrapper, state, messages, store };
+}
+
+function appendMessage(messages, messagesFile, value) {
+  if (!Array.isArray(messages.contents)) messages.contents = [];
+  messages.contents.push(value);
+  writeJson(messagesFile, messages);
+}
+
+function appendStoreRecord(store, storeFile, record) {
+  if (!Array.isArray(store.records)) store.records = [];
+  const completeRecord = {
+    record_id: `${Date.now()}-${store.records.length + 1}`,
+    timestamp: now(),
+    ...record
+  };
+  store.records.push(completeRecord);
+  writeJson(storeFile, store);
+  return completeRecord;
 }
 
 function valueAtExactPath(value, pathArr) {
@@ -208,6 +231,223 @@ function normalizedGateValue(schema) {
   return { valid: transitionValues.has(upper), value: upper };
 }
 
+function replyText(reply) {
+  return reply.parts.map(part => part.text || "").join("\n").trim();
+}
+
+function parseReturnedSchema(reply) {
+  const text = replyText(reply);
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenced) return JSON.parse(fenced[1].trim());
+    throw error;
+  }
+}
+
+function findObjectsWithControlFields(value, pathParts = [], results = []) {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => findObjectsWithControlFields(item, [...pathParts, index], results));
+    return results;
+  }
+  if (!value || typeof value !== "object") return results;
+
+  const controlKeys = [
+    "role_required",
+    "role_forbidden",
+    "role_completed",
+    "role_verification",
+    "return_schema_completed"
+  ];
+
+  if (controlKeys.some(key => Object.prototype.hasOwnProperty.call(value, key))) {
+    results.push({ path: pathParts, value });
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    findObjectsWithControlFields(child, [...pathParts, key], results);
+  }
+  return results;
+}
+
+function nonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function validateExecutionControlFields(returnSchema) {
+  const candidates = findObjectsWithControlFields(returnSchema);
+  const findings = [];
+
+  if (candidates.length === 0) {
+    findings.push({
+      check: "execution_control_fields_present",
+      pass: false,
+      comment: "No execution return object contains the required role/control fields."
+    });
+    return findings;
+  }
+
+  const candidate = candidates[0];
+  const record = candidate.value;
+  const recordPath = candidate.path.length ? candidate.path.join(".") : "$";
+
+  findings.push({
+    check: "role_required",
+    pass: record.role_required === executionRoleRequired,
+    comment: `${recordPath}.role_required must equal \"${executionRoleRequired}\".`
+  });
+  findings.push({
+    check: "role_forbidden",
+    pass: record.role_forbidden === executionRoleForbidden,
+    comment: `${recordPath}.role_forbidden must equal \"${executionRoleForbidden}\".`
+  });
+  findings.push({
+    check: "role_completed",
+    pass: record.role_completed === executionRoleRequired,
+    comment: `${recordPath}.role_completed must equal \"${executionRoleRequired}\".`
+  });
+  findings.push({
+    check: "role_verification_method",
+    pass: nonEmptyString(record?.role_verification?.method),
+    comment: `${recordPath}.role_verification.method must be a non-empty string.`
+  });
+  findings.push({
+    check: "role_verification_evidence",
+    pass: nonEmptyString(record?.role_verification?.evidence),
+    comment: `${recordPath}.role_verification.evidence must be a non-empty string.`
+  });
+  findings.push({
+    check: "return_schema_completed",
+    pass: record.return_schema_completed === true,
+    comment: `${recordPath}.return_schema_completed must be true.`
+  });
+
+  return findings;
+}
+
+function step3RequiresLoop(schema) {
+  if (!schema || typeof schema !== "object") return false;
+  const step3 = schema.Step_3 || schema;
+
+  let loopDecision = step3?.G?.Loop_Decision;
+  if (loopDecision && typeof loopDecision === "object" && "value" in loopDecision) {
+    loopDecision = loopDecision.value;
+  }
+
+  let returnTo = step3?.G?.return_to;
+  if (returnTo && typeof returnTo === "object" && "value" in returnTo) {
+    returnTo = returnTo.value;
+  }
+
+  let completed = step3?.return_schema_completed ?? step3?.step_3_completed;
+  if (completed && typeof completed === "object" && "value" in completed) {
+    completed = completed.value;
+  }
+
+  return (
+    (typeof loopDecision === "string" && loopDecision.trim().toLowerCase() === "true") ||
+    (typeof returnTo === "string" && returnTo.includes("Step_3.A")) ||
+    completed === false ||
+    completed === "false"
+  );
+}
+
+function extractUserRequestFromStep0(returnSchema) {
+  const direct = returnSchema?.start_of_turn?.user_request;
+  return nonEmptyString(direct) ? direct : null;
+}
+
+function extractStatedRequirements(state) {
+  const step2Record = state?.procedure?.step_records?.["2"]?.execution_return;
+  if (!step2Record) return [];
+  const list = step2Record?.step_2_record?.stated_requirements || step2Record?.stated_requirements;
+  return Array.isArray(list) ? list : [];
+}
+
+function parseIncomingExecution(trigger, currentStep) {
+  const execution = trigger?.execution;
+
+  if (!execution || typeof execution !== "object" || Array.isArray(execution)) {
+    return {
+      accepted: false,
+      reason: "The trigger does not contain an execution object. Raw user input is not a ChatGPT execution return and cannot satisfy the active execution step.",
+      execution: null
+    };
+  }
+
+  if (execution.source_role !== executionRoleRequired) {
+    return {
+      accepted: false,
+      reason: `execution.source_role must be \"${executionRoleRequired}\".`,
+      execution
+    };
+  }
+
+  if (!Number.isInteger(execution.step)) {
+    return {
+      accepted: false,
+      reason: "execution.step must be an integer.",
+      execution
+    };
+  }
+
+  if (execution.step !== currentStep) {
+    return {
+      accepted: false,
+      reason: `Received ChatGPT execution for Step ${execution.step}, but the deterministic current_step is Step ${currentStep}.`,
+      execution
+    };
+  }
+
+  if (!execution.return_schema || typeof execution.return_schema !== "object" || Array.isArray(execution.return_schema)) {
+    return {
+      accepted: false,
+      reason: "execution.return_schema must be a JSON object containing the completed ChatGPT execution return schema.",
+      execution
+    };
+  }
+
+  return { accepted: true, reason: null, execution };
+}
+
+function buildControllerValidation(step, execution, state) {
+  const findings = [
+    {
+      check: "execution_source_role",
+      pass: execution.source_role === executionRoleRequired,
+      comment: `Execution event source must be ${executionRoleRequired}.`
+    },
+    {
+      check: "execution_step_matches_state",
+      pass: execution.step === state.procedure.current_step,
+      comment: `Execution Step ${execution.step} must equal current state Step ${state.procedure.current_step}.`
+    },
+    ...validateExecutionControlFields(execution.return_schema)
+  ];
+
+  if (step === 0) {
+    findings.push({
+      check: "step0_verbatim_user_request_present",
+      pass: nonEmptyString(extractUserRequestFromStep0(execution.return_schema)),
+      comment: "Step 0 must contain start_of_turn.user_request as a non-empty verbatim user request."
+    });
+  }
+
+  if (step === 3) {
+    findings.push({
+      check: "step3_internal_loop_complete",
+      pass: !step3RequiresLoop(execution.return_schema),
+      comment: "Step 3 cannot pass its supervisory gate while its own return schema directs a return to Step_3.A or reports incomplete completion."
+    });
+  }
+
+  return {
+    pass: findings.every(finding => finding.pass),
+    findings
+  };
+}
+
 function buildUnevaluatedGranularMirror(obj) {
   if (Array.isArray(obj)) {
     return obj.map(item => buildUnevaluatedGranularMirror(item));
@@ -219,18 +459,21 @@ function buildUnevaluatedGranularMirror(obj) {
     }
     return mirror;
   }
-  return {
-    evaluation: null,
-    comment: null
-  };
+  return { evaluation: null, comment: null };
 }
 
 function buildUnevaluatedSupervisoryGate(step, executionReturn) {
-  const granularTemplate = buildUnevaluatedGranularMirror(executionReturn);
   const gate = {
     supervisory_gate: {
-      instruction: "Immediately after this step returns its execution schema, the supervisor must evaluate that returned schema before the next execution step may begin. Recursively mirror every returned key and every array entry at the same schema path. For every terminal returned value, replace the execution value with an evaluation and supervisor comment. Evaluate the step as a whole after completing the granular mirror. Every failed granular or step-level evaluation must be entered separately in failures. The next execution step is permitted only when gate_result is PASS.",
-      granular_evaluation: granularTemplate,
+      role_required: supervisorRoleRequired,
+      role_forbidden: supervisorRoleForbidden,
+      role_completed: null,
+      role_verification: {
+        method: null,
+        evidence: null
+      },
+      instruction: "Evaluate only the supplied ChatGPT execution return. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step. Recursively mirror every returned key and array entry. The next execution step is permitted only when gate_result is PASS.",
+      granular_evaluation: buildUnevaluatedGranularMirror(executionReturn),
       step_level_evaluation: {
         evaluation: null,
         comment: null
@@ -246,12 +489,11 @@ function buildUnevaluatedSupervisoryGate(step, executionReturn) {
       ...gate.supervisory_gate
     };
   }
-
   return gate;
 }
 
-function baseSystemInstruction(step) {
-  const parts = [readText(agentsPath)];
+function baseSystemInstruction(step, agentsText) {
+  const parts = [agentsText];
   if (step === 3) {
     parts.unshift(readText(definitionsPath));
     parts.unshift(readText(testsPath));
@@ -259,16 +501,12 @@ function baseSystemInstruction(step) {
   return parts.join("\n\n");
 }
 
-function contextFilesForStep(step) {
-  return step === 3
-    ? ["Agents.md", "evaluation-tests.md", "evaluator-definitions.md"]
-    : ["Agents.md"];
-}
-
-async function generate(contents, appendedSystemInstruction = "", step = null) {
-  const systemText = [baseSystemInstruction(step), appendedSystemInstruction]
-    .filter(Boolean)
-    .join("\n\n");
+async function generateSupervisor(contents, appendedSystemInstruction, step, agentsText) {
+  const systemText = [
+    baseSystemInstruction(step, agentsText),
+    "ROLE BOUNDARY: You are the Gemini model and may perform only the Supervisory Gate. You are strictly forbidden from completing, repairing, retrying, or simulating the ChatGPT-owned execution step. The Node.js controller, not you, controls state transitions.",
+    appendedSystemInstruction
+  ].filter(Boolean).join("\n\n");
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -305,371 +543,265 @@ async function generate(contents, appendedSystemInstruction = "", step = null) {
   return reply;
 }
 
-function persistSemanticExchange(runNonce, messages, store, messagesFile, storeFile, metadata, userMessage, modelReply) {
-  messages.contents.push(userMessage, modelReply);
-
-  const record = {
-    record_id: `${Date.now()}-${store.records.length + 1}`,
-    run_nonce: runNonce,
-    timestamp: now(),
-    step: metadata.step,
-    operation: metadata.operation,
-    attempt: metadata.attempt,
-    context_files: contextFilesForStep(metadata.step),
-    appended_system_instruction: metadata.appendedSystemInstruction || null,
-    user: userMessage,
-    model: modelReply,
-    return_schema: null,
-    transition_value: null
-  };
-
-  store.records.push(record);
-  writeJson(messagesFile, messages);
-  writeJson(storeFile, store);
-  return store.records.length - 1;
+function validateSupervisorRoleFields(schema) {
+  const gate = schema?.supervisory_gate;
+  if (!gate || typeof gate !== "object") {
+    return { valid: false, reason: "Missing supervisory_gate object." };
+  }
+  if (gate.role_required !== supervisorRoleRequired) {
+    return { valid: false, reason: `supervisory_gate.role_required must equal \"${supervisorRoleRequired}\".` };
+  }
+  if (gate.role_forbidden !== supervisorRoleForbidden) {
+    return { valid: false, reason: `supervisory_gate.role_forbidden must equal \"${supervisorRoleForbidden}\".` };
+  }
+  if (gate.role_completed !== supervisorRoleRequired) {
+    return { valid: false, reason: `supervisory_gate.role_completed must equal \"${supervisorRoleRequired}\".` };
+  }
+  if (!nonEmptyString(gate?.role_verification?.method)) {
+    return { valid: false, reason: "supervisory_gate.role_verification.method must be populated." };
+  }
+  if (!nonEmptyString(gate?.role_verification?.evidence)) {
+    return { valid: false, reason: "supervisory_gate.role_verification.evidence must be populated." };
+  }
+  return { valid: true, reason: null };
 }
 
-function updateStoredRecord(store, storeFile, recordIndex, fields) {
-  Object.assign(store.records[recordIndex], fields);
-  writeJson(storeFile, store);
-}
+async function requestSupervisorySchema({
+  runNonce,
+  step,
+  execution,
+  controllerValidation,
+  statedRequirements,
+  messages,
+  messagesFile,
+  store,
+  storeFile,
+  agentsText
+}) {
+  const executionReturn = execution.return_schema;
+  const template = buildUnevaluatedSupervisoryGate(step, executionReturn);
+  const stepBlock = extractStepBlock(agentsText, step);
 
-async function callSemanticOperator(runNonce, messages, store, messagesFile, storeFile, metadata, userMessage, appendedSystemInstruction = "") {
-  const contents = messages.contents.concat(userMessage);
-  const reply = await generate(contents, appendedSystemInstruction, metadata.step);
-  const recordIndex = persistSemanticExchange(
-    runNonce,
-    messages,
-    store,
-    messagesFile,
-    storeFile,
-    { ...metadata, appendedSystemInstruction },
-    userMessage,
-    reply
-  );
-  return { reply, recordIndex };
-}
-
-function step3RequiresLoop(schema) {
-  if (!schema || typeof schema !== "object") return false;
-  const step3 = schema.Step_3 || schema;
-
-  let loopDecision = step3?.G?.Loop_Decision;
-  if (loopDecision && typeof loopDecision === "object" && "value" in loopDecision) {
-    loopDecision = loopDecision.value;
-  }
-
-  let returnTo = step3?.G?.return_to;
-  if (returnTo && typeof returnTo === "object" && "value" in returnTo) {
-    returnTo = returnTo.value;
-  }
-
-  let completed = step3?.return_schema_completed ?? step3?.step_3_completed;
-  if (completed && typeof completed === "object" && "value" in completed) {
-    completed = completed.value;
-  }
-
-  if (typeof loopDecision === "string" && loopDecision.trim().toLowerCase() === "true") {
-    return true;
-  }
-  if (typeof returnTo === "string" && returnTo.includes("Step_3.A")) {
-    return true;
-  }
-  if (completed === false || completed === "false") {
-    return true;
-  }
-  return false;
-}
-
-async function requestExecutionSchema(runNonce, messages, store, messagesFile, storeFile, step, attempt, previousFailure, statedRequirements) {
-  const promptParts = [
-    `Perform exactly Step ${step} from Agents.md.`,
-    "The return schema for this step is the central control surface. You communicate completion and results exclusively through that exact return schema.",
-    "Ensure return_schema_completed is true for this step. A value of false means the step schema is incomplete and will fail supervisory evaluation.",
-    "Return only the complete execution return schema required by that step as valid JSON.",
-    "Do not perform the Supervisory Gate yourself. The returned execution schema will be supplied to the supervisor as its input."
-  ];
-
-  if (step === 3) {
-    promptParts.push(
-      "MANDATORY FOR STEP 3: In accordance with Step_3.evaluation_documents_read, read evaluation-tests.md and evaluator-definitions.md completely and use both as evaluation context throughout Step 3.",
-      "Step 3.G controls repetition or completion. If any test result in Step 3.F is T, set Loop_Decision to True, set return_to to Step_3.A, reject P, and loop. Set return_schema_completed to true only when Loop_Decision is False and P has passed all Step3_TSR tests."
-    );
-    if (statedRequirements && statedRequirements.length > 0) {
-      promptParts.push(
-        "Stated requirements extracted in Step 2 that must be satisfied by plan P and UI_output:",
-        JSON.stringify(statedRequirements, null, 2)
-      );
-    }
-  }
-
-  if (step === 4 && statedRequirements && statedRequirements.length > 0) {
-    promptParts.push(
-      "Stated requirements from Step 2 to verify in completion reporting:",
-      JSON.stringify(statedRequirements, null, 2)
-    );
-  }
-
-  if (previousFailure) {
-    promptParts.push(
-      "This execution step is being restarted because its preceding Supervisory Gate returned FAIL.",
-      "Previous execution return:",
-      JSON.stringify(previousFailure.execution_return, null, 2),
-      "Supervisory return that caused the restart:",
-      JSON.stringify(previousFailure.supervisory_return, null, 2),
-      "Revise the execution so the current attempt satisfies the governing step and supervisory findings."
-    );
-  }
-
-  let userMessage = {
-    role: "user",
-    parts: [{ text: promptParts.join("\n\n") }]
-  };
-  let operation = "execution";
-
-  while (true) {
-    let call = await callSemanticOperator(
-      runNonce,
-      messages,
-      store,
-      messagesFile,
-      storeFile,
-      { step, operation, attempt },
-      userMessage
-    );
-
-    let schema;
-    while (true) {
-      try {
-        schema = parseReturnedSchema(call.reply);
-        updateStoredRecord(store, storeFile, call.recordIndex, { return_schema: schema });
-        break;
-      } catch (error) {
-        const correction = [
-          "SYSTEM CORRECTION FOR THIS RESPONSE:",
-          `The Step ${step} semantic-operator response was not valid JSON and therefore cannot serve as the required execution return schema.`,
-          `Parser error: ${error.message}`,
-          "Revise your immediately preceding response into complete valid JSON matching the exact Step return schema. Do not omit required fields."
-        ].join("\n");
-
-        userMessage = {
-          role: "user",
-          parts: [{
-            text: "Revise the immediately preceding response according to the appended system instruction. Return only the complete corrected JSON."
-          }]
-        };
-        operation = "execution_json_repair";
-        call = await callSemanticOperator(
-          runNonce,
-          messages,
-          store,
-          messagesFile,
-          storeFile,
-          { step, operation, attempt },
-          userMessage,
-          correction
-        );
-      }
-    }
-
-    if (step === 3 && step3RequiresLoop(schema)) {
-      userMessage = {
-        role: "user",
-        parts: [{
-          text: [
-            "In accordance with Step 3.G, Loop_Decision is True and/or return_schema_completed is false.",
-            "The current proposed plan P is rejected. Return to Step 3.A, re-decompose, reconstruct P, and re-evaluate against every test in Step3_TSR until Loop_Decision is False and return_schema_completed is true.",
-            "Return the complete revised Step 3 execution schema as valid JSON."
-          ].join("\n\n")
-        }]
-      };
-      operation = "execution_step3_loop";
-      continue;
-    }
-
-    return { reply: call.reply, schema };
-  }
-}
-
-async function requestSupervisorySchema(runNonce, messages, store, messagesFile, storeFile, step, attempt, executionReturn, statedRequirements) {
-  const unevaluatedGateTemplate = buildUnevaluatedSupervisoryGate(step, executionReturn);
-  const supervisorPrompt = [
-    `Perform only the Supervisory Gate for Step ${step} from Agents.md.`,
-    "The execution return below is the input to this Supervisory Gate:",
+  const prompt = [
+    `Perform only the Supervisory Gate for Step ${step}.`,
+    "The ChatGPT execution return below is the complete input to this gate. Do not execute or rewrite the step:",
     JSON.stringify(executionReturn, null, 2),
-    "You must evaluate that returned schema and populate the unevaluated supervisory gate schema template.",
-    "The evaluative and result fields in this template begin unevaluated (null). Replace each null placeholder with your actual evaluation:",
-    "1. Replace null in granular_evaluation terminal entries with { \"evaluation\": \"PASS\" | \"FAIL\", \"comment\": \"<required supervisor evaluation>\" }.",
-    "2. In step_level_evaluation, replace null with your holistic step evaluation and comment.",
-    "3. In failures, add an entry for every granular or step-level FAIL.",
-    `4. Set supervisory_gate.gate_result to \"PASS\" only when every granular evaluation and step-level evaluation are PASS and return_schema_completed is true; otherwise set it to \"FAIL\".`,
-    "Unevaluated Supervisory Gate Schema Template to populate:",
-    JSON.stringify(unevaluatedGateTemplate, null, 2),
+    "Deterministic Node.js controller validation findings:",
+    JSON.stringify(controllerValidation, null, 2),
+    "The governing Agents.md Step block is:",
+    stepBlock,
+    "Populate this unevaluated supervisory template:",
+    JSON.stringify(template, null, 2),
+    "Set role_completed to \"Gemini model\" because this response is generated by the Gemini API inside send-to-gemini.js. Populate role_verification.method and role_verification.evidence with the directly observed runtime/API context represented by this call.",
+    "If ANY deterministic controller finding has pass=false, gate_result MUST be FAIL.",
+    "Set gate_result PASS only when all granular evaluations and the step-level evaluation pass, the ChatGPT execution return is complete, and the role requirements are satisfied.",
     "Return only the completed supervisory return schema as valid JSON."
   ];
 
   if (step === 3) {
-    supervisorPrompt.splice(
-      1,
-      0,
-      "MANDATORY FOR STEP 3 SUPERVISORY GATE: In accordance with supervisory_gate.evaluation_documents_read, read evaluation-tests.md and evaluator-definitions.md completely and use both documents as evaluation context for the Step 3 Supervisory Gate. Set supervisory_gate.evaluation_documents_read to \"evaluation-tests.md and evaluator-definitions.md read completely\"."
+    prompt.splice(1, 0,
+      "Read evaluation-tests.md and evaluator-definitions.md completely and use them throughout this Step 3 Supervisory Gate. Populate supervisory_gate.evaluation_documents_read."
     );
   }
 
-  if ((step === 3 || step === 4) && statedRequirements && statedRequirements.length > 0) {
-    supervisorPrompt.push(
-      "Verify the execution return against all Step 2 stated requirements:",
+  if ((step === 3 || step === 4) && statedRequirements.length > 0) {
+    prompt.push(
+      "Step 2 stated requirements that must be checked:",
       JSON.stringify(statedRequirements, null, 2)
     );
   }
 
-  let userMessage = {
-    role: "user",
-    parts: [{ text: supervisorPrompt.join("\n\n") }]
-  };
-  let operation = "supervisory_gate";
+  let userMessage = { role: "user", parts: [{ text: prompt.join("\n\n") }] };
   let appendedSystemInstruction = "";
+  let repairCount = 0;
 
   while (true) {
-    const call = await callSemanticOperator(
-      runNonce,
-      messages,
-      store,
-      messagesFile,
-      storeFile,
-      { step, operation, attempt },
-      userMessage,
-      appendedSystemInstruction
-    );
+    const reply = await generateSupervisor([userMessage], appendedSystemInstruction, step, agentsText);
+
+    appendMessage(messages, messagesFile, {
+      kind: repairCount === 0 ? "gemini_supervisory_gate" : "gemini_supervisory_gate_repair",
+      step,
+      attempt: repairCount + 1,
+      role: "model",
+      parts: reply.parts
+    });
 
     let schema = null;
     let parseError = null;
     try {
-      schema = parseReturnedSchema(call.reply);
-      updateStoredRecord(store, storeFile, call.recordIndex, { return_schema: schema });
+      schema = parseReturnedSchema(reply);
     } catch (error) {
       parseError = error;
     }
 
     if (schema) {
       const gate = normalizedGateValue(schema);
-      if (gate.valid) {
-        updateStoredRecord(store, storeFile, call.recordIndex, { transition_value: gate.value });
-        return { reply: call.reply, schema, gate_result: gate.value };
+      const role = validateSupervisorRoleFields(schema);
+      const controllerRequiresFail = !controllerValidation.pass;
+      const gateContradictsController = controllerRequiresFail && gate.valid && gate.value !== "FAIL";
+
+      if (gate.valid && role.valid && !gateContradictsController) {
+        appendStoreRecord(store, storeFile, {
+          run_nonce: runNonce,
+          step,
+          operation: repairCount === 0 ? "supervisory_gate" : "supervisory_gate_repair",
+          context_files: contextFilesForStep(step),
+          model,
+          return_schema: schema,
+          transition_value: gate.value
+        });
+        return { schema, gate_result: gate.value };
       }
+
+      const reasons = [];
+      if (!gate.valid) reasons.push(`Missing/invalid ${transitionPath.join(".")}.`);
+      if (!role.valid) reasons.push(role.reason);
+      if (gateContradictsController) reasons.push("Controller validation contains a deterministic FAIL, so gate_result must be FAIL.");
+
+      appendedSystemInstruction = [
+        "SYSTEM CORRECTION FOR THIS SUPERVISORY RESPONSE:",
+        ...reasons,
+        "Repair only the Supervisory Gate response. Do not execute or simulate the ChatGPT-owned step.",
+        "Return only complete valid JSON."
+      ].join("\n");
+    } else {
+      appendedSystemInstruction = [
+        "SYSTEM CORRECTION FOR THIS SUPERVISORY RESPONSE:",
+        `The preceding response was not valid JSON: ${parseError?.message || "unknown parse error"}`,
+        "Repair only the Supervisory Gate response. Do not execute or simulate the ChatGPT-owned step.",
+        `Ensure ${transitionPath.join(".")} is exactly PASS or FAIL.`,
+        "Return only complete valid JSON."
+      ].join("\n");
     }
 
-    const exactPath = transitionPath.join(".");
-    appendedSystemInstruction = parseError
-      ? [
-          "SYSTEM CORRECTION FOR THIS RESPONSE:",
-          "Your immediately preceding supervisory response could not be parsed as valid JSON.",
-          `Parser error: ${parseError.message}`,
-          "Populate and return the complete unevaluated supervisory gate schema template as valid JSON.",
-          `Ensure that ${exactPath} is populated with either \"PASS\" or \"FAIL\" and no required fields remain null.`
-        ].join("\n")
-      : [
-          "SYSTEM CORRECTION FOR THIS RESPONSE:",
-          `The required transition key:value was not found at the exact JSON path ${exactPath}, or remained null/unpopulated, or was not PASS or FAIL.`,
-          "Complete your evaluation of the execution return using the unevaluated supervisory schema template.",
-          `Set ${exactPath} to either \"PASS\" or \"FAIL\" based on your granular and step-level evaluations.`,
-          "Return only the complete valid supervisory return schema."
-        ].join("\n");
-
+    repairCount += 1;
     userMessage = {
       role: "user",
-      parts: [{
-        text: "Revise the immediately preceding response according to the appended system instruction. Return only the complete corrected JSON."
-      }]
+      parts: [{ text: "Repair your immediately preceding Supervisory Gate response according to the system correction. Return only the corrected supervisory JSON." }]
     };
-    operation = "supervisory_gate_repair";
   }
 }
 
-function commitStepCheckpoint(runNonce, step, gateResult, runDir) {
-  try {
-    execFileSync("git", ["add", runDir], { stdio: "pipe" });
-    const commitMsg = `checkpoint(${runNonce}): Step ${step} gate ${gateResult}`;
-    execFileSync("git", ["commit", "-m", commitMsg, "--allow-empty"], { stdio: "pipe" });
-    const hash = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
-    return hash;
-  } catch (err) {
-    return `git-checkpoint-local-${Date.now()}`;
-  }
-}
+function recordExecutionAttempt(state, step, execution, controllerValidation, supervision) {
+  const key = String(step);
+  const existing = state.procedure.step_records[key];
+  const attempts = Array.isArray(existing?.attempts) ? existing.attempts : [];
+  const attempt = attempts.length + 1;
 
-function recordAttempt(state, step, attempt, executionReturn, supervisoryReturn, gateResult, commitHash = null) {
-  state.procedure.step_records[String(step)] = {
+  attempts.push({
     attempt,
-    execution_return: executionReturn,
-    supervisory_return: supervisoryReturn,
+    received_at: now(),
+    execution_source_role: execution.source_role,
+    execution_return: execution.return_schema,
+    controller_validation: controllerValidation,
+    supervisory_return: supervision.schema,
     transition_key: transitionPath.join("."),
-    transition_value: gateResult,
-    commit_hash: commitHash,
+    transition_value: supervision.gate_result
+  });
+
+  state.procedure.step_records[key] = {
+    latest_attempt: attempt,
+    attempts,
+    execution_return: execution.return_schema,
+    supervisory_return: supervision.schema,
+    transition_key: transitionPath.join("."),
+    transition_value: supervision.gate_result,
     updated_at: now()
   };
-  if (commitHash) {
-    state.git_commits.push({
-      step,
-      gate_result: gateResult,
-      commit_hash: commitHash,
-      timestamp: now()
-    });
-  }
 }
 
-function advanceProcedure(state, steps, step) {
+function advanceAfterPass(state, steps, step) {
   if (!state.procedure.completed_steps.includes(step)) {
     state.procedure.completed_steps.push(step);
   }
+
+  state.procedure.remaining_steps = steps.filter(
+    candidate => !state.procedure.completed_steps.includes(candidate)
+  );
 
   const index = steps.indexOf(step);
   const nextStep = index >= 0 ? steps[index + 1] : undefined;
 
   if (nextStep === undefined) {
     state.procedure.current_step = null;
-    state.procedure.remaining_steps = [];
+    state.procedure.awaiting = null;
     state.status = "completed";
-    return false;
+    return;
   }
 
   state.procedure.current_step = nextStep;
-  state.procedure.remaining_steps = steps.filter(
-    candidate => !state.procedure.completed_steps.includes(candidate)
-  );
-  return true;
+  state.procedure.awaiting = {
+    type: "chatgpt_execution",
+    step: nextStep
+  };
+  state.status = "awaiting_chatgpt_execution";
 }
 
-function extractStatedRequirements(state) {
-  const step2Record = state?.procedure?.step_records?.["2"]?.execution_return;
-  if (!step2Record) return [];
-  const list = step2Record?.step_2_record?.stated_requirements || step2Record?.stated_requirements;
-  return Array.isArray(list) ? list : [];
+function remainOnStepAfterFail(state, step, supervision) {
+  state.procedure.current_step = step;
+  state.procedure.awaiting = {
+    type: "chatgpt_execution",
+    step,
+    reason: "supervisory_gate_fail"
+  };
+  state.status = "awaiting_chatgpt_execution";
+  state.last_supervisory_failure = {
+    step,
+    timestamp: now(),
+    supervisory_return: supervision.schema
+  };
+}
+
+function persistRejectedExecution({
+  runNonce,
+  state,
+  stateWrapper,
+  stateFile,
+  messages,
+  messagesFile,
+  store,
+  storeFile,
+  trigger,
+  reason
+}) {
+  appendMessage(messages, messagesFile, {
+    kind: "rejected_incoming_event",
+    timestamp: now(),
+    received: trigger,
+    reason
+  });
+
+  appendStoreRecord(store, storeFile, {
+    run_nonce: runNonce,
+    step: state.procedure.current_step,
+    operation: "execution_rejected",
+    deterministic_validation: {
+      pass: false,
+      reason
+    },
+    received_event: trigger
+  });
+
+  state.status = "awaiting_chatgpt_execution";
+  state.procedure.awaiting = {
+    type: "chatgpt_execution",
+    step: state.procedure.current_step,
+    reason: "incoming_event_rejected"
+  };
+  state.last_rejected_event = { timestamp: now(), reason };
+  state.updated_at = now();
+  writeJson(stateFile, stateWrapper);
 }
 
 async function main() {
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is missing from the GitHub Actions environment.");
-  }
+  if (!apiKey) throw new Error("GEMINI_API_KEY is missing from the GitHub Actions environment.");
 
   const agentsText = readText(agentsPath);
   const steps = extractProcedureSteps(agentsText);
-
   const trigger = readJson(triggerPath);
   const runNonce = validateRunNonce(trigger.run_nonce);
-  const nextmessage = trigger.nextmessage;
-
-  if (
-    !nextmessage ||
-    nextmessage.role !== "user" ||
-    !Array.isArray(nextmessage.parts) ||
-    !nextmessage.parts.some(p => typeof p.text === "string")
-  ) {
-    throw new Error("trigger nextmessage must be a Gemini user content object containing text.");
-  }
 
   const {
-    runDir,
     stateFile,
     messagesFile,
     storeFile,
@@ -677,76 +809,116 @@ async function main() {
     state,
     messages,
     store
-  } = initializeOrValidateRunContainer(runNonce, nextmessage, steps);
+  } = initializeOrValidateRunContainer(runNonce, steps);
 
-  state.status = "running";
+  state.event_count += 1;
+  state.updated_at = now();
 
-  while (state.procedure.current_step !== null) {
-    const step = state.procedure.current_step;
-    let attempt = 0;
-    let previousFailure = null;
-    const statedRequirements = extractStatedRequirements(state);
+  if (state.procedure.current_step === null || state.status === "completed") {
+    persistRejectedExecution({
+      runNonce,
+      state,
+      stateWrapper,
+      stateFile,
+      messages,
+      messagesFile,
+      store,
+      storeFile,
+      trigger,
+      reason: "This run is already complete and is not awaiting another execution."
+    });
+    return;
+  }
 
-    while (true) {
-      attempt += 1;
+  const step = state.procedure.current_step;
+  const incoming = parseIncomingExecution(trigger, step);
 
-      const execution = await requestExecutionSchema(
-        runNonce,
-        messages,
-        store,
-        messagesFile,
-        storeFile,
-        step,
-        attempt,
-        previousFailure,
-        statedRequirements
-      );
+  if (!incoming.accepted) {
+    persistRejectedExecution({
+      runNonce,
+      state,
+      stateWrapper,
+      stateFile,
+      messages,
+      messagesFile,
+      store,
+      storeFile,
+      trigger,
+      reason: incoming.reason
+    });
 
-      const supervision = await requestSupervisorySchema(
-        runNonce,
-        messages,
-        store,
-        messagesFile,
-        storeFile,
-        step,
-        attempt,
-        execution.schema,
-        statedRequirements
-      );
+    console.log(JSON.stringify({
+      runtime: "Node.js",
+      mode: "event-driven-controller",
+      run_nonce: runNonce,
+      current_step: state.procedure.current_step,
+      status: state.status,
+      accepted_execution: false,
+      reason: incoming.reason
+    }, null, 2));
+    return;
+  }
 
-      let commitHash = null;
-      if (supervision.gate_result === "PASS") {
-        commitHash = commitStepCheckpoint(runNonce, step, supervision.gate_result, runDir);
-      }
+  const execution = incoming.execution;
+  const controllerValidation = buildControllerValidation(step, execution, state);
 
-      recordAttempt(
-        state,
-        step,
-        attempt,
-        execution.schema,
-        supervision.schema,
-        supervision.gate_result,
-        commitHash
-      );
-
-      state.updated_at = now();
-      writeJson(stateFile, stateWrapper);
-
-      if (supervision.gate_result === "FAIL") {
-        previousFailure = {
-          execution_return: execution.schema,
-          supervisory_return: supervision.schema
-        };
-        continue;
-      }
-
-      advanceProcedure(state, steps, step);
-      break;
+  if (step === 0 && store.initial_user_message === null) {
+    const userRequest = extractUserRequestFromStep0(execution.return_schema);
+    if (userRequest !== null) {
+      store.initial_user_message = {
+        role: "user",
+        parts: [{ text: userRequest }]
+      };
+      writeJson(storeFile, store);
+      appendMessage(messages, messagesFile, {
+        kind: "initial_user_message",
+        role: "user",
+        parts: [{ text: userRequest }]
+      });
     }
   }
 
-  if (state.git_commits.length < steps.length) {
-    state.status = "failed_checkpoint_verification";
+  appendMessage(messages, messagesFile, {
+    kind: "chatgpt_execution",
+    timestamp: now(),
+    step,
+    source_role: execution.source_role,
+    return_schema: execution.return_schema
+  });
+
+  appendStoreRecord(store, storeFile, {
+    run_nonce: runNonce,
+    step,
+    operation: "chatgpt_execution_received",
+    execution_source_role: execution.source_role,
+    execution_return: execution.return_schema,
+    controller_validation: controllerValidation
+  });
+
+  state.status = "supervising";
+  state.updated_at = now();
+  writeJson(stateFile, stateWrapper);
+
+  const statedRequirements = extractStatedRequirements(state);
+  const supervision = await requestSupervisorySchema({
+    runNonce,
+    step,
+    execution,
+    controllerValidation,
+    statedRequirements,
+    messages,
+    messagesFile,
+    store,
+    storeFile,
+    agentsText
+  });
+
+  recordExecutionAttempt(state, step, execution, controllerValidation, supervision);
+
+  if (supervision.gate_result === "PASS") {
+    advanceAfterPass(state, steps, step);
+  } else {
+    remainOnStepAfterFail(state, step, supervision);
   }
 
   state.updated_at = now();
@@ -755,13 +927,14 @@ async function main() {
   console.log(JSON.stringify({
     runtime: "Node.js",
     node_version: process.version,
+    mode: "event-driven-controller",
     model,
     run_nonce: runNonce,
-    transition_key: transitionPath.join("."),
+    processed_execution_step: step,
+    supervisory_gate_result: supervision.gate_result,
+    current_step: state.procedure.current_step,
     completed_steps: state.procedure.completed_steps,
-    git_commits: state.git_commits.length,
-    stored_records: store.records.length,
-    store: storeFile,
+    awaiting: state.procedure.awaiting,
     status: state.status
   }, null, 2));
 }
