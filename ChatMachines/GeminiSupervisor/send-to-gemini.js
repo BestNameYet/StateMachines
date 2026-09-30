@@ -3,20 +3,13 @@
  *
  * Architectural contract:
  * - ChatGPT owns every non-supervisory execution step.
- * - Node.js deterministically validates and transitions state.
+ * - Node.js deterministically inspects incoming execution events and controls state.
  * - Gemini owns only the Supervisory Gate.
+ * - Deterministic validation never substitutes for the Supervisory Gate.
+ * - A deterministic validation failure is inserted into the run message stream as
+ *   a system message immediately before the Gemini supervisory call.
  * - A supervisory FAIL never executes or retries a step inside this runtime.
  *   It leaves the same step active and waits for a new ChatGPT execution event.
- *
- * Accepted trigger shape:
- * {
- *   "run_nonce": "<path-safe run id>",
- *   "execution": {
- *     "source_role": "ChatGPT model",
- *     "step": 0,
- *     "return_schema": { ...the exact Agents.md return schema for Step 0... }
- *   }
- * }
  */
 
 const fs = require("node:fs");
@@ -67,6 +60,7 @@ function extractProcedureSteps(agentsText) {
   const seen = new Set();
   const pattern = /^## Step\s+(\d+)\s*$/gm;
   let match;
+
   while ((match = pattern.exec(agentsText)) !== null) {
     const step = Number(match[1]);
     if (!seen.has(step)) {
@@ -74,9 +68,11 @@ function extractProcedureSteps(agentsText) {
       found.push(step);
     }
   }
+
   if (found.length === 0) {
     throw new Error("Agents.md contains no procedure steps matching '## Step N'.");
   }
+
   return found.sort((a, b) => a - b);
 }
 
@@ -84,6 +80,7 @@ function extractStepBlock(agentsText, step) {
   const heading = new RegExp(`^## Step\\s+${step}\\s*$`, "m");
   const match = heading.exec(agentsText);
   if (!match) throw new Error(`Agents.md does not contain Step ${step}.`);
+
   const start = match.index;
   const remainder = agentsText.slice(start + match[0].length);
   const next = /^## Step\s+\d+\s*$/m.exec(remainder);
@@ -144,7 +141,16 @@ function initializeOrValidateRunContainer(runNonce, steps) {
     writeJson(messagesFile, messages);
     writeJson(storeFile, store);
 
-    return { runDir, stateFile, messagesFile, storeFile, stateWrapper, state: stateWrapper.current_state, messages, store };
+    return {
+      runDir,
+      stateFile,
+      messagesFile,
+      storeFile,
+      stateWrapper,
+      state: stateWrapper.current_state,
+      messages,
+      store
+    };
   }
 
   if (!fs.existsSync(stateFile) || !fs.existsSync(messagesFile) || !fs.existsSync(storeFile)) {
@@ -190,7 +196,16 @@ function initializeOrValidateRunContainer(runNonce, steps) {
     ? null
     : { type: "chatgpt_execution", step: state.procedure.current_step };
 
-  return { runDir, stateFile, messagesFile, storeFile, stateWrapper, state, messages, store };
+  return {
+    runDir,
+    stateFile,
+    messagesFile,
+    storeFile,
+    stateWrapper,
+    state,
+    messages,
+    store
+  };
 }
 
 function appendMessage(messages, messagesFile, value) {
@@ -246,11 +261,16 @@ function parseReturnedSchema(reply) {
   }
 }
 
+function nonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 function findObjectsWithControlFields(value, pathParts = [], results = []) {
   if (Array.isArray(value)) {
     value.forEach((item, index) => findObjectsWithControlFields(item, [...pathParts, index], results));
     return results;
   }
+
   if (!value || typeof value !== "object") return results;
 
   const controlKeys = [
@@ -268,11 +288,8 @@ function findObjectsWithControlFields(value, pathParts = [], results = []) {
   for (const [key, child] of Object.entries(value)) {
     findObjectsWithControlFields(child, [...pathParts, key], results);
   }
-  return results;
-}
 
-function nonEmptyString(value) {
-  return typeof value === "string" && value.trim().length > 0;
+  return results;
 }
 
 function validateExecutionControlFields(returnSchema) {
@@ -280,11 +297,7 @@ function validateExecutionControlFields(returnSchema) {
   const findings = [];
 
   if (candidates.length === 0) {
-    findings.push({
-      check: "execution_control_fields_present",
-      pass: false,
-      comment: "No execution return object contains the required role/control fields."
-    });
+    findings.push("No execution return object contains the required role/control fields.");
     return findings;
   }
 
@@ -292,36 +305,24 @@ function validateExecutionControlFields(returnSchema) {
   const record = candidate.value;
   const recordPath = candidate.path.length ? candidate.path.join(".") : "$";
 
-  findings.push({
-    check: "role_required",
-    pass: record.role_required === executionRoleRequired,
-    comment: `${recordPath}.role_required must equal \"${executionRoleRequired}\".`
-  });
-  findings.push({
-    check: "role_forbidden",
-    pass: record.role_forbidden === executionRoleForbidden,
-    comment: `${recordPath}.role_forbidden must equal \"${executionRoleForbidden}\".`
-  });
-  findings.push({
-    check: "role_completed",
-    pass: record.role_completed === executionRoleRequired,
-    comment: `${recordPath}.role_completed must equal \"${executionRoleRequired}\".`
-  });
-  findings.push({
-    check: "role_verification_method",
-    pass: nonEmptyString(record?.role_verification?.method),
-    comment: `${recordPath}.role_verification.method must be a non-empty string.`
-  });
-  findings.push({
-    check: "role_verification_evidence",
-    pass: nonEmptyString(record?.role_verification?.evidence),
-    comment: `${recordPath}.role_verification.evidence must be a non-empty string.`
-  });
-  findings.push({
-    check: "return_schema_completed",
-    pass: record.return_schema_completed === true,
-    comment: `${recordPath}.return_schema_completed must be true.`
-  });
+  if (record.role_required !== executionRoleRequired) {
+    findings.push(`${recordPath}.role_required must equal "${executionRoleRequired}".`);
+  }
+  if (record.role_forbidden !== executionRoleForbidden) {
+    findings.push(`${recordPath}.role_forbidden must equal "${executionRoleForbidden}".`);
+  }
+  if (record.role_completed !== executionRoleRequired) {
+    findings.push(`${recordPath}.role_completed must equal "${executionRoleRequired}".`);
+  }
+  if (!nonEmptyString(record?.role_verification?.method)) {
+    findings.push(`${recordPath}.role_verification.method must be a non-empty string.`);
+  }
+  if (!nonEmptyString(record?.role_verification?.evidence)) {
+    findings.push(`${recordPath}.role_verification.evidence must be a non-empty string.`);
+  }
+  if (record.return_schema_completed !== true) {
+    findings.push(`${recordPath}.return_schema_completed must be true.`);
+  }
 
   return findings;
 }
@@ -365,86 +366,92 @@ function extractStatedRequirements(state) {
   return Array.isArray(list) ? list : [];
 }
 
-function parseIncomingExecution(trigger, currentStep) {
-  const execution = trigger?.execution;
+function rawSubmittedPayload(trigger) {
+  if (trigger && Object.prototype.hasOwnProperty.call(trigger, "nextmessage")) {
+    return trigger.nextmessage;
+  }
+  return trigger;
+}
 
-  if (!execution || typeof execution !== "object" || Array.isArray(execution)) {
-    return {
-      accepted: false,
-      reason: "The trigger does not contain an execution object. Raw user input is not a ChatGPT execution return and cannot satisfy the active execution step.",
-      execution: null
+function inspectIncomingEvent(trigger, currentStep) {
+  const failures = [];
+  const suppliedExecution = trigger?.execution;
+
+  let execution;
+  if (!suppliedExecution || typeof suppliedExecution !== "object" || Array.isArray(suppliedExecution)) {
+    failures.push("The trigger does not contain an execution object. Raw input is not a ChatGPT execution return for the active step.");
+    execution = {
+      source_role: null,
+      step: currentStep,
+      return_schema: rawSubmittedPayload(trigger)
     };
+  } else {
+    execution = {
+      source_role: suppliedExecution.source_role ?? null,
+      step: Number.isInteger(suppliedExecution.step) ? suppliedExecution.step : currentStep,
+      return_schema: (
+        suppliedExecution.return_schema &&
+        typeof suppliedExecution.return_schema === "object" &&
+        !Array.isArray(suppliedExecution.return_schema)
+      )
+        ? suppliedExecution.return_schema
+        : suppliedExecution
+    };
+
+    if (suppliedExecution.source_role !== executionRoleRequired) {
+      failures.push(`execution.source_role must equal "${executionRoleRequired}".`);
+    }
+    if (!Number.isInteger(suppliedExecution.step)) {
+      failures.push("execution.step must be an integer.");
+    } else if (suppliedExecution.step !== currentStep) {
+      failures.push(`Received execution for Step ${suppliedExecution.step}, but current_step is Step ${currentStep}.`);
+    }
+    if (
+      !suppliedExecution.return_schema ||
+      typeof suppliedExecution.return_schema !== "object" ||
+      Array.isArray(suppliedExecution.return_schema)
+    ) {
+      failures.push("execution.return_schema must be a JSON object containing the ChatGPT execution return schema.");
+    }
   }
 
   if (execution.source_role !== executionRoleRequired) {
-    return {
-      accepted: false,
-      reason: `execution.source_role must be \"${executionRoleRequired}\".`,
-      execution
-    };
+    failures.push(`Execution source is not server/controller-identified as "${executionRoleRequired}".`);
   }
 
-  if (!Number.isInteger(execution.step)) {
-    return {
-      accepted: false,
-      reason: "execution.step must be an integer.",
-      execution
-    };
+  failures.push(...validateExecutionControlFields(execution.return_schema));
+
+  if (currentStep === 0 && !nonEmptyString(extractUserRequestFromStep0(execution.return_schema))) {
+    failures.push("Step 0 must contain start_of_turn.user_request as a non-empty verbatim user request.");
   }
 
-  if (execution.step !== currentStep) {
-    return {
-      accepted: false,
-      reason: `Received ChatGPT execution for Step ${execution.step}, but the deterministic current_step is Step ${currentStep}.`,
-      execution
-    };
-  }
-
-  if (!execution.return_schema || typeof execution.return_schema !== "object" || Array.isArray(execution.return_schema)) {
-    return {
-      accepted: false,
-      reason: "execution.return_schema must be a JSON object containing the completed ChatGPT execution return schema.",
-      execution
-    };
-  }
-
-  return { accepted: true, reason: null, execution };
-}
-
-function buildControllerValidation(step, execution, state) {
-  const findings = [
-    {
-      check: "execution_source_role",
-      pass: execution.source_role === executionRoleRequired,
-      comment: `Execution event source must be ${executionRoleRequired}.`
-    },
-    {
-      check: "execution_step_matches_state",
-      pass: execution.step === state.procedure.current_step,
-      comment: `Execution Step ${execution.step} must equal current state Step ${state.procedure.current_step}.`
-    },
-    ...validateExecutionControlFields(execution.return_schema)
-  ];
-
-  if (step === 0) {
-    findings.push({
-      check: "step0_verbatim_user_request_present",
-      pass: nonEmptyString(extractUserRequestFromStep0(execution.return_schema)),
-      comment: "Step 0 must contain start_of_turn.user_request as a non-empty verbatim user request."
-    });
-  }
-
-  if (step === 3) {
-    findings.push({
-      check: "step3_internal_loop_complete",
-      pass: !step3RequiresLoop(execution.return_schema),
-      comment: "Step 3 cannot pass its supervisory gate while its own return schema directs a return to Step_3.A or reports incomplete completion."
-    });
+  if (currentStep === 3 && step3RequiresLoop(execution.return_schema)) {
+    failures.push("Step 3 return indicates its internal loop is incomplete or directs a return to Step_3.A.");
   }
 
   return {
-    pass: findings.every(finding => finding.pass),
-    findings
+    execution,
+    failures: [...new Set(failures)]
+  };
+}
+
+function buildValidationSystemMessage(step, failures) {
+  if (!Array.isArray(failures) || failures.length === 0) return null;
+
+  const text = [
+    `DETERMINISTIC PRE-SUPERVISION VALIDATION FAILED FOR STEP ${step}.`,
+    "This is controller evidence only; it is not an execution return schema and it does not replace the Supervisory Gate.",
+    "The submitted payload must still be evaluated by the Gemini supervisor under Agents.md.",
+    "Validation findings:",
+    ...failures.map((failure, index) => `${index + 1}. ${failure}`)
+  ].join("\n");
+
+  return {
+    kind: "system_validation_message",
+    role: "system",
+    timestamp: now(),
+    step,
+    parts: [{ text }]
   };
 }
 
@@ -472,7 +479,7 @@ function buildUnevaluatedSupervisoryGate(step, executionReturn) {
         method: null,
         evidence: null
       },
-      instruction: "Evaluate only the supplied ChatGPT execution return. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step. Recursively mirror every returned key and array entry. The next execution step is permitted only when gate_result is PASS.",
+      instruction: "Evaluate only the supplied execution candidate. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step. Recursively mirror every returned key and array entry. The next execution step is permitted only when gate_result is PASS.",
       granular_evaluation: buildUnevaluatedGranularMirror(executionReturn),
       step_level_evaluation: {
         evaluation: null,
@@ -489,6 +496,7 @@ function buildUnevaluatedSupervisoryGate(step, executionReturn) {
       ...gate.supervisory_gate
     };
   }
+
   return gate;
 }
 
@@ -540,6 +548,7 @@ async function generateSupervisor(contents, appendedSystemInstruction, step, age
   if (reply?.role !== "model" || !Array.isArray(reply.parts) || reply.parts.length === 0) {
     throw new Error(`Gemini returned no model content: ${JSON.stringify(body)}`);
   }
+
   return reply;
 }
 
@@ -549,13 +558,13 @@ function validateSupervisorRoleFields(schema) {
     return { valid: false, reason: "Missing supervisory_gate object." };
   }
   if (gate.role_required !== supervisorRoleRequired) {
-    return { valid: false, reason: `supervisory_gate.role_required must equal \"${supervisorRoleRequired}\".` };
+    return { valid: false, reason: `supervisory_gate.role_required must equal "${supervisorRoleRequired}".` };
   }
   if (gate.role_forbidden !== supervisorRoleForbidden) {
-    return { valid: false, reason: `supervisory_gate.role_forbidden must equal \"${supervisorRoleForbidden}\".` };
+    return { valid: false, reason: `supervisory_gate.role_forbidden must equal "${supervisorRoleForbidden}".` };
   }
   if (gate.role_completed !== supervisorRoleRequired) {
-    return { valid: false, reason: `supervisory_gate.role_completed must equal \"${supervisorRoleRequired}\".` };
+    return { valid: false, reason: `supervisory_gate.role_completed must equal "${supervisorRoleRequired}".` };
   }
   if (!nonEmptyString(gate?.role_verification?.method)) {
     return { valid: false, reason: "supervisory_gate.role_verification.method must be populated." };
@@ -570,7 +579,7 @@ async function requestSupervisorySchema({
   runNonce,
   step,
   execution,
-  controllerValidation,
+  validationSystemMessage,
   statedRequirements,
   messages,
   messagesFile,
@@ -584,22 +593,20 @@ async function requestSupervisorySchema({
 
   const prompt = [
     `Perform only the Supervisory Gate for Step ${step}.`,
-    "The ChatGPT execution return below is the complete input to this gate. Do not execute or rewrite the step:",
+    "The submitted execution candidate below is the complete input to this gate. Do not execute or rewrite the step:",
     JSON.stringify(executionReturn, null, 2),
-    "Deterministic Node.js controller validation findings:",
-    JSON.stringify(controllerValidation, null, 2),
     "The governing Agents.md Step block is:",
     stepBlock,
     "Populate this unevaluated supervisory template:",
     JSON.stringify(template, null, 2),
     "Set role_completed to \"Gemini model\" because this response is generated by the Gemini API inside send-to-gemini.js. Populate role_verification.method and role_verification.evidence with the directly observed runtime/API context represented by this call.",
-    "If ANY deterministic controller finding has pass=false, gate_result MUST be FAIL.",
-    "Set gate_result PASS only when all granular evaluations and the step-level evaluation pass, the ChatGPT execution return is complete, and the role requirements are satisfied.",
     "Return only the completed supervisory return schema as valid JSON."
   ];
 
   if (step === 3) {
-    prompt.splice(1, 0,
+    prompt.splice(
+      1,
+      0,
       "Read evaluation-tests.md and evaluator-definitions.md completely and use them throughout this Step 3 Supervisory Gate. Populate supervisory_gate.evaluation_documents_read."
     );
   }
@@ -611,12 +618,22 @@ async function requestSupervisorySchema({
     );
   }
 
+  const validationSystemText = validationSystemMessage?.parts?.[0]?.text || "";
   let userMessage = { role: "user", parts: [{ text: prompt.join("\n\n") }] };
-  let appendedSystemInstruction = "";
+  let repairInstruction = "";
   let repairCount = 0;
 
   while (true) {
-    const reply = await generateSupervisor([userMessage], appendedSystemInstruction, step, agentsText);
+    const appendedSystemInstruction = [validationSystemText, repairInstruction]
+      .filter(Boolean)
+      .join("\n\n");
+
+    const reply = await generateSupervisor(
+      [userMessage],
+      appendedSystemInstruction,
+      step,
+      agentsText
+    );
 
     appendMessage(messages, messagesFile, {
       kind: repairCount === 0 ? "gemini_supervisory_gate" : "gemini_supervisory_gate_repair",
@@ -628,6 +645,7 @@ async function requestSupervisorySchema({
 
     let schema = null;
     let parseError = null;
+
     try {
       schema = parseReturnedSchema(reply);
     } catch (error) {
@@ -637,10 +655,8 @@ async function requestSupervisorySchema({
     if (schema) {
       const gate = normalizedGateValue(schema);
       const role = validateSupervisorRoleFields(schema);
-      const controllerRequiresFail = !controllerValidation.pass;
-      const gateContradictsController = controllerRequiresFail && gate.valid && gate.value !== "FAIL";
 
-      if (gate.valid && role.valid && !gateContradictsController) {
+      if (gate.valid && role.valid) {
         appendStoreRecord(store, storeFile, {
           run_nonce: runNonce,
           step,
@@ -650,22 +666,22 @@ async function requestSupervisorySchema({
           return_schema: schema,
           transition_value: gate.value
         });
+
         return { schema, gate_result: gate.value };
       }
 
       const reasons = [];
       if (!gate.valid) reasons.push(`Missing/invalid ${transitionPath.join(".")}.`);
       if (!role.valid) reasons.push(role.reason);
-      if (gateContradictsController) reasons.push("Controller validation contains a deterministic FAIL, so gate_result must be FAIL.");
 
-      appendedSystemInstruction = [
+      repairInstruction = [
         "SYSTEM CORRECTION FOR THIS SUPERVISORY RESPONSE:",
         ...reasons,
         "Repair only the Supervisory Gate response. Do not execute or simulate the ChatGPT-owned step.",
         "Return only complete valid JSON."
       ].join("\n");
     } else {
-      appendedSystemInstruction = [
+      repairInstruction = [
         "SYSTEM CORRECTION FOR THIS SUPERVISORY RESPONSE:",
         `The preceding response was not valid JSON: ${parseError?.message || "unknown parse error"}`,
         "Repair only the Supervisory Gate response. Do not execute or simulate the ChatGPT-owned step.",
@@ -677,12 +693,14 @@ async function requestSupervisorySchema({
     repairCount += 1;
     userMessage = {
       role: "user",
-      parts: [{ text: "Repair your immediately preceding Supervisory Gate response according to the system correction. Return only the corrected supervisory JSON." }]
+      parts: [{
+        text: "Repair your immediately preceding Supervisory Gate response according to the system correction. Return only the corrected supervisory JSON."
+      }]
     };
   }
 }
 
-function recordExecutionAttempt(state, step, execution, controllerValidation, supervision) {
+function recordExecutionAttempt(state, step, execution, validationFailures, supervision) {
   const key = String(step);
   const existing = state.procedure.step_records[key];
   const attempts = Array.isArray(existing?.attempts) ? existing.attempts : [];
@@ -693,7 +711,7 @@ function recordExecutionAttempt(state, step, execution, controllerValidation, su
     received_at: now(),
     execution_source_role: execution.source_role,
     execution_return: execution.return_schema,
-    controller_validation: controllerValidation,
+    deterministic_validation_failures: validationFailures,
     supervisory_return: supervision.schema,
     transition_key: transitionPath.join("."),
     transition_value: supervision.gate_result
@@ -752,49 +770,29 @@ function remainOnStepAfterFail(state, step, supervision) {
   };
 }
 
-function persistRejectedExecution({
-  runNonce,
-  state,
-  stateWrapper,
-  stateFile,
-  messages,
-  messagesFile,
-  store,
-  storeFile,
-  trigger,
-  reason
-}) {
-  appendMessage(messages, messagesFile, {
-    kind: "rejected_incoming_event",
-    timestamp: now(),
-    received: trigger,
-    reason
-  });
+function preserveInitialUserMessageFromTrigger(store, storeFile, messages, messagesFile, trigger) {
+  if (store.initial_user_message !== null) return;
 
-  appendStoreRecord(store, storeFile, {
-    run_nonce: runNonce,
-    step: state.procedure.current_step,
-    operation: "execution_rejected",
-    deterministic_validation: {
-      pass: false,
-      reason
-    },
-    received_event: trigger
-  });
-
-  state.status = "awaiting_chatgpt_execution";
-  state.procedure.awaiting = {
-    type: "chatgpt_execution",
-    step: state.procedure.current_step,
-    reason: "incoming_event_rejected"
-  };
-  state.last_rejected_event = { timestamp: now(), reason };
-  state.updated_at = now();
-  writeJson(stateFile, stateWrapper);
+  const candidate = trigger?.nextmessage;
+  if (
+    candidate?.role === "user" &&
+    Array.isArray(candidate.parts) &&
+    candidate.parts.some(part => typeof part?.text === "string")
+  ) {
+    store.initial_user_message = candidate;
+    writeJson(storeFile, store);
+    appendMessage(messages, messagesFile, {
+      kind: "initial_user_message",
+      role: "user",
+      parts: candidate.parts
+    });
+  }
 }
 
 async function main() {
-  if (!apiKey) throw new Error("GEMINI_API_KEY is missing from the GitHub Actions environment.");
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is missing from the GitHub Actions environment.");
+  }
 
   const agentsText = readText(agentsPath);
   const steps = extractProcedureSteps(agentsText);
@@ -815,84 +813,55 @@ async function main() {
   state.updated_at = now();
 
   if (state.procedure.current_step === null || state.status === "completed") {
-    persistRejectedExecution({
-      runNonce,
-      state,
-      stateWrapper,
-      stateFile,
-      messages,
-      messagesFile,
-      store,
-      storeFile,
-      trigger,
-      reason: "This run is already complete and is not awaiting another execution."
-    });
-    return;
-  }
-
-  const step = state.procedure.current_step;
-  const incoming = parseIncomingExecution(trigger, step);
-
-  if (!incoming.accepted) {
-    persistRejectedExecution({
-      runNonce,
-      state,
-      stateWrapper,
-      stateFile,
-      messages,
-      messagesFile,
-      store,
-      storeFile,
-      trigger,
-      reason: incoming.reason
-    });
-
+    const systemMessage = {
+      kind: "system_validation_message",
+      role: "system",
+      timestamp: now(),
+      step: null,
+      parts: [{ text: "Deterministic validation: this run is already complete and is not awaiting another execution." }]
+    };
+    appendMessage(messages, messagesFile, systemMessage);
+    state.updated_at = now();
+    writeJson(stateFile, stateWrapper);
     console.log(JSON.stringify({
       runtime: "Node.js",
       mode: "event-driven-controller",
       run_nonce: runNonce,
-      current_step: state.procedure.current_step,
       status: state.status,
-      accepted_execution: false,
-      reason: incoming.reason
+      processed: false,
+      reason: "run already complete"
     }, null, 2));
     return;
   }
 
-  const execution = incoming.execution;
-  const controllerValidation = buildControllerValidation(step, execution, state);
+  const step = state.procedure.current_step;
+  preserveInitialUserMessageFromTrigger(store, storeFile, messages, messagesFile, trigger);
 
-  if (step === 0 && store.initial_user_message === null) {
-    const userRequest = extractUserRequestFromStep0(execution.return_schema);
-    if (userRequest !== null) {
-      store.initial_user_message = {
-        role: "user",
-        parts: [{ text: userRequest }]
-      };
-      writeJson(storeFile, store);
-      appendMessage(messages, messagesFile, {
-        kind: "initial_user_message",
-        role: "user",
-        parts: [{ text: userRequest }]
-      });
-    }
-  }
+  const inspection = inspectIncomingEvent(trigger, step);
+  const execution = inspection.execution;
+  const validationSystemMessage = buildValidationSystemMessage(step, inspection.failures);
 
   appendMessage(messages, messagesFile, {
-    kind: "chatgpt_execution",
+    kind: "incoming_execution_candidate",
     timestamp: now(),
     step,
     source_role: execution.source_role,
     return_schema: execution.return_schema
   });
 
+  if (validationSystemMessage) {
+    appendMessage(messages, messagesFile, validationSystemMessage);
+  }
+
   appendStoreRecord(store, storeFile, {
     run_nonce: runNonce,
     step,
-    operation: "chatgpt_execution_received",
+    operation: "incoming_execution_candidate_received",
     execution_source_role: execution.source_role,
     execution_return: execution.return_schema,
-    controller_validation: controllerValidation
+    validation_system_message: validationSystemMessage
+      ? validationSystemMessage.parts[0].text
+      : null
   });
 
   state.status = "supervising";
@@ -904,7 +873,7 @@ async function main() {
     runNonce,
     step,
     execution,
-    controllerValidation,
+    validationSystemMessage,
     statedRequirements,
     messages,
     messagesFile,
@@ -913,7 +882,13 @@ async function main() {
     agentsText
   });
 
-  recordExecutionAttempt(state, step, execution, controllerValidation, supervision);
+  recordExecutionAttempt(
+    state,
+    step,
+    execution,
+    inspection.failures,
+    supervision
+  );
 
   if (supervision.gate_result === "PASS") {
     advanceAfterPass(state, steps, step);
@@ -931,6 +906,7 @@ async function main() {
     model,
     run_nonce: runNonce,
     processed_execution_step: step,
+    validation_system_message_inserted: Boolean(validationSystemMessage),
     supervisory_gate_result: supervision.gate_result,
     current_step: state.procedure.current_step,
     completed_steps: state.procedure.completed_steps,
