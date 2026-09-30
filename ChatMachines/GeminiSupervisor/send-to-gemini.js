@@ -3,16 +3,17 @@ const { execFileSync } = require("node:child_process");
 
 const root = "ChatMachines/GeminiSupervisor";
 const webAppUrl = process.env.APPS_SCRIPT_WEB_APP_URL;
-const outputPath = `${root}/drive-transfer-test.json`;
+const outputPath = `${root}/Agents.md`;
 
-function driveJsonTransfer(input) {
-  const jsonText = JSON.stringify(input.document, null, 2);
-  const file = DriveApp.createFile(input.file_name, jsonText, "application/json");
-  const blob = DriveApp.getFileById(file.getId()).getBlob();
+function driveFolderTransfer(input) {
+  const folder = DriveApp.getFolderById(input.folder_id);
+  const files = folder.getFilesByName(input.file_name);
+  if (!files.hasNext()) throw new Error(`${input.file_name} not found in folder`);
+  const file = files.next();
+  const blob = file.getBlob();
   return {
-    drive_file_id: file.getId(),
-    file_name: input.file_name,
-    mime_type: "application/json",
+    file_name: file.getName(),
+    mime_type: blob.getContentType(),
     content_base64: Utilities.base64Encode(blob.getBytes())
   };
 }
@@ -24,14 +25,10 @@ async function main() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      sourcecode: `(${driveJsonTransfer.toString()})`,
+      sourcecode: `(${driveFolderTransfer.toString()})`,
       arguments: {
-        file_name: "drive-transfer-test.json",
-        document: {
-          transfer_test: true,
-          path: "Google Drive -> Apps Script -> GitHub Actions -> GitHub commit",
-          nonce: "2026-09-30-json-transfer-test"
-        }
+        folder_id: "1p_AumI0cvh0HMy112zHkAOKhoO_J8-y7",
+        file_name: "Agents.md"
       }
     }),
     redirect: "follow",
@@ -50,15 +47,18 @@ async function main() {
   }
 
   fs.writeFileSync(outputPath, Buffer.from(result.content_base64, "base64"));
-  JSON.parse(fs.readFileSync(outputPath, "utf8"));
 
   execFileSync("git", ["config", "user.name", "github-actions[bot]"]);
   execFileSync("git", ["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"]);
   execFileSync("git", ["add", outputPath]);
-  execFileSync("git", ["commit", "-m", "Commit Drive JSON transfer test"]);
+  const changed = execFileSync("git", ["status", "--porcelain", "--", outputPath], { encoding: "utf8" }).trim();
+  if (!changed) {
+    console.log("Agents.md already matches Drive; nothing to commit.");
+    return;
+  }
+  execFileSync("git", ["commit", "-m", "Transfer Agents.md from Drive"]);
   execFileSync("git", ["push", "origin", "HEAD:main"], { stdio: "inherit" });
-
-  console.log(`Transferred and committed ${outputPath}; Drive file ${result.drive_file_id}.`);
+  console.log(`Transferred and committed ${outputPath}.`);
 }
 
 main().catch(error => {
