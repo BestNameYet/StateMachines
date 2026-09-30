@@ -2,6 +2,21 @@
 
 This file describes the evaluation given to a semantic operator. It does not change Agents.md.
 
+## Mandatory first evaluation step: rewrite every request in main form
+
+Immediately before any other evaluation step, rewrite every user request in main form using the five-main-question rubric below. This applies to every request, including short follow-ups, corrections, and instructions to continue. Preserve the original utterance verbatim alongside the rewrite.
+
+Resolve references using relevant context and include applicable governing requirements with their sources. Split the effective instruction U into individually checkable requirements. For each requirement, explicitly write:
+1. Instruction type.
+2. Actor or subject.
+3. Action, relationship, or state.
+4. Target.
+5. Applicable limits and details, with each control recorded separately under the existing subquestions.
+
+Retain exact source words and provenance. Preserve all actions, prohibitions, permissions, questions, corrections, quantities, included sets, conditions, dependencies, timing, methods, and presentation requirements. Mark unspecified or unresolved parts explicitly; do not invent them. The rewrite must preserve the meaning and complete scope of U.
+
+Complete and record this main-form rewrite before comparing P, assessing satisfaction, applying tests, or evaluating failure patterns and analogies. Use the recorded main form throughout the subsequent evaluation together with its original sources.
+
 ## What the operator receives
 
 **The user's words:** Keep the current utterance exactly as written. Words such as "it," "that," and "proceed" may point to an earlier request. Read the relevant earlier exchange to determine what they point to. Do not treat the agent's description of the request as a replacement for what the user said.
