@@ -41,5 +41,17 @@ jobs:
             echo "No run state/context/store change."
             exit 0
           fi
-          git commit -m "Advance Gemini Supervisor run"
+          META=$(node - <<'NODE'
+          const fs = require('node:fs');
+          const root = 'ChatMachines/GeminiSupervisor';
+          const trigger = JSON.parse(fs.readFileSync(`${root}/nextmessage/nextmessage.json`, 'utf8'));
+          const run = trigger.run_nonce;
+          const step = trigger.execution?.step;
+          const state = JSON.parse(fs.readFileSync(`${root}/runs/${run}/state.json`, 'utf8')).current_state;
+          const rec = state.procedure?.step_records?.[String(step)];
+          const gate = rec?.transition_value || rec?.supervisory_return?.supervisory_gate?.gate_result || 'UNKNOWN';
+          process.stdout.write(`${run} Step ${step} ${gate}`);
+          NODE
+          )
+          git commit -m "Gemini Supervisor checkpoint: ${META}"
           git push origin HEAD:main

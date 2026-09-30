@@ -1,39 +1,821 @@
-const fs=require('node:fs'),path=require('node:path');
-const root='ChatMachines/GeminiSupervisor',triggerPath=`${root}/nextmessage/nextmessage.json`,agentsPath=`${root}/Agents.md`,testsPath=`${root}/evaluation-tests.md`,defsPath=`${root}/evaluator-definitions.md`;
-const apiKey=process.env.GEMINI_API_KEY,model=process.env.GEMINI_MODEL||'gemini-3.8-flash',PASSFAIL=new Set(['PASS','FAIL']),execRole='ChatGPT model',execForbidden='Gemini model',supRole='Gemini model',supForbidden='ChatGPT model';
-const readJson=p=>JSON.parse(fs.readFileSync(p,'utf8')),readText=p=>fs.readFileSync(p,'utf8'),now=()=>new Date().toISOString(),nonEmpty=v=>typeof v==='string'&&v.trim().length>0;
-function writeJson(p,v){fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,JSON.stringify(v,null,2)+'\n')}
-function nonce(v){if(typeof v!=='string'||!/^[a-zA-Z0-9_-]+$/.test(v))throw new Error(`Invalid run_nonce: ${v}`);return v}
-function stepsFrom(s){const a=[],seen=new Set(),r=/^## Step\s+(\d+)\s*$/gm;let m;while((m=r.exec(s))){const n=+m[1];if(!seen.has(n)){seen.add(n);a.push(n)}}if(!a.length)throw new Error('Agents.md contains no ## Step N headings.');return a.sort((a,b)=>a-b)}
-function stepBlock(s,n){const h=new RegExp(`^## Step\\s+${n}\\s*$`,'m'),m=h.exec(s);if(!m)throw new Error(`Missing Step ${n}.`);const rest=s.slice(m.index+m[0].length),nx=/^## Step\s+\d+\s*$/m.exec(rest),end=nx?m.index+m[0].length+nx.index:s.length;return s.slice(m.index,end).trim()}
-function contextFiles(step){if(step===0)return['Agents.md','evaluator-definitions.md'];if(step===3)return['Agents.md','evaluation-tests.md','evaluator-definitions.md'];return['Agents.md']}
-function initRun(runNonce,steps){const dir=path.join(root,'runs',runNonce),stateFile=path.join(dir,'state.json'),messagesFile=path.join(dir,'messages.json'),storeFile=path.join(dir,'store','store.json'),exists=[stateFile,messagesFile,storeFile].some(fs.existsSync);let sw,msg,store;
- if(!exists){sw={current_state:{run_nonce:runNonce,status:'awaiting_chatgpt_execution',created_at:now(),updated_at:now(),event_count:0,procedure:{current_step:steps[0],completed_steps:[],remaining_steps:[...steps],step_records:{},awaiting:{type:'chatgpt_execution',step:steps[0]}}}};msg={run_nonce:runNonce,contents:[]};store={run_nonce:runNonce,created_at:now(),initial_user_message:null,records:[]};writeJson(stateFile,sw);writeJson(messagesFile,msg);writeJson(storeFile,store)}
- else{if(![stateFile,messagesFile,storeFile].every(fs.existsSync))throw new Error(`Incomplete run container ${dir}`);sw=readJson(stateFile);msg=readJson(messagesFile);store=readJson(storeFile);for(const [n,v] of [['state',sw.current_state?.run_nonce],['messages',msg.run_nonce],['store',store.run_nonce]])if(v!==runNonce)throw new Error(`Mismatched run_nonce in ${n}`);const s=sw.current_state;s.procedure=s.procedure||{};s.procedure.completed_steps=Array.isArray(s.procedure.completed_steps)?s.procedure.completed_steps:[];s.procedure.step_records=s.procedure.step_records||{};s.event_count=Number.isInteger(s.event_count)?s.event_count:0;s.procedure.remaining_steps=steps.filter(x=>!s.procedure.completed_steps.includes(x));if(s.procedure.current_step!==null&&!steps.includes(s.procedure.current_step))s.procedure.current_step=s.procedure.remaining_steps[0]??null;if(s.procedure.current_step===null&&s.procedure.remaining_steps.length)s.procedure.current_step=s.procedure.remaining_steps[0];s.procedure.awaiting=s.procedure.current_step===null?null:{type:'chatgpt_execution',step:s.procedure.current_step}}
- return{stateFile,messagesFile,storeFile,sw,state:sw.current_state,msg,store}}
-function addMsg(msg,file,x){msg.contents=Array.isArray(msg.contents)?msg.contents:[];msg.contents.push(x);writeJson(file,msg)}
-function addStore(store,file,x){store.records=Array.isArray(store.records)?store.records:[];const r={record_id:`${Date.now()}-${store.records.length+1}`,timestamp:now(),...x};store.records.push(r);writeJson(file,store);return r}
-function findControl(v,p=[]){if(Array.isArray(v)){for(let i=0;i<v.length;i++){const r=findControl(v[i],[...p,i]);if(r)return r}return null}if(!v||typeof v!=='object')return null;if(['role_required','role_forbidden','role_completed','role_verification','return_schema_completed'].some(k=>Object.prototype.hasOwnProperty.call(v,k)))return{p,v};for(const[k,c]of Object.entries(v)){const r=findControl(c,[...p,k]);if(r)return r}return null}
-function controlFailures(schema){const c=findControl(schema),f=[];if(!c)return['No execution return object contains required role/control fields.'];const r=c.v,p=c.p.length?c.p.join('.'):'$';if(r.role_required!==execRole)f.push(`${p}.role_required must equal "${execRole}".`);if(r.role_forbidden!==execForbidden)f.push(`${p}.role_forbidden must equal "${execForbidden}".`);if(r.role_completed!==execRole)f.push(`${p}.role_completed must equal "${execRole}".`);if(!nonEmpty(r.role_verification?.method))f.push(`${p}.role_verification.method must be non-empty.`);if(!nonEmpty(r.role_verification?.evidence))f.push(`${p}.role_verification.evidence must be non-empty.`);if(r.return_schema_completed!==true)f.push(`${p}.return_schema_completed must be true.`);return f}
-function step3Loop(s){const x=s?.Step_3||s||{},val=v=>v&&typeof v==='object'&&'value'in v?v.value:v,l=val(x?.G?.Loop_Decision),rt=val(x?.G?.return_to),c=val(x?.return_schema_completed??x?.step_3_completed);return(typeof l==='string'&&l.toLowerCase()==='true')||(typeof rt==='string'&&rt.includes('Step_3.A'))||c===false||c==='false'}
-function inspect(trigger,step){const f=[],e0=trigger?.execution;let e;if(!e0||typeof e0!=='object'||Array.isArray(e0)){f.push('The trigger does not contain an execution object. Raw input is not a ChatGPT execution return for the active step.');e={source_role:null,step,return_schema:Object.prototype.hasOwnProperty.call(trigger||{},'nextmessage')?trigger.nextmessage:trigger}}else{e={source_role:e0.source_role??null,step:Number.isInteger(e0.step)?e0.step:step,return_schema:e0.return_schema&&typeof e0.return_schema==='object'&&!Array.isArray(e0.return_schema)?e0.return_schema:e0};if(e0.source_role!==execRole)f.push(`execution.source_role must equal "${execRole}".`);if(!Number.isInteger(e0.step))f.push('execution.step must be an integer.');else if(e0.step!==step)f.push(`Execution Step ${e0.step} does not match current Step ${step}.`);if(!e0.return_schema||typeof e0.return_schema!=='object'||Array.isArray(e0.return_schema))f.push('execution.return_schema must be a JSON object.')}
- if(e.source_role!==execRole)f.push(`Execution source is not server/controller-identified as "${execRole}".`);f.push(...controlFailures(e.return_schema));if(step===0&&!nonEmpty(e.return_schema?.start_of_turn?.user_request))f.push('Step 0 must contain start_of_turn.user_request as a non-empty verbatim user request.');if(step===3&&step3Loop(e.return_schema))f.push('Step 3 return indicates its internal loop is incomplete.');return{execution:e,failures:[...new Set(f)]}}
-function validationMsg(step,f){if(!f.length)return null;return{kind:'system_validation_message',role:'system',timestamp:now(),step,parts:[{text:[`DETERMINISTIC PRE-SUPERVISION VALIDATION FAILED FOR STEP ${step}.`,'This is controller evidence only; it is not an execution return schema and it does not replace the Supervisory Gate.','The submitted payload must still be evaluated by the Gemini supervisor under Agents.md.','Validation findings:',...f.map((x,i)=>`${i+1}. ${x}`)].join('\n')}]}}
-function terminalEval(k,v){return{[`${k}_eval`]:{[k]:v,supervisor_eval_result:null,supervisor_eval_comment:null}}}
-function evalTemplate(v){if(Array.isArray(v))return v.map((x,i)=>x!==null&&typeof x==='object'?evalTemplate(x):terminalEval(String(i),x));if(v!==null&&typeof v==='object'){const o={};for(const[k,x]of Object.entries(v))x!==null&&typeof x==='object'?o[k]=evalTemplate(x):Object.assign(o,terminalEval(k,x));return o}return terminalEval('value',v)}
-function gateTemplate(step,ret){let g={role_required:supRole,role_forbidden:supForbidden,role_completed:null,role_verification:{method:null,evidence:null},instruction:'Evaluate only the supplied execution candidate. For every terminal execution key K use K_eval, preserve K and its execution value exactly, then populate supervisor_eval_result and supervisor_eval_comment. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step.',granular_evaluation:evalTemplate(ret),step_level_evaluation:{supervisor_eval_result:null,supervisor_eval_comment:null},failures:[],gate_result:null};if(step===0||step===3)g={evaluation_documents_read:null,...g};return{supervisory_gate:g}}
-function systemText(step,agents){const p=[agents];if(step===0)p.unshift(readText(defsPath));if(step===3){p.unshift(readText(defsPath));p.unshift(readText(testsPath))}p.push('SUPERVISORY EVALUATION FORMAT: Agents.md is authoritative. The runtime-generated template instantiates the Agents.md *_eval contract. For each terminal execution key K/value V, fill K_eval as {K:V, supervisor_eval_result:PASS|FAIL, supervisor_eval_comment:<specific comment>}. Preserve K and V exactly.');p.push('ROLE BOUNDARY: You are Gemini and may perform only the Supervisory Gate. Never execute or simulate a ChatGPT-owned execution step.');return p.join('\n\n')}
-async function callGemini(contents,extra,step,agents){const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},body:JSON.stringify({system_instruction:{parts:[{text:[systemText(step,agents),extra].filter(Boolean).join('\n\n')}]},contents}),signal:AbortSignal.timeout(180000)}),text=await response.text();let b;try{b=JSON.parse(text)}catch{throw new Error(`Gemini returned non-JSON HTTP ${response.status}: ${text}`)}if(!response.ok)throw new Error(`Gemini HTTP ${response.status}: ${JSON.stringify(b.error||b)}`);const r=b.candidates?.[0]?.content;if(r?.role!=='model'||!Array.isArray(r.parts)||!r.parts.length)throw new Error(`Gemini returned no model content: ${JSON.stringify(b)}`);return r}
-function parseReply(r){const t=r.parts.map(p=>p.text||'').join('\n').trim();try{return JSON.parse(t)}catch(e){const m=t.match(/```(?:json)?\s*([\s\S]*?)```/i);if(m)return JSON.parse(m[1].trim());throw e}}
-function gateValue(s){const v=s?.supervisory_gate?.gate_result,u=typeof v==='string'?v.trim().toUpperCase():'';return{valid:PASSFAIL.has(u),value:PASSFAIL.has(u)?u:null}}
-function roleValid(s){const g=s?.supervisory_gate;if(!g||typeof g!=='object')return'Missing supervisory_gate.';if(g.role_required!==supRole)return`role_required must be ${supRole}.`;if(g.role_forbidden!==supForbidden)return`role_forbidden must be ${supForbidden}.`;if(g.role_completed!==supRole)return`role_completed must be ${supRole}.`;if(!nonEmpty(g.role_verification?.method))return'role_verification.method missing.';if(!nonEmpty(g.role_verification?.evidence))return'role_verification.evidence missing.';return null}
-const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-function evalShape(exec,ev,p=[]){const f=[];if(Array.isArray(exec)){if(!Array.isArray(ev)||ev.length!==exec.length)return[`${p.join('.')||'$'} evaluation array length mismatch.`];exec.forEach((x,i)=>{if(x!==null&&typeof x==='object')f.push(...evalShape(x,ev[i],[...p,i]));else{const k=String(i),r=ev[i]?.[`${k}_eval`],q=[...p,i].join('.');if(!r)f.push(`${q}: missing ${k}_eval.`);else{if(!Object.prototype.hasOwnProperty.call(r,k)||!same(r[k],x))f.push(`${q}: execution value not preserved.`);if(!PASSFAIL.has(String(r.supervisor_eval_result||'').toUpperCase()))f.push(`${q}: supervisor_eval_result must be PASS or FAIL.`);if(!nonEmpty(r.supervisor_eval_comment))f.push(`${q}: supervisor_eval_comment missing.`)}}});return f}
- if(exec!==null&&typeof exec==='object'){if(!ev||typeof ev!=='object'||Array.isArray(ev))return[`${p.join('.')||'$'} evaluation object missing.`];for(const[k,x]of Object.entries(exec)){if(x!==null&&typeof x==='object')f.push(...evalShape(x,ev[k],[...p,k]));else{const r=ev[`${k}_eval`],q=[...p,k].join('.');if(!r)f.push(`${q}: missing ${k}_eval.`);else{if(!Object.prototype.hasOwnProperty.call(r,k)||!same(r[k],x))f.push(`${q}: execution key/value not preserved.`);if(!PASSFAIL.has(String(r.supervisor_eval_result||'').toUpperCase()))f.push(`${q}: supervisor_eval_result must be PASS or FAIL.`);if(!nonEmpty(r.supervisor_eval_comment))f.push(`${q}: supervisor_eval_comment missing.`)}}}return f}return f}
-function evalValid(s,ret){const g=s?.supervisory_gate,f=evalShape(ret,g?.granular_evaluation),r=String(g?.step_level_evaluation?.supervisor_eval_result||'').toUpperCase();if(!PASSFAIL.has(r))f.push('step_level_evaluation.supervisor_eval_result must be PASS or FAIL.');if(!nonEmpty(g?.step_level_evaluation?.supervisor_eval_comment))f.push('step_level_evaluation.supervisor_eval_comment missing.');return f}
-async function supervise({runNonce,step,execution,vmsg,reqs,msg,messagesFile,store,storeFile,agents}){const ret=execution.return_schema,t=gateTemplate(step,ret),prompt=[`Perform only the Supervisory Gate for Step ${step}.`,'Submitted execution candidate:',JSON.stringify(ret,null,2),'Governing Agents.md Step block:',stepBlock(agents,step),'Populate this supervisory template exactly. Do not rename *_eval keys or alter the preserved execution key/value:',JSON.stringify(t,null,2),'For every *_eval record set supervisor_eval_result to PASS or FAIL and populate supervisor_eval_comment.','Set role_completed to "Gemini model" and populate role_verification from this API/runtime context.','Return only valid JSON.'];if(step===0)prompt.splice(1,0,'Read evaluator-definitions.md completely and use it throughout this Step 0 Supervisory Gate. Set evaluation_documents_read to ["evaluator-definitions.md"].');if(step===3)prompt.splice(1,0,'Read evaluation-tests.md and evaluator-definitions.md completely and use both throughout Step 3. Populate evaluation_documents_read with both filenames.');if((step===3||step===4)&&reqs.length)prompt.push('Step 2 stated requirements:',JSON.stringify(reqs,null,2));let user={role:'user',parts:[{text:prompt.join('\n\n')}]},repair='',n=0;while(true){const reply=await callGemini([user],[vmsg?.parts?.[0]?.text,repair].filter(Boolean).join('\n\n'),step,agents);addMsg(msg,messagesFile,{kind:n?'gemini_supervisory_gate_repair':'gemini_supervisory_gate',step,attempt:n+1,role:'model',parts:reply.parts});let s,parseErr;try{s=parseReply(reply)}catch(e){parseErr=e}if(s){const gv=gateValue(s),rv=roleValid(s),ef=evalValid(s,ret);if(gv.valid&&!rv&&!ef.length){addStore(store,storeFile,{run_nonce:runNonce,step,operation:n?'supervisory_gate_repair':'supervisory_gate',context_files:contextFiles(step),model,return_schema:s,transition_value:gv.value});return{schema:s,gate_result:gv.value}}repair=['SYSTEM CORRECTION FOR THIS SUPERVISORY RESPONSE:',!gv.valid?'Missing/invalid supervisory_gate.gate_result.':'',rv||'',...ef,'Repair only the Supervisory Gate. Preserve every original execution key/value in its *_eval record. Return only valid JSON.'].filter(Boolean).join('\n')}else repair=`SYSTEM CORRECTION: prior response was not valid JSON: ${parseErr?.message||'unknown error'}. Repair only the Supervisory Gate and return valid JSON.`;n++;user={role:'user',parts:[{text:'Repair your immediately preceding Supervisory Gate response according to the system correction. Return only corrected supervisory JSON.'}]}}}
-function recordAttempt(state,step,e,f,s){const k=String(step),old=state.procedure.step_records[k],a=Array.isArray(old?.attempts)?old.attempts:[],n=a.length+1;a.push({attempt:n,received_at:now(),execution_source_role:e.source_role,execution_return:e.return_schema,deterministic_validation_failures:f,supervisory_return:s.schema,transition_key:'supervisory_gate.gate_result',transition_value:s.gate_result});state.procedure.step_records[k]={latest_attempt:n,attempts:a,execution_return:e.return_schema,supervisory_return:s.schema,transition_key:'supervisory_gate.gate_result',transition_value:s.gate_result,updated_at:now()}}
-function transition(state,steps,step,s){if(s.gate_result==='PASS'){if(!state.procedure.completed_steps.includes(step))state.procedure.completed_steps.push(step);state.procedure.remaining_steps=steps.filter(x=>!state.procedure.completed_steps.includes(x));const nx=steps[steps.indexOf(step)+1];if(nx===undefined){state.procedure.current_step=null;state.procedure.awaiting=null;state.status='completed'}else{state.procedure.current_step=nx;state.procedure.awaiting={type:'chatgpt_execution',step:nx};state.status='awaiting_chatgpt_execution'}}else{state.procedure.current_step=step;state.procedure.awaiting={type:'chatgpt_execution',step,reason:'supervisory_gate_fail'};state.status='awaiting_chatgpt_execution';state.last_supervisory_failure={step,timestamp:now(),supervisory_return:s.schema}}}
-function preserveInitial(store,storeFile,msg,messagesFile,trigger){if(store.initial_user_message!==null)return;const c=trigger?.nextmessage;if(c?.role==='user'&&Array.isArray(c.parts)&&c.parts.some(p=>typeof p?.text==='string')){store.initial_user_message=c;writeJson(storeFile,store);addMsg(msg,messagesFile,{kind:'initial_user_message',role:'user',parts:c.parts})}}
-async function main(){if(!apiKey)throw new Error('GEMINI_API_KEY is missing.');const agents=readText(agentsPath),steps=stepsFrom(agents),trigger=readJson(triggerPath),runNonce=nonce(trigger.run_nonce),r=initRun(runNonce,steps),{stateFile,messagesFile,storeFile,sw,state,msg,store}=r;state.event_count++;state.updated_at=now();if(state.procedure.current_step===null||state.status==='completed'){addMsg(msg,messagesFile,{kind:'system_validation_message',role:'system',timestamp:now(),step:null,parts:[{text:'Deterministic validation: run already complete.'}]});writeJson(stateFile,sw);return}const step=state.procedure.current_step;preserveInitial(store,storeFile,msg,messagesFile,trigger);const i=inspect(trigger,step),e=i.execution,vmsg=validationMsg(step,i.failures);addMsg(msg,messagesFile,{kind:'incoming_execution_candidate',timestamp:now(),step,source_role:e.source_role,return_schema:e.return_schema});if(vmsg)addMsg(msg,messagesFile,vmsg);addStore(store,storeFile,{run_nonce:runNonce,step,operation:'incoming_execution_candidate_received',execution_source_role:e.source_role,execution_return:e.return_schema,validation_system_message:vmsg?.parts?.[0]?.text||null});state.status='supervising';writeJson(stateFile,sw);const reqs=state?.procedure?.step_records?.['2']?.execution_return?.step_2_record?.stated_requirements||state?.procedure?.step_records?.['2']?.execution_return?.stated_requirements||[];const s=await supervise({runNonce,step,execution:e,vmsg,reqs:Array.isArray(reqs)?reqs:[],msg,messagesFile,store,storeFile,agents});recordAttempt(state,step,e,i.failures,s);transition(state,steps,step,s);state.updated_at=now();writeJson(stateFile,sw);console.log(JSON.stringify({runtime:'Node.js',node_version:process.version,mode:'event-driven-controller',model,run_nonce:runNonce,processed_execution_step:step,validation_system_message_inserted:Boolean(vmsg),supervisory_gate_result:s.gate_result,current_step:state.procedure.current_step,completed_steps:state.procedure.completed_steps,awaiting:state.procedure.awaiting,status:state.status},null,2))}
-main().catch(e=>{console.error(e);process.exitCode=1});
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = 'ChatMachines/GeminiSupervisor';
+const triggerPath = `${root}/nextmessage/nextmessage.json`;
+const agentsPath = `${root}/Agents.md`;
+const testsPath = `${root}/evaluation-tests.md`;
+
+const apiKey = process.env.GEMINI_API_KEY;
+const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+const PASSFAIL = new Set(['PASS', 'FAIL']);
+const execRole = 'ChatGPT model';
+const execForbidden = 'Gemini model';
+const supRole = 'Gemini model';
+const supForbidden = 'ChatGPT model';
+
+const now = () => new Date().toISOString();
+const readText = p => fs.readFileSync(p, 'utf8');
+const readJson = p => JSON.parse(readText(p));
+const nonEmpty = v => typeof v === 'string' && v.trim().length > 0;
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+function writeJson(p, value) {
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, JSON.stringify(value, null, 2) + '\n');
+}
+
+function nonce(value) {
+  if (typeof value !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(value)) {
+    throw new Error(`Invalid run_nonce: ${value}`);
+  }
+  return value;
+}
+
+function stepsFrom(agents) {
+  const out = [];
+  const seen = new Set();
+  const re = /^## Step\s+(\d+)\s*$/gm;
+  let match;
+  while ((match = re.exec(agents))) {
+    const step = Number(match[1]);
+    if (!seen.has(step)) {
+      seen.add(step);
+      out.push(step);
+    }
+  }
+  if (!out.length) throw new Error('Agents.md contains no ## Step N headings.');
+  return out.sort((a, b) => a - b);
+}
+
+function stepBlock(agents, step) {
+  const heading = new RegExp(`^## Step\\s+${step}\\s*$`, 'm');
+  const match = heading.exec(agents);
+  if (!match) throw new Error(`Missing Step ${step}.`);
+  const rest = agents.slice(match.index + match[0].length);
+  const next = /^## Step\s+\d+\s*$/m.exec(rest);
+  const end = next ? match.index + match[0].length + next.index : agents.length;
+  return agents.slice(match.index, end).trim();
+}
+
+function contextFiles(step) {
+  return step === 3 ? ['Agents.md', 'evaluation-tests.md'] : ['Agents.md'];
+}
+
+function initRun(runNonce, steps) {
+  const dir = path.join(root, 'runs', runNonce);
+  const stateFile = path.join(dir, 'state.json');
+  const messagesFile = path.join(dir, 'messages.json');
+  const storeFile = path.join(dir, 'store', 'store.json');
+  const exists = [stateFile, messagesFile, storeFile].some(fs.existsSync);
+  let wrapper, messages, store;
+
+  if (!exists) {
+    wrapper = {
+      current_state: {
+        run_nonce: runNonce,
+        status: 'awaiting_chatgpt_execution',
+        created_at: now(),
+        updated_at: now(),
+        event_count: 0,
+        procedure: {
+          current_step: steps[0],
+          completed_steps: [],
+          remaining_steps: [...steps],
+          step_records: {},
+          awaiting: { type: 'chatgpt_execution', step: steps[0] }
+        }
+      }
+    };
+    messages = { run_nonce: runNonce, contents: [] };
+    store = { run_nonce: runNonce, created_at: now(), initial_user_message: null, records: [] };
+    writeJson(stateFile, wrapper);
+    writeJson(messagesFile, messages);
+    writeJson(storeFile, store);
+  } else {
+    if (![stateFile, messagesFile, storeFile].every(fs.existsSync)) {
+      throw new Error(`Incomplete run container ${dir}`);
+    }
+    wrapper = readJson(stateFile);
+    messages = readJson(messagesFile);
+    store = readJson(storeFile);
+    for (const [label, value] of [
+      ['state', wrapper.current_state?.run_nonce],
+      ['messages', messages.run_nonce],
+      ['store', store.run_nonce]
+    ]) {
+      if (value !== runNonce) throw new Error(`Mismatched run_nonce in ${label}`);
+    }
+    const state = wrapper.current_state;
+    state.procedure = state.procedure || {};
+    state.procedure.completed_steps = Array.isArray(state.procedure.completed_steps)
+      ? state.procedure.completed_steps : [];
+    state.procedure.step_records = state.procedure.step_records || {};
+    state.event_count = Number.isInteger(state.event_count) ? state.event_count : 0;
+    state.procedure.remaining_steps = steps.filter(s => !state.procedure.completed_steps.includes(s));
+    if (state.procedure.current_step !== null && !steps.includes(state.procedure.current_step)) {
+      state.procedure.current_step = state.procedure.remaining_steps[0] ?? null;
+    }
+    if (state.procedure.current_step === null && state.procedure.remaining_steps.length) {
+      state.procedure.current_step = state.procedure.remaining_steps[0];
+    }
+    state.procedure.awaiting = state.procedure.current_step === null
+      ? null : { type: 'chatgpt_execution', step: state.procedure.current_step };
+  }
+
+  return {
+    stateFile,
+    messagesFile,
+    storeFile,
+    wrapper,
+    state: wrapper.current_state,
+    messages,
+    store
+  };
+}
+
+function addMessage(messages, file, entry) {
+  messages.contents = Array.isArray(messages.contents) ? messages.contents : [];
+  messages.contents.push(entry);
+  writeJson(file, messages);
+}
+
+function addStore(store, file, entry) {
+  store.records = Array.isArray(store.records) ? store.records : [];
+  const record = {
+    record_id: `${Date.now()}-${store.records.length + 1}`,
+    timestamp: now(),
+    ...entry
+  };
+  store.records.push(record);
+  writeJson(file, store);
+  return record;
+}
+
+function get(obj, dotted) {
+  return dotted.split('.').reduce((value, key) => value?.[key], obj);
+}
+
+function completionValue(value) {
+  if (value && typeof value === 'object' && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, 'value')) {
+    return value.value;
+  }
+  return value;
+}
+
+function findControl(value, pathParts = []) {
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      const found = findControl(value[i], [...pathParts, i]);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (!value || typeof value !== 'object') return null;
+  if (['role_required', 'role_forbidden', 'role_completed', 'role_verification', 'return_schema_completed']
+      .some(key => Object.prototype.hasOwnProperty.call(value, key))) {
+    return { path: pathParts, value };
+  }
+  for (const [key, child] of Object.entries(value)) {
+    const found = findControl(child, [...pathParts, key]);
+    if (found) return found;
+  }
+  return null;
+}
+
+function controlFailures(schema) {
+  const control = findControl(schema);
+  if (!control) return ['No execution return object contains required role/control fields.'];
+  const record = control.value;
+  const prefix = control.path.length ? control.path.join('.') : '$';
+  const failures = [];
+  if (record.role_required !== execRole) failures.push(`${prefix}.role_required must equal "${execRole}".`);
+  if (record.role_forbidden !== execForbidden) failures.push(`${prefix}.role_forbidden must equal "${execForbidden}".`);
+  if (record.role_completed !== execRole) failures.push(`${prefix}.role_completed must equal "${execRole}".`);
+  if (!nonEmpty(record.role_verification?.method)) failures.push(`${prefix}.role_verification.method must be non-empty.`);
+  if (!nonEmpty(record.role_verification?.evidence)) failures.push(`${prefix}.role_verification.evidence must be non-empty.`);
+  if (completionValue(record.return_schema_completed) !== true) {
+    failures.push(`${prefix}.return_schema_completed must resolve to true.`);
+  }
+  return failures;
+}
+
+function requireString(failures, obj, pathName) {
+  if (!nonEmpty(get(obj, pathName))) failures.push(`${pathName} must be a non-empty string.`);
+}
+
+function requireArray(failures, obj, pathName) {
+  if (!Array.isArray(get(obj, pathName))) failures.push(`${pathName} must be an array.`);
+}
+
+function validateStep(step, schema) {
+  const failures = [...controlFailures(schema)];
+
+  if (step === 0) {
+    const x = schema?.start_of_turn;
+    if (!x || typeof x !== 'object' || Array.isArray(x)) failures.push('Step 0 requires start_of_turn object.');
+    requireString(failures, schema, 'start_of_turn.run_nonce');
+    requireString(failures, schema, 'start_of_turn.user_request');
+    requireString(failures, schema, 'start_of_turn.current_timestamp');
+    requireString(failures, schema, 'start_of_turn.return_schema_completed_timestamp');
+    requireString(failures, schema, 'start_of_turn.nonce');
+  }
+
+  if (step === 1) {
+    const x = schema?.step_1_record;
+    if (!x || typeof x !== 'object' || Array.isArray(x)) failures.push('Step 1 requires step_1_record object.');
+    for (const p of [
+      'step_1_record.run_nonce',
+      'step_1_record.user_request',
+      'step_1_record.nonce',
+      'step_1_record.current_timestamp',
+      'step_1_record.return_schema_completed_timestamp'
+    ]) requireString(failures, schema, p);
+  }
+
+  if (step === 2) {
+    const x = schema?.step_2_record;
+    if (!x || typeof x !== 'object' || Array.isArray(x)) failures.push('Step 2 requires step_2_record object.');
+    requireString(failures, schema, 'step_2_record.run_nonce');
+    requireString(failures, schema, 'step_2_record.user_request_nonce');
+    requireString(failures, schema, 'step_2_record.current_timestamp');
+    requireString(failures, schema, 'step_2_record.return_schema_completed_timestamp');
+    requireArray(failures, schema, 'step_2_record.stated_requirements');
+    if (Array.isArray(x?.stated_requirements)) {
+      x.stated_requirements.forEach((value, index) => {
+        if (!nonEmpty(value)) failures.push(`step_2_record.stated_requirements.${index} must be a non-empty string.`);
+      });
+    }
+  }
+
+  if (step === 3) {
+    const x = schema?.Step_3;
+    if (!x || typeof x !== 'object' || Array.isArray(x)) {
+      failures.push('Step 3 requires Step_3 object.');
+    } else {
+      for (const p of [
+        'Step_3.descriptor',
+        'Step_3.user_request_nonce',
+        'Step_3.A.descriptor',
+        'Step_3.A.U.instruction',
+        'Step_3.A.U.value',
+        'Step_3.B.descriptor',
+        'Step_3.B.clauses.instruction',
+        'Step_3.C.descriptor',
+        'Step_3.C.modifier_analysis.instruction',
+        'Step_3.D.descriptor',
+        'Step_3.D.P.instruction',
+        'Step_3.D.P.value',
+        'Step_3.E.descriptor',
+        'Step_3.E.UI_output.instruction',
+        'Step_3.E.UI_output.value',
+        'Step_3.F.descriptor',
+        'Step_3.F.Step3_TSR_status.value',
+        'Step_3.F.Step3_TSR_verbatim_result.value',
+        'Step_3.F.test_results.instruction',
+        'Step_3.G.descriptor',
+        'Step_3.G.Loop_Decision.value',
+        'Step_3.current_timestamp',
+        'Step_3.return_schema_completed_timestamp'
+      ]) requireString(failures, schema, p);
+
+      requireArray(failures, schema, 'Step_3.B.clauses.value');
+      requireArray(failures, schema, 'Step_3.C.modifier_analysis.value');
+      requireArray(failures, schema, 'Step_3.F.test_results.value');
+
+      const clauses = x?.B?.clauses?.value;
+      if (Array.isArray(clauses)) {
+        clauses.forEach((clause, index) => {
+          if (!nonEmpty(clause?.clause)) failures.push(`Step_3.B.clauses.value.${index}.clause must be non-empty.`);
+          for (const key of ['actions', 'persons', 'objects']) {
+            if (!Array.isArray(clause?.[key])) failures.push(`Step_3.B.clauses.value.${index}.${key} must be an array.`);
+          }
+        });
+      }
+
+      const modifiers = x?.C?.modifier_analysis?.value;
+      if (Array.isArray(modifiers)) {
+        modifiers.forEach((item, index) => {
+          for (const key of ['modifier', 'meaning_without_modifier', 'difference']) {
+            if (!nonEmpty(item?.[key])) failures.push(`Step_3.C.modifier_analysis.value.${index}.${key} must be non-empty.`);
+          }
+          if (!Number.isInteger(item?.recursive_level) || item.recursive_level < 1) {
+            failures.push(`Step_3.C.modifier_analysis.value.${index}.recursive_level must be a positive integer.`);
+          }
+        });
+      }
+
+      const count = x?.F?.Test_Count?.value;
+      const results = x?.F?.test_results?.value;
+      if (!Number.isInteger(count) || count < 1) failures.push('Step_3.F.Test_Count.value must be a positive integer.');
+      if (Array.isArray(results)) {
+        if (Number.isInteger(count) && results.length !== count) {
+          failures.push(`Step_3.F.test_results.value length ${results.length} must equal Test_Count.value ${count}.`);
+        }
+        results.forEach((item, index) => {
+          if (!nonEmpty(item?.question_number)) failures.push(`Step_3.F.test_results.value.${index}.question_number must be non-empty.`);
+          if (!nonEmpty(item?.question)) failures.push(`Step_3.F.test_results.value.${index}.question must be non-empty.`);
+          if (!['T', 'F'].includes(item?.result)) failures.push(`Step_3.F.test_results.value.${index}.result must be T or F.`);
+        });
+      }
+
+      const anyTrue = Array.isArray(results) && results.some(item => item?.result === 'T');
+      const loop = String(x?.G?.Loop_Decision?.value ?? '');
+      const returnTo = x?.G?.return_to?.value;
+      if (anyTrue && loop !== 'True') failures.push('Step_3.G.Loop_Decision.value must be True when any test result is T.');
+      if (!anyTrue && Array.isArray(results) && results.length && loop !== 'False') {
+        failures.push('Step_3.G.Loop_Decision.value must be False when every test result is F.');
+      }
+      if (loop === 'True' && returnTo !== 'Step_3.A') failures.push('Step_3.G.return_to.value must be Step_3.A when Loop_Decision is True.');
+      if (loop === 'False' && returnTo !== null) failures.push('Step_3.G.return_to.value must be null when Loop_Decision is False.');
+    }
+  }
+
+  if (step === 4) {
+    const x = schema?.Step_4;
+    if (!x || typeof x !== 'object' || Array.isArray(x)) failures.push('Step 4 requires Step_4 object.');
+    requireArray(failures, schema, 'Step_4.failed_actions');
+    requireArray(failures, schema, 'Step_4.not_completed_actions');
+    requireArray(failures, schema, 'Step_4.completed_actions');
+    requireString(failures, schema, 'Step_4.user_request');
+    requireString(failures, schema, 'Step_4.current_timestamp');
+    requireString(failures, schema, 'Step_4.return_schema_completed_timestamp');
+
+    if (Array.isArray(x?.failed_actions)) {
+      x.failed_actions.forEach((item, index) => {
+        for (const key of ['action', 'failure', 'remaining_work']) {
+          if (!nonEmpty(item?.[key])) failures.push(`Step_4.failed_actions.${index}.${key} must be non-empty.`);
+        }
+        if (!Array.isArray(item?.evidence)) failures.push(`Step_4.failed_actions.${index}.evidence must be an array.`);
+      });
+    }
+    if (Array.isArray(x?.not_completed_actions)) {
+      x.not_completed_actions.forEach((item, index) => {
+        if (!nonEmpty(item?.action)) failures.push(`Step_4.not_completed_actions.${index}.action must be non-empty.`);
+        if (!nonEmpty(item?.remaining_work)) failures.push(`Step_4.not_completed_actions.${index}.remaining_work must be non-empty.`);
+        if (!Array.isArray(item?.evidence)) failures.push(`Step_4.not_completed_actions.${index}.evidence must be an array.`);
+      });
+    }
+    if (Array.isArray(x?.completed_actions)) {
+      x.completed_actions.forEach((item, index) => {
+        if (!nonEmpty(item?.action)) failures.push(`Step_4.completed_actions.${index}.action must be non-empty.`);
+        if (item?.completion !== 'complete') failures.push(`Step_4.completed_actions.${index}.completion must equal complete.`);
+        if (!Array.isArray(item?.completion_evidence) || item.completion_evidence.length === 0) {
+          failures.push(`Step_4.completed_actions.${index}.completion_evidence must be a non-empty array.`);
+        }
+      });
+    }
+  }
+
+  return [...new Set(failures)];
+}
+
+function inspect(trigger, step) {
+  const failures = [];
+  const rawExecution = trigger?.execution;
+  let execution;
+
+  if (!rawExecution || typeof rawExecution !== 'object' || Array.isArray(rawExecution)) {
+    failures.push('The trigger does not contain an execution object. Raw input is not a ChatGPT execution return for the active step.');
+    execution = {
+      source_role: null,
+      step,
+      return_schema: Object.prototype.hasOwnProperty.call(trigger || {}, 'nextmessage') ? trigger.nextmessage : trigger
+    };
+  } else {
+    execution = {
+      source_role: rawExecution.source_role ?? null,
+      step: Number.isInteger(rawExecution.step) ? rawExecution.step : step,
+      return_schema: rawExecution.return_schema && typeof rawExecution.return_schema === 'object' && !Array.isArray(rawExecution.return_schema)
+        ? rawExecution.return_schema : rawExecution
+    };
+    if (rawExecution.source_role !== execRole) failures.push(`execution.source_role must equal "${execRole}".`);
+    if (!Number.isInteger(rawExecution.step)) failures.push('execution.step must be an integer.');
+    else if (rawExecution.step !== step) failures.push(`Execution Step ${rawExecution.step} does not match current Step ${step}.`);
+    if (!rawExecution.return_schema || typeof rawExecution.return_schema !== 'object' || Array.isArray(rawExecution.return_schema)) {
+      failures.push('execution.return_schema must be a JSON object.');
+    }
+  }
+
+  if (execution.source_role !== execRole) failures.push(`Execution source is not controller-identified as "${execRole}".`);
+  failures.push(...validateStep(step, execution.return_schema));
+  return { execution, failures: [...new Set(failures)] };
+}
+
+function validationMessage(step, failures) {
+  if (!failures.length) return null;
+  return {
+    kind: 'system_validation_message',
+    role: 'system',
+    timestamp: now(),
+    step,
+    parts: [{
+      text: [
+        `DETERMINISTIC PRE-SUPERVISION VALIDATION FINDINGS FOR STEP ${step}.`,
+        'These findings are evidence for the Gemini supervisory gate; deterministic validation does not substitute for semantic supervision.',
+        'The execution candidate must still be evaluated against Agents.md.',
+        'Findings:',
+        ...failures.map((failure, index) => `${index + 1}. ${failure}`)
+      ].join('\n')
+    }]
+  };
+}
+
+function terminalEval(key, value) {
+  return {
+    [`${key}_eval`]: {
+      [key]: value,
+      supervisor_eval_result: null,
+      supervisor_eval_comment: null
+    }
+  };
+}
+
+function evalTemplate(value) {
+  if (Array.isArray(value)) {
+    return value.map((child, index) =>
+      child !== null && typeof child === 'object'
+        ? evalTemplate(child)
+        : terminalEval(String(index), child)
+    );
+  }
+  if (value !== null && typeof value === 'object') {
+    const out = {};
+    for (const [key, child] of Object.entries(value)) {
+      if (child !== null && typeof child === 'object') out[key] = evalTemplate(child);
+      else Object.assign(out, terminalEval(key, child));
+    }
+    return out;
+  }
+  return terminalEval('value', value);
+}
+
+function gateTemplate(returnSchema) {
+  return {
+    supervisory_gate: {
+      role_required: supRole,
+      role_forbidden: supForbidden,
+      role_completed: null,
+      role_verification: { method: null, evidence: null },
+      instruction: 'Evaluate only the supplied execution candidate against Agents.md. For every terminal execution key K use K_eval, preserve K and its exact value, then populate supervisor_eval_result and supervisor_eval_comment. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step.',
+      granular_evaluation: evalTemplate(returnSchema),
+      step_level_evaluation: {
+        supervisor_eval_result: null,
+        supervisor_eval_comment: null
+      },
+      failures: [],
+      gate_result: null
+    }
+  };
+}
+
+function systemText(step, agents) {
+  const parts = [agents];
+  if (step === 3) {
+    parts.unshift([
+      '===== ACTIVE STEP3_TSR TEST SOURCE: evaluation-tests.md =====',
+      readText(testsPath),
+      '===== END ACTIVE STEP3_TSR TEST SOURCE ====='
+    ].join('\n'));
+  }
+  parts.push('Agents.md is the canonical source for evaluation definitions, pass/fail criteria, procedure schemas, role controls, and transition semantics. Do not require evaluator-definitions.md or any external evaluation-definition read tracker.');
+  parts.push('SUPERVISORY EVALUATION FORMAT: For each terminal execution key K/value V, fill K_eval as {K:V, supervisor_eval_result:PASS|FAIL, supervisor_eval_comment:<specific comment>}. Preserve K and V exactly.');
+  parts.push('ROLE BOUNDARY: You are Gemini and may perform only the Supervisory Gate. Never execute or simulate a ChatGPT-owned execution step.');
+  return parts.join('\n\n');
+}
+
+async function callGemini(contents, extra, step, agents) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: [systemText(step, agents), extra].filter(Boolean).join('\n\n') }]
+        },
+        contents
+      }),
+      signal: AbortSignal.timeout(180000)
+    }
+  );
+
+  const text = await response.text();
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch (_) {
+    throw new Error(`Gemini returned non-JSON HTTP ${response.status}: ${text}`);
+  }
+  if (!response.ok) throw new Error(`Gemini HTTP ${response.status}: ${JSON.stringify(body.error || body)}`);
+  const reply = body.candidates?.[0]?.content;
+  if (reply?.role !== 'model' || !Array.isArray(reply.parts) || reply.parts.length === 0) {
+    throw new Error(`Gemini returned no model content: ${JSON.stringify(body)}`);
+  }
+  return reply;
+}
+
+function parseReply(reply) {
+  const text = reply.parts.map(part => part.text || '').join('\n').trim();
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenced) return JSON.parse(fenced[1].trim());
+    throw error;
+  }
+}
+
+function gateValue(schema) {
+  const raw = schema?.supervisory_gate?.gate_result;
+  const value = typeof raw === 'string' ? raw.trim().toUpperCase() : '';
+  return { valid: PASSFAIL.has(value), value: PASSFAIL.has(value) ? value : null };
+}
+
+function roleValid(schema) {
+  const gate = schema?.supervisory_gate;
+  if (!gate || typeof gate !== 'object') return 'Missing supervisory_gate.';
+  if (gate.role_required !== supRole) return `role_required must be ${supRole}.`;
+  if (gate.role_forbidden !== supForbidden) return `role_forbidden must be ${supForbidden}.`;
+  if (gate.role_completed !== supRole) return `role_completed must be ${supRole}.`;
+  if (!nonEmpty(gate.role_verification?.method)) return 'role_verification.method missing.';
+  if (!nonEmpty(gate.role_verification?.evidence)) return 'role_verification.evidence missing.';
+  return null;
+}
+
+function evalShape(execution, evaluation, pathParts = []) {
+  const failures = [];
+  if (Array.isArray(execution)) {
+    if (!Array.isArray(evaluation) || evaluation.length !== execution.length) {
+      return [`${pathParts.join('.') || '$'} evaluation array length mismatch.`];
+    }
+    execution.forEach((child, index) => {
+      if (child !== null && typeof child === 'object') {
+        failures.push(...evalShape(child, evaluation[index], [...pathParts, index]));
+      } else {
+        const key = String(index);
+        const record = evaluation[index]?.[`${key}_eval`];
+        const where = [...pathParts, index].join('.');
+        if (!record) failures.push(`${where}: missing ${key}_eval.`);
+        else {
+          if (!Object.prototype.hasOwnProperty.call(record, key) || !same(record[key], child)) failures.push(`${where}: execution value not preserved.`);
+          if (!PASSFAIL.has(String(record.supervisor_eval_result || '').toUpperCase())) failures.push(`${where}: supervisor_eval_result must be PASS or FAIL.`);
+          if (!nonEmpty(record.supervisor_eval_comment)) failures.push(`${where}: supervisor_eval_comment missing.`);
+        }
+      }
+    });
+    return failures;
+  }
+
+  if (execution !== null && typeof execution === 'object') {
+    if (!evaluation || typeof evaluation !== 'object' || Array.isArray(evaluation)) {
+      return [`${pathParts.join('.') || '$'} evaluation object missing.`];
+    }
+    for (const [key, child] of Object.entries(execution)) {
+      if (child !== null && typeof child === 'object') {
+        failures.push(...evalShape(child, evaluation[key], [...pathParts, key]));
+      } else {
+        const record = evaluation[`${key}_eval`];
+        const where = [...pathParts, key].join('.');
+        if (!record) failures.push(`${where}: missing ${key}_eval.`);
+        else {
+          if (!Object.prototype.hasOwnProperty.call(record, key) || !same(record[key], child)) failures.push(`${where}: execution key/value not preserved.`);
+          if (!PASSFAIL.has(String(record.supervisor_eval_result || '').toUpperCase())) failures.push(`${where}: supervisor_eval_result must be PASS or FAIL.`);
+          if (!nonEmpty(record.supervisor_eval_comment)) failures.push(`${where}: supervisor_eval_comment missing.`);
+        }
+      }
+    }
+  }
+  return failures;
+}
+
+function evalValid(schema, returnSchema) {
+  const gate = schema?.supervisory_gate;
+  const failures = evalShape(returnSchema, gate?.granular_evaluation);
+  const result = String(gate?.step_level_evaluation?.supervisor_eval_result || '').toUpperCase();
+  if (!PASSFAIL.has(result)) failures.push('step_level_evaluation.supervisor_eval_result must be PASS or FAIL.');
+  if (!nonEmpty(gate?.step_level_evaluation?.supervisor_eval_comment)) failures.push('step_level_evaluation.supervisor_eval_comment missing.');
+  if (!Array.isArray(gate?.failures)) failures.push('supervisory_gate.failures must be an array.');
+  return failures;
+}
+
+function statedRequirements(state) {
+  const record = state?.procedure?.step_records?.['2']?.execution_return?.step_2_record?.stated_requirements;
+  return Array.isArray(record) ? record : [];
+}
+
+async function supervise({ runNonce, step, execution, validation, requirements, messages, messagesFile, store, storeFile, agents }) {
+  const returnSchema = execution.return_schema;
+  const template = gateTemplate(returnSchema);
+  const prompt = [
+    `Perform only the Supervisory Gate for Step ${step}.`,
+    'Submitted execution candidate:',
+    JSON.stringify(returnSchema, null, 2),
+    'Governing Agents.md Step block:',
+    stepBlock(agents, step),
+    'Populate this supervisory template exactly. Do not rename *_eval keys or alter preserved execution key/value evidence:',
+    JSON.stringify(template, null, 2),
+    'For every *_eval record set supervisor_eval_result to PASS or FAIL and populate supervisor_eval_comment.',
+    'Set role_completed to "Gemini model" and populate role_verification from this API/runtime context.',
+    'Return only valid JSON.'
+  ];
+  if (step === 3) {
+    prompt.splice(1, 0, 'Use the complete evaluation-tests.md corpus supplied in system context as the Step3_TSR test source. Agents.md already contains the canonical evaluation definitions and pass/fail criteria. Do not require or emit evaluation_documents_read.');
+  }
+  if ((step === 3 || step === 4) && requirements.length) {
+    prompt.push('Step 2 stated requirements:', JSON.stringify(requirements, null, 2));
+  }
+
+  const user = { role: 'user', parts: [{ text: prompt.join('\n\n') }] };
+  let repair = '';
+  let attempt = 0;
+
+  while (true) {
+    const reply = await callGemini(
+      [user],
+      [validation?.parts?.[0]?.text, repair].filter(Boolean).join('\n\n'),
+      step,
+      agents
+    );
+    addMessage(messages, messagesFile, {
+      kind: attempt ? 'gemini_supervisory_gate_repair' : 'gemini_supervisory_gate',
+      step,
+      attempt: attempt + 1,
+      role: 'model',
+      parts: reply.parts
+    });
+
+    let schema;
+    let parseError;
+    try {
+      schema = parseReply(reply);
+    } catch (error) {
+      parseError = error;
+    }
+
+    if (schema) {
+      const gate = gateValue(schema);
+      const roleError = roleValid(schema);
+      const shapeErrors = evalValid(schema, returnSchema);
+      if (gate.valid && !roleError && shapeErrors.length === 0) {
+        addStore(store, storeFile, {
+          run_nonce: runNonce,
+          step,
+          operation: attempt ? 'supervisory_gate_repair' : 'supervisory_gate',
+          context_files: contextFiles(step),
+          model,
+          return_schema: schema,
+          transition_value: gate.value
+        });
+        return { schema, gate_result: gate.value };
+      }
+      repair = [
+        'SYSTEM CORRECTION FOR THIS SUPERVISORY RESPONSE:',
+        !gate.valid ? 'Missing/invalid supervisory_gate.gate_result.' : '',
+        roleError || '',
+        ...shapeErrors,
+        'Repair only the Supervisory Gate. Preserve every original execution key/value in its *_eval record. Do not add evaluation_documents_read. Return only valid JSON.'
+      ].filter(Boolean).join('\n');
+    } else {
+      repair = `SYSTEM CORRECTION: supervisory response was not valid JSON (${parseError?.message || 'parse failure'}). Repair only the Supervisory Gate and return valid JSON.`;
+    }
+
+    attempt += 1;
+    if (attempt >= 4) throw new Error(`Gemini supervisory repair limit exceeded for Step ${step}. Last correction: ${repair}`);
+  }
+}
+
+async function main() {
+  if (!apiKey) throw new Error('GEMINI_API_KEY is missing from the GitHub Actions environment.');
+
+  const trigger = readJson(triggerPath);
+  const runNonce = nonce(trigger?.run_nonce);
+  const agents = readText(agentsPath);
+  const steps = stepsFrom(agents);
+  const run = initRun(runNonce, steps);
+  const state = run.state;
+  const step = state.procedure.current_step;
+
+  if (step === null) throw new Error(`Run ${runNonce} is already terminal.`);
+
+  const inspected = inspect(trigger, step);
+  const execution = inspected.execution;
+  const validation = validationMessage(step, inspected.failures);
+
+  if (step === 0 && !run.store.initial_user_message) {
+    const userRequest = execution.return_schema?.start_of_turn?.user_request;
+    if (nonEmpty(userRequest)) {
+      run.store.initial_user_message = userRequest;
+      writeJson(run.storeFile, run.store);
+    }
+  }
+
+  addMessage(run.messages, run.messagesFile, {
+    kind: 'chatgpt_execution_candidate',
+    step,
+    role: 'user',
+    timestamp: now(),
+    source_role: execution.source_role,
+    parts: [{ text: JSON.stringify(execution.return_schema, null, 2) }]
+  });
+  addStore(run.store, run.storeFile, {
+    run_nonce: runNonce,
+    step,
+    operation: 'execution_candidate',
+    source_role: execution.source_role,
+    return_schema: execution.return_schema,
+    deterministic_validation_failures: inspected.failures
+  });
+  if (validation) {
+    addMessage(run.messages, run.messagesFile, validation);
+    addStore(run.store, run.storeFile, {
+      run_nonce: runNonce,
+      step,
+      operation: 'deterministic_validation',
+      findings: inspected.failures
+    });
+  }
+
+  const requirements = statedRequirements(state);
+  const supervisory = await supervise({
+    runNonce,
+    step,
+    execution,
+    validation,
+    requirements,
+    messages: run.messages,
+    messagesFile: run.messagesFile,
+    store: run.store,
+    storeFile: run.storeFile,
+    agents
+  });
+
+  const procedure = state.procedure;
+  const existing = procedure.step_records[String(step)] || { latest_attempt: 0, attempts: [] };
+  existing.attempts = Array.isArray(existing.attempts) ? existing.attempts : [];
+  const attemptNumber = existing.attempts.length + 1;
+  const attemptRecord = {
+    attempt: attemptNumber,
+    received_at: now(),
+    execution_source_role: execution.source_role,
+    execution_return: execution.return_schema,
+    deterministic_validation_failures: inspected.failures,
+    supervisory_return: supervisory.schema,
+    transition_key: 'supervisory_gate.gate_result',
+    transition_value: supervisory.gate_result
+  };
+  existing.latest_attempt = attemptNumber;
+  existing.attempts.push(attemptRecord);
+  existing.execution_return = execution.return_schema;
+  existing.supervisory_return = supervisory.schema;
+  existing.transition_key = 'supervisory_gate.gate_result';
+  existing.transition_value = supervisory.gate_result;
+  existing.updated_at = now();
+  procedure.step_records[String(step)] = existing;
+
+  if (supervisory.gate_result === 'PASS') {
+    if (!procedure.completed_steps.includes(step)) procedure.completed_steps.push(step);
+    procedure.completed_steps.sort((a, b) => a - b);
+    procedure.remaining_steps = steps.filter(value => !procedure.completed_steps.includes(value));
+    procedure.current_step = procedure.remaining_steps[0] ?? null;
+    procedure.awaiting = procedure.current_step === null
+      ? null : { type: 'chatgpt_execution', step: procedure.current_step };
+    state.status = procedure.current_step === null ? 'complete' : 'awaiting_chatgpt_execution';
+    delete state.last_supervisory_failure;
+  } else {
+    procedure.remaining_steps = steps.filter(value => !procedure.completed_steps.includes(value));
+    procedure.current_step = step;
+    procedure.awaiting = { type: 'chatgpt_execution', step, reason: 'supervisory_gate_fail' };
+    state.status = 'awaiting_chatgpt_execution';
+    state.last_supervisory_failure = {
+      step,
+      timestamp: now(),
+      supervisory_return: supervisory.schema
+    };
+  }
+
+  state.event_count += 1;
+  state.updated_at = now();
+  writeJson(run.stateFile, run.wrapper);
+
+  console.log(JSON.stringify({
+    runtime: 'Node.js',
+    node_version: process.version,
+    model,
+    run_nonce: runNonce,
+    evaluated_step: step,
+    deterministic_validation_failures: inspected.failures,
+    gate_result: supervisory.gate_result,
+    next_step: procedure.current_step,
+    status: state.status,
+    context_files: contextFiles(step)
+  }, null, 2));
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
