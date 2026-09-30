@@ -26,22 +26,25 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Evaluate Gemini Supervisor against Agents.md
+      - name: Evaluate or revise Gemini Supervisor against Agents.md
         env:
           GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
         run: node ChatMachines/GeminiSupervisor/evaluate-supervisor.js
 
-      - name: Commit evaluator response and evaluation
+      - name: Commit evaluator response
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             ChatMachines/GeminiSupervisor/evaluator-messages.json \
             ChatMachines/GeminiSupervisor/program-evaluation.json
+          if [ -f ChatMachines/GeminiSupervisor/revised-send-to-gemini.js ]; then
+            git add ChatMachines/GeminiSupervisor/revised-send-to-gemini.js
+          fi
           if git diff --cached --quiet; then
             echo "No evaluator output change."
             exit 0
           fi
-          git commit -m "Evaluate Gemini Supervisor program"
+          git commit -m "Update Gemini Supervisor evaluator output"
           git push origin HEAD:main
