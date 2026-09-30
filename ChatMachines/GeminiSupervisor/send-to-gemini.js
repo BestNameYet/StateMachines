@@ -1,18 +1,18 @@
-/**
- * One-time transport: ask Apps Script to return raw Agents.md from Drive
- * and write the returned bytes to the repository working tree.
- */
 const fs = require("node:fs");
+const { execFileSync } = require("node:child_process");
 
 const root = "ChatMachines/GeminiSupervisor";
 const webAppUrl = process.env.APPS_SCRIPT_WEB_APP_URL;
-const agentsPath = `${root}/Agents.md`;
+const outputPath = `${root}/drive-transfer-test.json`;
 
-function driveFile(input) {
-  const blob = DriveApp.getFileById(input.file_id).getBlob();
+function driveJsonTransfer(input) {
+  const jsonText = JSON.stringify(input.document, null, 2);
+  const file = DriveApp.createFile(input.file_name, jsonText, "application/json");
+  const blob = DriveApp.getFileById(file.getId()).getBlob();
   return {
+    drive_file_id: file.getId(),
     file_name: input.file_name,
-    mime_type: "text/markdown",
+    mime_type: "application/json",
     content_base64: Utilities.base64Encode(blob.getBytes())
   };
 }
@@ -24,10 +24,14 @@ async function main() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      sourcecode: `(${driveFile.toString()})`,
+      sourcecode: `(${driveJsonTransfer.toString()})`,
       arguments: {
-        file_id: "1xnsUXwd_4kagU-ou9iAB20FKQ7aF41nX",
-        file_name: "Agents.md"
+        file_name: "drive-transfer-test.json",
+        document: {
+          transfer_test: true,
+          path: "Google Drive -> Apps Script -> GitHub Actions -> GitHub commit",
+          nonce: "2026-09-30-json-transfer-test"
+        }
       }
     }),
     redirect: "follow",
@@ -42,13 +46,19 @@ async function main() {
   catch (_) { throw new Error(`Apps Script returned non-JSON: ${text}`); }
 
   if (!result || !result.content_base64) {
-    throw new Error("Apps Script did not return Agents.md content_base64.");
+    throw new Error(`Apps Script did not return content_base64: ${text}`);
   }
 
-  fs.writeFileSync(agentsPath, Buffer.from(result.content_base64, "base64"));
+  fs.writeFileSync(outputPath, Buffer.from(result.content_base64, "base64"));
+  JSON.parse(fs.readFileSync(outputPath, "utf8"));
 
-  if (!fs.existsSync(agentsPath)) throw new Error("Agents.md was not written.");
-  console.log(`Recovered ${agentsPath} from Drive (${fs.statSync(agentsPath).size} bytes).`);
+  execFileSync("git", ["config", "user.name", "github-actions[bot]"]);
+  execFileSync("git", ["config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"]);
+  execFileSync("git", ["add", outputPath]);
+  execFileSync("git", ["commit", "-m", "Commit Drive JSON transfer test"]);
+  execFileSync("git", ["push", "origin", "HEAD:main"], { stdio: "inherit" });
+
+  console.log(`Transferred and committed ${outputPath}; Drive file ${result.drive_file_id}.`);
 }
 
 main().catch(error => {
