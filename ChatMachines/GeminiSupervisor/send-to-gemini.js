@@ -47,7 +47,7 @@ function supervisorMachine(input) {
   const state = input.state;
   const messages = input.messages;
   const apiKey = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
-  const model = PropertiesService.getScriptProperties().getProperty("GEMINI_MODEL") || "gemini-2.5-flash";
+  const model = PropertiesService.getScriptProperties().getProperty("GEMINI_MODEL") || "gemini-3.8-flash";
   if (!apiKey) throw new Error("GEMINI_API_KEY is missing from Apps Script properties.");
 
   state.procedure = state.procedure || {};
