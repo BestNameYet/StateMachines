@@ -32,15 +32,16 @@ jobs:
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
         run: node ChatMachines/GeminiSupervisor/send-to-gemini.js
 
-      - name: Commit returned state and context
+      - name: Commit returned state, context, and store
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             ChatMachines/GeminiSupervisor/current_state.json \
-            ChatMachines/GeminiSupervisor/messages.json
+            ChatMachines/GeminiSupervisor/messages.json \
+            ChatMachines/GeminiSupervisor/store/store.json
           if git diff --cached --quiet; then
-            echo "No state/context change."
+            echo "No state/context/store change."
             exit 0
           fi
           git commit -m "Advance Gemini Supervisor state machine"
