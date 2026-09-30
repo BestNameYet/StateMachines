@@ -1,1 +1,1 @@
-console.log("extension write test");
+const outputPath = "ChatMachines/GeminiSupervisor/Agents.md";
