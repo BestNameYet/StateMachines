@@ -220,8 +220,53 @@ function normalizedGateValue(schema) {
       }
     }
   }
-  const upper = result.value.toUpperCase();
+  if (!result.value || typeof result.value !== "string") {
+    return { valid: false, value: null };
+  }
+  const upper = result.value.trim().toUpperCase();
   return { valid: transitionValues.has(upper), value: upper };
+}
+
+function buildUnevaluatedGranularMirror(obj) {
+  if (Array.isArray(obj)) {
+    return obj.map(item => buildUnevaluatedGranularMirror(item));
+  }
+  if (obj !== null && typeof obj === "object") {
+    const mirror = {};
+    for (const key of Object.keys(obj)) {
+      mirror[key] = buildUnevaluatedGranularMirror(obj[key]);
+    }
+    return mirror;
+  }
+  return {
+    evaluation: null,
+    comment: null
+  };
+}
+
+function buildUnevaluatedSupervisoryGate(step, executionReturn) {
+  const granularTemplate = buildUnevaluatedGranularMirror(executionReturn);
+  const gate = {
+    supervisory_gate: {
+      instruction: "Immediately after this step returns its execution schema, the supervisor must evaluate that returned schema before the next execution step may begin. Recursively mirror every returned key and every array entry at the same schema path. For every terminal returned value, replace the execution value with an evaluation and supervisor comment. Evaluate the step as a whole after completing the granular mirror. Every failed granular or step-level evaluation must be entered separately in failures. The next execution step is permitted only when gate_result is PASS.",
+      granular_evaluation: granularTemplate,
+      step_level_evaluation: {
+        evaluation: null,
+        comment: null
+      },
+      failures: [],
+      gate_result: null
+    }
+  };
+
+  if (step === 3) {
+    gate.supervisory_gate = {
+      evaluation_documents_read: null,
+      ...gate.supervisory_gate
+    };
+  }
+
+  return gate;
 }
 
 function baseSystemInstruction(step) {
@@ -451,21 +496,27 @@ async function requestExecutionSchema(runNonce, messages, store, messagesFile, s
 }
 
 async function requestSupervisorySchema(runNonce, messages, store, messagesFile, storeFile, step, attempt, executionReturn) {
+  const unevaluatedGateTemplate = buildUnevaluatedSupervisoryGate(step, executionReturn);
   const supervisorPrompt = [
     `Perform only the Supervisory Gate for Step ${step} from Agents.md.`,
-    "The execution return below is the input to this Supervisory Gate.",
-    "Evaluate it exactly as required by the Step's Supervisory Gate.",
-    "Return only the complete supervisory return schema as valid JSON.",
-    `The transition controller requires the exact key:value at ${transitionPath.join(".")} with value PASS or FAIL.`,
-    "Execution return schema:",
-    JSON.stringify(executionReturn, null, 2)
+    "The execution return below is the input to this Supervisory Gate:",
+    JSON.stringify(executionReturn, null, 2),
+    "You must evaluate that returned schema and populate the following unevaluated supervisory gate schema template.",
+    "The evaluative and result fields in this template begin unevaluated (null). You must replace each null placeholder with your actual evaluation:",
+    "1. Replace null in granular_evaluation terminal entries with { \"evaluation\": \"PASS\" | \"FAIL\", \"comment\": \"<required supervisor evaluation>\" }.",
+    "2. In step_level_evaluation, replace null with your holistic step evaluation and comment.",
+    "3. In failures, add an entry for every granular or step-level FAIL.",
+    `4. Set supervisory_gate.gate_result to \"PASS\" only when every granular evaluation and the step-level evaluation are PASS and every failure is recorded; otherwise set it to \"FAIL\".`,
+    "Unevaluated Supervisory Gate Schema Template to populate:",
+    JSON.stringify(unevaluatedGateTemplate, null, 2),
+    "Return only the completed supervisory return schema as valid JSON."
   ];
 
   if (step === 3) {
     supervisorPrompt.splice(
       1,
       0,
-      "MANDATORY FOR STEP 3 SUPERVISORY GATE: In accordance with supervisory_gate.evaluation_documents_read, read evaluation-tests.md and evaluator-definitions.md completely and use both documents as evaluation context for the Step 3 Supervisory Gate."
+      "MANDATORY FOR STEP 3 SUPERVISORY GATE: In accordance with supervisory_gate.evaluation_documents_read, read evaluation-tests.md and evaluator-definitions.md completely and use both documents as evaluation context for the Step 3 Supervisory Gate. Set supervisory_gate.evaluation_documents_read to \"evaluation-tests.md and evaluator-definitions.md read completely\"."
     );
   }
 
@@ -511,14 +562,15 @@ async function requestSupervisorySchema(runNonce, messages, store, messagesFile,
           "SYSTEM CORRECTION FOR THIS RESPONSE:",
           "Your immediately preceding supervisory response could not be parsed as valid JSON.",
           `Parser error: ${parseError.message}`,
-          `The transition controller also requires the exact key:value ${exactPath}: \"PASS\" or ${exactPath}: \"FAIL\".`,
-          "Revise the complete response as valid JSON and include that exact transition key:value."
+          "Populate and return the complete unevaluated supervisory gate schema template as valid JSON.",
+          `Ensure that ${exactPath} is populated with either \"PASS\" or \"FAIL\" and no required fields remain null.`
         ].join("\n")
       : [
           "SYSTEM CORRECTION FOR THIS RESPONSE:",
-          `The required transition key:value was not found at the exact JSON path ${exactPath}, or its value was not PASS or FAIL.`,
-          `Revise your immediately preceding response to include exactly ${exactPath}: \"PASS\" or ${exactPath}: \"FAIL\", according to your evaluation.`,
-          "Preserve and correct the rest of the complete supervisory schema; do not replace it with only the transition key."
+          `The required transition key:value was not found at the exact JSON path ${exactPath}, or remained null/unpopulated, or was not PASS or FAIL.`,
+          "Complete your evaluation of the execution return using the unevaluated supervisory schema template.",
+          `Set ${exactPath} to either \"PASS\" or \"FAIL\" based on your granular and step-level evaluations.`,
+          "Return only the complete valid supervisory return schema."
         ].join("\n");
 
     userMessage = {
