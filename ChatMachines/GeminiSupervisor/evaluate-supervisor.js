@@ -1,16 +1,15 @@
 /**
- * Evaluates the current Gemini Supervisor implementation against Agents.md.
- *
- * Runs directly in GitHub Actions / Node.js 22.
- * This evaluator has its own trigger message and its own conversation stream,
- * separate from the Gemini Supervisor runtime conversation.
+ * Evaluates or revises the current Gemini Supervisor implementation against
+ * Agents.md using a separate evaluator conversation.
  *
  * Trigger:
  *   ChatMachines/GeminiSupervisor/evaluator-nextmessage/nextmessage.json
  * Conversation:
  *   ChatMachines/GeminiSupervisor/evaluator-messages.json
- * Output:
+ * Evaluation output:
  *   ChatMachines/GeminiSupervisor/program-evaluation.json
+ * Revision output:
+ *   ChatMachines/GeminiSupervisor/revised-send-to-gemini.js
  */
 const fs = require("node:fs");
 
@@ -19,7 +18,8 @@ const agentsPath = `${root}/Agents.md`;
 const programPath = `${root}/send-to-gemini.js`;
 const nextPath = `${root}/evaluator-nextmessage/nextmessage.json`;
 const messagesPath = `${root}/evaluator-messages.json`;
-const outputPath = `${root}/program-evaluation.json`;
+const evaluationOutputPath = `${root}/program-evaluation.json`;
+const revisionOutputPath = `${root}/revised-send-to-gemini.js`;
 
 const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
@@ -70,75 +70,99 @@ function appendNextMessage(messages, nextmessage) {
 }
 
 function buildSystemInstruction(agents, program) {
+  const evaluationSchema = {
+    response_type: "evaluation",
+    evaluation_basis: {
+      agents_md: "authoritative",
+      program: "implementation_under_test"
+    },
+    overall_result: "PASS | FAIL | INDETERMINATE",
+    executive_summary: "string",
+    requirement_evaluations: [
+      {
+        requirement_id: "string",
+        agents_md_reference: {
+          lines: "string",
+          requirement: "string"
+        },
+        program_reference: {
+          lines: "string | null",
+          behavior: "string"
+        },
+        result: "PASS | FAIL | PARTIAL | NOT_APPLICABLE | INDETERMINATE",
+        explanation: "string",
+        required_change: "string | null"
+      }
+    ],
+    transition_evaluation: {
+      exact_transition_key: "string",
+      expected_values: ["PASS", "FAIL"],
+      execution_to_supervisor_handoff: "PASS | FAIL | PARTIAL | INDETERMINATE",
+      missing_key_repair_branch: "PASS | FAIL | PARTIAL | INDETERMINATE",
+      fail_restarts_same_execution_step: "PASS | FAIL | PARTIAL | INDETERMINATE",
+      pass_advances_procedure: "PASS | FAIL | PARTIAL | INDETERMINATE",
+      explanation: "string"
+    },
+    unauthorized_or_invented_control_logic: [
+      {
+        program_lines: "string",
+        behavior: "string",
+        conflict_with_agents_md: "string"
+      }
+    ],
+    omissions: [
+      {
+        agents_md_lines: "string",
+        missing_behavior: "string",
+        consequence: "string"
+      }
+    ],
+    recommended_changes: [
+      {
+        priority: "REQUIRED | OPTIONAL",
+        change: "string",
+        reason: "string"
+      }
+    ]
+  };
+
+  const revisionSchema = {
+    response_type: "revision",
+    revision_basis: {
+      agents_md: "authoritative",
+      prior_evaluator_context: "used",
+      current_program: "implementation_being_revised"
+    },
+    corrections_applied: [
+      {
+        issue: "string",
+        change: "string",
+        agents_md_basis: "string"
+      }
+    ],
+    unresolved_requirements: ["string"],
+    revised_program: "<complete, non-truncated contents of send-to-gemini.js>"
+  };
+
   return [
-    "You are evaluating the supplied Gemini Supervisor JavaScript implementation against the supplied Agents.md procedure.",
-    "Agents.md is the authoritative specification for this evaluation. Do not replace, normalize, reinterpret, or supplement its requirements with general best practices unless you explicitly label that material as non-authoritative commentary.",
-    "Evaluate what the program actually does, not what its comments claim it does.",
-    "Inspect control flow, procedure sequencing, semantic-operator inputs, semantic-operator returns, supervisory-gate handoff, transition-key handling, PASS/FAIL branching, restart behavior, missing-key repair behavior, persistence/state updates, conversation/context handling, and termination behavior.",
-    "For every material Agents.md requirement relevant to this runtime, identify whether the program implements it. Do not stop after finding the first failure.",
-    "Pay particular attention to whether transitions are driven by the exact key:value returned by the semantic operators and whether every step's supervisory PASS/FAIL result correctly determines restart versus advance.",
-    "When the required transition key:value is absent, evaluate whether the program correctly echoes the relevant context and the responder's preceding response back to that responder and appends a system instruction identifying the missing key:value and requesting a corrected response.",
-    "Use the provided line numbers when citing evidence from either source.",
-    "Return only one JSON object with this exact top-level structure:",
-    JSON.stringify({
-      evaluation_basis: {
-        agents_md: "authoritative",
-        program: "implementation_under_test"
-      },
-      overall_result: "PASS | FAIL | INDETERMINATE",
-      executive_summary: "string",
-      requirement_evaluations: [
-        {
-          requirement_id: "string",
-          agents_md_reference: {
-            lines: "string",
-            requirement: "string"
-          },
-          program_reference: {
-            lines: "string | null",
-            behavior: "string"
-          },
-          result: "PASS | FAIL | PARTIAL | NOT_APPLICABLE | INDETERMINATE",
-          explanation: "string",
-          required_change: "string | null"
-        }
-      ],
-      transition_evaluation: {
-        exact_transition_key: "string",
-        expected_values: ["PASS", "FAIL"],
-        execution_to_supervisor_handoff: "PASS | FAIL | PARTIAL | INDETERMINATE",
-        missing_key_repair_branch: "PASS | FAIL | PARTIAL | INDETERMINATE",
-        fail_restarts_same_execution_step: "PASS | FAIL | PARTIAL | INDETERMINATE",
-        pass_advances_procedure: "PASS | FAIL | PARTIAL | INDETERMINATE",
-        explanation: "string"
-      },
-      unauthorized_or_invented_control_logic: [
-        {
-          program_lines: "string",
-          behavior: "string",
-          conflict_with_agents_md: "string"
-        }
-      ],
-      omissions: [
-        {
-          agents_md_lines: "string",
-          missing_behavior: "string",
-          consequence: "string"
-        }
-      ],
-      recommended_changes: [
-        {
-          priority: "REQUIRED | OPTIONAL",
-          change: "string",
-          reason: "string"
-        }
-      ]
-    }, null, 2),
+    "You are the independent Gemini Supervisor evaluator/reviser.",
+    "The latest user message in the evaluator conversation controls whether you evaluate the program or produce a corrected revision.",
+    "Agents.md is the authoritative specification. Preserve its actual procedure, return schemas, branches, loops, and supervisory gates. Do not invent substitute control logic.",
+    "Use prior evaluator conversation messages as context, including previously identified failures and corrections, but re-check them against the CURRENT Agents.md because Agents.md may have changed since the prior evaluation.",
+    "Evaluate or revise what the JavaScript actually does, not what comments claim it does.",
+    "For Step 3, honor the current Agents.md requirements for the executor and the supervisor to read evaluation-tests.md and evaluator-definitions.md at the beginning of their respective Step 3 work. Do not inject those documents into unrelated steps unless Agents.md requires it.",
+    "Transitions must be driven by the exact semantic-operator return key:value required by Agents.md. Missing required transition keys must follow the repair branch defined by the runtime contract and user instructions.",
+    "If the latest user message asks for an evaluation, return only one JSON object matching this evaluation schema:",
+    JSON.stringify(evaluationSchema, null, 2),
+    "If the latest user message asks for a revised/corrected JavaScript program, return only one JSON object matching this revision schema:",
+    JSON.stringify(revisionSchema, null, 2),
+    "For a revision request, revised_program MUST contain the entire replacement send-to-gemini.js file. Do not truncate it, use ellipses, omit unchanged sections, or provide a patch. Apply every correction supported by current Agents.md and the prior evaluator findings. If a requirement cannot be implemented from the available repository/runtime context without inventing an unspecified external interface, list it in unresolved_requirements instead of fabricating one.",
+    "Use the provided line numbers when citing source evidence in evaluation or correction metadata.",
     "",
-    "===== AGENTS.MD (AUTHORITATIVE) =====",
+    "===== CURRENT AGENTS.MD (AUTHORITATIVE) =====",
     numbered(agents),
     "",
-    "===== SEND-TO-GEMINI.JS (IMPLEMENTATION UNDER TEST) =====",
+    "===== CURRENT SEND-TO-GEMINI.JS =====",
     numbered(program)
   ].join("\n\n");
 }
@@ -179,13 +203,13 @@ async function callGemini(messages, systemInstruction) {
 
   const reply = body.candidates?.[0]?.content;
   if (reply?.role !== "model" || !Array.isArray(reply.parts) || reply.parts.length === 0) {
-    throw new Error(`Gemini returned no evaluation content: ${JSON.stringify(body)}`);
+    throw new Error(`Gemini returned no evaluator content: ${JSON.stringify(body)}`);
   }
 
   const replyText = reply.parts.map(part => part.text || "").join("\n").trim();
   return {
     reply,
-    evaluation: extractJson(replyText)
+    payload: extractJson(replyText)
   };
 }
 
@@ -208,7 +232,18 @@ async function main() {
 
   messages.contents.push(result.reply);
   writeJson(messagesPath, messages);
-  writeJson(outputPath, result.evaluation);
+
+  if (result.payload.response_type === "revision") {
+    if (typeof result.payload.revised_program !== "string" || result.payload.revised_program.trim() === "") {
+      throw new Error("Revision response did not contain a complete revised_program string.");
+    }
+    fs.writeFileSync(revisionOutputPath, result.payload.revised_program.endsWith("\n")
+      ? result.payload.revised_program
+      : result.payload.revised_program + "\n");
+    writeJson(evaluationOutputPath, result.payload);
+  } else {
+    writeJson(evaluationOutputPath, result.payload);
+  }
 
   console.log(JSON.stringify({
     runtime: "Node.js",
@@ -218,8 +253,9 @@ async function main() {
     message_stream: messagesPath,
     evaluated_program: programPath,
     authoritative_specification: agentsPath,
-    output: outputPath,
-    overall_result: result.evaluation.overall_result ?? null
+    output: evaluationOutputPath,
+    response_type: result.payload.response_type ?? null,
+    revision_output: result.payload.response_type === "revision" ? revisionOutputPath : null
   }, null, 2));
 }
 
