@@ -34,6 +34,17 @@
 11. **No role laundering through controller messages.** Re-labeling a Gemini-generated payload as a ChatGPT execution return, copying it through GitHub, or placing it into a ChatGPT-shaped schema does not change its role identity. The same prohibition applies in the opposite direction.
 12. **Gate duty.** Every Gemini Supervisory Gate must explicitly evaluate the execution return's role fields and server verification evidence as part of its granular evaluation before it may return PASS.
 
+## ChatGPT Turn Continuation and Gemini Handshake Protocol
+
+ChatGPT's current user-facing turn spans the complete Gemini commit-and-response handshake across all execution stages. Committing any `nextmessage` is never a turn-ending boundary. Immediately after committing any `nextmessage`, ChatGPT cannot end the turn; every new `nextmessage` commit creates a new mandatory wait state in which ChatGPT must wait for, retrieve, and inspect the corresponding Gemini response within the active turn.
+
+Handling Gemini verification outcomes requires continuous execution:
+- **On FAIL:** Merely reporting `FAIL` is strictly prohibited and constitutes an execution violation. ChatGPT must remain in the same turn, inspect the failure details, correct the same ChatGPT-owned execution step, commit the corrected `nextmessage` using the same run, and wait for Gemini's response again.
+- **On PASS:** If any subsequent execution step remains, ChatGPT must remain in the same turn, perform the next ChatGPT-owned step, commit that `nextmessage`, and wait for Gemini's response again.
+- **Turn Termination Condition:** ChatGPT may end the turn only after the latest committed `nextmessage` has received its corresponding Gemini response and the entire procedure has reached a terminal state where no further ChatGPT execution or `nextmessage` commitment is required.
+
+Ending a turn while a Gemini response is outstanding, ending immediately after any `nextmessage` commit, or failing to continue turn execution following a non-terminal Gemini response is a definitive procedure failure.
+
 ## Failure Examples
 
 ```json
@@ -182,6 +193,8 @@ Immediately after a step returns its execution schema, the supervisor evaluates 
 
 **Required execution role: ChatGPT model. Forbidden execution role: Gemini model.**
 
+**Turn-continuation requirement for Step 0.** ChatGPT's current user-facing turn spans the entire Step 0 commit-and-response handshake with Gemini. Committing a `nextmessage` for Step 0 is never a turn-ending boundary; once committed, ChatGPT cannot end the turn and must remain active to wait for and inspect Gemini's response. If Gemini returns FAIL, merely reporting FAIL is prohibited; ChatGPT must remain in the same turn, inspect the failure, correct the Step 0 execution, commit the corrected `nextmessage` using the same run, and wait for Gemini again. If Gemini returns PASS and another execution step remains, ChatGPT must remain in the same turn, proceed immediately to the next execution step, commit its `nextmessage`, and wait for Gemini's response. ChatGPT may end the turn only after the latest committed `nextmessage` receives a Gemini response and the procedure is completely terminal with no further ChatGPT execution or `nextmessage` commits required; ending while a Gemini response is outstanding, ending immediately after a commit, or halting after a non-terminal response constitutes a procedure failure.
+
 All responses to user requests use a return schema. As soon as a user request appears, create the start-of-turn record. Include that record under a key in the completed return schema. Print this step's record to persistent storage.
 
 ### Required record, return schema, or evidence
@@ -249,6 +262,8 @@ For a completed Step 0 Supervisory Gate, `evaluation_documents_read` must be `["
 
 **Required execution role: ChatGPT model. Forbidden execution role: Gemini model.**
 
+**Turn-continuation requirement for Step 1.** ChatGPT's current user-facing turn spans the entire Step 1 commit-and-response handshake with Gemini. Committing a `nextmessage` for Step 1 is never a turn-ending boundary; once committed, ChatGPT cannot end the turn and must remain active to wait for and inspect Gemini's response. If Gemini returns FAIL, merely reporting FAIL is prohibited; ChatGPT must remain in the same turn, inspect the failure, correct the Step 1 execution, commit the corrected `nextmessage` using the same run, and wait for Gemini again. If Gemini returns PASS and another execution step remains, ChatGPT must remain in the same turn, proceed immediately to the next execution step, commit its `nextmessage`, and wait for Gemini's response. ChatGPT may end the turn only after the latest committed `nextmessage` receives a Gemini response and the procedure is completely terminal with no further ChatGPT execution or `nextmessage` commits required; ending while a Gemini response is outstanding, ending immediately after a commit, or halting after a non-terminal response constitutes a procedure failure.
+
 Preserve the request as received. Print this step's record to persistent storage.
 
 ### Required record, return schema, or evidence
@@ -308,6 +323,8 @@ Preserve the request as received. Print this step's record to persistent storage
 ## Step 2
 
 **Required execution role: ChatGPT model. Forbidden execution role: Gemini model.**
+
+**Turn-continuation requirement for Step 2.** ChatGPT's current user-facing turn spans the entire Step 2 commit-and-response handshake with Gemini. Committing a `nextmessage` for Step 2 is never a turn-ending boundary; once committed, ChatGPT cannot end the turn and must remain active to wait for and inspect Gemini's response. If Gemini returns FAIL, merely reporting FAIL is prohibited; ChatGPT must remain in the same turn, inspect the failure, correct the Step 2 execution, commit the corrected `nextmessage` using the same run, and wait for Gemini again. If Gemini returns PASS and another execution step remains, ChatGPT must remain in the same turn, proceed immediately to the next execution step, commit its `nextmessage`, and wait for Gemini's response. ChatGPT may end the turn only after the latest committed `nextmessage` receives a Gemini response and the procedure is completely terminal with no further ChatGPT execution or `nextmessage` commits required; ending while a Gemini response is outstanding, ending immediately after a commit, or halting after a non-terminal response constitutes a procedure failure.
 
 Extract only requirements stated by the user. Preserve each requirement verbatim so it can be traced to the request. Print this step's record to persistent storage.
 
@@ -371,6 +388,8 @@ Extract only requirements stated by the user. Preserve each requirement verbatim
 ## Step 3
 
 **Required execution role: ChatGPT model. Forbidden execution role: Gemini model.**
+
+**Turn-continuation requirement for Step 3.** ChatGPT's current user-facing turn spans the entire Step 3 commit-and-response handshake with Gemini. Committing a `nextmessage` for Step 3 is never a turn-ending boundary; once committed, ChatGPT cannot end the turn and must remain active to wait for and inspect Gemini's response. If Gemini returns FAIL, merely reporting FAIL is prohibited; ChatGPT must remain in the same turn, inspect the failure, correct the Step 3 execution, commit the corrected `nextmessage` using the same run, and wait for Gemini again. If Gemini returns PASS and another execution step remains, ChatGPT must remain in the same turn, proceed immediately to the next execution step, commit its `nextmessage`, and wait for Gemini's response. ChatGPT may end the turn only after the latest committed `nextmessage` receives a Gemini response and the procedure is completely terminal with no further ChatGPT execution or `nextmessage` commits required; ending while a Gemini response is outstanding, ending immediately after a commit, or halting after a non-terminal response constitutes a procedure failure.
 
 ```json
 {
@@ -527,6 +546,8 @@ For a completed Step 3 Supervisory Gate, `evaluation_documents_read` must be `["
 ## Step 4
 
 **Required execution role: ChatGPT model. Forbidden execution role: Gemini model.**
+
+**Turn-continuation requirement for Step 4.** ChatGPT's current user-facing turn spans the entire Step 4 commit-and-response handshake with Gemini. Committing a `nextmessage` for Step 4 is never a turn-ending boundary; once committed, ChatGPT cannot end the turn and must remain active to wait for and inspect Gemini's response. If Gemini returns FAIL, merely reporting FAIL is prohibited; ChatGPT must remain in the same turn, inspect the failure, correct the Step 4 execution, commit the corrected `nextmessage` using the same run, and wait for Gemini again. If Gemini returns PASS and another execution step remains, ChatGPT must remain in the same turn, proceed immediately to the next execution step, commit its `nextmessage`, and wait for Gemini's response. ChatGPT may end the turn only after the latest committed `nextmessage` receives a Gemini response and the procedure is completely terminal with no further ChatGPT execution or `nextmessage` commits required; ending while a Gemini response is outstanding, ending immediately after a commit, or halting after a non-terminal response constitutes a procedure failure.
 
 ```json
 {
