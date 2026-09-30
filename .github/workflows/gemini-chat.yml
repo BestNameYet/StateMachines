@@ -1,4 +1,4 @@
-name: Gemini Supervisor message stream
+name: Gemini Supervisor state machine
 
 on:
   push:
@@ -10,11 +10,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: gemini-supervisor-message-stream
+  group: gemini-supervisor-state-machine
   cancel-in-progress: false
 
 jobs:
-  respond:
+  run-supervisor:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,20 +26,23 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Send conversation to Gemini and append reply
+      - name: Build and send one state-machine substep
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-2.5-flash
+          APPS_SCRIPT_WEB_APP_URL: ${{ secrets.APPS_SCRIPT_WEB_APP_URL }}
         run: node ChatMachines/GeminiSupervisor/send-to-gemini.js
 
-      - name: Commit updated message stream
+      - name: Commit returned state and context
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ChatMachines/GeminiSupervisor/messages.json
+          git add \
+            ChatMachines/GeminiSupervisor/current_state.json \
+            ChatMachines/GeminiSupervisor/messages.json
           if git diff --cached --quiet; then
-            echo "No message stream change."
+            echo "No state/context change."
             exit 0
           fi
-          git commit -m "Append Gemini response to message stream"
+          git commit -m "Advance Gemini Supervisor state machine"
           git push origin HEAD:main
