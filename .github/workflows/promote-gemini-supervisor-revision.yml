@@ -1,0 +1,35 @@
+name: Promote Gemini Supervisor revision
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiSupervisor/promotion-trigger/trigger.json
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Promote revised runtime
+        run: |
+          test -f ChatMachines/GeminiSupervisor/revised-send-to-gemini.js
+          cp ChatMachines/GeminiSupervisor/revised-send-to-gemini.js ChatMachines/GeminiSupervisor/send-to-gemini.js
+          rm ChatMachines/GeminiSupervisor/revised-send-to-gemini.js
+
+      - name: Commit promoted runtime
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A \
+            ChatMachines/GeminiSupervisor/send-to-gemini.js \
+            ChatMachines/GeminiSupervisor/revised-send-to-gemini.js
+          git commit -m "Promote run-scoped Gemini Supervisor runtime"
+          git push origin HEAD:main
