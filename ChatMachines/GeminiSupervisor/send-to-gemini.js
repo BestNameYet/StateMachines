@@ -1,18 +1,20 @@
 /**
  * Gemini Supervisor runner for GitHub Actions / Node.js 22.
  *
- * Agents.md controls the procedure. Every semantic-operator call is persisted
- * as an input/return pair in both the conversation stream and the record store.
- * The exact supervisory transition key is:
- *   supervisory_gate.gate_result = "PASS" | "FAIL"
+ * Agents.md controls the procedure. Every user utterance triggers Bootstrap before Step 0.
+ * Runs are isolated at ChatMachines/GeminiSupervisor/runs/<run_nonce>/
+ * containing state.json, messages.json, and store/store.json.
+ *
+ * Every semantic-operator call is persisted as an input/return exchange in both
+ * messages.json and store/store.json with the canonical run_nonce.
+ *
+ * Exact supervisory transition key: supervisory_gate.gate_result = "PASS" | "FAIL"
  */
 const fs = require("node:fs");
+const path = require("node:path");
 
 const root = "ChatMachines/GeminiSupervisor";
-const messagesPath = `${root}/messages.json`;
-const nextPath = `${root}/nextmessage/nextmessage.json`;
-const statePath = `${root}/current_state.json`;
-const storePath = `${root}/store/store.json`;
+const triggerPath = `${root}/nextmessage/nextmessage.json`;
 const agentsPath = `${root}/Agents.md`;
 const testsPath = `${root}/evaluation-tests.md`;
 const definitionsPath = `${root}/evaluator-definitions.md`;
@@ -22,46 +24,31 @@ const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const transitionPath = ["supervisory_gate", "gate_result"];
 const transitionValues = new Set(["PASS", "FAIL"]);
 
-function readJson(path) {
-  return JSON.parse(fs.readFileSync(path, "utf8"));
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function readText(path) {
-  return fs.readFileSync(path, "utf8");
+function readText(filePath) {
+  return fs.readFileSync(filePath, "utf8");
 }
 
-function writeJson(path, value) {
-  fs.writeFileSync(path, JSON.stringify(value, null, 2) + "\n");
+function writeJson(filePath, value) {
+  const dir = path.dirname(filePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + "\n");
 }
 
 function now() {
   return new Date().toISOString();
 }
 
-function ensureStore(store) {
-  if (!store || typeof store !== "object") store = {};
-  if (!Array.isArray(store.records)) store.records = [];
-  return store;
-}
-
-function appendNextMessage(messages, nextmessage) {
-  if (!Array.isArray(messages.contents)) {
-    throw new Error("messages.json must contain contents[].");
+function validateRunNonce(runNonce) {
+  if (typeof runNonce !== "string" || !/^[a-zA-Z0-9_-]+$/.test(runNonce)) {
+    throw new Error(`Invalid run_nonce: "${runNonce}". Must be a non-empty path-safe identifier.`);
   }
-  if (
-    !nextmessage ||
-    nextmessage.role !== "user" ||
-    !Array.isArray(nextmessage.parts) ||
-    !nextmessage.parts.some(part => typeof part.text === "string")
-  ) {
-    throw new Error("nextmessage.json.nextmessage must be a Gemini user content object containing text.");
-  }
-
-  const last = messages.contents[messages.contents.length - 1];
-  if (JSON.stringify(last) !== JSON.stringify(nextmessage)) {
-    messages.contents.push(nextmessage);
-  }
-  return messages;
+  return runNonce;
 }
 
 function extractProcedureSteps(agentsText) {
@@ -69,7 +56,6 @@ function extractProcedureSteps(agentsText) {
   const seen = new Set();
   const pattern = /^## Step\s+(\d+)\s*$/gm;
   let match;
-
   while ((match = pattern.exec(agentsText)) !== null) {
     const step = Number(match[1]);
     if (!seen.has(step)) {
@@ -77,15 +63,91 @@ function extractProcedureSteps(agentsText) {
       found.push(step);
     }
   }
-
   if (found.length === 0) {
     throw new Error("Agents.md contains no procedure steps matching '## Step N'.");
   }
-
   return found.sort((a, b) => a - b);
 }
 
-function ensureProcedureState(state, steps) {
+function initializeOrValidateRunContainer(runNonce, nextmessage, steps) {
+  const runDir = path.join(root, "runs", runNonce);
+  const stateFile = path.join(runDir, "state.json");
+  const messagesFile = path.join(runDir, "messages.json");
+  const storeFile = path.join(runDir, "store", "store.json");
+
+  let stateWrapper;
+  let messages;
+  let store;
+
+  const isNewRun = !fs.existsSync(stateFile) && !fs.existsSync(messagesFile);
+
+  if (isNewRun) {
+    fs.mkdirSync(path.join(runDir, "store"), { recursive: true });
+
+    const initialState = {
+      current_state: {
+        run_nonce: runNonce,
+        status: "running",
+        created_at: now(),
+        updated_at: now(),
+        procedure: {
+          current_step: steps[0],
+          completed_steps: [],
+          remaining_steps: [...steps],
+          step_records: {}
+        }
+      }
+    };
+
+    const initialMessages = {
+      run_nonce: runNonce,
+      contents: [nextmessage]
+    };
+
+    const initialStore = {
+      run_nonce: runNonce,
+      created_at: now(),
+      initial_user_message: nextmessage,
+      records: []
+    };
+
+    writeJson(stateFile, initialState);
+    writeJson(messagesFile, initialMessages);
+    writeJson(storeFile, initialStore);
+
+    stateWrapper = initialState;
+    messages = initialMessages;
+    store = initialStore;
+  } else {
+    if (!fs.existsSync(stateFile) || !fs.existsSync(messagesFile) || !fs.existsSync(storeFile)) {
+      throw new Error(`Incomplete run container at ${runDir}. Required files missing.`);
+    }
+
+    stateWrapper = readJson(stateFile);
+    messages = readJson(messagesFile);
+    store = readJson(storeFile);
+
+    if (stateWrapper?.current_state?.run_nonce !== runNonce) {
+      throw new Error(`Mismatched run_nonce in state.json: expected ${runNonce}, found ${stateWrapper?.current_state?.run_nonce}`);
+    }
+    if (messages?.run_nonce !== runNonce) {
+      throw new Error(`Mismatched run_nonce in messages.json: expected ${runNonce}, found ${messages?.run_nonce}`);
+    }
+    if (store?.run_nonce !== runNonce) {
+      throw new Error(`Mismatched run_nonce in store.json: expected ${runNonce}, found ${store?.run_nonce}`);
+    }
+
+    if (!Array.isArray(messages.contents)) {
+      messages.contents = [];
+    }
+    const lastMessage = messages.contents[messages.contents.length - 1];
+    if (JSON.stringify(lastMessage) !== JSON.stringify(nextmessage)) {
+      messages.contents.push(nextmessage);
+      writeJson(messagesFile, messages);
+    }
+  }
+
+  const state = stateWrapper.current_state;
   state.procedure = state.procedure || {};
   state.procedure.completed_steps = Array.isArray(state.procedure.completed_steps)
     ? state.procedure.completed_steps
@@ -101,7 +163,16 @@ function ensureProcedureState(state, steps) {
     step => !state.procedure.completed_steps.includes(step)
   );
 
-  return state;
+  return {
+    runDir,
+    stateFile,
+    messagesFile,
+    storeFile,
+    stateWrapper,
+    state,
+    messages,
+    store
+  };
 }
 
 function replyText(reply) {
@@ -113,15 +184,17 @@ function parseReturnedSchema(reply) {
   try {
     return JSON.parse(text);
   } catch (_) {
-    const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)```\s*$/i);
-    if (!fenced) throw _;
-    return JSON.parse(fenced[1].trim());
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenced) {
+      return JSON.parse(fenced[1].trim());
+    }
+    throw _;
   }
 }
 
-function valueAtExactPath(value, path) {
+function valueAtExactPath(value, pathArr) {
   let current = value;
-  for (const key of path) {
+  for (const key of pathArr) {
     if (!current || typeof current !== "object" || !Object.prototype.hasOwnProperty.call(current, key)) {
       return { found: false, value: undefined };
     }
@@ -131,13 +204,24 @@ function valueAtExactPath(value, path) {
 }
 
 function normalizedGateValue(schema) {
-  const result = valueAtExactPath(schema, transitionPath);
+  let result = valueAtExactPath(schema, transitionPath);
   if (!result.found || typeof result.value !== "string") {
-    return { valid: false, value: result.value };
+    const altPath = ["supervisory_gate", "gate_result", "select"];
+    const alt = valueAtExactPath(schema, altPath);
+    if (alt.found && typeof alt.value === "string") {
+      result = alt;
+    } else {
+      const valPath = ["supervisory_gate", "gate_result", "value"];
+      const val = valueAtExactPath(schema, valPath);
+      if (val.found && typeof val.value === "string") {
+        result = val;
+      } else {
+        return { valid: false, value: result.value };
+      }
+    }
   }
-
-  const value = result.value.toUpperCase();
-  return { valid: transitionValues.has(value), value };
+  const upper = result.value.toUpperCase();
+  return { valid: transitionValues.has(upper), value: upper };
 }
 
 function baseSystemInstruction(step) {
@@ -192,15 +276,15 @@ async function generate(contents, appendedSystemInstruction = "", step = null) {
   if (reply?.role !== "model" || !Array.isArray(reply.parts) || reply.parts.length === 0) {
     throw new Error(`Gemini returned no model content: ${JSON.stringify(body)}`);
   }
-
   return reply;
 }
 
-function persistSemanticExchange(messages, store, metadata, userMessage, modelReply) {
+function persistSemanticExchange(runNonce, messages, store, messagesFile, storeFile, metadata, userMessage, modelReply) {
   messages.contents.push(userMessage, modelReply);
 
   const record = {
     record_id: `${Date.now()}-${store.records.length + 1}`,
+    run_nonce: runNonce,
     timestamp: now(),
     step: metadata.step,
     operation: metadata.operation,
@@ -214,22 +298,25 @@ function persistSemanticExchange(messages, store, metadata, userMessage, modelRe
   };
 
   store.records.push(record);
-  writeJson(messagesPath, messages);
-  writeJson(storePath, store);
+  writeJson(messagesFile, messages);
+  writeJson(storeFile, store);
   return store.records.length - 1;
 }
 
-function updateStoredReturn(store, recordIndex, fields) {
+function updateStoredRecord(store, storeFile, recordIndex, fields) {
   Object.assign(store.records[recordIndex], fields);
-  writeJson(storePath, store);
+  writeJson(storeFile, store);
 }
 
-async function callSemanticOperator(messages, store, metadata, userMessage, appendedSystemInstruction = "") {
+async function callSemanticOperator(runNonce, messages, store, messagesFile, storeFile, metadata, userMessage, appendedSystemInstruction = "") {
   const contents = messages.contents.concat(userMessage);
   const reply = await generate(contents, appendedSystemInstruction, metadata.step);
   const recordIndex = persistSemanticExchange(
+    runNonce,
     messages,
     store,
+    messagesFile,
+    storeFile,
     { ...metadata, appendedSystemInstruction },
     userMessage,
     reply
@@ -240,11 +327,23 @@ async function callSemanticOperator(messages, store, metadata, userMessage, appe
 function step3RequiresLoop(schema) {
   if (!schema || typeof schema !== "object") return false;
   const step3 = schema.Step_3 || schema;
-  const loopDecision = step3?.G?.Loop_Decision;
-  const returnTo = step3?.G?.return_to;
-  const completed = step3?.step_3_completed;
+  
+  let loopDecision = step3?.G?.Loop_Decision;
+  if (loopDecision && typeof loopDecision === "object" && "value" in loopDecision) {
+    loopDecision = loopDecision.value;
+  }
 
-  if (typeof loopDecision === "string" && loopDecision.toLowerCase() === "true") {
+  let returnTo = step3?.G?.return_to;
+  if (returnTo && typeof returnTo === "object" && "value" in returnTo) {
+    returnTo = returnTo.value;
+  }
+
+  let completed = step3?.step_3_completed;
+  if (completed && typeof completed === "object" && "value" in completed) {
+    completed = completed.value;
+  }
+
+  if (typeof loopDecision === "string" && loopDecision.trim().toLowerCase() === "true") {
     return true;
   }
   if (typeof returnTo === "string" && returnTo.includes("Step_3.A")) {
@@ -256,7 +355,7 @@ function step3RequiresLoop(schema) {
   return false;
 }
 
-async function requestExecutionSchema(messages, store, step, attempt, previousFailure) {
+async function requestExecutionSchema(runNonce, messages, store, messagesFile, storeFile, step, attempt, previousFailure) {
   const promptParts = [
     `Perform exactly Step ${step} from Agents.md.`,
     "Return only the complete execution return schema required by that step as valid JSON.",
@@ -289,8 +388,11 @@ async function requestExecutionSchema(messages, store, step, attempt, previousFa
 
   while (true) {
     let call = await callSemanticOperator(
+      runNonce,
       messages,
       store,
+      messagesFile,
+      storeFile,
       { step, operation, attempt },
       userMessage
     );
@@ -299,7 +401,7 @@ async function requestExecutionSchema(messages, store, step, attempt, previousFa
     while (true) {
       try {
         schema = parseReturnedSchema(call.reply);
-        updateStoredReturn(store, call.recordIndex, { return_schema: schema });
+        updateStoredRecord(store, storeFile, call.recordIndex, { return_schema: schema });
         break;
       } catch (error) {
         const correction = [
@@ -317,8 +419,11 @@ async function requestExecutionSchema(messages, store, step, attempt, previousFa
         };
         operation = "execution_json_repair";
         call = await callSemanticOperator(
+          runNonce,
           messages,
           store,
+          messagesFile,
+          storeFile,
           { step, operation, attempt },
           userMessage,
           correction
@@ -345,7 +450,7 @@ async function requestExecutionSchema(messages, store, step, attempt, previousFa
   }
 }
 
-async function requestSupervisorySchema(messages, store, step, attempt, executionReturn) {
+async function requestSupervisorySchema(runNonce, messages, store, messagesFile, storeFile, step, attempt, executionReturn) {
   const supervisorPrompt = [
     `Perform only the Supervisory Gate for Step ${step} from Agents.md.`,
     "The execution return below is the input to this Supervisory Gate.",
@@ -373,8 +478,11 @@ async function requestSupervisorySchema(messages, store, step, attempt, executio
 
   while (true) {
     const call = await callSemanticOperator(
+      runNonce,
       messages,
       store,
+      messagesFile,
+      storeFile,
       { step, operation, attempt },
       userMessage,
       appendedSystemInstruction
@@ -384,7 +492,7 @@ async function requestSupervisorySchema(messages, store, step, attempt, executio
     let parseError = null;
     try {
       schema = parseReturnedSchema(call.reply);
-      updateStoredReturn(store, call.recordIndex, { return_schema: schema });
+      updateStoredRecord(store, storeFile, call.recordIndex, { return_schema: schema });
     } catch (error) {
       parseError = error;
     }
@@ -392,7 +500,7 @@ async function requestSupervisorySchema(messages, store, step, attempt, executio
     if (schema) {
       const gate = normalizedGateValue(schema);
       if (gate.valid) {
-        updateStoredReturn(store, call.recordIndex, { transition_value: gate.value });
+        updateStoredRecord(store, storeFile, call.recordIndex, { transition_value: gate.value });
         return { reply: call.reply, schema, gate_result: gate.value };
       }
     }
@@ -463,18 +571,30 @@ async function main() {
 
   const agentsText = readText(agentsPath);
   const steps = extractProcedureSteps(agentsText);
-  const messages = appendNextMessage(
-    readJson(messagesPath),
-    readJson(nextPath).nextmessage
-  );
-  const store = ensureStore(readJson(storePath));
 
-  const stateWrapper = readJson(statePath);
-  if (!stateWrapper.current_state) {
-    throw new Error("current_state.json must contain current_state.");
+  const trigger = readJson(triggerPath);
+  const runNonce = validateRunNonce(trigger.run_nonce);
+  const nextmessage = trigger.nextmessage;
+
+  if (
+    !nextmessage ||
+    nextmessage.role !== "user" ||
+    !Array.isArray(nextmessage.parts) ||
+    !nextmessage.parts.some(p => typeof p.text === "string")
+  ) {
+    throw new Error("trigger nextmessage must be a Gemini user content object containing text.");
   }
 
-  const state = ensureProcedureState(stateWrapper.current_state, steps);
+  const {
+    stateFile,
+    messagesFile,
+    storeFile,
+    stateWrapper,
+    state,
+    messages,
+    store
+  } = initializeOrValidateRunContainer(runNonce, nextmessage, steps);
+
   state.status = "running";
 
   while (state.procedure.current_step !== null) {
@@ -486,15 +606,22 @@ async function main() {
       attempt += 1;
 
       const execution = await requestExecutionSchema(
+        runNonce,
         messages,
         store,
+        messagesFile,
+        storeFile,
         step,
         attempt,
         previousFailure
       );
+
       const supervision = await requestSupervisorySchema(
+        runNonce,
         messages,
         store,
+        messagesFile,
+        storeFile,
         step,
         attempt,
         execution.schema
@@ -510,9 +637,7 @@ async function main() {
       );
 
       state.updated_at = now();
-      writeJson(statePath, { current_state: state });
-      writeJson(messagesPath, messages);
-      writeJson(storePath, store);
+      writeJson(stateFile, stateWrapper);
 
       if (supervision.gate_result === "FAIL") {
         previousFailure = {
@@ -528,18 +653,17 @@ async function main() {
   }
 
   state.updated_at = now();
-  writeJson(statePath, { current_state: state });
-  writeJson(messagesPath, messages);
-  writeJson(storePath, store);
+  writeJson(stateFile, stateWrapper);
 
   console.log(JSON.stringify({
     runtime: "Node.js",
     node_version: process.version,
     model,
+    run_nonce: runNonce,
     transition_key: transitionPath.join("."),
     completed_steps: state.procedure.completed_steps,
     stored_records: store.records.length,
-    store: storePath,
+    store: storeFile,
     status: state.status
   }, null, 2));
 }
