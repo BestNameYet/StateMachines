@@ -8,12 +8,12 @@
  */
 const fs = require('node:fs');
 
-const root = 'ChatMachines/GeminiSupervisor';
+const supervisorRoot = 'ChatMachines/GeminiSupervisor';
 const evaluationRoot = 'ChatMachines/GeminiEvaluation';
-const agentsPath = `${root}/Agents.md`;
-const programPath = `${root}/send-to-gemini.js`;
-const nextPath = `${root}/evaluator-nextmessage/nextmessage.json`;
-const messagesPath = `${root}/evaluator-messages.json`;
+const agentsPath = `${supervisorRoot}/Agents.md`;
+const programPath = `${supervisorRoot}/send-to-gemini.js`;
+const nextPath = `${evaluationRoot}/evaluator-nextmessage/nextmessage.json`;
+const messagesPath = `${evaluationRoot}/evaluator-messages.json`;
 const evaluationOutputPath = `${evaluationRoot}/program-evaluation.json`;
 const revisionAgentsOutputPath = `${evaluationRoot}/revised-Agents.md`;
 const revisionProgramOutputPath = `${evaluationRoot}/revised-send-to-gemini.js`;

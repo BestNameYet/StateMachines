@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ChatMachines/GeminiSupervisor/evaluator-nextmessage/nextmessage.json
+      - ChatMachines/GeminiEvaluation/.migration-trigger-disabled
 
 permissions:
   contents: write
@@ -30,14 +30,14 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
-        run: node ChatMachines/GeminiSupervisor/evaluate-supervisor.js
+        run: node ChatMachines/GeminiEvaluation/evaluate-supervisor.js
 
       - name: Commit evaluator response
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
-            ChatMachines/GeminiSupervisor/evaluator-messages.json \
+            ChatMachines/GeminiEvaluation/evaluator-messages.json \
             ChatMachines/GeminiEvaluation/program-evaluation.json
           if [ -f ChatMachines/GeminiEvaluation/revised-Agents.md ]; then
             git add ChatMachines/GeminiEvaluation/revised-Agents.md
