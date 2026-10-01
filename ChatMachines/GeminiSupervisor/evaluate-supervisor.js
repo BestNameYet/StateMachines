@@ -9,13 +9,14 @@
 const fs = require('node:fs');
 
 const root = 'ChatMachines/GeminiSupervisor';
+const evaluationRoot = 'ChatMachines/GeminiEvaluation';
 const agentsPath = `${root}/Agents.md`;
 const programPath = `${root}/send-to-gemini.js`;
 const nextPath = `${root}/evaluator-nextmessage/nextmessage.json`;
 const messagesPath = `${root}/evaluator-messages.json`;
-const evaluationOutputPath = `${root}/program-evaluation.json`;
-const revisionAgentsOutputPath = `${root}/revised-Agents.md`;
-const revisionProgramOutputPath = `${root}/revised-send-to-gemini.js`;
+const evaluationOutputPath = `${evaluationRoot}/program-evaluation.json`;
+const revisionAgentsOutputPath = `${evaluationRoot}/revised-Agents.md`;
+const revisionProgramOutputPath = `${evaluationRoot}/revised-send-to-gemini.js`;
 
 const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
@@ -141,7 +142,7 @@ function buildSystemInstruction(agents, program) {
     'Preserve the intended procedure, per-step return schemas, branches, loops, supervisory gates, run isolation, persistence, and user-request semantics. Do not invent substitute control logic.',
     'The per-step return schema is the central communication/control surface for that step. A step does not communicate completion, advancement, or a valid execution result outside its required return schema.',
     'return_schema_completed refers only to completion of the governing step return schema, never completion of the whole multi-step procedure.',
-    'For Step 3, evaluation-tests.md may be supplied as the Step3_TSR test corpus. Evaluation definitions and pass/fail criteria are read from Agents.md itself, not an external evaluator-definitions.md file.',
+    'For Step 3, ChatMachines/GeminiEvaluation/evaluation-tests.md may be supplied as the Step3_TSR test corpus. Evaluation definitions and pass/fail criteria are read from Agents.md itself, not an external evaluator-definitions.md file.',
     'Transitions are driven by supervisory_gate.gate_result. FAIL repeats the same execution step; PASS advances exactly one step after persistence/checkpoint; missing or malformed supervisory transition data is repaired only on the supervisory side.',
     'If the latest user message asks for an evaluation, return only one JSON object matching this evaluation schema:',
     JSON.stringify(evaluationSchema, null, 2),
