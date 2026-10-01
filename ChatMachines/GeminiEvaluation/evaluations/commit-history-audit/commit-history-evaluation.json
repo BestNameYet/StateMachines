@@ -1,0 +1,2210 @@
+{
+  "response_type": "generic_evaluation",
+  "overall_result": "FAIL",
+  "evaluation_heuristic": "Evaluate the configured commit_history artifact against original_user_request. For commit coverage, treat git_log as the authoritative commit sequence for the lineage and cutoff represented by that log. First determine whether every commit represented by git_log that is in scope under the original request is represented exactly once in commit_history, in correct chronological order; report all missing, extra, duplicate, or misordered commits explicitly. Then evaluate every semantic SUCCESS/FAILURE judgment contained in commit_history. Do not sample. For each recorded commit judgment, determine whether the status and rationale are supported by available evidence and by the original request definition: SUCCESS means the initiating user goal was met such that the user was satisfied with that commit; FAILURE means the goal was not met and/or additional work was necessary to meet it. Do not infer user satisfaction merely from absence of an immediate corrective commit. When the initiating user prompt or subsequent user feedback is not present in the supplied inputs, mark the semantic judgment INDETERMINATE unless the supplied evidence independently establishes the requested success/failure condition. Distinguish a commit that is merely an intermediate implementation step from a commit that itself failed its own initiating user request. Additional later work is evidence of FAILURE only when that later work was necessary to satisfy the same initiating user goal. Also evaluate whether every per-commit field required by original_user_request is present and semantically supported: commit number, description, all affected files, how each file changed, why each change was made, date/time, wider movement/pattern/goal when applicable, and success/failure evaluation relative to the initiating prompt. Return an exhaustive result. Do not truncate, sample, or collapse individual semantic evaluations.",
+  "input_inventory": [
+    {
+      "key": "git_log",
+      "source": "/home/runner/work/StateMachines/StateMachines/ChatMachines/GeminiSupervisor/commit history/git-log.txt",
+      "role_in_evaluation": "Authoritative ground-truth commit sequence and lineage"
+    },
+    {
+      "key": "commit_history",
+      "source": "/home/runner/work/StateMachines/StateMachines/ChatMachines/GeminiSupervisor/commit history/commit-history.md",
+      "role_in_evaluation": "Evaluation target artifact containing commit-by-commit records and semantic judgments"
+    },
+    {
+      "key": "original_user_request",
+      "source": "config.literal",
+      "role_in_evaluation": "Specification defining scope, mandatory per-commit fields, and success/failure definitions"
+    }
+  ],
+  "coverage_evaluation": {
+    "ground_truth_commit_count": 236,
+    "artifact_commit_count": 235,
+    "missing_commits": [
+      {
+        "sha": "032d73557b8f82c75b14f98ced8678e05751e294",
+        "explanation": "Commit 032d73557b8f82c75b14f98ced8678e05751e294 ('Add GeminiSupervisor full commit history audit') created ChatMachines/GeminiSupervisor/commit history/commit-history.md and is present in git_log within the lineage paths, but was omitted from the artifact's commit records."
+      }
+    ],
+    "extra_commits": [],
+    "duplicate_commits": [],
+    "ordering_errors": [],
+    "result": "FAIL",
+    "explanation": "The artifact covers 235 of 236 in-scope commits. While all 235 included commits appear in exact chronological order without duplicates or extraneous commits, commit 032d73557b8f82c75b14f98ced8678e05751e294 is omitted."
+  },
+  "contract_evaluation": [
+    {
+      "requirement": "Complete lineage commit coverage for GeminiSupervisor and predecessor folder",
+      "result": "FAIL",
+      "evidence": "git_log contains 236 commits along the lineage paths up through 032d73557b8f82c75b14f98ced8678e05751e294, whereas commit-history.md records only 235 commits.",
+      "required_change": "Include commit 032d73557b8f82c75b14f98ced8678e05751e294 in the audit record."
+    },
+    {
+      "requirement": "Per-commit field presence: commit number, description, date/time, author, wider movement/pattern/goal",
+      "result": "PASS",
+      "evidence": "All 235 entries contain headings with commit numbers and SHAs, as well as Date/time, Author, Description, and Wider movement / pattern / goal metadata fields.",
+      "required_change": null
+    },
+    {
+      "requirement": "Per-commit affected files inventory and change explanation",
+      "result": "PASS",
+      "evidence": "Each commit entry includes a structured Markdown table listing every repository file affected, change type (A/M/D/R/C/T), and an explanation of how the file changed including diff line stats.",
+      "required_change": null
+    },
+    {
+      "requirement": "Per-commit rationale ('why each change was made')",
+      "result": "PASS",
+      "evidence": "Every commit entry contains a dedicated 'Why this commit was made' section grounded in commit metadata and run records.",
+      "required_change": null
+    },
+    {
+      "requirement": "Success/failure semantic evaluations relative to initiating prompt and user satisfaction",
+      "result": "FAIL",
+      "evidence": "The artifact systematically infers SUCCESS from the mere absence of immediate corrective follow-up when no user prompt or feedback is recovered, and classifies normal intermediate implementation steps as FAILURE. The evaluation heuristic explicitly prohibits inferring user satisfaction from the absence of an immediate corrective commit and requires marking judgments INDETERMINATE when user prompt or feedback is missing.",
+      "required_change": "Update semantic evaluations to INDETERMINATE whenever the initiating prompt or feedback is missing or unverified, and avoid classifying intermediate implementation steps as failures unless they failed their own initiating request."
+    }
+  ],
+  "semantic_evaluations": [
+    {
+      "commit_number": 1,
+      "commit_sha": "c0f0b0ca45d9099dd36459d4bbe9cff24cacadc0",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 2,
+      "commit_sha": "fc0cedc22617036f17d049a204e7dfe265f9ec98",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 3,
+      "commit_sha": "34322f0abbe3c125f4f87765f5bd3d77c8664c0a",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 4,
+      "commit_sha": "042bf800c29a585b80aaa4bef30c21253ebec425",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 5,
+      "commit_sha": "713cbfd3a5cbf48675f43a267a8d2468367e352b",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 6,
+      "commit_sha": "3b8dea0e020e13b8e706c67ea14dfe5d669d0785",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 7,
+      "commit_sha": "7375605c886c76d6738eed862294c463a3e9fbc9",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 8,
+      "commit_sha": "ff80cca77619c6846df6e73559ef32aa3be81e96",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 9,
+      "commit_sha": "5b7c2b70f48f122dfd256daad97a087aa3f282b4",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 10,
+      "commit_sha": "f80bf64f1566d7a03b8ad3233112ec76a6279fea",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 11,
+      "commit_sha": "bbdd97a212d60001ab59aabd56d9b61af5cdc0e4",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 12,
+      "commit_sha": "9dd3710e79baf4141ea38da2ca24f8f20f17e7c9",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 13,
+      "commit_sha": "fa26c2818d45efa77a830bbf2c3b45ec034b395d",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 14,
+      "commit_sha": "1dc42f621fd5d987eea0c010a9209b510c242307",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 15,
+      "commit_sha": "de40eb2479731231da3603e92273b1f754457e2f",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 16,
+      "commit_sha": "d78ed05fcc7341df5b02a8cf8d2a50c757907ea0",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 17,
+      "commit_sha": "25c69457d67cc4a25aab15bf4ada84478e6966e6",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 18,
+      "commit_sha": "4a19ee16e063266d10bb79ae3b8a6244f21487d6",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 19,
+      "commit_sha": "d6e692fc1e9370d29c5a2a6422f33cf87376d913",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 20,
+      "commit_sha": "866056b5da5ede8cab87b2feb8626fb55b8ea5cf",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 21,
+      "commit_sha": "b8e7979b9ffcb4f44c6ac932beff2bdd87291007",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 22,
+      "commit_sha": "539117c7a3c0f44a08cfd3b9a98370a96e5c352b",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 23,
+      "commit_sha": "a736881717b5c4f2b2ce153e524e2c23139f513d",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 24,
+      "commit_sha": "aac8882654d7e7bf081df6dc6cf4e47281ccf353",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 25,
+      "commit_sha": "6b480df36a91cdfc44149228d0bb7cec999b5f7d",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 26,
+      "commit_sha": "8fb7ee47710950d4bf9f064fd8d5926145676379",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 27,
+      "commit_sha": "700345a61464ead562eff92cfe8aa6bf657444f3",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 28,
+      "commit_sha": "f0c779be85146da07ebb5874e8689107d9efdf29",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 29,
+      "commit_sha": "d2404a5981df4d12cc34a034271b5a750e66209a",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 30,
+      "commit_sha": "d64f37ab2a3eb09367cbe8df3c7e24555bee2961",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 31,
+      "commit_sha": "f164eaeeb2e2879287bd49a6ed67db91b986689c",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 32,
+      "commit_sha": "c8099645442f021cc568d2026062b5e685011490",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 33,
+      "commit_sha": "5c3afb224b04003cd4ccaa8fb0e303aac4f6efc9",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 34,
+      "commit_sha": "2f23dc11fdbfc06450ea92d91ec7684bcbc4ae85",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "Without an initiating prompt, a subsequent commit touching the same file does not establish user-level goal failure.",
+      "evidence": "Prompt text unrecovered; cannot determine whether later commit was part of the original goal."
+    },
+    {
+      "commit_number": 35,
+      "commit_sha": "c66d3e37417bd831d4d8b58ddc19bde080082345",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale explicitly acknowledges inferring success from history."
+    },
+    {
+      "commit_number": 36,
+      "commit_sha": "89a84da5321a0b821cb94c3377e6f80c5c33a9dc",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 37,
+      "commit_sha": "20e1fc8a8e0871cb421bd6427cf9c26b10033629",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 38,
+      "commit_sha": "43a6879539b4ef2540e0e396d890792d8e49d252",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 39,
+      "commit_sha": "baa514607812455e878cf6b9ad21c6722250d926",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 40,
+      "commit_sha": "dadb9afd4d24aaf442ac9d10e31d6817749c78d3",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 41,
+      "commit_sha": "f8c4d091d3abc2e1d6e5f6721b5104801ef57e59",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 42,
+      "commit_sha": "f6359a59901c40e7d1b42f59933d643180bbe7a7",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 43,
+      "commit_sha": "7446099d538040ad22cb5d36bffa4ef3fabc9702",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 44,
+      "commit_sha": "ed388990e9a884d116c6ce5bd9059b8c94282ff8",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 45,
+      "commit_sha": "71a63d525d2c5bd31768906305d28e84c3597a09",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 46,
+      "commit_sha": "d628a2c1fcf68b620657a4c762cec4a952881042",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 47,
+      "commit_sha": "b4cd6f54263b3c6dbabcffb9f9769569a92fd97c",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 48,
+      "commit_sha": "099163fa453593e969db3c2eef85afd93e6aa9cb",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 49,
+      "commit_sha": "2ba1bb1a38664a413412b112a2315e2c119ff8d9",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale explicitly acknowledges inferring success from history."
+    },
+    {
+      "commit_number": 50,
+      "commit_sha": "f96e046a3a0a8771477caa73f9c7b779863cd95f",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 51,
+      "commit_sha": "3d941bcfe3f3c637e7a4f120721a92f7080fba4d",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 52,
+      "commit_sha": "04ad74c60463b4cf742bbcd3b15f254ba25f4925",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 53,
+      "commit_sha": "b2975630bc015ed71c7e05e774bcc8f14da4740b",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 54,
+      "commit_sha": "b351daacd5e5bc45919ff6114c59311cb9282504",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 55,
+      "commit_sha": "d33dc85ad94ef0263a73c112355db99d05e84fab",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 56,
+      "commit_sha": "7de67f507c6b615fe3071f2f10f3c7707b45b481",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 57,
+      "commit_sha": "6d0f5cfba0f84d038bb7fe12857a953cb314766f",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 58,
+      "commit_sha": "b8f22c0366d3b178a2ef7b2481e4888eea42f972",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 59,
+      "commit_sha": "c0485775f42c1309be97110610da90985cb303e3",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 60,
+      "commit_sha": "f35d54e5190b573a3d9676d19c450bfe00806e76",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 61,
+      "commit_sha": "998796ad329046d18a8a91f2701400dfc3671cbc",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 62,
+      "commit_sha": "884603ee2707198ac010b9a29c9efef5380725f4",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 63,
+      "commit_sha": "8fcd57f2ee557cbcead41f3a8003d475e18876af",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 64,
+      "commit_sha": "1948f5478325f05b41fd551d85ea8df57f30d9d1",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 65,
+      "commit_sha": "b4b0b858589dcde32a99dfdb00f7336cac8fd5cf",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 66,
+      "commit_sha": "9b39b3f3f1cd381397fae7f94be6f7b1f168510e",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 67,
+      "commit_sha": "37bb80045376504bba7d259e2ceb86c3ed2ae626",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 68,
+      "commit_sha": "561bd0ae962a4551d054f1dfc1053e9d3a1c7e28",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 69,
+      "commit_sha": "c8bb19b6a02154107ded95fda202c3099b21da6a",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 70,
+      "commit_sha": "d3f4672244eee22c53cb38cf7beedd1bbc2856ce",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 71,
+      "commit_sha": "589d8985fd6276b7b1aafed347cca27d57de6455",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 72,
+      "commit_sha": "5ce3d0aad31e084302ddac00aab33e2eb445ad70",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "Without an initiating prompt, a subsequent commit touching the same file does not establish user-level goal failure.",
+      "evidence": "Prompt text unrecovered; cannot determine whether later commit was part of the original goal."
+    },
+    {
+      "commit_number": 73,
+      "commit_sha": "ce19acc66206e87c2a2eefaa9edbaa841c14ce0f",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 74,
+      "commit_sha": "ef665db08051181f9ca421ecb576788031643367",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 75,
+      "commit_sha": "e5951ebff19ff8f4cc4bd301ceb3e6f75c3c395f",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 76,
+      "commit_sha": "58b675628b31eeb8cbcd89b39070276f93250e97",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 77,
+      "commit_sha": "803947ed6ac32a96cac6087ecf75eb4674baf24e",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 78,
+      "commit_sha": "b3191d0c87ef0dc346b7ecb6474c39093ca344d5",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 79,
+      "commit_sha": "643c48188884b7a266da17b9f8aa2e4f2256a396",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 80,
+      "commit_sha": "68fc7654a5e25b2cefb4311c7df168b91f534d67",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 81,
+      "commit_sha": "23020c28d2d39453f51a9e73adc9a56811f3da63",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 82,
+      "commit_sha": "6f62eaf26efec4f7ffabc08dec0e8c1e11696839",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 83,
+      "commit_sha": "35e1f0f6083ecd283aa2a6d786f70ce40d50c02e",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 84,
+      "commit_sha": "17b35ba429c3e3a3421929c593f49c107a5f3f40",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 85,
+      "commit_sha": "884b3ea8dd95961b0cd8a9919ac5848085def1ab",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 86,
+      "commit_sha": "7c62f3d81da1fe60ebe50f0424d848fa8b021c91",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 87,
+      "commit_sha": "17488615fe44eaeec7655d2cd83e604cb3b62ec0",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 88,
+      "commit_sha": "cc905efbc0f506fb5fa96c5ea105c8d67cbad5a5",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 89,
+      "commit_sha": "052043c791c100360c325c219db9ac243efae1d8",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 90,
+      "commit_sha": "af6a5ac41136a5c263d45f7d56cc4458f73577bd",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 91,
+      "commit_sha": "85c80dcb92261578fb04fe1dd3f507f3c434d3b0",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "Without an initiating prompt, a subsequent commit touching the same file does not establish user-level goal failure.",
+      "evidence": "Prompt text unrecovered; cannot determine whether later commit was part of the original goal."
+    },
+    {
+      "commit_number": 92,
+      "commit_sha": "e2c4db6b9af29499c9b899a77cdedb0fe6b09c6c",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 93,
+      "commit_sha": "da7a445e054c6338f3ff656612a3357900c24e6a",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale explicitly acknowledges inferring success from history."
+    },
+    {
+      "commit_number": 94,
+      "commit_sha": "f33db0bbc046c74a52697a0cda2896dff4c7b70f",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 95,
+      "commit_sha": "6040b25d123b8a5f62d3ca9611036c9d40092a45",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 96,
+      "commit_sha": "49bbf70d83271a353c8259d4070c60897e4d5358",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 97,
+      "commit_sha": "3129142aad1b9b8299f1a7db01420da2640ed372",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 98,
+      "commit_sha": "94a9b7c9323fa2bfbe2bfe6976e73c8bbb29d22d",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 99,
+      "commit_sha": "7de06e65c05349c38f84ac9bc3cac32c5d3a7896",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "Without an initiating prompt, a subsequent commit touching the same file does not establish user-level goal failure.",
+      "evidence": "Prompt text unrecovered; cannot determine whether later commit was part of the original goal."
+    },
+    {
+      "commit_number": 100,
+      "commit_sha": "67750564f40dadc5b9533b7c94953172f2498293",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 101,
+      "commit_sha": "5660bd5e6a7c23ec00a89a2292b6bd2ab7d25f86",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale explicitly acknowledges inferring success from history."
+    },
+    {
+      "commit_number": 102,
+      "commit_sha": "b5734a0dde52ab07469d7d33998f8da538048ce0",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale explicitly acknowledges inferring success from history."
+    },
+    {
+      "commit_number": 103,
+      "commit_sha": "1f773f109426ff37391b2ec23b01df74511f6c75",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 104,
+      "commit_sha": "b85eb62044957872565e744f47e045db25c0e75f",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 105,
+      "commit_sha": "ef97350df864b1ba414ae016a212c9b321a46448",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 106,
+      "commit_sha": "a5add9e6e28aee76546f376cd910a382a6174fe9",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 107,
+      "commit_sha": "b97a6033b4d2d1a7d3b002c3a5a61544b061cabe",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 108,
+      "commit_sha": "4659dfe14ec1b9e96fe785911e2884c0f0c208f1",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 109,
+      "commit_sha": "60b8e66667fc3690f2b5f0a7cb10e6b9cb5cda60",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 110,
+      "commit_sha": "4e40da9349106585f929cee46611aa4d0a17061f",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 111,
+      "commit_sha": "23c08f97b0750db4c9adf19e0b2ccf4cd36e253b",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 112,
+      "commit_sha": "55569517a9c821903a7393691cf625f8b44cb232",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "When satisfaction is not established from the evidence, the judgment must be marked INDETERMINATE, not FAILURE.",
+      "evidence": "Rationale explicitly notes satisfaction is not established; no evidence of user dissatisfaction or error."
+    },
+    {
+      "commit_number": 113,
+      "commit_sha": "9d3682d8370ff7032a6db5bdbb81976a25be7c7d",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 114,
+      "commit_sha": "36d40cce574fe1731960687a64100ef27914b74b",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "When satisfaction is not established from the evidence, the judgment must be marked INDETERMINATE, not FAILURE.",
+      "evidence": "Rationale explicitly notes satisfaction is not established; no evidence of user dissatisfaction or error."
+    },
+    {
+      "commit_number": 115,
+      "commit_sha": "e7a69ed3545c108ccac01494c9bbcd02c3fe1243",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 116,
+      "commit_sha": "ff29c1d9d9d9bd2de2e43d8254807b47d2380ed4",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "When satisfaction is not established from the evidence, the judgment must be marked INDETERMINATE, not FAILURE.",
+      "evidence": "Rationale explicitly notes satisfaction is not established; no evidence of user dissatisfaction or error."
+    },
+    {
+      "commit_number": 117,
+      "commit_sha": "73e73a89327978d7f1fdb4311f7e59d22d51fc2d",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale explicitly acknowledges inferring success from history."
+    },
+    {
+      "commit_number": 118,
+      "commit_sha": "dc3770a5bdda5a297a610fc5726391908fb3638b",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 119,
+      "commit_sha": "de707117c9d1d82088acd51ce21bba2fd2d00685",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 120,
+      "commit_sha": "d33bcb92f01955e5ae3bc71a5138a44fb5799fc5",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 121,
+      "commit_sha": "f3f6a5c4985edf0210fae5d71c6867f3633971dd",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "When satisfaction is not established from the evidence, the judgment must be marked INDETERMINATE, not FAILURE.",
+      "evidence": "Rationale explicitly notes satisfaction is not established; no evidence of user dissatisfaction or error."
+    },
+    {
+      "commit_number": 122,
+      "commit_sha": "71ced945a883ec37ce681c9ea1bed68efe726bb0",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 123,
+      "commit_sha": "022241561f0ec35fdc8dc1b69762b5831925893b",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 124,
+      "commit_sha": "a5d68e0f51159519022cef36fa16efbf24c13928",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 125,
+      "commit_sha": "c1037fe60748a1f57cde518d49189c05a8f65665",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 126,
+      "commit_sha": "41e57084d3d68f819f3c4b60bdb0dab07fcbe32c",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 127,
+      "commit_sha": "5f7124e89c998c4f1c3a06d0ca3c186d2bc40e7f",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 128,
+      "commit_sha": "43474351271f6509f3a7815226ad7bfc45118b0d",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 129,
+      "commit_sha": "50f9074948a87de0501fc55e1ba0fa76743999fa",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "AGREE",
+      "corrected_status": "SUCCESS",
+      "rationale": "Initiating request is preserved and run concluded with explicit Step 4 PASS satisfying the stated goal.",
+      "evidence": "User request recovered in state.json; final run step verified PASS."
+    },
+    {
+      "commit_number": 130,
+      "commit_sha": "307adf67b3ce959542af79fde1cbb0b8e6284cf0",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 131,
+      "commit_sha": "eebea6f2772239c508bc294db735f81aeb052379",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "AGREE",
+      "corrected_status": "SUCCESS",
+      "rationale": "Initiating request is preserved and run concluded with explicit Step 4 PASS satisfying the stated goal.",
+      "evidence": "User request recovered in state.json; final run step verified PASS."
+    },
+    {
+      "commit_number": 132,
+      "commit_sha": "457f251ce37ed3e3783997a3b369be9b937eb64b",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 133,
+      "commit_sha": "b0d4d9fd425adb4a39b3b267c5de66dd7c80b844",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "AGREE",
+      "corrected_status": "SUCCESS",
+      "rationale": "Initiating request is preserved and run concluded with explicit Step 4 PASS satisfying the stated goal.",
+      "evidence": "User request recovered in state.json; final run step verified PASS."
+    },
+    {
+      "commit_number": 134,
+      "commit_sha": "ae8b49d4cfb44d03f4aa539c31246cc1e3a7ebd4",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 135,
+      "commit_sha": "8cb849abacd36805afc9fe43f48dc5a8b2f246ed",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating user prompt was recovered; a test commit cannot be marked FAILURE without evidence of initiating prompt expectations.",
+      "evidence": "Initiating prompt unrecovered."
+    },
+    {
+      "commit_number": 136,
+      "commit_sha": "0cf99324a660e1f3ae0150eb76d647f9796d3a49",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "AGREE",
+      "corrected_status": "SUCCESS",
+      "rationale": "Initiating request is preserved and run concluded with explicit Step 4 PASS satisfying the stated goal.",
+      "evidence": "User request recovered in state.json; final run step verified PASS."
+    },
+    {
+      "commit_number": 137,
+      "commit_sha": "003f26acea1c00244832dcdb2cde087b0e1f828e",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 138,
+      "commit_sha": "6ab7ec33d278c5b0e3f376edd42683b1a4842429",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 139,
+      "commit_sha": "efad3a636163d6eeda47bc453058a5f9a0850c8b",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be determined.",
+      "evidence": "Initiating prompt text unrecovered."
+    },
+    {
+      "commit_number": 140,
+      "commit_sha": "a4eb36683168120981a50034c935237501da0a19",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 141,
+      "commit_sha": "ff7695e8635562f7cbd30013ddca5050719564aa",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating user prompt was recovered; a test commit cannot be marked FAILURE without evidence of initiating prompt expectations.",
+      "evidence": "Initiating prompt unrecovered."
+    },
+    {
+      "commit_number": 142,
+      "commit_sha": "286a7cd1c7b0debe6c71eafb5e3bae15d40582fe",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it was an intermediate commit."
+    },
+    {
+      "commit_number": 143,
+      "commit_sha": "474e19a03a613703b2c35e945a8c62367ec5f8e5",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 144,
+      "commit_sha": "c505bd97e4cd32fd5df9a8c8043f0ccd0f17f4b2",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "When satisfaction is not established from the evidence, the judgment must be marked INDETERMINATE, not FAILURE.",
+      "evidence": "Rationale explicitly notes satisfaction is not established; no evidence of user dissatisfaction or error."
+    },
+    {
+      "commit_number": 145,
+      "commit_sha": "6744183e6c0d68fce6d32c2482b739e690cc7c45",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 146,
+      "commit_sha": "0c5120635e6ccb8b9ea7d98d6e37bb278acf5a4f",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 147,
+      "commit_sha": "19b7be73a6b0e717759f839064d837005bb54cdf",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 148,
+      "commit_sha": "df3910ee89022b89ca160066b0936419d3ad0f81",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Prompt unrecovered; rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 149,
+      "commit_sha": "2759e1c5113ec40f166de49887f22f191781adba",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it was an intermediate commit."
+    },
+    {
+      "commit_number": 150,
+      "commit_sha": "12d9a634ad4cc23615b473bbf83efe57877cfb63",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale explicitly acknowledges inferring success from history."
+    },
+    {
+      "commit_number": 151,
+      "commit_sha": "5f1967f5ea348012cf4e921a7759225b71d69806",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it was an intermediate commit."
+    },
+    {
+      "commit_number": 152,
+      "commit_sha": "a405f5b68df6d5d34b75d97b1ccf141787b6d19c",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "When satisfaction is not established from the evidence, the judgment must be marked INDETERMINATE, not FAILURE.",
+      "evidence": "Rationale explicitly notes satisfaction is not established; no evidence of user dissatisfaction or error."
+    },
+    {
+      "commit_number": 153,
+      "commit_sha": "a59b00da67439a44103dcb4c36eaa41f725fbf87",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 154,
+      "commit_sha": "2f2896097e01a3052f7ce19ee346e0edad84c32d",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 155,
+      "commit_sha": "1639d4d092b4a33fbaabac5f6c6160b3fa1a7f78",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 156,
+      "commit_sha": "166cfdcb20a509c6d92dae49bd83207735bcda28",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 157,
+      "commit_sha": "c0168d1bf0305087eef0cdf8a2c90f81872d9575",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this initial trigger commit was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 158,
+      "commit_sha": "cae8729672b28d6ec1699a2a428037976ecd2283",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it was an intermediate commit."
+    },
+    {
+      "commit_number": 159,
+      "commit_sha": "4dacbe4d71c8b1bc9e5125bdfed71dd635b71a9a",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 160,
+      "commit_sha": "81ba7de36b9854861234b23f9bdc96eeaeb3b510",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it was an intermediate commit."
+    },
+    {
+      "commit_number": 161,
+      "commit_sha": "18853eb550da5f9cd047cc72d353387ec931e1b3",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 162,
+      "commit_sha": "7ffb39f6e4fc62be1371a34851c73ad6c99ed9fc",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it was an intermediate commit."
+    },
+    {
+      "commit_number": 163,
+      "commit_sha": "1c7f29a471f24588cfd6a876289fa01c0c78ea89",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 164,
+      "commit_sha": "df70083417964c0e28969e1ee481fbab3320e15d",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it was an intermediate commit."
+    },
+    {
+      "commit_number": 165,
+      "commit_sha": "bd074d7feba54bfb38fc6b9b8d4b0ec8790b8e60",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale explicitly acknowledges inferring success from history."
+    },
+    {
+      "commit_number": 166,
+      "commit_sha": "1b5139c2829d5932d1ca3604434893cb99fd1860",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it was an intermediate commit."
+    },
+    {
+      "commit_number": 167,
+      "commit_sha": "88241bc880a4c8177de30a6cf48b6dc516ba8cbb",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 168,
+      "commit_sha": "88f3bbdc33fc58be4bfb22bf3deb90804bbcd3a2",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 169,
+      "commit_sha": "aa392663bc4e0289c6b45093839aac264724524e",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "AGREE",
+      "corrected_status": "SUCCESS",
+      "rationale": "Initiating request is preserved and run concluded with explicit Step 4 PASS satisfying the stated goal.",
+      "evidence": "User request recovered in state.json; final run step verified PASS."
+    },
+    {
+      "commit_number": 170,
+      "commit_sha": "48f14588027da40c2aa5ea1b471e7fba8b5614f5",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 171,
+      "commit_sha": "3e6d94b2b21c0fd82020a0ee0112070ab7148fa9",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 172,
+      "commit_sha": "ceb6df1cd00c0e52982d774aed5a4777976cfee0",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 173,
+      "commit_sha": "ead5cb7d8bc326cd1c021c667a38fe8b0fd6aa67",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 0 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 0 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 174,
+      "commit_sha": "d4bd5cb300feff108384baf7b85d9e20c9b4cfb9",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 175,
+      "commit_sha": "847d9ac1d71f01ff7a062df26e0f7d990cba5d67",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 1 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 1 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 176,
+      "commit_sha": "676f905d66950951e94dd2517d86d6cee5a00cfb",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 177,
+      "commit_sha": "a2af426d81883ba646dd064ff42025707fd77b3f",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 2 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 2 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 178,
+      "commit_sha": "657835b88f8a42255fcb3aa30e87a9b362169fbc",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 179,
+      "commit_sha": "bbddde73638fc6c44fc396926deafb8642cf5acd",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 3 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 3 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 180,
+      "commit_sha": "12f457dddd35da1e60b6163460348c990abaac7e",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 181,
+      "commit_sha": "16fdc8a62f853a2d2749b8fcaa80ed3218a8c2c7",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 182,
+      "commit_sha": "cbce2976f9787f07860e14c2fbbbde3815f7340e",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "AGREE",
+      "corrected_status": "SUCCESS",
+      "rationale": "Initiating request is preserved and run concluded with explicit Step 4 PASS satisfying the stated goal.",
+      "evidence": "User request recovered in state.json; final run step verified PASS."
+    },
+    {
+      "commit_number": 183,
+      "commit_sha": "c68cfdeb9a35d563a4ec5b636803982458290595",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 184,
+      "commit_sha": "37650d77040c17d01ed4493e4113078d3e8d8732",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 185,
+      "commit_sha": "6e4fd1edbe4392e46775c6e340f071cbb0ed0232",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate implementation step cannot be marked FAILURE without evidence establishing the initiating prompt and failure thereof.",
+      "evidence": "Rationale inappropriately equated advancing ongoing work with failure."
+    },
+    {
+      "commit_number": 186,
+      "commit_sha": "ebc8b1fbfb4f5c15d57813ea486c2e952d5ccd36",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 187,
+      "commit_sha": "6fb27bc1cadd1548d2ae6eec7ab5282f1136b5c7",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 188,
+      "commit_sha": "200d3bfe5c6bfcb419a3efe0eec90dd89003a53b",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 189,
+      "commit_sha": "eb41706dc7232c5399f66881398a7578110339cd",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 190,
+      "commit_sha": "2c7ffdd7e18f5e8ae10ebe056d5aa4248daf1024",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 0 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 0 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 191,
+      "commit_sha": "3cb22e72be98e2c58c4260c5286c75bf8d263d18",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 192,
+      "commit_sha": "6ff04156ac14cabf13e03733e43dd492e934f9a1",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 1 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 1 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 193,
+      "commit_sha": "93df00636e53c689bba36b5c27a62da16ebdde06",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 194,
+      "commit_sha": "f6135b33b94d11f4f5881f2402e5cbdcdb2be578",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 2 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 2 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 195,
+      "commit_sha": "940f12148768baba872483d660940551afc25017",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 196,
+      "commit_sha": "fdd7195919aa7446f1dc2f21203bccbf0cb264cd",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 3 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 3 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 197,
+      "commit_sha": "b2174fe01c1e639d9ce5c0faf946fc64108d0ab0",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 198,
+      "commit_sha": "02ab147bcd6550e88676961fe3380084e2b97b60",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 199,
+      "commit_sha": "6887f04048dc868f6cff41d7228430c2ed8d52a2",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "AGREE",
+      "corrected_status": "SUCCESS",
+      "rationale": "Initiating request is preserved and run concluded with explicit Step 4 PASS satisfying the stated goal.",
+      "evidence": "User request recovered in state.json; final run step verified PASS."
+    },
+    {
+      "commit_number": 200,
+      "commit_sha": "956554df41149e4dd3b9d03b76dc2aa24228e911",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 201,
+      "commit_sha": "99df3af5b07b37925061cf2b7cfb6f936de4edfb",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 0 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 0 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 202,
+      "commit_sha": "57bb80a50351c1950d4c9ea46ca278f2398d7560",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 203,
+      "commit_sha": "68634eeb5465a96f09153d4cc8eb0e2e4ab22641",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 1 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 1 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 204,
+      "commit_sha": "1fefe1095ebbd640b3877f354f8cc659bdfe7009",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 205,
+      "commit_sha": "c66f3b5d92b0f67126dcd0c0b7c9b273e621cf0e",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 2 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 2 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 206,
+      "commit_sha": "3d5ee87120f66b638e4eedd22af7c5f741593c9f",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 207,
+      "commit_sha": "08d43df2b760610655988a23a72a7a53e033b276",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 3 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 3 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 208,
+      "commit_sha": "edda2f29a23c391b584f383e442c764b95064ac2",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 209,
+      "commit_sha": "9298b84c82cad5ca06a75c182705fd972a4158eb",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating prompt or user feedback is recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Initiating prompt text unrecovered; rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 210,
+      "commit_sha": "fdb8629d6725c8d5c421cf183750a1f0c0a1a048",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 211,
+      "commit_sha": "b8272c3540bcb7950e23a91014c78acde92d69ae",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "AGREE",
+      "corrected_status": "SUCCESS",
+      "rationale": "Initiating request is preserved and run concluded with explicit Step 4 PASS satisfying the stated goal.",
+      "evidence": "User request recovered in state.json; final run step verified PASS."
+    },
+    {
+      "commit_number": 212,
+      "commit_sha": "b6cc1be730771a907bcac08830a6c330509e839b",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 213,
+      "commit_sha": "673ed0f48c2bd66485a688ad099c6c0d50beb885",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 214,
+      "commit_sha": "2e587ba75c57a5e4aebb89a74d1a1ba9ca08476a",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 215,
+      "commit_sha": "35095f369ff474ea78806dc0e94f2d671fa0d946",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating user prompt was recovered; a temporary placeholder commit cannot be marked FAILURE without evidence of initiating prompt expectations.",
+      "evidence": "Initiating prompt unrecovered."
+    },
+    {
+      "commit_number": 216,
+      "commit_sha": "937a69d771bdd6a3349be0720aeb7acb42741121",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No initiating user prompt was recovered; a noop placeholder commit cannot be marked FAILURE without evidence of initiating prompt expectations.",
+      "evidence": "Initiating prompt unrecovered."
+    },
+    {
+      "commit_number": 217,
+      "commit_sha": "8b28b7e643284bda6ce22619cb7cabd162035bb1",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 218,
+      "commit_sha": "809a8226551b1db156e280f4bb3a045dbc987f4e",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 219,
+      "commit_sha": "75c01338250a9150d5f6b0b9128f8c5293d391ba",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 0 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 0 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 220,
+      "commit_sha": "1fa397a9768ddc1b9b94b3b42bc3af8be5b42105",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 221,
+      "commit_sha": "d3c08cf6d3fa625056a87df3629759e059b831c3",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 1 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 1 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 222,
+      "commit_sha": "056bce75f6b8f74700fa130f376747406e9f4949",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 223,
+      "commit_sha": "1b51a050a8a5f61eeb6e6cdcb67b35fa3f0a335f",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 2 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 2 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 224,
+      "commit_sha": "ad5f68e6a87701298286b3151c0c7629f617e51a",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 225,
+      "commit_sha": "1422c317a97fecc2b8944e1ef94cf9170e851eab",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "A successful Step 3 checkpoint within a multi-step run cannot be classified as FAILURE merely because subsequent steps remain.",
+      "evidence": "Rationale explicitly classified passing Step 3 checkpoint as FAILURE because later steps remained."
+    },
+    {
+      "commit_number": 226,
+      "commit_sha": "fd56cefbf20add524bf53b5e88463f5c9893ea17",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "Without an initiating prompt, a subsequent commit touching the same file does not establish user-level goal failure.",
+      "evidence": "Prompt text unrecovered; cannot determine whether later commit was part of the original goal."
+    },
+    {
+      "commit_number": 227,
+      "commit_sha": "f0425b0d40c5c3bb082feea78616d13546c992a5",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "Without an initiating prompt, a subsequent commit touching the same file does not establish user-level goal failure.",
+      "evidence": "Prompt text unrecovered; cannot determine whether later commit was part of the original goal."
+    },
+    {
+      "commit_number": 228,
+      "commit_sha": "64c489563b0be08af4b8d2540e84f314da5636c3",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "An intermediate commit in a multi-step run cannot be equated with FAILURE of the initiating user goal.",
+      "evidence": "Rationale explicitly classified commit as FAILURE because it advanced work rather than completing it."
+    },
+    {
+      "commit_number": 229,
+      "commit_sha": "9e614f98660304c6dbcaec02122654cb009e0f7b",
+      "recorded_status": "FAILURE",
+      "evaluator_result": "AGREE",
+      "corrected_status": "FAILURE",
+      "rationale": "The commit checkpoint explicitly evaluated Step 4 to FAIL, failing the initiating request goal.",
+      "evidence": "Run store and state record Step 4 FAIL checkpoint."
+    },
+    {
+      "commit_number": 230,
+      "commit_sha": "62adb204aa51bc6d02948fc9ce17895f773dac68",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this corrective payload submission was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale explicitly acknowledges inferring success from history."
+    },
+    {
+      "commit_number": 231,
+      "commit_sha": "256de71f652ca331f420e5a02bdc5a35a2236a11",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "AGREE",
+      "corrected_status": "SUCCESS",
+      "rationale": "Initiating request is preserved and run concluded with explicit Step 4 PASS satisfying the stated goal.",
+      "evidence": "User request recovered in state.json; final run step verified PASS."
+    },
+    {
+      "commit_number": 232,
+      "commit_sha": "fcb4522f6ce154bedeb7d197f3cf22ea3f5c694f",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 233,
+      "commit_sha": "7cf2f4cb977e5e2c3f9ca09fffbf58448a8a34ac",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 234,
+      "commit_sha": "b21ce75d46b6b02f9bc253415cde5b8c3c09c07b",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    },
+    {
+      "commit_number": 235,
+      "commit_sha": "b911c9903745cb7d423a02883ab3705d42d4ed2b",
+      "recorded_status": "SUCCESS",
+      "evaluator_result": "DISAGREE",
+      "corrected_status": "INDETERMINATE",
+      "rationale": "No user feedback regarding this change was recovered; satisfaction cannot be inferred merely from absence of corrective commits.",
+      "evidence": "Rationale relies on absence of immediate corrective continuation."
+    }
+  ],
+  "semantic_summary": {
+    "evaluations_expected": 235,
+    "evaluations_returned": 235,
+    "agreements": 10,
+    "disagreements": 225,
+    "indeterminate": 0
+  },
+  "required_corrections": [
+    {
+      "scope": "Commit coverage",
+      "correction": "Append commit 032d73557b8f82c75b14f98ced8678e05751e294 to the audit as Commit 236 to cover the complete lineage defined in git_log.",
+      "reason": "git_log contains 236 commits within the lineage cutoff, ending at 032d73557b8f82c75b14f98ced8678e05751e294."
+    },
+    {
+      "scope": "Semantic evaluation criteria",
+      "correction": "Revise all semantic SUCCESS/FAILURE determinations where initiating prompts or user feedback are unrecovered to INDETERMINATE, rather than inferring SUCCESS from the lack of immediate corrective commits.",
+      "reason": "The configured heuristic mandates that user satisfaction cannot be inferred merely from the absence of an immediate corrective commit, and that missing initiating prompts or feedback require an INDETERMINATE judgment unless independently established."
+    },
+    {
+      "scope": "Intermediate commit handling",
+      "correction": "Do not classify intermediate implementation steps or passing intermediate checkpoints within multi-step state machine runs as FAILURE.",
+      "reason": "The heuristic explicitly instructs the evaluator to distinguish a commit that is merely an intermediate implementation step from one that itself failed its initiating user request."
+    }
+  ]
+}
