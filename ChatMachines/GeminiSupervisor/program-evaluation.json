@@ -5,35 +5,35 @@
     "program": "implementation_under_test"
   },
   "overall_result": "FAIL",
-  "executive_summary": "Re-evaluating Agents.md and send-to-gemini.js reveals that the current evaluation_requirements entries across Steps 0-4 are largely superficial boilerplate ('false work'). Rather than defining granular, independently checkable semantic verification rules derived from the user request and governing rules, the existing entries are high-level meta-summaries (e.g. 'Preserve the complete request as received', 'Complete/persist the Step 1 schema') that collapse distinct mechanical verification dimensions. Furthermore, send-to-gemini.js only deterministically checks key presence, types, and strings, leaving semantic evaluation to unconstrained model interpretation while discarding the rigorous decomposition, modifier analysis, and deliverable verification criteria mandated by the Governing Rule Catalog.",
+  "executive_summary": "The current architecture contains no integration of live ground-truth verification against pathological deception. While Agents.md defines role separation, verbatim request preservation, and evidence-based completion rules, neither Agents.md nor send-to-gemini.js operationalizes external verification of facts, disk state, or execution claims before granting supervisory PASS. The live-ground-truth-verification skill must be integrated as a dual-surface mechanism: (1) canonically defined in Agents.md within the Governing Rule Catalog, per-step evaluation_requirements, and supervisory gate schemas; and (2) mechanically enforced in send-to-gemini.js both as runtime pre-supervision validation (inspecting live files/git state directly) and as non-bypassable supervisory system instructions and unevaluated gate fields.",
   "requirement_evaluations": [
     {
-      "requirement_id": "REQ-01-STEP-EVALUATION-REQUIREMENTS-SUBSTANCE",
+      "requirement_id": "REQ-GROUND-TRUTH-CANONICAL-SPECIFICATION",
       "agents_md_reference": {
-        "lines": "437-442, 486-490, 533-537, 609-616, 660-666",
-        "requirement": "Explicit evaluation requirements must provide concrete, non-tautological verification criteria for each distinct mechanical dimension of that step."
+        "lines": "32-39, 125-144, 265-284, 633-636",
+        "requirement": "Agent responses must describe only actions/results supported by direct observation. Evidence must identify exact source, locator, and observed content. Statements of intention or attempt must never substitute for observed completion."
       },
       "program_reference": {
-        "lines": "211-370",
-        "behavior": "Only executes structural type and null checks without verifying semantic compliance or granular rule matching against the evaluation_requirements."
+        "lines": "472-485, 610-632",
+        "behavior": "send-to-gemini.js passes Agents.md in systemText and asks Gemini to evaluate the execution candidate, but does not inject live ground-truth verification requirements or independent external environment evidence into the prompt."
       },
       "result": "FAIL",
-      "explanation": "The evaluation_requirements arrays in Steps 0-4 consist of broad restatements of step instructions (e.g., 'Use verified ChatGPT role, complete/persist the Step 3 schema, receive Gemini PASS...') rather than decomposed, checkable verification assertions. They function as descriptive text rather than an operational evaluation harness.",
-      "required_change": "Decompose the evaluation_requirements for each step into discrete, independently testable semantic assertions tied directly to specific fields, modifier boundaries, and failure modes from the Governing Rule Catalog."
+      "explanation": "Agents.md states that completion claims must be backed by evidence (e.g. Step 4 completed_actions.completion_evidence), but it lacks an explicit 'live-ground-truth-verification' governing rule requiring the supervisor to independently verify claimed state against actual external runtime artifacts (files on disk, git commits, environment state) rather than taking the execution candidate's self-contained assertions at face value.",
+      "required_change": "Add an explicit canonical rule in Agents.md Governing Rule Catalog for 'live_ground_truth_verification_against_pathological_deception'. Specify that self-asserted evidence in execution returns is treated as unverified testimony until correlated with observed external ground truth."
     },
     {
-      "requirement_id": "REQ-02-EVALUATION-REQUIREMENTS-ENFORCEMENT",
+      "requirement_id": "REQ-GROUND-TRUTH-RUNTIME-ENFORCEMENT",
       "agents_md_reference": {
-        "lines": "105-124, 205-224, 421-425, 471-474, 518-521, 594-597, 645-648",
-        "requirement": "The supervisory gate must granularly evaluate execution against each applicable governing requirement and failure rule, mapping every failure to a specific requirement."
+        "lines": "105-124, 205-224",
+        "requirement": "The supervisory gate must verify deliverables and evidence before granting PASS. Deterministic pre-validation must supply findings as evidence to the supervisor."
       },
       "program_reference": {
-        "lines": "424-432, 613-632",
-        "behavior": "gateTemplate only generates key/value mirrors of the returned execution payload without embedding or anchoring to the step's explicit evaluation_requirements."
+        "lines": "211-370, 405-422, 610-635",
+        "behavior": "send-to-gemini.js only checks JSON shapes, field presence, and regex/type constraints in memory. It does not check live disk/git reality (e.g., verifying whether files mentioned in execution candidates actually exist or contain the claimed content) or supply verified environment ground truth to the supervisor."
       },
       "result": "FAIL",
-      "explanation": "Neither Agents.md nor send-to-gemini.js binds the step's evaluation_requirements into the granular evaluation structure. The supervisor is given an empty *_eval mirror of the raw execution return, meaning evaluation_requirements are bypassed during supervisory evaluation.",
-      "required_change": "Incorporate the step's evaluation_requirements directly into the supervisory evaluation envelope (or require each requirement to be evaluated with an explicit evaluation/comment entry alongside granular terminal field evaluations)."
+      "explanation": "send-to-gemini.js acts purely as a message router and schema shape validator. When an execution candidate fabricates paths, commits, or completion evidence, the runtime provides zero objective environment ground truth to Gemini, allowing pathological deception to pass supervisory review whenever the fabricated JSON matches expected shape.",
+      "required_change": "In send-to-gemini.js, add a ground-truth verification module that inspects actual workspace files, git commit logs, and run store artifacts. Inject this verified ground truth into the supervisory prompt and enforce ground_truth_eval fields in the supervisory gate template."
     }
   ],
   "transition_evaluation": {
@@ -46,21 +46,31 @@
     "missing_key_repair_branch": "PASS",
     "fail_restarts_same_execution_step": "PASS",
     "pass_advances_procedure": "PASS",
-    "explanation": "While supervisory_gate.gate_result transition mechanics are structurally wired in send-to-gemini.js, the execution-to-supervisor handoff fails to provide an evaluative anchor against the step's evaluation_requirements."
+    "explanation": "The transition mechanics function as designed for schema-level PASS/FAIL, but the supervisory handoff is incomplete because it passes only the execution candidate's ungrounded self-claims without independent ground-truth verification data."
   },
   "unauthorized_or_invented_control_logic": [],
   "omissions": [
     {
-      "agents_md_lines": "437-442, 486-490, 533-537, 609-616, 660-666",
-      "missing_behavior": "Integration of evaluation_requirements into supervisory gate evaluation schemas.",
-      "consequence": "The evaluation_requirements remain isolated decorative metadata and do not govern whether a gate returns PASS or FAIL."
+      "agents_md_lines": "100-346, 430-671",
+      "missing_behavior": "Explicit definition of live ground-truth verification protocols, anti-hallucination/deception constraints, and verification evidence requirements in evaluation_requirements and supervisory gates.",
+      "consequence": "Supervisors evaluate syntactic self-consistency of execution candidates rather than empirical truth."
+    },
+    {
+      "program_lines": "472-485, 610-632",
+      "missing_behavior": "Supplying live filesystem and git state as ground-truth context in systemText and supervisory prompts.",
+      "consequence": "Gemini Supervisor cannot detect fabricated locators, fake completion evidence, or hallucinated file modifications."
     }
   ],
   "recommended_changes": [
     {
       "priority": "REQUIRED",
-      "change": "Refactor evaluation_requirements across Steps 0-4 from generic high-level summaries into concrete, checkable criteria, and embed an evaluation_requirements_eval section inside supervisory_gate so every requirement must be explicitly evaluated as PASS or FAIL.",
-      "reason": "Prevents evaluation requirements from being superficial 'false work' that has no operational effect on gating."
+      "change": "Integrate canonically into Agents.md as a Governing Rule and as an explicit supervisory gate verification requirement for Step 0, Step 2, Step 3, and Step 4.",
+      "reason": "Agents.md is the authoritative contract. If the skill is only injected as a system instruction in code, it is unauthorized external logic not grounded in the procedure specification. Placing it in Agents.md makes anti-deception verification an explicit governing rule with clear pass/fail criteria."
+    },
+    {
+      "priority": "REQUIRED",
+      "change": "Integrate into send-to-gemini.js as a dual-stage verification harness: (1) in systemText/prompt context via system instruction injecting live filesystem/git inspection findings; and (2) in gateTemplate/evalShape adding an explicit ground_truth_verification_eval section.",
+      "reason": "A prompt instruction alone can be rationalized away by an LLM supervisor. Requiring deterministic environment verification in the runner and concrete ground_truth_verification_eval entries in the supervisory gate schema ensures that empirical verification is mechanically enforced before gate_result can be PASS."
     }
   ]
 }
