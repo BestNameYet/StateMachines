@@ -358,7 +358,27 @@ async function main() {
   if (!apiKey) throw new Error('GEMINI_API_KEY is missing from the GitHub Actions environment.');
 
   const useGenericEvaluation = isGenericMode;
-  const nextMessage = readJson(nextPath).nextmessage;
+  const triggerEnvelope = readJson(nextPath);
+  const nextMessage = triggerEnvelope.nextmessage;
+  const rawRunNonce = triggerEnvelope.run_nonce;
+  if (typeof rawRunNonce !== 'string' || rawRunNonce.trim() === '') {
+    throw new Error('The configured next-message file must contain non-empty run_nonce.');
+  }
+  const runNonce = rawRunNonce.trim();
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(runNonce)) {
+    throw new Error(`Invalid run_nonce ${runNonce}. Use only letters, digits, dot, underscore, and hyphen.`);
+  }
+  const evaluationsRootPath = optionalPath(evaluationRoot, config.evaluations_root || 'evaluations');
+  if (!evaluationsRootPath) throw new Error('evaluations_root is required.');
+  const runRootPath = path.join(evaluationsRootPath, runNonce);
+  const runEvaluationOutputPath = path.join(runRootPath, config.run_evaluation_file || 'evaluation.json');
+  const runMessagesPath = path.join(runRootPath, config.run_messages_file || 'messages.json');
+  const runOutputsPath = path.join(runRootPath, config.run_outputs_directory || 'outputs');
+  const runRevisionAgentsOutputPath = path.join(runOutputsPath, config.revision_agents_output_file || 'revised-Agents.md');
+  const runRevisionProgramOutputPath = path.join(runOutputsPath, config.revision_program_output_file || 'revised-send-to-gemini.js');
+  const runSourceConfigOutputPath = path.join(runOutputsPath, path.basename(config.source_revision_config_output_path || 'config.json'));
+  const runArtifactRevisionOutputPath = path.join(runOutputsPath, config.artifact_revision_output_file || path.basename(config.artifact_revision_output_path || 'step-3-evaluation.json'));
+  const writeLatestCompatibilityOutputs = config.write_latest_compatibility_outputs !== false;
   const reuseGenericHistory = config.generic_reuse_message_history === true;
   const initialMessages = useGenericEvaluation && !reuseGenericHistory
     ? { contents: [] }
@@ -390,7 +410,8 @@ async function main() {
   }
 
   messages.contents.push(result.reply);
-  writeJson(messagesPath, messages);
+  writeJson(runMessagesPath, messages);
+  if (writeLatestCompatibilityOutputs) writeJson(messagesPath, messages);
 
   if (!useGenericEvaluation && result.payload.response_type === 'paired_revision') {
     if (!sourceRevisionEnabled) {
@@ -411,10 +432,16 @@ async function main() {
     if (!revisedSourceConfig || Array.isArray(revisedSourceConfig) || typeof revisedSourceConfig !== 'object') {
       throw new Error('revised_source_config must be a JSON object.');
     }
-    fs.mkdirSync(revisionDeliverablesOutputPath, { recursive: true });
-    fs.writeFileSync(revisionAgentsOutputPath, normalizeRevisedAgents(result.payload.revised_agents_md));
-    fs.writeFileSync(revisionProgramOutputPath, normalizeRevisedProgram(result.payload.revised_program));
-    writeJson(sourceRevisionConfigOutputPath, revisedSourceConfig);
+    fs.mkdirSync(runOutputsPath, { recursive: true });
+    fs.writeFileSync(runRevisionAgentsOutputPath, normalizeRevisedAgents(result.payload.revised_agents_md));
+    fs.writeFileSync(runRevisionProgramOutputPath, normalizeRevisedProgram(result.payload.revised_program));
+    writeJson(runSourceConfigOutputPath, revisedSourceConfig);
+    if (writeLatestCompatibilityOutputs) {
+      fs.mkdirSync(revisionDeliverablesOutputPath, { recursive: true });
+      fs.writeFileSync(revisionAgentsOutputPath, normalizeRevisedAgents(result.payload.revised_agents_md));
+      fs.writeFileSync(revisionProgramOutputPath, normalizeRevisedProgram(result.payload.revised_program));
+      writeJson(sourceRevisionConfigOutputPath, revisedSourceConfig);
+    }
   }
 
   if (!useGenericEvaluation && result.payload.response_type === 'artifact_revision') {
@@ -428,32 +455,37 @@ async function main() {
       ? extractJson(result.payload.revised_artifact)
       : result.payload.revised_artifact;
     assertPreservedPointers(step3Evaluation, revisedArtifact);
-    writeJson(artifactRevisionOutputPath, revisedArtifact);
+    writeJson(runArtifactRevisionOutputPath, revisedArtifact);
+    if (writeLatestCompatibilityOutputs) writeJson(artifactRevisionOutputPath, revisedArtifact);
   }
 
-  writeJson(evaluationOutputPath, result.payload);
+  writeJson(runEvaluationOutputPath, result.payload);
+  if (writeLatestCompatibilityOutputs) writeJson(evaluationOutputPath, result.payload);
 
   console.log(JSON.stringify({
     runtime: 'Node.js',
     node_version: process.version,
     config: configPath,
     runtime_root: runtimeRoot,
+    run_nonce: runNonce,
+    run_root: runRootPath,
     model,
     trigger: nextPath,
-    message_stream: messagesPath,
+    message_stream: runMessagesPath,
     evaluated_program: useGenericEvaluation ? null : programPath,
     specification: useGenericEvaluation ? null : agentsPath,
     evaluation_mode: config.evaluation_mode || 'supervisor',
     generic_inputs: genericInputs.map(input => ({ key: input.key, source: input.source })),
     evaluation_heuristic_configured: typeof config.evaluation_heuristic === 'string' && config.evaluation_heuristic.trim() !== '',
     step3_evaluation: useGenericEvaluation ? null : step3EvaluationPath,
-    output: evaluationOutputPath,
-    revision_deliverables_output_path: revisionDeliverablesOutputPath,
+    output: runEvaluationOutputPath,
+    outputs_directory: runOutputsPath,
+    latest_compatibility_output: writeLatestCompatibilityOutputs ? evaluationOutputPath : null,
     response_type: result.payload.response_type ?? null,
-    revision_agents_output: result.payload.response_type === 'paired_revision' ? revisionAgentsOutputPath : null,
-    revision_program_output: result.payload.response_type === 'paired_revision' ? revisionProgramOutputPath : null,
-    revision_source_config_output: result.payload.response_type === 'paired_revision' ? sourceRevisionConfigOutputPath : null,
-    artifact_revision_output: result.payload.response_type === 'artifact_revision' ? artifactRevisionOutputPath : null
+    revision_agents_output: result.payload.response_type === 'paired_revision' ? runRevisionAgentsOutputPath : null,
+    revision_program_output: result.payload.response_type === 'paired_revision' ? runRevisionProgramOutputPath : null,
+    revision_source_config_output: result.payload.response_type === 'paired_revision' ? runSourceConfigOutputPath : null,
+    artifact_revision_output: result.payload.response_type === 'artifact_revision' ? runArtifactRevisionOutputPath : null
   }, null, 2));
 }
 
