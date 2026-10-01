@@ -1,0 +1,105 @@
+name: Update evaluator nonce-scoped persistence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/update-evaluator-nonce-storage.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Make evaluator persistence nonce-scoped
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('ChatMachines/GeminiEvaluation')
+          config_path = root / 'config.json'
+          source_path = root / 'evaluate-supervisor.js'
+          workflow_path = Path('.github/workflows/gemini-supervisor-evaluator.yml')
+
+          config = json.loads(config_path.read_text())
+          config['evaluations_root'] = 'evaluations'
+          config['run_evaluation_file'] = 'evaluation.json'
+          config['run_messages_file'] = 'messages.json'
+          config['run_outputs_directory'] = 'outputs'
+          config['write_latest_compatibility_outputs'] = True
+          config_path.write_text(json.dumps(config, indent=2) + '\n')
+
+          source = source_path.read_text()
+
+          old = """  const useGenericEvaluation = isGenericMode;\n  const nextMessage = readJson(nextPath).nextmessage;\n  const reuseGenericHistory = config.generic_reuse_message_history === true;\n  const initialMessages = useGenericEvaluation && !reuseGenericHistory\n    ? { contents: [] }\n    : (fs.existsSync(messagesPath) ? readJson(messagesPath) : { contents: [] });\n  const messages = appendNextMessage(initialMessages, nextMessage);\n"""
+          new = """  const useGenericEvaluation = isGenericMode;\n  const triggerEnvelope = readJson(nextPath);\n  const nextMessage = triggerEnvelope.nextmessage;\n  const rawRunNonce = triggerEnvelope.run_nonce;\n  if (typeof rawRunNonce !== 'string' || rawRunNonce.trim() === '') {\n    throw new Error('The configured next-message file must contain non-empty run_nonce.');\n  }\n  const runNonce = rawRunNonce.trim();\n  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(runNonce)) {\n    throw new Error(`Invalid run_nonce ${runNonce}. Use only letters, digits, dot, underscore, and hyphen.`);\n  }\n  const evaluationsRootPath = optionalPath(evaluationRoot, config.evaluations_root || 'evaluations');\n  if (!evaluationsRootPath) throw new Error('evaluations_root is required.');\n  const runRootPath = path.join(evaluationsRootPath, runNonce);\n  const runEvaluationOutputPath = path.join(runRootPath, config.run_evaluation_file || 'evaluation.json');\n  const runMessagesPath = path.join(runRootPath, config.run_messages_file || 'messages.json');\n  const runOutputsPath = path.join(runRootPath, config.run_outputs_directory || 'outputs');\n  const runRevisionAgentsOutputPath = path.join(runOutputsPath, config.revision_agents_output_file || 'revised-Agents.md');\n  const runRevisionProgramOutputPath = path.join(runOutputsPath, config.revision_program_output_file || 'revised-send-to-gemini.js');\n  const runSourceConfigOutputPath = path.join(runOutputsPath, path.basename(config.source_revision_config_output_path || 'config.json'));\n  const runArtifactRevisionOutputPath = path.join(runOutputsPath, config.artifact_revision_output_file || path.basename(config.artifact_revision_output_path || 'step-3-evaluation.json'));\n  const writeLatestCompatibilityOutputs = config.write_latest_compatibility_outputs !== false;\n  const reuseGenericHistory = config.generic_reuse_message_history === true;\n  const initialMessages = useGenericEvaluation && !reuseGenericHistory\n    ? { contents: [] }\n    : (fs.existsSync(messagesPath) ? readJson(messagesPath) : { contents: [] });\n  const messages = appendNextMessage(initialMessages, nextMessage);\n"""
+          if old not in source:
+              raise SystemExit('main nonce insertion anchor not found')
+          source = source.replace(old, new, 1)
+
+          old = """  messages.contents.push(result.reply);\n  writeJson(messagesPath, messages);\n"""
+          new = """  messages.contents.push(result.reply);\n  writeJson(runMessagesPath, messages);\n  if (writeLatestCompatibilityOutputs) writeJson(messagesPath, messages);\n"""
+          if old not in source:
+              raise SystemExit('message persistence anchor not found')
+          source = source.replace(old, new, 1)
+
+          old = """    fs.mkdirSync(revisionDeliverablesOutputPath, { recursive: true });\n    fs.writeFileSync(revisionAgentsOutputPath, normalizeRevisedAgents(result.payload.revised_agents_md));\n    fs.writeFileSync(revisionProgramOutputPath, normalizeRevisedProgram(result.payload.revised_program));\n    writeJson(sourceRevisionConfigOutputPath, revisedSourceConfig);\n"""
+          new = """    fs.mkdirSync(runOutputsPath, { recursive: true });\n    fs.writeFileSync(runRevisionAgentsOutputPath, normalizeRevisedAgents(result.payload.revised_agents_md));\n    fs.writeFileSync(runRevisionProgramOutputPath, normalizeRevisedProgram(result.payload.revised_program));\n    writeJson(runSourceConfigOutputPath, revisedSourceConfig);\n    if (writeLatestCompatibilityOutputs) {\n      fs.mkdirSync(revisionDeliverablesOutputPath, { recursive: true });\n      fs.writeFileSync(revisionAgentsOutputPath, normalizeRevisedAgents(result.payload.revised_agents_md));\n      fs.writeFileSync(revisionProgramOutputPath, normalizeRevisedProgram(result.payload.revised_program));\n      writeJson(sourceRevisionConfigOutputPath, revisedSourceConfig);\n    }\n"""
+          if old not in source:
+              raise SystemExit('paired revision persistence anchor not found')
+          source = source.replace(old, new, 1)
+
+          old = """    assertPreservedPointers(step3Evaluation, revisedArtifact);\n    writeJson(artifactRevisionOutputPath, revisedArtifact);\n  }\n\n  writeJson(evaluationOutputPath, result.payload);\n"""
+          new = """    assertPreservedPointers(step3Evaluation, revisedArtifact);\n    writeJson(runArtifactRevisionOutputPath, revisedArtifact);\n    if (writeLatestCompatibilityOutputs) writeJson(artifactRevisionOutputPath, revisedArtifact);\n  }\n\n  writeJson(runEvaluationOutputPath, result.payload);\n  if (writeLatestCompatibilityOutputs) writeJson(evaluationOutputPath, result.payload);\n"""
+          if old not in source:
+              raise SystemExit('artifact/evaluation persistence anchor not found')
+          source = source.replace(old, new, 1)
+
+          old = """    runtime_root: runtimeRoot,\n    model,\n    trigger: nextPath,\n    message_stream: messagesPath,\n"""
+          new = """    runtime_root: runtimeRoot,\n    run_nonce: runNonce,\n    run_root: runRootPath,\n    model,\n    trigger: nextPath,\n    message_stream: runMessagesPath,\n"""
+          if old not in source:
+              raise SystemExit('console run metadata anchor not found')
+          source = source.replace(old, new, 1)
+
+          old = """    output: evaluationOutputPath,\n    revision_deliverables_output_path: revisionDeliverablesOutputPath,\n    response_type: result.payload.response_type ?? null,\n    revision_agents_output: result.payload.response_type === 'paired_revision' ? revisionAgentsOutputPath : null,\n    revision_program_output: result.payload.response_type === 'paired_revision' ? revisionProgramOutputPath : null,\n    revision_source_config_output: result.payload.response_type === 'paired_revision' ? sourceRevisionConfigOutputPath : null,\n    artifact_revision_output: result.payload.response_type === 'artifact_revision' ? artifactRevisionOutputPath : null\n"""
+          new = """    output: runEvaluationOutputPath,\n    outputs_directory: runOutputsPath,\n    latest_compatibility_output: writeLatestCompatibilityOutputs ? evaluationOutputPath : null,\n    response_type: result.payload.response_type ?? null,\n    revision_agents_output: result.payload.response_type === 'paired_revision' ? runRevisionAgentsOutputPath : null,\n    revision_program_output: result.payload.response_type === 'paired_revision' ? runRevisionProgramOutputPath : null,\n    revision_source_config_output: result.payload.response_type === 'paired_revision' ? runSourceConfigOutputPath : null,\n    artifact_revision_output: result.payload.response_type === 'artifact_revision' ? runArtifactRevisionOutputPath : null\n"""
+          if old not in source:
+              raise SystemExit('console output metadata anchor not found')
+          source = source.replace(old, new, 1)
+
+          source_path.write_text(source)
+
+          workflow = workflow_path.read_text()
+          old = """          EVALUATION_ROOT=\"ChatMachines/GeminiEvaluation\"\n          REVISION_OUTPUT_PATH=$(node -p \"require('./ChatMachines/GeminiEvaluation/config.json').revision_deliverables_output_path\")\n\n          git add \\\n            \"$EVALUATION_ROOT/evaluator-messages.json\" \\\n            \"$EVALUATION_ROOT/program-evaluation.json\"\n\n          if [ -d \"$EVALUATION_ROOT/$REVISION_OUTPUT_PATH\" ]; then\n            git add \"$EVALUATION_ROOT/$REVISION_OUTPUT_PATH\"\n          fi\n"""
+          new = """          EVALUATION_ROOT=\"ChatMachines/GeminiEvaluation\"\n          EVALUATIONS_ROOT=$(node -p \"require('./ChatMachines/GeminiEvaluation/config.json').evaluations_root || 'evaluations'\")\n          REVISION_OUTPUT_PATH=$(node -p \"require('./ChatMachines/GeminiEvaluation/config.json').revision_deliverables_output_path || ''\")\n\n          if [ -d \"$EVALUATION_ROOT/$EVALUATIONS_ROOT\" ]; then\n            git add \"$EVALUATION_ROOT/$EVALUATIONS_ROOT\"\n          fi\n\n          for FILE in evaluator-messages.json generic-evaluator-messages.json program-evaluation.json; do\n            if [ -f \"$EVALUATION_ROOT/$FILE\" ]; then\n              git add \"$EVALUATION_ROOT/$FILE\"\n            fi\n          done\n\n          if [ -n \"$REVISION_OUTPUT_PATH\" ] && [ -d \"$EVALUATION_ROOT/$REVISION_OUTPUT_PATH\" ]; then\n            git add \"$EVALUATION_ROOT/$REVISION_OUTPUT_PATH\"\n          fi\n"""
+          if old not in workflow:
+              raise SystemExit('workflow staging anchor not found')
+          workflow = workflow.replace(old, new, 1)
+          workflow_path.write_text(workflow)
+          PY
+
+          node --check ChatMachines/GeminiEvaluation/evaluate-supervisor.js
+          node -e "JSON.parse(require('fs').readFileSync('ChatMachines/GeminiEvaluation/config.json','utf8')); console.log('config ok')"
+
+      - name: Commit nonce-scoped evaluator persistence
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ChatMachines/GeminiEvaluation/config.json \
+                  ChatMachines/GeminiEvaluation/evaluate-supervisor.js \
+                  .github/workflows/gemini-supervisor-evaluator.yml
+          git commit -m "Make evaluator outputs nonce-scoped"
+          git push origin HEAD:main
