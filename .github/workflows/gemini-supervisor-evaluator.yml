@@ -39,13 +39,20 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           EVALUATION_ROOT="ChatMachines/GeminiEvaluation"
-          REVISION_OUTPUT_PATH=$(node -p "require('./ChatMachines/GeminiEvaluation/config.json').revision_deliverables_output_path")
+          EVALUATIONS_ROOT=$(node -p "require('./ChatMachines/GeminiEvaluation/config.json').evaluations_root || 'evaluations'")
+          REVISION_OUTPUT_PATH=$(node -p "require('./ChatMachines/GeminiEvaluation/config.json').revision_deliverables_output_path || ''")
 
-          git add \
-            "$EVALUATION_ROOT/evaluator-messages.json" \
-            "$EVALUATION_ROOT/program-evaluation.json"
+          if [ -d "$EVALUATION_ROOT/$EVALUATIONS_ROOT" ]; then
+            git add "$EVALUATION_ROOT/$EVALUATIONS_ROOT"
+          fi
 
-          if [ -d "$EVALUATION_ROOT/$REVISION_OUTPUT_PATH" ]; then
+          for FILE in evaluator-messages.json generic-evaluator-messages.json program-evaluation.json; do
+            if [ -f "$EVALUATION_ROOT/$FILE" ]; then
+              git add "$EVALUATION_ROOT/$FILE"
+            fi
+          done
+
+          if [ -n "$REVISION_OUTPUT_PATH" ] && [ -d "$EVALUATION_ROOT/$REVISION_OUTPUT_PATH" ]; then
             git add "$EVALUATION_ROOT/$REVISION_OUTPUT_PATH"
           fi
 
