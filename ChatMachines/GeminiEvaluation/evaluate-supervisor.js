@@ -12,20 +12,26 @@ const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
 const runtimeRoot = path.resolve(__dirname, config.runtime_root || '.');
 const evaluationRoot = runtimeRoot;
-const supervisorRoot = path.resolve(evaluationRoot, config.supervisor_root);
-const agentsPath = path.join(supervisorRoot, config.agents_file);
-const programPath = path.join(supervisorRoot, config.program_file);
-const step3EvaluationPath = path.join(supervisorRoot, config.artifact_target_file);
+const isGenericMode = config.evaluation_mode === 'generic';
+
+function optionalPath(base, configuredPath) {
+  return typeof configuredPath === 'string' && configuredPath.trim() ? path.resolve(base, configuredPath) : null;
+}
+
+const supervisorRoot = !isGenericMode ? optionalPath(evaluationRoot, config.supervisor_root) : null;
+const agentsPath = !isGenericMode && supervisorRoot ? optionalPath(supervisorRoot, config.agents_file) : null;
+const programPath = !isGenericMode && supervisorRoot ? optionalPath(supervisorRoot, config.program_file) : null;
+const step3EvaluationPath = !isGenericMode && supervisorRoot ? optionalPath(supervisorRoot, config.artifact_target_file) : null;
 const nextPath = path.join(evaluationRoot, config.new_message_folder, config.new_message_file);
 const messagesPath = path.join(evaluationRoot, config.messages_file);
 const evaluationOutputPath = path.join(evaluationRoot, config.evaluation_output_file);
-const revisionDeliverablesOutputPath = path.join(evaluationRoot, config.revision_deliverables_output_path);
-const revisionAgentsOutputPath = path.join(revisionDeliverablesOutputPath, config.revision_agents_output_file);
-const revisionProgramOutputPath = path.join(revisionDeliverablesOutputPath, config.revision_program_output_file);
-const sourceRevisionEnabled = config.source_revision_enabled === true;
-const sourceRevisionConfigOutputPath = path.join(evaluationRoot, config.source_revision_config_output_path);
-const artifactRevisionEnabled = config.artifact_revision_enabled === true;
-const artifactRevisionOutputPath = path.join(evaluationRoot, config.artifact_revision_output_path);
+const revisionDeliverablesOutputPath = optionalPath(evaluationRoot, config.revision_deliverables_output_path);
+const revisionAgentsOutputPath = revisionDeliverablesOutputPath ? optionalPath(revisionDeliverablesOutputPath, config.revision_agents_output_file) : null;
+const revisionProgramOutputPath = revisionDeliverablesOutputPath ? optionalPath(revisionDeliverablesOutputPath, config.revision_program_output_file) : null;
+const sourceRevisionEnabled = !isGenericMode && config.source_revision_enabled === true;
+const sourceRevisionConfigOutputPath = !isGenericMode ? optionalPath(evaluationRoot, config.source_revision_config_output_path) : null;
+const artifactRevisionEnabled = !isGenericMode && config.artifact_revision_enabled === true;
+const artifactRevisionOutputPath = !isGenericMode ? optionalPath(evaluationRoot, config.artifact_revision_output_path) : null;
 const artifactRevisionPreservePointers = Array.isArray(config.artifact_revision_preserve_json_pointers)
   ? config.artifact_revision_preserve_json_pointers
   : [];
@@ -124,55 +130,16 @@ function buildGenericEvaluationInstruction(genericInputs) {
     throw new Error('Generic evaluation requires non-empty config.evaluation_heuristic.');
   }
 
-  const schema = {
-    response_type: 'generic_evaluation',
-    overall_result: 'PASS | FAIL | PARTIAL | INDETERMINATE',
-    evaluation_heuristic: 'verbatim configured heuristic used',
-    input_inventory: [
-      { key: 'string', source: 'string', role_in_evaluation: 'string' }
-    ],
-    coverage_evaluation: {
-      ground_truth_commit_count: 'integer | null',
-      artifact_commit_count: 'integer | null',
-      missing_commits: [{ sha: 'string', explanation: 'string' }],
-      extra_commits: [{ sha: 'string', explanation: 'string' }],
-      duplicate_commits: [{ sha: 'string', explanation: 'string' }],
-      ordering_errors: [{ sha: 'string', explanation: 'string' }],
-      result: 'PASS | FAIL | PARTIAL | INDETERMINATE',
-      explanation: 'string'
-    },
-    contract_evaluation: [
-      { requirement: 'string', result: 'PASS | FAIL | PARTIAL | INDETERMINATE', evidence: 'string', required_change: 'string | null' }
-    ],
-    semantic_evaluations: [
-      {
-        commit_number: 'integer | null',
-        commit_sha: 'string',
-        recorded_status: 'SUCCESS | FAILURE | other',
-        evaluator_result: 'AGREE | DISAGREE | INDETERMINATE',
-        corrected_status: 'SUCCESS | FAILURE | INDETERMINATE',
-        rationale: 'string',
-        evidence: 'string'
-      }
-    ],
-    semantic_summary: {
-      evaluations_expected: 'integer',
-      evaluations_returned: 'integer',
-      agreements: 'integer',
-      disagreements: 'integer',
-      indeterminate: 'integer'
-    },
-    required_corrections: [
-      { scope: 'string', correction: 'string', reason: 'string' }
-    ]
-  };
+  if (!config.evaluation_output_schema || Array.isArray(config.evaluation_output_schema) || typeof config.evaluation_output_schema !== 'object') {
+    throw new Error('Generic evaluation requires config.evaluation_output_schema object.');
+  }
 
   const sections = [
     'You are an independent generic evaluator. The runtime supplies labeled inputs without assigning semantics to them.',
     'The evaluation heuristic is supplied by config and is authoritative for how the inputs are interpreted.',
     'Use only the supplied inputs and the configured heuristic. Do not silently import assumptions from the normal GeminiSupervisor Agents/source evaluation mode.',
     'Return one JSON object matching this schema:',
-    JSON.stringify(schema, null, 2),
+    JSON.stringify(config.evaluation_output_schema, null, 2),
     'Configured evaluation heuristic:',
     config.evaluation_heuristic,
     'Configured inputs:'
@@ -390,7 +357,7 @@ async function main() {
   if (!apiKey) throw new Error('GEMINI_API_KEY is missing from the GitHub Actions environment.');
 
   const messages = appendNextMessage(readJson(messagesPath), readJson(nextPath).nextmessage);
-  const useGenericEvaluation = config.evaluation_mode === 'generic';
+  const useGenericEvaluation = isGenericMode;
   let agents = null;
   let program = null;
   let step3Evaluation = null;
@@ -409,10 +376,17 @@ async function main() {
 
   const result = await callGemini(messages, systemInstruction);
 
+  if (useGenericEvaluation) {
+    const expectedResponseType = config.evaluation_output_schema?.response_type;
+    if (typeof expectedResponseType === 'string' && expectedResponseType && result.payload.response_type !== expectedResponseType) {
+      throw new Error(`Generic evaluator returned response_type ${result.payload.response_type ?? 'missing'}; expected ${expectedResponseType}.`);
+    }
+  }
+
   messages.contents.push(result.reply);
   writeJson(messagesPath, messages);
 
-  if (result.payload.response_type === 'paired_revision') {
+  if (!useGenericEvaluation && result.payload.response_type === 'paired_revision') {
     if (!sourceRevisionEnabled) {
       throw new Error('Paired revision response received while source_revision_enabled is false.');
     }
@@ -437,7 +411,7 @@ async function main() {
     writeJson(sourceRevisionConfigOutputPath, revisedSourceConfig);
   }
 
-  if (result.payload.response_type === 'artifact_revision') {
+  if (!useGenericEvaluation && result.payload.response_type === 'artifact_revision') {
     if (!artifactRevisionEnabled) {
       throw new Error('Artifact revision response received while artifact_revision_enabled is false.');
     }
@@ -461,8 +435,8 @@ async function main() {
     model,
     trigger: nextPath,
     message_stream: messagesPath,
-    evaluated_program: programPath,
-    specification: agentsPath,
+    evaluated_program: useGenericEvaluation ? null : programPath,
+    specification: useGenericEvaluation ? null : agentsPath,
     evaluation_mode: config.evaluation_mode || 'supervisor',
     generic_inputs: genericInputs.map(input => ({ key: input.key, source: input.source })),
     evaluation_heuristic_configured: typeof config.evaluation_heuristic === 'string' && config.evaluation_heuristic.trim() !== '',
