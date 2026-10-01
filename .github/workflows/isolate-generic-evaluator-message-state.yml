@@ -1,0 +1,63 @@
+name: Isolate generic evaluator message state
+
+on:
+  push:
+    paths:
+      - '.github/workflows/isolate-generic-evaluator-message-state.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  isolate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Isolate generic evaluation from Supervisor evaluator history
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const root = 'ChatMachines/GeminiEvaluation';
+          const configPath = `${root}/config.json`;
+          const sourcePath = `${root}/evaluate-supervisor.js`;
+
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          config.generic_messages_file = 'generic-evaluator-messages.json';
+          config.generic_reuse_message_history = false;
+          fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+
+          let source = fs.readFileSync(sourcePath, 'utf8');
+          source = source.replace(
+            "const messagesPath = path.join(evaluationRoot, config.messages_file);",
+            "const supervisorMessagesPath = path.join(evaluationRoot, config.messages_file);\nconst genericMessagesPath = optionalPath(evaluationRoot, config.generic_messages_file);\nconst messagesPath = isGenericMode ? (genericMessagesPath || supervisorMessagesPath) : supervisorMessagesPath;"
+          );
+
+          source = source.replace(
+            "  const messages = appendNextMessage(readJson(messagesPath), readJson(nextPath).nextmessage);\n  const useGenericEvaluation = isGenericMode;",
+            "  const useGenericEvaluation = isGenericMode;\n  const nextMessage = readJson(nextPath).nextmessage;\n  const reuseGenericHistory = config.generic_reuse_message_history === true;\n  const initialMessages = useGenericEvaluation && !reuseGenericHistory\n    ? { contents: [] }\n    : (fs.existsSync(messagesPath) ? readJson(messagesPath) : { contents: [] });\n  const messages = appendNextMessage(initialMessages, nextMessage);"
+          );
+
+          source = source.replace(
+            " * Evaluates or revises the current Gemini Supervisor implementation against\n * Agents.md using a separate evaluator conversation.\n *\n * Runtime settings are loaded from config.json in this directory.",
+            " * Config-driven evaluator runtime. In generic mode it loads arbitrary labeled\n * inputs, an evaluation heuristic, and an output schema from config.json.\n * Supervisor-specific Agents/source evaluation remains available in non-generic mode."
+          );
+
+          fs.writeFileSync(sourcePath, source);
+
+          const genericMessagesPath = `${root}/${config.generic_messages_file}`;
+          if (!fs.existsSync(genericMessagesPath)) {
+            fs.writeFileSync(genericMessagesPath, JSON.stringify({contents: []}, null, 2) + '\n');
+          }
+          NODE
+
+      - name: Commit isolated generic evaluator state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ChatMachines/GeminiEvaluation/config.json ChatMachines/GeminiEvaluation/evaluate-supervisor.js ChatMachines/GeminiEvaluation/generic-evaluator-messages.json
+          git commit -m "Isolate generic evaluator from Supervisor message history"
+          git push origin HEAD:main
