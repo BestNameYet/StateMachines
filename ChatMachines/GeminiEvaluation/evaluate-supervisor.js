@@ -2,30 +2,36 @@
  * Evaluates or revises the current Gemini Supervisor implementation against
  * Agents.md using a separate evaluator conversation.
  *
- * Agents.md is the canonical source of evaluation definitions and pass/fail
- * criteria. This evaluator must not require evaluator-definitions.md or any
- * evaluation-definition read-tracking field.
+ * Runtime settings are loaded from config.json in this directory.
  */
 const fs = require('node:fs');
+const path = require('node:path');
 
-const supervisorRoot = 'ChatMachines/GeminiSupervisor';
-const evaluationRoot = 'ChatMachines/GeminiEvaluation';
-const agentsPath = `${supervisorRoot}/Agents.md`;
-const programPath = `${supervisorRoot}/send-to-gemini.js`;
-const nextPath = `${evaluationRoot}/evaluator-nextmessage/nextmessage.json`;
-const messagesPath = `${evaluationRoot}/evaluator-messages.json`;
-const evaluationOutputPath = `${evaluationRoot}/program-evaluation.json`;
-const revisionAgentsOutputPath = `${evaluationRoot}/revised-Agents.md`;
-const revisionProgramOutputPath = `${evaluationRoot}/revised-send-to-gemini.js`;
+const configPath = path.join(__dirname, 'config.json');
+const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+const runtimeRoot = path.resolve(__dirname, config.runtime_root || '.');
+const evaluationRoot = runtimeRoot;
+const supervisorRoot = path.resolve(evaluationRoot, config.supervisor_root);
+const agentsPath = path.join(supervisorRoot, config.agents_file);
+const programPath = path.join(supervisorRoot, config.program_file);
+const step3EvaluationPath = path.join(supervisorRoot, config.artifact_target_file);
+const nextPath = path.join(evaluationRoot, config.new_message_folder, config.new_message_file);
+const messagesPath = path.join(evaluationRoot, config.messages_file);
+const evaluationOutputPath = path.join(evaluationRoot, config.evaluation_output_file);
+const revisionDeliverablesOutputPath = path.join(evaluationRoot, config.revision_deliverables_output_path);
+const revisionAgentsOutputPath = path.join(revisionDeliverablesOutputPath, config.revision_agents_output_file);
+const revisionProgramOutputPath = path.join(revisionDeliverablesOutputPath, config.revision_program_output_file);
 
 const apiKey = process.env.GEMINI_API_KEY;
-const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+const model = process.env.GEMINI_MODEL || config.default_model;
+const requestTimeoutMs = Number(config.request_timeout_ms || 180000);
 
-const readText = path => fs.readFileSync(path, 'utf8');
-const readJson = path => JSON.parse(readText(path));
+const readText = filePath => fs.readFileSync(filePath, 'utf8');
+const readJson = filePath => JSON.parse(readText(filePath));
 
-function writeJson(path, value) {
-  fs.writeFileSync(path, JSON.stringify(value, null, 2) + '\n');
+function writeJson(filePath, value) {
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n');
 }
 
 function numbered(text) {
@@ -63,21 +69,29 @@ function normalizeRevisedAgents(agents) {
 }
 
 function appendNextMessage(messages, nextmessage) {
-  if (!Array.isArray(messages.contents)) throw new Error('evaluator-messages.json must contain contents[].');
-  if (!nextmessage || nextmessage.role !== 'user' || !Array.isArray(nextmessage.parts) || !nextmessage.parts.some(part => typeof part.text === 'string')) {
-    throw new Error('evaluator-nextmessage/nextmessage.json must contain a Gemini user content object with text.');
+  if (!Array.isArray(messages.contents)) {
+    throw new Error('evaluator-messages.json must contain contents[].');
+  }
+  if (
+    !nextmessage ||
+    nextmessage.role !== 'user' ||
+    !Array.isArray(nextmessage.parts) ||
+    !nextmessage.parts.some(part => typeof part.text === 'string')
+  ) {
+    throw new Error('The configured next-message file must contain a Gemini user content object with text.');
   }
   const last = messages.contents[messages.contents.length - 1];
   if (JSON.stringify(last) !== JSON.stringify(nextmessage)) messages.contents.push(nextmessage);
   return messages;
 }
 
-function buildSystemInstruction(agents, program) {
+function buildSystemInstruction(agents, program, step3Evaluation) {
   const evaluationSchema = {
     response_type: 'evaluation',
     evaluation_basis: {
       agents_md: 'authoritative',
-      program: 'implementation_under_test'
+      program: 'implementation_under_test',
+      step3_evaluation: 'merged_heuristic_and_question_corpus'
     },
     overall_result: 'PASS | FAIL | INDETERMINATE',
     executive_summary: 'string',
@@ -116,7 +130,8 @@ function buildSystemInstruction(agents, program) {
     revision_basis: {
       agents_md: 'specification_being_revised',
       prior_evaluator_context: 'used',
-      current_program: 'implementation_being_revised'
+      current_program: 'implementation_being_revised',
+      step3_evaluation: 'merged_heuristic_and_question_corpus'
     },
     corrections_applied: [
       {
@@ -134,7 +149,8 @@ function buildSystemInstruction(agents, program) {
   return [
     'You are the independent Gemini Supervisor evaluator/reviser.',
     'Agents.md is the authoritative and self-contained source for procedure rules, evaluation definitions, and pass/fail criteria.',
-    'Do not require evaluator-definitions.md. Do not require, invent, or restore evaluation_documents_read or any equivalent field whose purpose is tracking evaluation-definition reads.',
+    'The merged Step 3 evaluation JSON supplied below is the single Step3_TSR evaluation source. Use evaluation_heuristic.key_value_records as the U/P or expectation-vs-outcome evaluation method and use step3_tsr.tests as the complete Step 3 question corpus.',
+    'Do not require evaluator-definitions.md or evaluation-tests.md. Do not require, invent, or restore evaluation_documents_read or any equivalent field whose purpose is tracking evaluation-definition reads.',
     'The latest user message in the evaluator conversation controls whether you evaluate or produce a paired revision.',
     'When revising gating semantics, revise Agents.md and send-to-gemini.js together so the specification and runtime are mutually consistent. Do not revise only one side when the latest request requires a paired correction.',
     'Use prior evaluator conversation messages as historical context, but re-check them against the CURRENT Agents.md and CURRENT send-to-gemini.js. Historical requirements superseded by the current canonical contract must not be reintroduced.',
@@ -142,7 +158,6 @@ function buildSystemInstruction(agents, program) {
     'Preserve the intended procedure, per-step return schemas, branches, loops, supervisory gates, run isolation, persistence, and user-request semantics. Do not invent substitute control logic.',
     'The per-step return schema is the central communication/control surface for that step. A step does not communicate completion, advancement, or a valid execution result outside its required return schema.',
     'return_schema_completed refers only to completion of the governing step return schema, never completion of the whole multi-step procedure.',
-    'For Step 3, ChatMachines/GeminiEvaluation/evaluation-tests.md may be supplied as the Step3_TSR test corpus. Evaluation definitions and pass/fail criteria are read from Agents.md itself, not an external evaluator-definitions.md file.',
     'Transitions are driven by supervisory_gate.gate_result. FAIL repeats the same execution step; PASS advances exactly one step after persistence/checkpoint; missing or malformed supervisory transition data is repaired only on the supervisory side.',
     'If the latest user message asks for an evaluation, return only one JSON object matching this evaluation schema:',
     JSON.stringify(evaluationSchema, null, 2),
@@ -156,7 +171,10 @@ function buildSystemInstruction(agents, program) {
     numbered(agents),
     '',
     '===== CURRENT SEND-TO-GEMINI.JS =====',
-    numbered(program)
+    numbered(program),
+    '',
+    '===== MERGED STEP 3 EVALUATION JSON =====',
+    JSON.stringify(step3Evaluation, null, 2)
   ].join('\n\n');
 }
 
@@ -174,7 +192,7 @@ async function callGemini(messages, systemInstruction) {
         contents: messages.contents,
         generationConfig: { responseMimeType: 'application/json' }
       }),
-      signal: AbortSignal.timeout(180000)
+      signal: AbortSignal.timeout(requestTimeoutMs)
     }
   );
 
@@ -185,7 +203,9 @@ async function callGemini(messages, systemInstruction) {
   } catch (_) {
     throw new Error(`Gemini returned non-JSON HTTP ${response.status}: ${text}`);
   }
-  if (!response.ok) throw new Error(`Gemini HTTP ${response.status}: ${JSON.stringify(body.error || body)}`);
+  if (!response.ok) {
+    throw new Error(`Gemini HTTP ${response.status}: ${JSON.stringify(body.error || body)}`);
+  }
 
   const reply = body.candidates?.[0]?.content;
   if (reply?.role !== 'model' || !Array.isArray(reply.parts) || reply.parts.length === 0) {
@@ -201,8 +221,9 @@ async function main() {
 
   const agents = readText(agentsPath);
   const program = readText(programPath);
+  const step3Evaluation = readJson(step3EvaluationPath);
   const messages = appendNextMessage(readJson(messagesPath), readJson(nextPath).nextmessage);
-  const result = await callGemini(messages, buildSystemInstruction(agents, program));
+  const result = await callGemini(messages, buildSystemInstruction(agents, program, step3Evaluation));
 
   messages.contents.push(result.reply);
   writeJson(messagesPath, messages);
@@ -214,6 +235,7 @@ async function main() {
     if (typeof result.payload.revised_program !== 'string' || result.payload.revised_program.trim() === '') {
       throw new Error('Paired revision did not contain complete revised_program.');
     }
+    fs.mkdirSync(revisionDeliverablesOutputPath, { recursive: true });
     fs.writeFileSync(revisionAgentsOutputPath, normalizeRevisedAgents(result.payload.revised_agents_md));
     fs.writeFileSync(revisionProgramOutputPath, normalizeRevisedProgram(result.payload.revised_program));
   }
@@ -223,12 +245,16 @@ async function main() {
   console.log(JSON.stringify({
     runtime: 'Node.js',
     node_version: process.version,
+    config: configPath,
+    runtime_root: runtimeRoot,
     model,
     trigger: nextPath,
     message_stream: messagesPath,
     evaluated_program: programPath,
     specification: agentsPath,
+    step3_evaluation: step3EvaluationPath,
     output: evaluationOutputPath,
+    revision_deliverables_output_path: revisionDeliverablesOutputPath,
     response_type: result.payload.response_type ?? null,
     revision_agents_output: result.payload.response_type === 'paired_revision' ? revisionAgentsOutputPath : null,
     revision_program_output: result.payload.response_type === 'paired_revision' ? revisionProgramOutputPath : null
