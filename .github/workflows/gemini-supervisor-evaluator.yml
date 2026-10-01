@@ -37,21 +37,22 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          EVALUATION_ROOT="ChatMachines/GeminiEvaluation"
+          REVISION_OUTPUT_PATH=$(node -p "require('./ChatMachines/GeminiEvaluation/config.json').revision_deliverables_output_path")
+
           git add \
-            ChatMachines/GeminiEvaluation/evaluator-messages.json \
-            ChatMachines/GeminiEvaluation/program-evaluation.json
-          if [ -f ChatMachines/GeminiEvaluation/revised-Agents.md ]; then
-            git add ChatMachines/GeminiEvaluation/revised-Agents.md
+            "$EVALUATION_ROOT/evaluator-messages.json" \
+            "$EVALUATION_ROOT/program-evaluation.json"
+
+          if [ -d "$EVALUATION_ROOT/$REVISION_OUTPUT_PATH" ]; then
+            git add "$EVALUATION_ROOT/$REVISION_OUTPUT_PATH"
           fi
-          if [ -f ChatMachines/GeminiEvaluation/revised-send-to-gemini.js ]; then
-            git add ChatMachines/GeminiEvaluation/revised-send-to-gemini.js
-          fi
-          if [ -f ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json ]; then
-            git add ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json
-          fi
+
           if git diff --cached --quiet; then
             echo "No evaluator output change."
             exit 0
           fi
+
           git commit -m "Update Gemini Supervisor evaluator output"
           git push origin HEAD:main
