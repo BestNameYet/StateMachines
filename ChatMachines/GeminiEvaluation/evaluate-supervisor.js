@@ -1,8 +1,7 @@
 /**
- * Evaluates or revises the current Gemini Supervisor implementation against
- * Agents.md using a separate evaluator conversation.
- *
- * Runtime settings are loaded from config.json in this directory.
+ * Config-driven evaluator runtime. In generic mode it loads arbitrary labeled
+ * inputs, an evaluation heuristic, and an output schema from config.json.
+ * Supervisor-specific Agents/source evaluation remains available in non-generic mode.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -23,7 +22,9 @@ const agentsPath = !isGenericMode && supervisorRoot ? optionalPath(supervisorRoo
 const programPath = !isGenericMode && supervisorRoot ? optionalPath(supervisorRoot, config.program_file) : null;
 const step3EvaluationPath = !isGenericMode && supervisorRoot ? optionalPath(supervisorRoot, config.artifact_target_file) : null;
 const nextPath = path.join(evaluationRoot, config.new_message_folder, config.new_message_file);
-const messagesPath = path.join(evaluationRoot, config.messages_file);
+const supervisorMessagesPath = path.join(evaluationRoot, config.messages_file);
+const genericMessagesPath = optionalPath(evaluationRoot, config.generic_messages_file);
+const messagesPath = isGenericMode ? (genericMessagesPath || supervisorMessagesPath) : supervisorMessagesPath;
 const evaluationOutputPath = path.join(evaluationRoot, config.evaluation_output_file);
 const revisionDeliverablesOutputPath = optionalPath(evaluationRoot, config.revision_deliverables_output_path);
 const revisionAgentsOutputPath = revisionDeliverablesOutputPath ? optionalPath(revisionDeliverablesOutputPath, config.revision_agents_output_file) : null;
@@ -356,8 +357,13 @@ async function callGemini(messages, systemInstruction) {
 async function main() {
   if (!apiKey) throw new Error('GEMINI_API_KEY is missing from the GitHub Actions environment.');
 
-  const messages = appendNextMessage(readJson(messagesPath), readJson(nextPath).nextmessage);
   const useGenericEvaluation = isGenericMode;
+  const nextMessage = readJson(nextPath).nextmessage;
+  const reuseGenericHistory = config.generic_reuse_message_history === true;
+  const initialMessages = useGenericEvaluation && !reuseGenericHistory
+    ? { contents: [] }
+    : (fs.existsSync(messagesPath) ? readJson(messagesPath) : { contents: [] });
+  const messages = appendNextMessage(initialMessages, nextMessage);
   let agents = null;
   let program = null;
   let step3Evaluation = null;
