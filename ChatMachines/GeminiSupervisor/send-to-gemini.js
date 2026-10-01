@@ -1,14 +1,18 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 
 const root = 'ChatMachines/GeminiSupervisor';
 const triggerPath = `${root}/nextmessage/nextmessage.json`;
 const agentsPath = `${root}/Agents.md`;
 const testsPath = `${root}/evaluation-tests.md`;
+const repoRoot = path.resolve(process.cwd());
 
 const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const PASSFAIL = new Set(['PASS', 'FAIL']);
+const GT_STATUS = new Set(['VERIFIED', 'CONTRADICTED', 'PARTIAL', 'UNKNOWN', 'NOT_EXECUTED']);
+const BLOCKING_GT_STATUS = new Set(['CONTRADICTED', 'PARTIAL', 'UNKNOWN', 'NOT_EXECUTED']);
 const execRole = 'ChatGPT model';
 const execForbidden = 'Gemini model';
 const supRole = 'Gemini model';
@@ -124,6 +128,7 @@ function initRun(runNonce, steps) {
   }
 
   return {
+    dir,
     stateFile,
     messagesFile,
     storeFile,
@@ -157,9 +162,8 @@ function get(obj, dotted) {
 }
 
 function completionValue(value) {
-  if (value && typeof value === 'object' && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, 'value')) {
-    return value.value;
-  }
+  if (value && typeof value === 'object' && !Array.isArray(value) &&
+      Object.prototype.hasOwnProperty.call(value, 'value')) return value.value;
   return value;
 }
 
@@ -214,11 +218,13 @@ function validateStep(step, schema) {
   if (step === 0) {
     const x = schema?.start_of_turn;
     if (!x || typeof x !== 'object' || Array.isArray(x)) failures.push('Step 0 requires start_of_turn object.');
-    requireString(failures, schema, 'start_of_turn.run_nonce');
-    requireString(failures, schema, 'start_of_turn.user_request');
-    requireString(failures, schema, 'start_of_turn.current_timestamp');
-    requireString(failures, schema, 'start_of_turn.return_schema_completed_timestamp');
-    requireString(failures, schema, 'start_of_turn.nonce');
+    for (const p of [
+      'start_of_turn.run_nonce',
+      'start_of_turn.user_request',
+      'start_of_turn.current_timestamp',
+      'start_of_turn.return_schema_completed_timestamp',
+      'start_of_turn.nonce'
+    ]) requireString(failures, schema, p);
   }
 
   if (step === 1) {
@@ -236,10 +242,12 @@ function validateStep(step, schema) {
   if (step === 2) {
     const x = schema?.step_2_record;
     if (!x || typeof x !== 'object' || Array.isArray(x)) failures.push('Step 2 requires step_2_record object.');
-    requireString(failures, schema, 'step_2_record.run_nonce');
-    requireString(failures, schema, 'step_2_record.user_request_nonce');
-    requireString(failures, schema, 'step_2_record.current_timestamp');
-    requireString(failures, schema, 'step_2_record.return_schema_completed_timestamp');
+    for (const p of [
+      'step_2_record.run_nonce',
+      'step_2_record.user_request_nonce',
+      'step_2_record.current_timestamp',
+      'step_2_record.return_schema_completed_timestamp'
+    ]) requireString(failures, schema, p);
     requireArray(failures, schema, 'step_2_record.stated_requirements');
     if (Array.isArray(x?.stated_requirements)) {
       x.stated_requirements.forEach((value, index) => {
@@ -337,9 +345,11 @@ function validateStep(step, schema) {
     requireArray(failures, schema, 'Step_4.failed_actions');
     requireArray(failures, schema, 'Step_4.not_completed_actions');
     requireArray(failures, schema, 'Step_4.completed_actions');
-    requireString(failures, schema, 'Step_4.user_request');
-    requireString(failures, schema, 'Step_4.current_timestamp');
-    requireString(failures, schema, 'Step_4.return_schema_completed_timestamp');
+    for (const p of [
+      'Step_4.user_request',
+      'Step_4.current_timestamp',
+      'Step_4.return_schema_completed_timestamp'
+    ]) requireString(failures, schema, p);
 
     if (Array.isArray(x?.failed_actions)) {
       x.failed_actions.forEach((item, index) => {
@@ -402,8 +412,381 @@ function inspect(trigger, step) {
   return { execution, failures: [...new Set(failures)] };
 }
 
-function validationMessage(step, failures) {
-  if (!failures.length) return null;
+function git(args) {
+  try {
+    return {
+      ok: true,
+      stdout: execFileSync('git', args, {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        maxBuffer: 4 * 1024 * 1024
+      }).trim(),
+      error: null
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      stdout: String(error.stdout || '').trim(),
+      error: String(error.stderr || error.message || '').trim()
+    };
+  }
+}
+
+function safeWorkspacePath(candidate) {
+  if (!nonEmpty(candidate)) return null;
+  const clean = candidate.replace(/\\/g, '/').replace(/^\.\/+/, '').trim();
+  if (clean.includes('\0') || path.isAbsolute(clean)) return null;
+  const absolute = path.resolve(repoRoot, clean);
+  const relative = path.relative(repoRoot, absolute);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return null;
+  return { relative: relative.replace(/\\/g, '/'), absolute };
+}
+
+function extractRepoPath(text) {
+  if (!nonEmpty(text)) return null;
+  const normalized = text.replace(/\\/g, '/');
+  const patterns = [
+    /(?:ChatMachines|\.github|tests|docs|src)\/[A-Za-z0-9_.\/-]+/g,
+    /\bruns\/[A-Za-z0-9_.\/-]+/g
+  ];
+  for (const re of patterns) {
+    const match = re.exec(normalized);
+    if (match) {
+      const found = match[0].replace(/[),.;:'"`\]}]+$/g, '');
+      return found.startsWith('runs/') ? `${root}/${found}` : found;
+    }
+  }
+  return null;
+}
+
+function shaFromText(text) {
+  const match = String(text || '').match(/\b[0-9a-f]{40}\b/i);
+  return match ? match[0].toLowerCase() : null;
+}
+
+function fileFinding({ claimId, claimPath, relPath, observed, source, locator, material = true }) {
+  const safe = safeWorkspacePath(relPath);
+  const base = {
+    claim_id: claimId,
+    claim_path: claimPath,
+    source: source || 'workspace',
+    locator: locator || relPath,
+    claimed_observed_content: observed || null,
+    material,
+    authority: 'repository workspace at triggering commit',
+    freshness: 'current GitHub Actions checkout',
+    specificity: relPath,
+    status: 'UNKNOWN',
+    observed_content: null,
+    reason: null,
+    error: null
+  };
+  if (!safe) {
+    return { ...base, status: 'UNKNOWN', reason: 'Locator is not a safe repository-relative workspace path.' };
+  }
+  if (!fs.existsSync(safe.absolute)) {
+    return { ...base, status: 'NOT_EXECUTED', reason: `Workspace path does not exist: ${safe.relative}` };
+  }
+
+  let stat;
+  try {
+    stat = fs.statSync(safe.absolute);
+  } catch (error) {
+    return { ...base, status: 'UNKNOWN', reason: 'Unable to stat workspace path.', error: error.message };
+  }
+  if (!stat.isFile()) {
+    return {
+      ...base,
+      status: observed ? 'PARTIAL' : 'VERIFIED',
+      observed_content: `Path exists and is ${stat.isDirectory() ? 'a directory' : 'not a regular file'}.`,
+      reason: observed ? 'Claimed file content cannot be matched because locator is not a regular file.' : 'Path existence verified.'
+    };
+  }
+
+  let text;
+  try {
+    text = fs.readFileSync(safe.absolute, 'utf8');
+  } catch (error) {
+    return { ...base, status: 'UNKNOWN', reason: 'File exists but could not be read as UTF-8.', error: error.message };
+  }
+
+  const tracked = git(['ls-files', '--error-unmatch', '--', safe.relative]);
+  const dirty = tracked.ok ? git(['status', '--porcelain', '--', safe.relative]) : { ok: false, stdout: '', error: null };
+  const trackedNote = tracked.ok
+    ? `tracked${dirty.ok && !dirty.stdout ? ' and clean at current checkout' : dirty.ok ? ' with working-tree changes' : ''}`
+    : 'not verified as tracked';
+
+  if (nonEmpty(observed)) {
+    const matched = text.includes(observed);
+    return {
+      ...base,
+      status: matched ? 'VERIFIED' : 'PARTIAL',
+      observed_content: matched
+        ? observed
+        : `File exists (${text.length} UTF-8 chars, ${trackedNote}) but the claimed observed_content was not found verbatim.`,
+      reason: matched
+        ? `File exists, is ${trackedNote}, and claimed observed_content was found verbatim.`
+        : 'File existence is verified but the claimed content is not an exact live match.'
+    };
+  }
+  return {
+    ...base,
+    status: 'VERIFIED',
+    observed_content: `File exists (${text.length} UTF-8 chars) and is ${trackedNote}.`,
+    reason: 'Workspace file existence verified.'
+  };
+}
+
+function gitObjectFinding({ claimId, claimPath, sha, kind, source, locator, material = true }) {
+  const base = {
+    claim_id: claimId,
+    claim_path: claimPath,
+    source: source || `git ${kind}`,
+    locator: locator || sha,
+    claimed_observed_content: null,
+    material,
+    authority: 'local git object database for triggering checkout',
+    freshness: 'current GitHub Actions checkout',
+    specificity: `${kind}:${sha}`,
+    status: 'UNKNOWN',
+    observed_content: null,
+    reason: null,
+    error: null
+  };
+  if (!sha) return { ...base, reason: 'No full 40-character git SHA was found.' };
+  const spec = kind === 'blob' ? `${sha}^{blob}` : `${sha}^{commit}`;
+  const exists = git(['cat-file', '-e', spec]);
+  if (!exists.ok) {
+    return {
+      ...base,
+      status: 'UNKNOWN',
+      reason: `Git ${kind} is not present in the local checkout object database; shallow checkout may limit historical objects.`,
+      error: exists.error
+    };
+  }
+  const observed = kind === 'commit'
+    ? git(['show', '-s', '--format=%H%n%s', sha])
+    : git(['cat-file', '-s', sha]);
+  return {
+    ...base,
+    status: 'VERIFIED',
+    observed_content: observed.ok ? observed.stdout : `${kind} ${sha} exists`,
+    reason: `Git ${kind} existence verified directly.`
+  };
+}
+
+function baselineFindings(run, runNonce) {
+  const findings = [];
+  const specs = [
+    ['state', run.stateFile, 'current_state.run_nonce'],
+    ['messages', run.messagesFile, 'run_nonce'],
+    ['store', run.storeFile, 'run_nonce']
+  ];
+  for (const [label, file, noncePath] of specs) {
+    const rel = path.relative(repoRoot, path.resolve(file)).replace(/\\/g, '/');
+    let status = 'UNKNOWN';
+    let observed = null;
+    let reason = null;
+    let error = null;
+    try {
+      const value = readJson(file);
+      const actualNonce = get(value, noncePath);
+      status = actualNonce === runNonce ? 'VERIFIED' : 'CONTRADICTED';
+      observed = `${noncePath}=${JSON.stringify(actualNonce)}`;
+      reason = actualNonce === runNonce ? 'Live run-container nonce matches active run.' : 'Live run-container nonce conflicts with active run.';
+    } catch (e) {
+      error = e.message;
+      reason = 'Live run file could not be parsed.';
+    }
+    findings.push({
+      claim_id: `runtime_${label}_nonce`,
+      claim_path: `$runtime.${label}`,
+      source: 'live run container',
+      locator: rel,
+      claimed_observed_content: `${noncePath}=${JSON.stringify(runNonce)}`,
+      material: true,
+      authority: 'active run container',
+      freshness: 'current process read',
+      specificity: noncePath,
+      status,
+      observed_content: observed,
+      reason,
+      error
+    });
+  }
+  const head = git(['rev-parse', 'HEAD']);
+  findings.push({
+    claim_id: 'runtime_git_head',
+    claim_path: '$runtime.git_head',
+    source: 'git',
+    locator: 'HEAD',
+    claimed_observed_content: null,
+    material: true,
+    authority: 'git checkout',
+    freshness: 'current process read',
+    specificity: 'HEAD commit',
+    status: head.ok ? 'VERIFIED' : 'UNKNOWN',
+    observed_content: head.ok ? head.stdout : null,
+    reason: head.ok ? 'Current git HEAD read directly.' : 'Unable to resolve git HEAD.',
+    error: head.ok ? null : head.error
+  });
+  return findings;
+}
+
+function walk(value, visit, pathParts = []) {
+  if (Array.isArray(value)) {
+    value.forEach((child, index) => walk(child, visit, [...pathParts, index]));
+    return;
+  }
+  if (!value || typeof value !== 'object') {
+    visit(value, pathParts);
+    return;
+  }
+  visit(value, pathParts);
+  for (const [key, child] of Object.entries(value)) walk(child, visit, [...pathParts, key]);
+}
+
+function evidenceRecords(returnSchema) {
+  const out = [];
+  walk(returnSchema, (value, parts) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+    if (nonEmpty(value.source) && nonEmpty(value.locator) &&
+        Object.prototype.hasOwnProperty.call(value, 'observed_content')) {
+      out.push({ value, path: parts.join('.') || '$' });
+    }
+  });
+  return out;
+}
+
+function pathClaimStrings(returnSchema) {
+  const out = [];
+  const relevant = /(evidence|completion|locator|observed_content|verification|Step3_TSR|source|failure|remaining_work)/i;
+  walk(returnSchema, (value, parts) => {
+    if (!nonEmpty(value)) return;
+    const dotted = parts.join('.');
+    if (!relevant.test(dotted)) return;
+    const rel = extractRepoPath(value);
+    const sha = shaFromText(value);
+    if (rel || sha) out.push({ value, path: dotted, rel, sha });
+  });
+  return out;
+}
+
+function dedupeFindings(findings) {
+  const seen = new Set();
+  const out = [];
+  for (const finding of findings) {
+    const key = `${finding.claim_path}|${finding.source}|${finding.locator}|${finding.claimed_observed_content || ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ ...finding, claim_id: finding.claim_id || `claim_${out.length + 1}` });
+  }
+  return out.map((finding, index) => ({ ...finding, claim_id: `gt_${String(index + 1).padStart(3, '0')}_${finding.claim_id}` }));
+}
+
+function collectGroundTruth({ run, runNonce, step, returnSchema }) {
+  const findings = baselineFindings(run, runNonce);
+
+  for (const record of evidenceRecords(returnSchema)) {
+    const { source, locator, observed_content: observed } = record.value;
+    const combined = `${source}\n${locator}`;
+    const rel = extractRepoPath(combined);
+    const sha = shaFromText(combined);
+    const mentionsCommit = /commit/i.test(combined);
+    const mentionsBlob = /blob/i.test(combined);
+
+    if (rel) {
+      findings.push(fileFinding({
+        claimId: 'evidence_file',
+        claimPath: record.path,
+        relPath: rel,
+        observed,
+        source,
+        locator,
+        material: true
+      }));
+    } else if (sha && mentionsBlob) {
+      findings.push(gitObjectFinding({
+        claimId: 'evidence_blob',
+        claimPath: record.path,
+        sha,
+        kind: 'blob',
+        source,
+        locator,
+        material: true
+      }));
+    } else if (sha && mentionsCommit) {
+      findings.push(gitObjectFinding({
+        claimId: 'evidence_commit',
+        claimPath: record.path,
+        sha,
+        kind: 'commit',
+        source,
+        locator,
+        material: true
+      }));
+    } else {
+      findings.push({
+        claim_id: 'evidence_external',
+        claim_path: record.path,
+        source,
+        locator,
+        claimed_observed_content: observed ?? null,
+        material: true,
+        authority: 'unresolved from deterministic local sources',
+        freshness: 'unknown',
+        specificity: locator,
+        status: 'UNKNOWN',
+        observed_content: null,
+        reason: 'Evidence record could not be correlated with a supported live workspace/git/run source.',
+        error: null
+      });
+    }
+  }
+
+  for (const claim of pathClaimStrings(returnSchema)) {
+    if (claim.rel) {
+      findings.push(fileFinding({
+        claimId: 'embedded_path',
+        claimPath: claim.path,
+        relPath: claim.rel,
+        observed: null,
+        source: 'embedded execution claim',
+        locator: claim.rel,
+        material: true
+      }));
+    } else if (claim.sha) {
+      const kind = /blob/i.test(claim.value) ? 'blob' : 'commit';
+      findings.push(gitObjectFinding({
+        claimId: 'embedded_git_object',
+        claimPath: claim.path,
+        sha: claim.sha,
+        kind,
+        source: 'embedded execution claim',
+        locator: claim.sha,
+        material: true
+      }));
+    }
+  }
+
+  const normalized = dedupeFindings(findings);
+  const blocking = normalized.filter(f => f.material && BLOCKING_GT_STATUS.has(f.status));
+  return {
+    step,
+    generated_at: now(),
+    required_by_agents_md: 'live_ground_truth_verification_against_pathological_deception',
+    source_policy: 'Runtime findings are immutable empirical evidence. Agent self-report is testimony until correlated with these findings.',
+    findings: normalized,
+    blocking_findings: blocking.map(f => f.claim_id),
+    aggregate_status: blocking.length ? 'FAIL' : 'PASS'
+  };
+}
+
+function validationMessage(step, failures, groundTruth) {
+  const gtFailures = groundTruth.blocking_findings.map(id => `Live ground-truth finding ${id} is blocking.`);
+  const all = [...failures, ...gtFailures];
+  if (!all.length) return null;
   return {
     kind: 'system_validation_message',
     role: 'system',
@@ -412,10 +795,10 @@ function validationMessage(step, failures) {
     parts: [{
       text: [
         `DETERMINISTIC PRE-SUPERVISION VALIDATION FINDINGS FOR STEP ${step}.`,
-        'These findings are evidence for the Gemini supervisory gate; deterministic validation does not substitute for semantic supervision.',
+        'These findings are immutable evidence for the Gemini supervisory gate; deterministic validation does not substitute for semantic supervision.',
         'The execution candidate must still be evaluated against Agents.md.',
         'Findings:',
-        ...failures.map((failure, index) => `${index + 1}. ${failure}`)
+        ...all.map((failure, index) => `${index + 1}. ${failure}`)
       ].join('\n')
     }]
   };
@@ -450,15 +833,31 @@ function evalTemplate(value) {
   return terminalEval('value', value);
 }
 
-function gateTemplate(returnSchema) {
+function groundTruthEvalTemplate(groundTruth) {
+  return {
+    deterministic_findings: groundTruth.findings,
+    claim_evaluations: groundTruth.findings.map(finding => ({
+      claim_id: finding.claim_id,
+      deterministic_status: finding.status,
+      supervisor_eval_result: null,
+      supervisor_eval_comment: null
+    })),
+    aggregate_status: groundTruth.aggregate_status,
+    supervisor_eval_result: null,
+    supervisor_eval_comment: null
+  };
+}
+
+function gateTemplate(returnSchema, groundTruth) {
   return {
     supervisory_gate: {
       role_required: supRole,
       role_forbidden: supForbidden,
       role_completed: null,
       role_verification: { method: null, evidence: null },
-      instruction: 'Evaluate only the supplied execution candidate against Agents.md. For every terminal execution key K use K_eval, preserve K and its exact value, then populate supervisor_eval_result and supervisor_eval_comment. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step.',
+      instruction: 'Evaluate only the supplied execution candidate against Agents.md. Preserve every terminal execution key/value in its *_eval record. Treat agent self-report as testimony until correlated with immutable runtime ground-truth findings. Preserve deterministic findings exactly. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step.',
       granular_evaluation: evalTemplate(returnSchema),
+      ground_truth_verification_eval: groundTruthEvalTemplate(groundTruth),
       step_level_evaluation: {
         supervisor_eval_result: null,
         supervisor_eval_comment: null
@@ -469,7 +868,7 @@ function gateTemplate(returnSchema) {
   };
 }
 
-function systemText(step, agents) {
+function systemText(step, agents, groundTruth) {
   const parts = [agents];
   if (step === 3) {
     parts.unshift([
@@ -478,13 +877,19 @@ function systemText(step, agents) {
       '===== END ACTIVE STEP3_TSR TEST SOURCE ====='
     ].join('\n'));
   }
-  parts.push('Agents.md is the canonical source for evaluation definitions, pass/fail criteria, procedure schemas, role controls, and transition semantics. Do not require evaluator-definitions.md or any external evaluation-definition read tracker.');
+  parts.push('Agents.md is the canonical source for evaluation definitions, pass/fail criteria, procedure schemas, role controls, live-ground-truth requirements, and transition semantics. Do not require evaluator-definitions.md or any external evaluation-definition read tracker.');
+  parts.push('LIVE GROUND-TRUTH RULE: Agent self-report, memory, prior assistant statements, plans, and generated summaries are testimony only. For empirical execution/artifact facts, the deterministic runtime findings below are authoritative evidence. Preserve them exactly; do not rewrite a deterministic status. A material CONTRADICTED, PARTIAL, UNKNOWN, or NOT_EXECUTED finding cannot be ignored by a PASS gate.');
+  parts.push([
+    '===== IMMUTABLE DETERMINISTIC LIVE GROUND-TRUTH FINDINGS =====',
+    JSON.stringify(groundTruth, null, 2),
+    '===== END IMMUTABLE DETERMINISTIC LIVE GROUND-TRUTH FINDINGS ====='
+  ].join('\n'));
   parts.push('SUPERVISORY EVALUATION FORMAT: For each terminal execution key K/value V, fill K_eval as {K:V, supervisor_eval_result:PASS|FAIL, supervisor_eval_comment:<specific comment>}. Preserve K and V exactly.');
   parts.push('ROLE BOUNDARY: You are Gemini and may perform only the Supervisory Gate. Never execute or simulate a ChatGPT-owned execution step.');
   return parts.join('\n\n');
 }
 
-async function callGemini(contents, extra, step, agents) {
+async function callGemini(contents, extra, step, agents, groundTruth) {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
     {
@@ -495,7 +900,7 @@ async function callGemini(contents, extra, step, agents) {
       },
       body: JSON.stringify({
         system_instruction: {
-          parts: [{ text: [systemText(step, agents), extra].filter(Boolean).join('\n\n') }]
+          parts: [{ text: [systemText(step, agents, groundTruth), extra].filter(Boolean).join('\n\n') }]
         },
         contents
       }),
@@ -592,13 +997,53 @@ function evalShape(execution, evaluation, pathParts = []) {
   return failures;
 }
 
-function evalValid(schema, returnSchema) {
+function groundTruthEvalValid(gate, groundTruth) {
+  const failures = [];
+  const gt = gate?.ground_truth_verification_eval;
+  if (!gt || typeof gt !== 'object' || Array.isArray(gt)) {
+    return ['supervisory_gate.ground_truth_verification_eval is required.'];
+  }
+  if (!same(gt.deterministic_findings, groundTruth.findings)) {
+    failures.push('ground_truth_verification_eval.deterministic_findings must preserve runtime findings exactly.');
+  }
+  if (gt.aggregate_status !== groundTruth.aggregate_status) {
+    failures.push('ground_truth_verification_eval.aggregate_status must equal the deterministic aggregate status.');
+  }
+  if (!Array.isArray(gt.claim_evaluations) || gt.claim_evaluations.length !== groundTruth.findings.length) {
+    failures.push('ground_truth_verification_eval.claim_evaluations must contain one record per deterministic finding.');
+  } else {
+    gt.claim_evaluations.forEach((record, index) => {
+      const finding = groundTruth.findings[index];
+      if (record?.claim_id !== finding.claim_id) failures.push(`ground_truth claim ${index}: claim_id changed.`);
+      if (record?.deterministic_status !== finding.status) failures.push(`ground_truth claim ${index}: deterministic_status changed.`);
+      if (!PASSFAIL.has(String(record?.supervisor_eval_result || '').toUpperCase())) failures.push(`ground_truth claim ${index}: supervisor_eval_result must be PASS or FAIL.`);
+      if (!nonEmpty(record?.supervisor_eval_comment)) failures.push(`ground_truth claim ${index}: supervisor_eval_comment missing.`);
+    });
+  }
+  if (!PASSFAIL.has(String(gt.supervisor_eval_result || '').toUpperCase())) {
+    failures.push('ground_truth_verification_eval.supervisor_eval_result must be PASS or FAIL.');
+  }
+  if (!nonEmpty(gt.supervisor_eval_comment)) {
+    failures.push('ground_truth_verification_eval.supervisor_eval_comment missing.');
+  }
+  return failures;
+}
+
+function evalValid(schema, returnSchema, groundTruth) {
   const gate = schema?.supervisory_gate;
   const failures = evalShape(returnSchema, gate?.granular_evaluation);
+  failures.push(...groundTruthEvalValid(gate, groundTruth));
   const result = String(gate?.step_level_evaluation?.supervisor_eval_result || '').toUpperCase();
   if (!PASSFAIL.has(result)) failures.push('step_level_evaluation.supervisor_eval_result must be PASS or FAIL.');
   if (!nonEmpty(gate?.step_level_evaluation?.supervisor_eval_comment)) failures.push('step_level_evaluation.supervisor_eval_comment missing.');
   if (!Array.isArray(gate?.failures)) failures.push('supervisory_gate.failures must be an array.');
+  const gateResult = String(gate?.gate_result || '').toUpperCase();
+  if (gateResult === 'PASS' && groundTruth.aggregate_status !== 'PASS') {
+    failures.push('gate_result cannot PASS while deterministic live ground truth has blocking findings.');
+  }
+  if (gateResult === 'PASS' && String(gate?.ground_truth_verification_eval?.supervisor_eval_result || '').toUpperCase() !== 'PASS') {
+    failures.push('gate_result cannot PASS unless ground_truth_verification_eval.supervisor_eval_result is PASS.');
+  }
   return failures;
 }
 
@@ -607,23 +1052,28 @@ function statedRequirements(state) {
   return Array.isArray(record) ? record : [];
 }
 
-async function supervise({ runNonce, step, execution, validation, requirements, messages, messagesFile, store, storeFile, agents }) {
+async function supervise({
+  runNonce, step, execution, validation, groundTruth, requirements,
+  messages, messagesFile, store, storeFile, agents
+}) {
   const returnSchema = execution.return_schema;
-  const template = gateTemplate(returnSchema);
+  const template = gateTemplate(returnSchema, groundTruth);
   const prompt = [
     `Perform only the Supervisory Gate for Step ${step}.`,
     'Submitted execution candidate:',
     JSON.stringify(returnSchema, null, 2),
+    'Immutable deterministic live ground-truth findings:',
+    JSON.stringify(groundTruth, null, 2),
     'Governing Agents.md Step block:',
     stepBlock(agents, step),
-    'Populate this supervisory template exactly. Do not rename *_eval keys or alter preserved execution key/value evidence:',
+    'Populate this supervisory template exactly. Do not rename *_eval keys, alter preserved execution values, or alter deterministic ground-truth findings:',
     JSON.stringify(template, null, 2),
-    'For every *_eval record set supervisor_eval_result to PASS or FAIL and populate supervisor_eval_comment.',
+    'For every *_eval and ground-truth claim evaluation set supervisor_eval_result to PASS or FAIL and populate supervisor_eval_comment.',
     'Set role_completed to "Gemini model" and populate role_verification from this API/runtime context.',
     'Return only valid JSON.'
   ];
   if (step === 3) {
-    prompt.splice(1, 0, 'Use the complete evaluation-tests.md corpus supplied in system context as the Step3_TSR test source. Agents.md already contains the canonical evaluation definitions and pass/fail criteria. Do not require or emit evaluation_documents_read.');
+    prompt.splice(1, 0, 'Use the complete evaluation-tests.md corpus supplied in system context as the Step3_TSR test source. Agents.md contains canonical evaluation definitions. Do not require or emit evaluation_documents_read.');
   }
   if ((step === 3 || step === 4) && requirements.length) {
     prompt.push('Step 2 stated requirements:', JSON.stringify(requirements, null, 2));
@@ -638,7 +1088,8 @@ async function supervise({ runNonce, step, execution, validation, requirements, 
       [user],
       [validation?.parts?.[0]?.text, repair].filter(Boolean).join('\n\n'),
       step,
-      agents
+      agents,
+      groundTruth
     );
     addMessage(messages, messagesFile, {
       kind: attempt ? 'gemini_supervisory_gate_repair' : 'gemini_supervisory_gate',
@@ -659,7 +1110,7 @@ async function supervise({ runNonce, step, execution, validation, requirements, 
     if (schema) {
       const gate = gateValue(schema);
       const roleError = roleValid(schema);
-      const shapeErrors = evalValid(schema, returnSchema);
+      const shapeErrors = evalValid(schema, returnSchema, groundTruth);
       if (gate.valid && !roleError && shapeErrors.length === 0) {
         addStore(store, storeFile, {
           run_nonce: runNonce,
@@ -667,6 +1118,7 @@ async function supervise({ runNonce, step, execution, validation, requirements, 
           operation: attempt ? 'supervisory_gate_repair' : 'supervisory_gate',
           context_files: contextFiles(step),
           model,
+          ground_truth_verification: groundTruth,
           return_schema: schema,
           transition_value: gate.value
         });
@@ -677,14 +1129,16 @@ async function supervise({ runNonce, step, execution, validation, requirements, 
         !gate.valid ? 'Missing/invalid supervisory_gate.gate_result.' : '',
         roleError || '',
         ...shapeErrors,
-        'Repair only the Supervisory Gate. Preserve every original execution key/value in its *_eval record. Do not add evaluation_documents_read. Return only valid JSON.'
+        'Repair only the Supervisory Gate. Preserve every execution key/value and every deterministic ground-truth finding exactly. Do not add evaluation_documents_read. Return only valid JSON.'
       ].filter(Boolean).join('\n');
     } else {
       repair = `SYSTEM CORRECTION: supervisory response was not valid JSON (${parseError?.message || 'parse failure'}). Repair only the Supervisory Gate and return valid JSON.`;
     }
 
     attempt += 1;
-    if (attempt >= 4) throw new Error(`Gemini supervisory repair limit exceeded for Step ${step}. Last correction: ${repair}`);
+    if (attempt >= 4) {
+      throw new Error(`Gemini supervisory repair limit exceeded for Step ${step}. Last correction: ${repair}`);
+    }
   }
 }
 
@@ -703,7 +1157,13 @@ async function main() {
 
   const inspected = inspect(trigger, step);
   const execution = inspected.execution;
-  const validation = validationMessage(step, inspected.failures);
+  const groundTruth = collectGroundTruth({
+    run,
+    runNonce,
+    step,
+    returnSchema: execution.return_schema
+  });
+  const validation = validationMessage(step, inspected.failures, groundTruth);
 
   if (step === 0 && !run.store.initial_user_message) {
     const userRequest = execution.return_schema?.start_of_turn?.user_request;
@@ -714,30 +1174,24 @@ async function main() {
   }
 
   addMessage(run.messages, run.messagesFile, {
-    kind: 'chatgpt_execution_candidate',
+    kind: 'chatgpt_execution',
     step,
     role: 'user',
-    timestamp: now(),
-    source_role: execution.source_role,
-    parts: [{ text: JSON.stringify(execution.return_schema, null, 2) }]
+    execution_source_role: execution.source_role,
+    return_schema: execution.return_schema
   });
+  if (validation) addMessage(run.messages, run.messagesFile, validation);
+
   addStore(run.store, run.storeFile, {
     run_nonce: runNonce,
     step,
-    operation: 'execution_candidate',
+    operation: 'chatgpt_execution',
     source_role: execution.source_role,
-    return_schema: execution.return_schema,
-    deterministic_validation_failures: inspected.failures
+    context_files: contextFiles(step),
+    deterministic_validation_failures: inspected.failures,
+    ground_truth_verification: groundTruth,
+    return_schema: execution.return_schema
   });
-  if (validation) {
-    addMessage(run.messages, run.messagesFile, validation);
-    addStore(run.store, run.storeFile, {
-      run_nonce: runNonce,
-      step,
-      operation: 'deterministic_validation',
-      findings: inspected.failures
-    });
-  }
 
   const requirements = statedRequirements(state);
   const supervisory = await supervise({
@@ -745,6 +1199,7 @@ async function main() {
     step,
     execution,
     validation,
+    groundTruth,
     requirements,
     messages: run.messages,
     messagesFile: run.messagesFile,
@@ -754,7 +1209,10 @@ async function main() {
   });
 
   const procedure = state.procedure;
-  const existing = procedure.step_records[String(step)] || { latest_attempt: 0, attempts: [] };
+  const existing = procedure.step_records[String(step)] || {
+    latest_attempt: 0,
+    attempts: []
+  };
   existing.attempts = Array.isArray(existing.attempts) ? existing.attempts : [];
   const attemptNumber = existing.attempts.length + 1;
   const attemptRecord = {
@@ -763,6 +1221,7 @@ async function main() {
     execution_source_role: execution.source_role,
     execution_return: execution.return_schema,
     deterministic_validation_failures: inspected.failures,
+    ground_truth_verification: groundTruth,
     supervisory_return: supervisory.schema,
     transition_key: 'supervisory_gate.gate_result',
     transition_value: supervisory.gate_result
@@ -770,6 +1229,8 @@ async function main() {
   existing.latest_attempt = attemptNumber;
   existing.attempts.push(attemptRecord);
   existing.execution_return = execution.return_schema;
+  existing.deterministic_validation_failures = inspected.failures;
+  existing.ground_truth_verification = groundTruth;
   existing.supervisory_return = supervisory.schema;
   existing.transition_key = 'supervisory_gate.gate_result';
   existing.transition_value = supervisory.gate_result;
@@ -793,6 +1254,7 @@ async function main() {
     state.last_supervisory_failure = {
       step,
       timestamp: now(),
+      ground_truth_verification: groundTruth,
       supervisory_return: supervisory.schema
     };
   }
@@ -808,6 +1270,8 @@ async function main() {
     run_nonce: runNonce,
     evaluated_step: step,
     deterministic_validation_failures: inspected.failures,
+    ground_truth_aggregate_status: groundTruth.aggregate_status,
+    ground_truth_blocking_findings: groundTruth.blocking_findings,
     gate_result: supervisory.gate_result,
     next_step: procedure.current_step,
     status: state.status,
