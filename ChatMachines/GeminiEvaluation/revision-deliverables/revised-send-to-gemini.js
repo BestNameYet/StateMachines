@@ -496,7 +496,7 @@ function extractRepoPath(text) {
 }
 
 function shaFromText(text) {
-  const match = String(text || '').match(/\b[0-9a-f]{40}\b/i);
+  const match = String(text || '').match(/\b[0-9a-f]{40}/i);
   return match ? match[0].toLowerCase() : null;
 }
 
