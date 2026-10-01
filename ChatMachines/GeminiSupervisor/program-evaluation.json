@@ -5,132 +5,132 @@
     "program": "implementation_under_test"
   },
   "overall_result": "PASS",
-  "executive_summary": "Agents.md and send-to-gemini.js fully satisfy the migration contract. All 13 semantic areas from the legacy evaluator definitions are canonically merged into Agents.md under Canonical Evaluation Definitions and the Governing Rule Catalog with complete definitions, definitions of evaluation, and pass/fail criteria. All former markdown-style rules have been converted into key:value catalog rules with verbose names, definitions, definitions of evaluation, pass/fail criteria, and at least three rule-following and three rule-breaking scenario examples citing criterion_used and status. Each step (Steps 0 through 4) contains an explicit evaluation_requirements list and is preceded by a JSON field definition glossary covering every field of that step's execution return and supervisory gate with key, value, definition, definition_of_evaluation, pass_criteria, and fail_criteria. A procedure dependency chart maps concrete procedure values to decisions, downstream storage artifacts, and source code consumers. All requirements to read external evaluator-definitions.md and all read-tracking keys (evaluation_documents_read) have been completely eliminated from both Agents.md and send-to-gemini.js, while Step 3 retains access to evaluation-tests.md as its test corpus. Deterministic schema validation in send-to-gemini.js strictly matches the canonical Step 0-4 return schemas and supervisory envelope, and supervisory gating correctly enforces same-step retry on FAIL and advancement only on PASS.",
+  "executive_summary": "Both Agents.md and send-to-gemini.js fully satisfy the exact user migration request and all items of the legacy evaluator-definitions.md semantic checklist. Every step (Steps 0 through 4) contains an explicit evaluation_requirements array; all 13 legacy semantic areas are canonically merged into Agents.md with unabbreviated pass/fail criteria; a JSON field-definition glossary with key, value, definition, definition_of_evaluation, pass_criteria, and fail_criteria precedes each step (covering every execution and supervisory field, including nested objects and arrays); all governing rules are formatted as verbose key:value catalog entries with definition, definition_of_evaluation, pass_criteria, fail_criteria, and at least three rule_following and three rule_breaking scenarios specifying criterion_used and status; the procedure dependency chart explicitly maps procedure values to state/messages/store/nextmessage/source-code/commit outputs; external evaluator-definitions.md reads and all evaluation_documents_read tracking keys are eliminated while preserving Step 3 access to evaluation-tests.md; deterministic schema validation in send-to-gemini.js aligns with the canonical schemas without obsolete fields; and supervisory_gate.gate_result strictly governs single-step advancement on PASS and same-step retry on FAIL.",
   "requirement_evaluations": [
     {
-      "requirement_id": "REQ-01-EXPLICIT-EVAL-REQUIREMENTS-PER-STEP",
+      "requirement_id": "REQ-01-EXPLICIT-STEP-EVALUATION-REQUIREMENTS",
       "agents_md_reference": {
         "lines": "437-442, 486-490, 533-537, 609-616, 660-666",
-        "requirement": "Create explicit evaluation_requirements lists for any step that lacks one. Every step (0-4) must possess an explicit evaluation_requirements list."
+        "requirement": "Create evaluation requirements for any step that doesn't have explicit requirements list in the requirements doc. PASS only if no Step 0-4 lacks an explicit evaluation_requirements list."
       },
       "program_reference": {
         "lines": "51-59, 617-619",
-        "behavior": "send-to-gemini.js extracts the governing step block and supplies it to Gemini for evaluation against Agents.md."
+        "behavior": "send-to-gemini.js extracts the governing step block from Agents.md and supplies it to Gemini for evaluation."
       },
       "result": "PASS",
-      "explanation": "Every step from Step 0 to Step 4 contains an explicit, structured evaluation_requirements array in its step JSON block: Step 0 has 4 requirements (lines 437-442), Step 1 has 3 requirements (lines 486-490), Step 2 has 3 requirements (lines 533-537), Step 3 has 6 requirements (lines 609-616), and Step 4 has 5 requirements (lines 660-666). No step lacks an explicit evaluation_requirements list.",
+      "explanation": "Every step (Steps 0-4) contains an explicit JSON array named evaluation_requirements within its step definition: Step 0 has 4 requirements (lines 437-442: verbatim user request, bootstrap identity, role/completion integrity, persistence/checkpoint); Step 1 has 3 requirements (lines 486-490: request preservation, identity/traceability, completion/persistence); Step 2 has 3 requirements (lines 533-537: user-stated only, verbatim coverage, integrity/persistence); Step 3 has 6 requirements (lines 609-616: decomposition, plan coverage, prospective UI integrity, all tests evaluated, loop control, integrity/checkpoint); and Step 4 has 5 requirements (lines 660-666: failures first, incomplete second, completed last/evidenced, Step 2 coverage, terminal gate integrity). No step lacks an explicit evaluation_requirements list.",
       "required_change": null
     },
     {
-      "requirement_id": "REQ-02-MERGE-LEGACY-EVALUATOR-DEFINITIONS",
+      "requirement_id": "REQ-02-MERGE-LEGACY-EVALUATOR-DEFINITIONS-1-TO-13",
       "agents_md_reference": {
-        "lines": "7-97, 105-345",
-        "requirement": "Merge all semantic content from legacy evaluator-definitions.md (items 1-13) into Agents.md with equivalent pass/fail semantics and without weakened qualifiers."
+        "lines": "8-95, 225-345",
+        "requirement": "Merge all evaluation definitions into Agents.md. All 13 semantic checklist items must be represented with equivalent pass/fail semantics and no lost subrule or weakened qualifier."
       },
       "program_reference": {
         "lines": "481, 626",
         "behavior": "send-to-gemini.js instructs Gemini that Agents.md is the canonical source for evaluation definitions and pass/fail criteria."
       },
       "result": "PASS",
-      "explanation": "All 13 legacy semantic items are canonically present: (1) user_words (lines 8-15), (2) applicable_rules (lines 16-23, 325-345), (3) effective_instruction_U (lines 24-31, 225-244), (4) agent_response_P (lines 32-39), (5) requirement_decomposition (lines 40-47, 245-264), (6) modifier_analysis subquestions (lines 48-55, 245-264), (7) source_traceability (lines 28-29, 225-244), (8) exact_satisfaction (lines 56-63, 265-284), (9) failure_description (lines 64-71, 265-284), (10) failure_pattern_and_analogy (lines 72-79, 285-304), (11) pattern_test_result_semantics (lines 76-78, 286-292), (12) promise_instead_of_execution (lines 80-87, 305-324), and (13) complete_agreed_work (lines 88-95, 305-324). Every item defines key, value, definition, definition_of_evaluation, pass_criteria, and fail_criteria without weakened qualifiers.",
+      "explanation": "All 13 checklist items are present in Canonical Evaluation Definitions (lines 8-95) and the Governing Rule Catalog (lines 225-345): (1) user_words (lines 8-15) preserves verbatim text and reference resolution without agent summary; (2) applicable_rules (lines 16-23, 325-345) requires exact sources and distinguishes failure examples from rules; (3) effective_instruction_U (lines 24-31, 225-244) combines user words and rules with source traceability; (4) agent_response_P (lines 32-39) distinguishes intention, attempt, and verified completion; (5) requirement_decomposition (lines 40-47, 245-264) decomposes into instruction types, actor, action, target, and modifiers; (6) modifier_analysis (lines 48-55, 245-264) covers polarity, quantity, set, conditions, sequence, time, and method; (7) source_traceability (lines 28-29, 225-244) preserves sources and interpretation context; (8) exact_satisfaction (lines 56-63, 265-284) requires conjunctive satisfaction without unstated demands; (9) failure_description (lines 64-71, 265-284) requires specific component mismatches and observations; (10) failure_pattern_and_analogy (lines 72-79, 285-304) defines semantic relations over topic similarity; (11) pattern_test_result_semantics (lines 76-78, 286-292) defines true as specific violation and false as non-proof of total compliance; (12) promise_instead_of_execution (lines 80-87, 305-324) forbids future promises for authorized due work; and (13) complete_agreed_work (lines 88-95, 305-324) mandates immediate execution of agreed definitions/assignments. No qualifiers are weakened or lost.",
       "required_change": null
     },
     {
-      "requirement_id": "REQ-03-FIELD-DEFINITION-GLOSSARIES",
+      "requirement_id": "REQ-03-FIELD-DEFINITION-GLOSSARIES-PRECEDING-EACH-STEP",
       "agents_md_reference": {
         "lines": "400-428, 452-477, 500-524, 547-600, 626-651",
-        "requirement": "Add a JSON field-definition glossary preceding the appearance of each Step 0-4 covering every execution-return and supervisory-return field with key, value, definition, definition_of_evaluation, pass_criteria, and fail_criteria."
+        "requirement": "Add a definition glossary with an entry for each return schema field in Agents.md. The glossary should precede the appearance of the step, be formatted in JSON, and include key, value, definition, definition_of_evaluation, pass_criteria, fail_criteria."
       },
       "program_reference": {
         "lines": "211-370",
-        "behavior": "Deterministic schema validation validates all required fields defined in the glossaries."
+        "behavior": "send-to-gemini.js validates every field declared in the glossaries during pre-supervision validation."
       },
       "result": "PASS",
-      "explanation": "Each step is immediately preceded by its JSON glossary: Step 0 Field Definition Glossary (lines 400-428) covers 18 execution and supervisory fields; Step 1 Field Definition Glossary (lines 452-477) covers 14 fields; Step 2 Field Definition Glossary (lines 500-524) covers 15 fields; Step 3 Field Definition Glossary (lines 547-600) covers 33 execution (A through G, including wildcards like clauses[*].actions, modifier_analysis[*], test_results[*]) and supervisory fields; Step 4 Field Definition Glossary (lines 626-651) covers 17 fields. Every glossary entry contains key, value, definition, definition_of_evaluation, pass_criteria, and fail_criteria.",
+      "explanation": "A JSON field definition glossary strictly precedes each step: Step 0 Field Definition Glossary (lines 400-428) covers 18 execution and supervisory fields; Step 1 Field Definition Glossary (lines 452-477) covers 14 fields; Step 2 Field Definition Glossary (lines 500-524) covers 15 fields; Step 3 Field Definition Glossary (lines 547-600) covers 33 execution and supervisory fields, including nested/wildcard array paths (clauses[*].actions, modifier_analysis[*].modifier, test_results[*].question_number, etc.); and Step 4 Field Definition Glossary (lines 626-651) covers 17 fields including failed_actions, not_completed_actions, and completed_actions. Every glossary entry contains key, value, definition, definition_of_evaluation, pass_criteria, and fail_criteria.",
       "required_change": null
     },
     {
-      "requirement_id": "REQ-04-CONVERT-MARKDOWN-RULES-TO-KEY-VALUE-ENTRIES",
+      "requirement_id": "REQ-04-KEY-VALUE-RULES-WITH-SCENARIOS",
       "agents_md_reference": {
         "lines": "103-346",
-        "requirement": "Convert all markdown-style rules to key:value entries with definitions, verbose rule names, definition_of_evaluation, pass_criteria, fail_criteria, and at least 3 rule-following and 3 rule-breaking scenario examples identifying criterion_used and status."
+        "requirement": "All markdown style rules must be converted to key:value style entries with definitions of each rule, verbose rule names, evaluation criteria (definition_of_evaluation), pass criteria, fail criteria, and at least 3 scenario-based examples of rule breaking and 3 of rule following specifying criterion_used and status."
       },
       "program_reference": {
         "lines": "472-485",
-        "behavior": "send-to-gemini.js loads Agents.md as the governing rule catalog in system instructions."
+        "behavior": "send-to-gemini.js passes the full Agents.md containing the rule catalog in system instructions."
       },
       "result": "PASS",
-      "explanation": "All 8 governing rules in the Governing Rule Catalog (lines 103-346) are structured JSON entries with verbose rule names: return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface (lines 105-124), model_role_separation_and_server_verified_execution_identity_are_mandatory (lines 125-144), chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake (lines 145-164), bootstrap_must_create_and_isolate_a_consistent_run_container_before_step_zero (lines 165-184), every_passed_step_must_have_a_durable_git_checkpoint_before_the_next_step (lines 185-204), gemini_supervisory_gate_must_evaluate_every_terminal_execution_value_without_rewriting_evidence (lines 205-224), effective_instruction_must_be_built_from_exact_user_words_and_applicable_rules_with_source_traceability (lines 225-244), requirements_must_be_decomposed_into_checkable_components_and_every_modifier_must_keep_its_scope (lines 245-264), contract_satisfaction_and_failure_records_must_be_requirement_specific_and_evidence_based (lines 265-284), failure_patterns_and_analogies_must_match_semantic_relationships_not_surface_topics (lines 285-304), authorized_work_due_now_must_be_executed_not_replaced_with_a_future_promise (lines 305-324), and failure_examples_are_evidence_for_evaluation_and_do_not_override_their_governing_requirement_sources (lines 325-345). Each rule includes definition, definition_of_evaluation, pass_criteria, fail_criteria, and exactly 3 rule_following and 3 rule_breaking scenario examples with criterion_used and status (PASS/FAIL).",
+      "explanation": "All governing rules are structured JSON entries in the Governing Rule Catalog (lines 103-346): return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface (lines 105-124), model_role_separation_and_server_verified_execution_identity_are_mandatory (lines 125-144), chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake (lines 145-164), bootstrap_must_create_and_isolate_a_consistent_run_container_before_step_zero (lines 165-184), every_passed_step_must_have_a_durable_git_checkpoint_before_the_next_step (lines 185-204), gemini_supervisory_gate_must_evaluate_every_terminal_execution_value_without_rewriting_evidence (lines 205-224), effective_instruction_must_be_built_from_exact_user_words_and_applicable_rules_with_source_traceability (lines 225-244), requirements_must_be_decomposed_into_checkable_components_and_every_modifier_must_keep_its_scope (lines 245-264), contract_satisfaction_and_failure_records_must_be_requirement_specific_and_evidence_based (lines 265-284), failure_patterns_and_analogies_must_match_semantic_relationships_not_surface_topics (lines 285-304), authorized_work_due_now_must_be_executed_not_replaced_with_a_future_promise (lines 305-324), and failure_examples_are_evidence_for_evaluation_and_do_not_override_their_governing_requirement_sources (lines 325-345). Each rule defines key, value, definition, definition_of_evaluation, pass_criteria, fail_criteria, and an object scenario_examples with exactly 3 rule_following (status: PASS) and 3 rule_breaking (status: FAIL) scenarios, each citing scenario, criterion_used, and status.",
       "required_change": null
     },
     {
       "requirement_id": "REQ-05-PROCEDURE-DEPENDENCY-CHART",
       "agents_md_reference": {
         "lines": "374-394",
-        "requirement": "Include a dependency chart mapping procedure values to decisions and outputs in state, messages, store, nextmessage, source code, and workflow commits."
+        "requirement": "Include a dependency chart describing which values in the procedure map to which decisions and outputs in the message stream file, store file, source code, etc."
       },
       "program_reference": {
         "lines": "28-33, 65-135, 186-201, 373-403, 606-608, 664-672, 756-798",
-        "behavior": "send-to-gemini.js directly consumes each mapped source value and produces the state, messages, and store outputs identified in the chart."
+        "behavior": "send-to-gemini.js consumes the source_values defined in the dependency chart and writes the corresponding decisions and outputs."
       },
       "result": "PASS",
-      "explanation": "The procedure_dependency_chart (lines 374-394) defines 15 mappings covering run_nonce, execution.step, role fields, return_schema_completed, Step 0 user_request, Step 2 stated_requirements, Step 3 plan P, Step 3 UI_output, Step 3 test results, Step 3 Loop_Decision, granular evaluations, gate_result, current_step/remaining_steps, messages.json contents, store.json records, and Git commit checkpoints. Each entry specifies source_value, decision, outputs, and source_code_consumer.",
+      "explanation": "procedure_dependency_chart (lines 374-394) is a JSON array of 15 mappings covering run_nonce, execution.step, role fields, return_schema_completed, Step 0 user_request, Step 2 stated_requirements, Step 3 plan P, Step 3 UI_output, Step 3 test results, Step 3 Loop_Decision, granular evaluations, gate_result, current_step/remaining_steps, messages.json contents, store.json records, and Git commit checkpoints. Each item provides source_value, decision, outputs, and source_code_consumer.",
       "required_change": null
     },
     {
-      "requirement_id": "REQ-06-ELIMINATE-EVALUATOR-DEFINITIONS-READ-TRACKING",
+      "requirement_id": "REQ-06-ELIMINATE-EXTERNAL-EVAL-DEFINITION-READS-AND-TRACKING",
       "agents_md_reference": {
-        "lines": "675-684",
-        "requirement": "Eliminate the requirement to read external evaluator-definitions.md and remove evaluation_documents_read and any equivalent tracking keys from schemas and runtime."
+        "lines": "678-682",
+        "requirement": "The requirements to read external eval definition must be discarded once eval definition and pass fail criteria are merged into Agents.md and any key value inputs tracking those reads must be eliminated."
       },
       "program_reference": {
         "lines": "6-7, 61-63, 175-184, 481, 626, 680",
-        "behavior": "send-to-gemini.js defines contextFiles(step) referencing only Agents.md (and evaluation-tests.md for Step 3); does not read evaluator-definitions.md; controlFailures does not track or require evaluation_documents_read; prompts and repair branches explicitly forbid adding evaluation_documents_read."
+        "behavior": "send-to-gemini.js does not import or read evaluator-definitions.md; contextFiles(step) excludes it; controlFailures does not validate evaluation_documents_read; prompts and repair branches explicitly prohibit adding evaluation_documents_read."
       },
       "result": "PASS",
-      "explanation": "evaluator-definitions.md is completely removed as an active dependency. No Step 0-4 execution schema, supervisory gate schema, or glossary entry in Agents.md contains evaluation_documents_read. In send-to-gemini.js, lines 6-7, 61-63, 481, 626, and 680 explicitly ensure evaluator-definitions.md is neither required nor read, and evaluation_documents_read is eliminated from deterministic validation.",
+      "explanation": "External evaluator-definitions.md is no longer required or referenced anywhere in active schemas. No schema in Agents.md contains evaluation_documents_read. In send-to-gemini.js, evaluator-definitions.md is not read, contextFiles(step) points only to Agents.md (and evaluation-tests.md for Step 3), and prompts explicitly forbid emitting evaluation_documents_read.",
       "required_change": null
     },
     {
-      "requirement_id": "REQ-07-DETERMINISTIC-SCHEMA-VALIDATION-ALIGNMENT",
+      "requirement_id": "REQ-07-UPDATE-DETERMINISTIC-SCHEMA-VALIDATION",
       "agents_md_reference": {
         "lines": "443-444, 491-492, 538-539, 617-618, 667-668, 680",
-        "requirement": "Update deterministic validation of procedure schemas in send-to-gemini.js to match current Step 0-4 execution schemas and supervisory envelope without requiring removed fields or permitting omitted required fields."
+        "requirement": "All deterministic validation of procedure schema must be updated to match current Step 0-4 return schemas and supervisory envelope without requiring removed fields or permitting omitted required fields."
       },
       "program_reference": {
         "lines": "186-201, 211-370, 373-403, 549-593, 595-603",
-        "behavior": "validateStep and controlFailures enforce role controls, return_schema_completed, and the exact required fields for start_of_turn, step_1_record, step_2_record, Step_3 (A-G, clauses, modifiers, test results, loop decision), and Step_4 (failed_actions, not_completed_actions, completed_actions). evalShape enforces the granular *_eval mirror envelope."
+        "behavior": "Deterministic validation strictly checks role fields, return_schema_completed, Step 0 start_of_turn, Step 1 step_1_record, Step 2 step_2_record, Step 3 Step_3 (including A-G and nested arrays), Step 4 Step_4, and the supervisory granular *_eval envelope."
       },
       "result": "PASS",
-      "explanation": "Deterministic schema validation in validateStep (lines 211-370), controlFailures (lines 186-201), inspect (lines 373-403), and evalShape/evalValid (lines 549-603) strictly enforces the exact canonical schemas from Agents.md: start_of_turn (Step 0), step_1_record (Step 1), step_2_record (Step 2), Step_3 with A-G hierarchy (Step 3), and Step_4 (Step 4). Removed fields such as evaluation_documents_read are not validated or required, and all required fields are verified.",
+      "explanation": "send-to-gemini.js validates each execution candidate in validateStep (lines 211-370) and controlFailures (lines 186-201) against the exact canonical schemas in Agents.md. It does not look for evaluation_documents_read or any other obsolete fields, checks all required keys and array elements, validates types, and validates the supervisory envelope via evalShape/evalValid (lines 549-603).",
       "required_change": null
     },
     {
-      "requirement_id": "REQ-08-STEP-3-TEST-SOURCE-AVAILABILITY",
+      "requirement_id": "REQ-08-STEP-3-TEST-SOURCE-ACCESS-PRESERVED",
       "agents_md_reference": {
-        "lines": "578-579, 613, 617-618, 681",
-        "requirement": "Step 3 must have access to evaluation-tests.md / Step3_TSR test corpus without reintroducing evaluator-definition read tracking."
+        "lines": "578-579, 613, 617-618, 681-682",
+        "requirement": "Step 3 must retain access to evaluation-tests.md / Step3_TSR without reintroducing evaluator-definition read tracking."
       },
       "program_reference": {
         "lines": "7, 61-63, 474-480, 625-627",
-        "behavior": "send-to-gemini.js supplies evaluation-tests.md in system context for Step 3 only, while reminding the model that evaluation definitions are canonical in Agents.md and evaluation_documents_read must not be emitted."
+        "behavior": "evaluation-tests.md is read from disk and injected into system instruction for Step 3 only, with explicit reminder that evaluation definitions reside in Agents.md and evaluation_documents_read is eliminated."
       },
       "result": "PASS",
-      "explanation": "Step 3 accesses evaluation-tests.md as its Step3_TSR test source via send-to-gemini.js lines 7, 61-63, and 474-480 without introducing any evaluator-definition read-tracking field, adhering to Agents.md lines 681-682.",
+      "explanation": "Step 3 accesses evaluation-tests.md as its test corpus via send-to-gemini.js lines 7, 61-63, and 474-480 without tracking reads or introducing evaluation_documents_read, satisfying Agents.md lines 681-682.",
       "required_change": null
     },
     {
-      "requirement_id": "REQ-09-TRANSITION-AND-GATE-CONTROL",
+      "requirement_id": "REQ-09-TRANSITION-KEY-AND-GATE-CONTROL",
       "agents_md_reference": {
         "lines": "105-124, 205-224, 388-389, 425, 474, 521, 597, 648",
         "requirement": "supervisory_gate.gate_result is the exact transition key; FAIL repeats the same step; PASS advances exactly one step after persistence/checkpoint; terminal completion occurs only after final PASS."
       },
       "program_reference": {
         "lines": "11, 532-536, 673, 767-798",
-        "behavior": "gateValue extracts supervisory_gate.gate_result ('PASS' or 'FAIL'). On PASS, advances current_step to the next uncompleted step and clears failure state; on FAIL, maintains current_step on the same step and records last_supervisory_failure."
+        "behavior": "send-to-gemini.js parses supervisory_gate.gate_result for PASS or FAIL. On FAIL, preserves current_step to force same-step retry; on PASS, advances current_step to the next uncompleted step. Marks complete only when remaining_steps is empty."
       },
       "result": "PASS",
-      "explanation": "The transition key supervisory_gate.gate_result is strictly evaluated against {'PASS', 'FAIL'}. On FAIL, send-to-gemini.js sets current_step = step (lines 788-798), forcing ChatGPT to repeat the same step. On PASS, current_step advances exactly one step (lines 779-787). The run terminates with status 'complete' only when remaining_steps is empty after Step 4 passes.",
+      "explanation": "The runtime strictly inspects supervisory_gate.gate_result. If FAIL, lines 788-798 set current_step = step, remaining_steps unchanged, awaiting = supervisory_gate_fail, and logs last_supervisory_failure. If PASS, lines 779-787 append step to completed_steps and advance current_step by exactly one step. Status becomes 'complete' only when procedure.current_step is null and all steps are finished.",
       "required_change": null
     }
   ],
@@ -144,7 +144,7 @@
     "missing_key_repair_branch": "PASS",
     "fail_restarts_same_execution_step": "PASS",
     "pass_advances_procedure": "PASS",
-    "explanation": "The supervisory handoff, unevaluated template generation via gateTemplate, granular evaluation shape enforcement via evalShape, missing/malformed repair loop via supervise (lines 636-688), same-step restart on FAIL, and single-step advance on PASS operate strictly according to the canonical specification."
+    "explanation": "The transition key supervisory_gate.gate_result is enforced without fallback aliases. Execution output is passed unevaluated to Gemini via gateTemplate. Missing or malformed keys are repaired in a dedicated loop (supervise lines 636-688) without modifying execution records. FAIL retains the current step for retry, and PASS advances the procedure by exactly one step."
   },
   "unauthorized_or_invented_control_logic": [],
   "omissions": [],
