@@ -22,6 +22,11 @@ const evaluationOutputPath = path.join(evaluationRoot, config.evaluation_output_
 const revisionDeliverablesOutputPath = path.join(evaluationRoot, config.revision_deliverables_output_path);
 const revisionAgentsOutputPath = path.join(revisionDeliverablesOutputPath, config.revision_agents_output_file);
 const revisionProgramOutputPath = path.join(revisionDeliverablesOutputPath, config.revision_program_output_file);
+const artifactRevisionEnabled = config.artifact_revision_enabled === true;
+const artifactRevisionOutputPath = path.join(evaluationRoot, config.artifact_revision_output_path);
+const artifactRevisionPreservePointers = Array.isArray(config.artifact_revision_preserve_json_pointers)
+  ? config.artifact_revision_preserve_json_pointers
+  : [];
 
 const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL || config.default_model;
@@ -30,7 +35,12 @@ const requestTimeoutMs = Number(config.request_timeout_ms || 180000);
 const readText = filePath => fs.readFileSync(filePath, 'utf8');
 const readJson = filePath => JSON.parse(readText(filePath));
 
+function ensureParent(filePath) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+}
+
 function writeJson(filePath, value) {
+  ensureParent(filePath);
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n');
 }
 
@@ -83,6 +93,37 @@ function appendNextMessage(messages, nextmessage) {
   const last = messages.contents[messages.contents.length - 1];
   if (JSON.stringify(last) !== JSON.stringify(nextmessage)) messages.contents.push(nextmessage);
   return messages;
+}
+
+function decodePointerToken(token) {
+  return token.replace(/~1/g, '/').replace(/~0/g, '~');
+}
+
+function valueAtJsonPointer(value, pointer) {
+  if (pointer === '') return value;
+  if (typeof pointer !== 'string' || !pointer.startsWith('/')) {
+    throw new Error(`Invalid JSON pointer: ${pointer}`);
+  }
+  return pointer
+    .slice(1)
+    .split('/')
+    .map(decodePointerToken)
+    .reduce((current, token) => {
+      if (current === null || current === undefined || !Object.prototype.hasOwnProperty.call(Object(current), token)) {
+        throw new Error(`JSON pointer does not resolve: ${pointer}`);
+      }
+      return current[token];
+    }, value);
+}
+
+function assertPreservedPointers(original, revised) {
+  for (const pointer of artifactRevisionPreservePointers) {
+    const before = valueAtJsonPointer(original, pointer);
+    const after = valueAtJsonPointer(revised, pointer);
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      throw new Error(`Artifact revision changed preserved JSON pointer ${pointer}.`);
+    }
+  }
 }
 
 function buildSystemInstruction(agents, program, step3Evaluation) {
@@ -146,15 +187,33 @@ function buildSystemInstruction(agents, program, step3Evaluation) {
     revised_program: '<complete, non-truncated contents of send-to-gemini.js>'
   };
 
-  return [
+  const artifactRevisionSchema = {
+    response_type: 'artifact_revision',
+    revision_basis: {
+      target_file: config.artifact_target_file,
+      output_path: config.artifact_revision_output_path,
+      preserve_json_pointers: artifactRevisionPreservePointers
+    },
+    corrections_applied: [
+      {
+        issue: 'string',
+        change: 'string',
+        rationale: 'string'
+      }
+    ],
+    unresolved_requirements: ['string'],
+    revised_artifact: '<complete, non-truncated JSON value for the configured artifact>'
+  };
+
+  const sections = [
     'You are the independent Gemini Supervisor evaluator/reviser.',
     'Agents.md is the authoritative and self-contained source for procedure rules, evaluation definitions, and pass/fail criteria.',
     'The merged Step 3 evaluation JSON supplied below is the single Step3_TSR evaluation source. Use evaluation_heuristic.key_value_records as the U/P or expectation-vs-outcome evaluation method and use step3_tsr.tests as the complete Step 3 question corpus.',
     'Do not require evaluator-definitions.md or evaluation-tests.md. Do not require, invent, or restore evaluation_documents_read or any equivalent field whose purpose is tracking evaluation-definition reads.',
-    'The latest user message in the evaluator conversation controls whether you evaluate or produce a paired revision.',
+    'The latest user message in the evaluator conversation controls whether you evaluate, produce a paired revision, or revise the configured artifact.',
     'When revising gating semantics, revise Agents.md and send-to-gemini.js together so the specification and runtime are mutually consistent. Do not revise only one side when the latest request requires a paired correction.',
-    'Use prior evaluator conversation messages as historical context, but re-check them against the CURRENT Agents.md and CURRENT send-to-gemini.js. Historical requirements superseded by the current canonical contract must not be reintroduced.',
-    'Evaluate or revise what the JavaScript actually does, not what comments claim it does.',
+    'Use prior evaluator conversation messages as historical context, but re-check them against CURRENT configured inputs. Historical requirements superseded by the current canonical contract must not be reintroduced.',
+    'Evaluate or revise actual content, not comments about content.',
     'Preserve the intended procedure, per-step return schemas, branches, loops, supervisory gates, run isolation, persistence, and user-request semantics. Do not invent substitute control logic.',
     'The per-step return schema is the central communication/control surface for that step. A step does not communicate completion, advancement, or a valid execution result outside its required return schema.',
     'return_schema_completed refers only to completion of the governing step return schema, never completion of the whole multi-step procedure.',
@@ -163,8 +222,22 @@ function buildSystemInstruction(agents, program, step3Evaluation) {
     JSON.stringify(evaluationSchema, null, 2),
     'If the latest user message asks to revise Agents.md and source code together, return only one JSON object matching this paired revision schema:',
     JSON.stringify(pairedRevisionSchema, null, 2),
-    'For a paired revision, revised_agents_md MUST contain the entire replacement Agents.md and revised_program MUST contain the entire replacement send-to-gemini.js. Do not truncate, use ellipses, omit unchanged sections, or provide patches.',
-    'Apply every correction required to make the specification and runtime mutually consistent. If anything remains impossible without inventing an unspecified external interface, list it in unresolved_requirements.',
+    'For a paired revision, revised_agents_md MUST contain the entire replacement Agents.md and revised_program MUST contain the entire replacement send-to-gemini.js. Do not truncate, use ellipses, omit unchanged sections, or provide patches.'
+  ];
+
+  if (artifactRevisionEnabled) {
+    sections.push(
+      `Artifact revision is enabled. The source artifact is ${step3EvaluationPath}.`,
+      `Write the revised file deliverable to the configured output path ${artifactRevisionOutputPath}.`,
+      `These JSON pointers are immutable and must be reproduced exactly: ${JSON.stringify(artifactRevisionPreservePointers)}.`,
+      'If the latest user message asks to revise the configured artifact, return only one JSON object matching this artifact revision schema:',
+      JSON.stringify(artifactRevisionSchema, null, 2),
+      'For artifact_revision, revised_artifact MUST contain the entire revised JSON artifact. Do not return a patch, Markdown fence, ellipsis, omitted unchanged content, or commentary outside the JSON object.'
+    );
+  }
+
+  sections.push(
+    'Apply every correction required by the latest user message. If anything remains impossible without inventing an unspecified external interface, list it in unresolved_requirements.',
     'Use the provided line numbers when citing source evidence in evaluation/correction metadata.',
     '',
     '===== CURRENT AGENTS.MD =====',
@@ -175,7 +248,9 @@ function buildSystemInstruction(agents, program, step3Evaluation) {
     '',
     '===== MERGED STEP 3 EVALUATION JSON =====',
     JSON.stringify(step3Evaluation, null, 2)
-  ].join('\n\n');
+  );
+
+  return sections.join('\n\n');
 }
 
 async function callGemini(messages, systemInstruction) {
@@ -240,6 +315,20 @@ async function main() {
     fs.writeFileSync(revisionProgramOutputPath, normalizeRevisedProgram(result.payload.revised_program));
   }
 
+  if (result.payload.response_type === 'artifact_revision') {
+    if (!artifactRevisionEnabled) {
+      throw new Error('Artifact revision response received while artifact_revision_enabled is false.');
+    }
+    if (!Object.prototype.hasOwnProperty.call(result.payload, 'revised_artifact')) {
+      throw new Error('Artifact revision did not contain complete revised_artifact.');
+    }
+    const revisedArtifact = typeof result.payload.revised_artifact === 'string'
+      ? extractJson(result.payload.revised_artifact)
+      : result.payload.revised_artifact;
+    assertPreservedPointers(step3Evaluation, revisedArtifact);
+    writeJson(artifactRevisionOutputPath, revisedArtifact);
+  }
+
   writeJson(evaluationOutputPath, result.payload);
 
   console.log(JSON.stringify({
@@ -257,7 +346,8 @@ async function main() {
     revision_deliverables_output_path: revisionDeliverablesOutputPath,
     response_type: result.payload.response_type ?? null,
     revision_agents_output: result.payload.response_type === 'paired_revision' ? revisionAgentsOutputPath : null,
-    revision_program_output: result.payload.response_type === 'paired_revision' ? revisionProgramOutputPath : null
+    revision_program_output: result.payload.response_type === 'paired_revision' ? revisionProgramOutputPath : null,
+    artifact_revision_output: result.payload.response_type === 'artifact_revision' ? artifactRevisionOutputPath : null
   }, null, 2));
 }
 
