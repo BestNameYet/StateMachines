@@ -1,0 +1,49 @@
+name: Generate GeminiSupervisor Git Log
+
+on:
+  push:
+    paths:
+      - '.github/workflows/generate-gemini-supervisor-git-log.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate rename-aware lineage git log
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT='ChatMachines/GeminiSupervisor/commit history/git-log.txt'
+          CUTOFF="$(git rev-parse HEAD)"
+          {
+            echo "GeminiSupervisor lineage git log"
+            echo "cutoff_commit: $CUTOFF"
+            echo "lineage_paths: ChatMachines/GeminiChatGPTAppScript -> ChatMachines/GeminiSupervisor"
+            echo "command: git log --reverse --date=iso-strict --format=fuller --name-status -M -C -- ChatMachines/GeminiChatGPTAppScript ChatMachines/GeminiSupervisor"
+            echo
+            git log --reverse --date=iso-strict --format=fuller --name-status -M -C -- \
+              ChatMachines/GeminiChatGPTAppScript \
+              ChatMachines/GeminiSupervisor
+          } > "$OUT"
+
+      - name: Commit generated log
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'ChatMachines/GeminiSupervisor/commit history/git-log.txt'
+          if git diff --cached --quiet; then
+            echo 'No changes.'
+            exit 0
+          fi
+          git commit -m 'Add GeminiSupervisor lineage git log'
+          git push origin HEAD:main
