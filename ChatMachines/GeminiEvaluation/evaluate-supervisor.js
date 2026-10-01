@@ -22,6 +22,8 @@ const evaluationOutputPath = path.join(evaluationRoot, config.evaluation_output_
 const revisionDeliverablesOutputPath = path.join(evaluationRoot, config.revision_deliverables_output_path);
 const revisionAgentsOutputPath = path.join(revisionDeliverablesOutputPath, config.revision_agents_output_file);
 const revisionProgramOutputPath = path.join(revisionDeliverablesOutputPath, config.revision_program_output_file);
+const sourceRevisionEnabled = config.source_revision_enabled === true;
+const sourceRevisionConfigOutputPath = path.join(evaluationRoot, config.source_revision_config_output_path);
 const artifactRevisionEnabled = config.artifact_revision_enabled === true;
 const artifactRevisionOutputPath = path.join(evaluationRoot, config.artifact_revision_output_path);
 const artifactRevisionPreservePointers = Array.isArray(config.artifact_revision_preserve_json_pointers)
@@ -172,6 +174,7 @@ function buildSystemInstruction(agents, program, step3Evaluation) {
       agents_md: 'specification_being_revised',
       prior_evaluator_context: 'used',
       current_program: 'implementation_being_revised',
+      source_config: 'shared_external_reference_configuration',
       step3_evaluation: 'merged_heuristic_and_question_corpus'
     },
     corrections_applied: [
@@ -179,12 +182,14 @@ function buildSystemInstruction(agents, program, step3Evaluation) {
         issue: 'string',
         agents_change: 'string',
         program_change: 'string',
+        source_config_change: 'string',
         rationale: 'string'
       }
     ],
     unresolved_requirements: ['string'],
     revised_agents_md: '<complete, non-truncated contents of Agents.md>',
-    revised_program: '<complete, non-truncated contents of send-to-gemini.js>'
+    revised_program: '<complete, non-truncated contents of send-to-gemini.js>',
+    revised_source_config: '<complete JSON object for ChatMachines/GeminiSupervisor/config.json>'
   };
 
   const artifactRevisionSchema = {
@@ -208,10 +213,11 @@ function buildSystemInstruction(agents, program, step3Evaluation) {
   const sections = [
     'You are the independent Gemini Supervisor evaluator/reviser.',
     'Agents.md is the authoritative and self-contained source for procedure rules, evaluation definitions, and pass/fail criteria.',
-    'The merged Step 3 evaluation JSON supplied below is the single Step3_TSR evaluation source. Use evaluation_heuristic.key_value_records as the U/P or expectation-vs-outcome evaluation method and use step3_tsr.tests as the complete Step 3 question corpus.',
+    'The merged Step 3 evaluation JSON supplied below is the single Step3_TSR evaluation source. Use its evaluation_heuristic object as the U/P or expectation-vs-outcome evaluation method and use step3_tsr.tests as the complete Step 3 question corpus.',
     'Do not require evaluator-definitions.md or evaluation-tests.md. Do not require, invent, or restore evaluation_documents_read or any equivalent field whose purpose is tracking evaluation-definition reads.',
     'The latest user message in the evaluator conversation controls whether you evaluate, produce a paired revision, or revise the configured artifact.',
-    'When revising gating semantics, revise Agents.md and send-to-gemini.js together so the specification and runtime are mutually consistent. Do not revise only one side when the latest request requires a paired correction.',
+    'Agents.md and send-to-gemini.js are a paired specification/runtime surface. When the latest request changes their shared behavior or dependencies, revise both together in one paired_revision response.',
+    'When a paired revision introduces or changes references to files outside Agents.md and send-to-gemini.js, create one shared Supervisor source config and make both revised files point to that same config/key rather than independently hardcoding divergent external paths.',
     'Use prior evaluator conversation messages as historical context, but re-check them against CURRENT configured inputs. Historical requirements superseded by the current canonical contract must not be reintroduced.',
     'Evaluate or revise actual content, not comments about content.',
     'Preserve the intended procedure, per-step return schemas, branches, loops, supervisory gates, run isolation, persistence, and user-request semantics. Do not invent substitute control logic.',
@@ -222,7 +228,8 @@ function buildSystemInstruction(agents, program, step3Evaluation) {
     JSON.stringify(evaluationSchema, null, 2),
     'If the latest user message asks to revise Agents.md and source code together, return only one JSON object matching this paired revision schema:',
     JSON.stringify(pairedRevisionSchema, null, 2),
-    'For a paired revision, revised_agents_md MUST contain the entire replacement Agents.md and revised_program MUST contain the entire replacement send-to-gemini.js. Do not truncate, use ellipses, omit unchanged sections, or provide patches.'
+    'For a paired revision, revised_agents_md MUST contain the entire replacement Agents.md, revised_program MUST contain the entire replacement send-to-gemini.js, and revised_source_config MUST contain the complete shared Supervisor config JSON object. Do not truncate, use ellipses, omit unchanged sections, or provide patches.',
+    'For a paired revision, Agents.md and send-to-gemini.js must agree on the shared config contract. Any external file dependency represented in that config must use the same config key and resolved path semantics in both revised files.'
   ];
 
   if (artifactRevisionEnabled) {
@@ -304,15 +311,28 @@ async function main() {
   writeJson(messagesPath, messages);
 
   if (result.payload.response_type === 'paired_revision') {
+    if (!sourceRevisionEnabled) {
+      throw new Error('Paired revision response received while source_revision_enabled is false.');
+    }
     if (typeof result.payload.revised_agents_md !== 'string' || result.payload.revised_agents_md.trim() === '') {
       throw new Error('Paired revision did not contain complete revised_agents_md.');
     }
     if (typeof result.payload.revised_program !== 'string' || result.payload.revised_program.trim() === '') {
       throw new Error('Paired revision did not contain complete revised_program.');
     }
+    if (!Object.prototype.hasOwnProperty.call(result.payload, 'revised_source_config')) {
+      throw new Error('Paired revision did not contain complete revised_source_config.');
+    }
+    const revisedSourceConfig = typeof result.payload.revised_source_config === 'string'
+      ? extractJson(result.payload.revised_source_config)
+      : result.payload.revised_source_config;
+    if (!revisedSourceConfig || Array.isArray(revisedSourceConfig) || typeof revisedSourceConfig !== 'object') {
+      throw new Error('revised_source_config must be a JSON object.');
+    }
     fs.mkdirSync(revisionDeliverablesOutputPath, { recursive: true });
     fs.writeFileSync(revisionAgentsOutputPath, normalizeRevisedAgents(result.payload.revised_agents_md));
     fs.writeFileSync(revisionProgramOutputPath, normalizeRevisedProgram(result.payload.revised_program));
+    writeJson(sourceRevisionConfigOutputPath, revisedSourceConfig);
   }
 
   if (result.payload.response_type === 'artifact_revision') {
@@ -347,6 +367,7 @@ async function main() {
     response_type: result.payload.response_type ?? null,
     revision_agents_output: result.payload.response_type === 'paired_revision' ? revisionAgentsOutputPath : null,
     revision_program_output: result.payload.response_type === 'paired_revision' ? revisionProgramOutputPath : null,
+    revision_source_config_output: result.payload.response_type === 'paired_revision' ? sourceRevisionConfigOutputPath : null,
     artifact_revision_output: result.payload.response_type === 'artifact_revision' ? artifactRevisionOutputPath : null
   }, null, 2));
 }
