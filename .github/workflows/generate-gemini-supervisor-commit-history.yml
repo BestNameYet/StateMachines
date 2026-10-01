@@ -1,0 +1,291 @@
+name: Generate GeminiSupervisor Commit History
+
+on:
+  push:
+    paths:
+      - '.github/workflows/generate-gemini-supervisor-commit-history.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate commit-by-commit audit
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const cp = require('child_process');
+
+          const repoRoot = process.cwd();
+          const currentRoot = 'ChatMachines/GeminiSupervisor';
+          const predecessorRoot = 'ChatMachines/GeminiChatGPTAppScript';
+          const outputPath = `${currentRoot}/commit history/commit-history.md`;
+          const cutoff = cp.execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim();
+
+          function git(args, allowFail=false) {
+            try {
+              return cp.execFileSync('git', args, {encoding:'utf8', maxBuffer: 128 * 1024 * 1024}).trimEnd();
+            } catch (e) {
+              if (allowFail) return '';
+              throw e;
+            }
+          }
+
+          function esc(s) {
+            return String(s ?? '').replace(/\r/g, '').replace(/\|/g, '\\|');
+          }
+
+          function short(s, n=2400) {
+            s = String(s ?? '').trim();
+            return s.length > n ? s.slice(0, n) + ' …[truncated in audit]' : s;
+          }
+
+          function parseNameStatus(text) {
+            if (!text.trim()) return [];
+            return text.split('\n').filter(Boolean).map(line => {
+              const p = line.split('\t');
+              const code = p[0];
+              const kind = code[0];
+              if ((kind === 'R' || kind === 'C') && p.length >= 3) {
+                return {code, kind, oldPath:p[1], path:p[2]};
+              }
+              return {code, kind, path:p[1] || ''};
+            });
+          }
+
+          function parseNumstat(text) {
+            const m = new Map();
+            if (!text.trim()) return m;
+            for (const line of text.split('\n').filter(Boolean)) {
+              const p = line.split('\t');
+              if (p.length < 3) continue;
+              const added = p[0], deleted = p[1];
+              const path = p.slice(2).join('\t');
+              m.set(path, {added, deleted});
+              // Rename numstat can use brace notation; retain a fallback record.
+              if (path.includes(' => ')) {
+                const dest = path.replace(/.* => /, '').replace(/[{}]/g, '');
+                m.set(dest, {added, deleted});
+              }
+            }
+            return m;
+          }
+
+          function recursiveValues(obj, wanted, out=[]) {
+            if (obj === null || obj === undefined) return out;
+            if (Array.isArray(obj)) {
+              for (const v of obj) recursiveValues(v, wanted, out);
+              return out;
+            }
+            if (typeof obj !== 'object') return out;
+            for (const [k,v] of Object.entries(obj)) {
+              if (wanted.has(k) && typeof v === 'string' && v.trim()) out.push({key:k, value:v.trim()});
+              recursiveValues(v, wanted, out);
+            }
+            return out;
+          }
+
+          function showJsonAt(sha, path) {
+            const raw = git(['show', `${sha}:${path}`], true);
+            if (!raw) return null;
+            try { return JSON.parse(raw); } catch { return null; }
+          }
+
+          function getPromptEvidence(c) {
+            const wanted = new Set(['user_request','source_user_request','resolved_request','request_text','prompt']);
+            const candidatePaths = [];
+            if (c.runNonce) {
+              candidatePaths.push(`${currentRoot}/runs/${c.runNonce}/state.json`);
+              candidatePaths.push(`${currentRoot}/runs/${c.runNonce}/messages.json`);
+            }
+            candidatePaths.push(`${currentRoot}/nextmessage/nextmessage.json`);
+            candidatePaths.push(`${predecessorRoot}/nextmessage.json`);
+            candidatePaths.push(`${predecessorRoot}/MessageStream/nextmessage.json`);
+
+            for (const path of candidatePaths) {
+              const obj = showJsonAt(c.sha, path);
+              if (!obj) continue;
+              const vals = recursiveValues(obj, wanted);
+              if (vals.length) {
+                // Prefer user_request, then the longest surviving request-like value.
+                vals.sort((a,b) => ((a.key === 'user_request') ? -1 : 0) - ((b.key === 'user_request') ? -1 : 0) || b.value.length - a.value.length);
+                return {source:path, key:vals[0].key, text:vals[0].value};
+              }
+              // Gemini message shape fallback: take the last user part.
+              const contents = obj && Array.isArray(obj.contents) ? obj.contents : [];
+              for (let i=contents.length-1; i>=0; i--) {
+                if (contents[i]?.role === 'user' && Array.isArray(contents[i].parts)) {
+                  const text = contents[i].parts.map(x => x?.text || '').join('\n').trim();
+                  if (text) return {source:path, key:'last_user_message', text};
+                }
+              }
+            }
+            return null;
+          }
+
+          function movement(c) {
+            const s = c.subject.toLowerCase();
+            const paths = c.files.map(f => f.path).join(' ').toLowerCase();
+            if (c.sha === '5b7c2b70f48f122dfd256daad97a087aa3f282b4' || s.includes('rename chat machine')) return 'Rename/identity transition from GeminiChatGPTAppScript to GeminiSupervisor.';
+            if (c.date.startsWith('2026-09-29') && (paths.includes('geminichatgptappscript') || s.includes('gemini chat'))) return 'Initial Gemini chat + Apps Script transport prototype.';
+            if (s.includes('manifest') || s.includes('commit history')) return 'Repository documentation and external operability cleanup.';
+            if (s.includes('step 3') || s.includes('step3') || paths.includes('step-3-evaluation')) return 'Unification and operationalization of the Step 3 evaluation heuristic/test corpus.';
+            if (s.includes('ground-truth') || s.includes('ground truth') || paths.includes('live-ground-truth')) return 'Live ground-truth verification integration.';
+            if (s.includes('approval rulebook') || paths.includes('work-action-approval-rulebook')) return 'Action authorization / approval-rule formalization.';
+            if (s.includes('schema migration') || (paths.includes('agents.md') && c.runNonce?.includes('agents_schema'))) return 'Agents.md canonical evaluation-contract migration.';
+            if (s.includes('role') || c.runNonce?.includes('role_separation')) return 'ChatGPT/Gemini role-separation and execution-locus enforcement.';
+            if (s.includes('skill') || c.runNonce?.includes('skill_')) return 'Supervisor skill interface/bootstrap/revision work.';
+            if (s.includes('evaluator') || paths.includes('evaluation-tests') || paths.includes('evaluator-')) return 'Evaluator architecture and supervisory feedback loop.';
+            if (s.includes('node') || s.includes('runtime') || paths.includes('send-to-gemini.js')) return 'Supervisor runtime evolution, including migration toward GitHub-hosted Node execution.';
+            if (c.runNonce) return `Run-scoped state-machine execution for ${c.runNonce}.`;
+            return 'Incremental GeminiSupervisor architecture or persisted-state evolution.';
+          }
+
+          function changeDescription(f, stats) {
+            const st = stats.get(f.path) || (f.oldPath ? stats.get(f.oldPath) : null);
+            const delta = st ? ` (${st.added === '-' ? 'binary' : `+${st.added}/-${st.deleted}`})` : '';
+            switch (f.kind) {
+              case 'A': return `Created${delta}.`;
+              case 'D': return `Deleted${delta}.`;
+              case 'M': return `Modified${delta}.`;
+              case 'R': return `Renamed/moved from \`${f.oldPath}\` to \`${f.path}\`${delta}.`;
+              case 'C': return `Copied from \`${f.oldPath}\` to \`${f.path}\`${delta}.`;
+              default: return `Changed (${f.code})${delta}.`;
+            }
+          }
+
+          // Relevant commits are every commit touching either the predecessor or current directory.
+          const shas = git(['log','--reverse','--format=%H','--',predecessorRoot,currentRoot]).split('\n').filter(Boolean);
+          const commits = shas.map((sha, idx) => {
+            const raw = git(['show','-s','--format=%H%x1f%aI%x1f%cI%x1f%an%x1f%s%x1f%b',sha]);
+            const [fullSha, authorDate, commitDate, author, subject, body=''] = raw.split('\x1f');
+            const files = parseNameStatus(git(['diff-tree','--root','--no-commit-id','-r','-M','-C','--name-status',sha]));
+            const stats = parseNumstat(git(['show','--format=','--numstat','-M','-C',sha]));
+            const inScope = files.filter(f => [f.path, f.oldPath].filter(Boolean).some(p => p === currentRoot || p.startsWith(currentRoot + '/') || p === predecessorRoot || p.startsWith(predecessorRoot + '/')));
+            const runMatch = inScope.map(f => f.path).join('\n').match(/ChatMachines\/GeminiSupervisor\/runs\/([^/]+)/);
+            return {number: idx+1, sha:fullSha, date:commitDate, authorDate, author, subject, body:body.trim(), files, stats, inScope, runNonce:runMatch ? runMatch[1] : null};
+          });
+
+          // Prompt evidence is derived after basic commit records exist.
+          for (const c of commits) c.prompt = getPromptEvidence(c);
+
+          const runGroups = new Map();
+          commits.forEach((c,i) => { if (c.runNonce) { if (!runGroups.has(c.runNonce)) runGroups.set(c.runNonce, []); runGroups.get(c.runNonce).push(i); } });
+
+          function overlap(a,b) {
+            const A = new Set(a.inScope.map(f => f.path));
+            return b.inScope.some(f => A.has(f.path) || (f.oldPath && A.has(f.oldPath)));
+          }
+
+          function evaluate(c, i) {
+            const s = c.subject.toLowerCase();
+            if (/step\s*\d+\s+fail/.test(s) || s === 'temp' || s === 'noop') {
+              return {status:'FAILURE', confidence:'high', rationale:'The commit is explicitly a failed checkpoint/placeholder or is identified by its own subject as non-final work.'};
+            }
+            const stepPass = s.match(/step\s*(\d+)\s+pass/);
+            if (stepPass) {
+              const n = Number(stepPass[1]);
+              if (n < 4) return {status:'FAILURE', confidence:'high', rationale:`The Step ${n} gate passed, but the user-level goal still required later steps; additional work was therefore necessary.`};
+              return {status:'SUCCESS', confidence:'high', rationale:'This is an explicit Step 4 PASS checkpoint, which closes the associated Supervisor run; no further work in that run was required to meet its recorded goal.'};
+            }
+            if (c.runNonce) {
+              const group = runGroups.get(c.runNonce) || [];
+              const pos = group.indexOf(i);
+              if (pos >= 0 && pos < group.length - 1) return {status:'FAILURE', confidence:'high', rationale:'This commit is an intermediate commit in a persisted Supervisor run; later commits in the same run were still required.'};
+              // A last run commit without an explicit final PASS is still not assumed successful unless state says completion.
+              const state = showJsonAt(c.sha, `${currentRoot}/runs/${c.runNonce}/state.json`);
+              const stateText = state ? JSON.stringify(state) : '';
+              if (/"step"\s*:\s*4/.test(stateText) && /PASS/.test(stateText)) return {status:'SUCCESS', confidence:'medium', rationale:'This is the final observed commit for the run and the persisted state contains Step 4/PASS evidence.'};
+              return {status:'FAILURE', confidence:'medium', rationale:'It is the final observed commit for this run in the path history, but no explicit completed user-level Step 4 PASS was recovered at this commit; satisfaction is therefore not established.'};
+            }
+            if (/\b(trigger|request|submit|advance)\b/.test(s)) return {status:'FAILURE', confidence:'high', rationale:'The commit initiates or advances work rather than completing the initiating user goal, so additional work was necessary.'};
+            // Look ahead for an immediate corrective commit touching the same Supervisor artifact(s).
+            for (let j=i+1; j<Math.min(commits.length, i+6); j++) {
+              const n = commits[j];
+              if (!overlap(c,n)) continue;
+              if (/\b(fix|correct|retry|restore|replace|revert)\b/.test(n.subject.toLowerCase())) {
+                return {status:'FAILURE', confidence:'medium', rationale:`A near-term corrective commit (${n.sha.slice(0,12)}: ${n.subject}) touched the same Supervisor artifact(s), showing additional work was needed.`};
+              }
+              break;
+            }
+            if (/\b(fix|correct|retry)\b/.test(s)) {
+              // A corrective commit can succeed if no further correction immediately follows.
+              return {status:'SUCCESS', confidence:'medium', rationale:'The commit is itself corrective and no immediate further correction of the same Supervisor artifact was found; success is inferred from the resulting history, not explicit user-feedback text.'};
+            }
+            return {status:'SUCCESS', confidence:'low', rationale:'The commit directly implements its stated scope and no immediate corrective continuation on the same Supervisor artifact was found. Explicit user-satisfaction text was not recovered, so this is a low-confidence historical inference.'};
+          }
+
+          commits.forEach((c,i) => c.evaluation = evaluate(c,i));
+
+          const lines = [];
+          lines.push('# GeminiSupervisor Commit History Audit');
+          lines.push('');
+          lines.push(`**Generated from full Git history at cutoff commit:** \`${cutoff}\``);
+          lines.push(`**Lineage traced:** \`${predecessorRoot}\` → \`${currentRoot}\``);
+          lines.push(`**Relevant commits recorded:** ${commits.length}`);
+          lines.push('');
+          lines.push('## Method and interpretation');
+          lines.push('');
+          lines.push('- A commit is included when Git reports that it changed the current GeminiSupervisor directory, its predecessor directory, or a file/subdirectory stored under either path at that time.');
+          lines.push('- For every included commit, the **Affected files** section lists all files changed by the commit across the repository, not only the Supervisor paths. Rename/copy detection uses Git `-M -C`; line counts come from `--numstat`.');
+          lines.push('- **Why** uses surviving commit subject/body plus run-state evidence. Where an initiating user request survives in run state or next-message data, its locator and text are included. Where it does not survive, the audit does not invent verbatim user wording.');
+          lines.push('- **Success/failure** follows the requested definition: a commit is FAILURE if more work was still necessary for the same user-level goal; it is SUCCESS when the recorded goal was closed and no corrective continuation indicates dissatisfaction. Explicit Step 4 PASS/FAIL is high-confidence evidence. For older standalone commits lacking preserved user-feedback text, success may be inferred at lower confidence from the absence/presence of corrective follow-up.');
+          lines.push('- The audit cannot include the commit that writes this audit without creating an infinite self-reference. The cutoff SHA above makes the boundary explicit. Regenerating later advances the cutoff.');
+          lines.push('');
+          lines.push('## Commit-by-commit record');
+          lines.push('');
+
+          for (const c of commits) {
+            lines.push(`### Commit ${c.number} — \`${c.sha}\``);
+            lines.push('');
+            lines.push(`- **Date/time:** ${c.date}`);
+            if (c.authorDate !== c.date) lines.push(`- **Author date/time:** ${c.authorDate}`);
+            lines.push(`- **Author:** ${c.author}`);
+            lines.push(`- **Description:** ${esc(c.subject)}`);
+            if (c.body) lines.push(`- **Commit body:** ${esc(short(c.body, 3000))}`);
+            lines.push(`- **Wider movement / pattern / goal:** ${movement(c)}`);
+            lines.push(`- **Why this commit was made:** ${c.body ? esc(short(c.body,1200)) : `Implement or persist the stated change: ${esc(c.subject)}.`}`);
+            if (c.prompt) {
+              lines.push(`- **Initiating user-prompt evidence:** recovered from \`${c.prompt.source}\` (${c.prompt.key}).`);
+              lines.push(`  - ${esc(short(c.prompt.text, 5000)).replace(/\n/g,'\n    ')}`);
+            } else {
+              lines.push('- **Initiating user-prompt evidence:** No verbatim initiating user prompt was recoverable from the tracked Supervisor run/next-message artifacts at this commit; intent is therefore derived from the commit/diff evidence.');
+            }
+            lines.push(`- **Evaluation:** **${c.evaluation.status}** (${c.evaluation.confidence} confidence) — ${c.evaluation.rationale}`);
+            lines.push(`- **Supervisor/predecessor files affected:** ${c.inScope.length}`);
+            lines.push(`- **All files affected by this commit:** ${c.files.length}`);
+            lines.push('');
+            lines.push('| File | Change | How changed |');
+            lines.push('|---|---|---|');
+            for (const f of c.files) {
+              const label = f.oldPath ? `${f.oldPath} → ${f.path}` : f.path;
+              lines.push(`| \`${esc(label)}\` | ${f.code} | ${esc(changeDescription(f,c.stats))} |`);
+            }
+            lines.push('');
+          }
+
+          fs.mkdirSync(require('path').dirname(outputPath), {recursive:true});
+          fs.writeFileSync(outputPath, lines.join('\n') + '\n', 'utf8');
+          console.log(`Wrote ${outputPath} with ${commits.length} commits through ${cutoff}`);
+          NODE
+
+      - name: Commit generated audit
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "ChatMachines/GeminiSupervisor/commit history/commit-history.md"
+          if git diff --cached --quiet; then
+            echo "No audit changes to commit"
+            exit 0
+          fi
+          git commit -m "Add GeminiSupervisor full commit history audit"
+          git push
