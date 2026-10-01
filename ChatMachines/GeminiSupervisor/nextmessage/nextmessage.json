@@ -2,105 +2,80 @@
   "run_nonce": "merge_step3_tsr_evaluation_heuristic_20261001_1",
   "execution": {
     "source_role": "ChatGPT model",
-    "step": 3,
+    "step": 4,
     "return_schema": {
-      "Step_3": {
+      "Step_4": {
         "role_required": "ChatGPT model",
         "role_forbidden": "Gemini model",
         "role_completed": "ChatGPT model",
         "role_verification": {
-          "method": "ChatGPT execution locus via connected GitHub tool",
-          "evidence": "This Step 3 plan was authored and committed by ChatGPT after live state showed Steps 0-2 complete and current_step 3. The two exact source blobs were read from main before planning."
+          "method": "ChatGPT execution locus via connected GitHub tool plus live repository readback",
+          "evidence": "ChatGPT created the merge artifact through the connected GitHub tool, detected the malformed first live blob during readback, corrected it, and then re-read the live tests directory."
         },
-        "descriptor": "Plan the exact merge of the historical evaluation heuristic and Step 3 TSR question corpus into one JSON document.",
-        "user_request_nonce": "req_merge_step3_tsr_evaluation_heuristic_20261001_1",
-        "A": {
-          "descriptor": "Preserve complete U.",
-          "U": {
-            "instruction": "Preserve the complete user instruction without truncation or paraphrase as the planning source.",
-            "value": "User prompt: step 3 tests return schema is the question list, evaluation tests is the evaluation method heuristic, merge the two into 1. An untruncated restatement in JSON of the heuristic for evaluation U/P or any expectation vs outcome comparator found in evaluation tests + the untruncated question list found in step3 tsr.\nThe final merge document must be in json and must include atleast  key value for every rule and observation found in evaluation tests and a verbatim inclusion of every test found in step3 tsr.\nUse commit"
-          }
-        },
-        "B": {
-          "descriptor": "Decompose U into checkable clauses.",
-          "clauses": {
-            "instruction": "Identify all user-authored requirements without adding implementation requirements.",
-            "value": [
-              {"clause":"step 3 tests return schema is the question list","actions":["treat as question-list source"],"persons":["user","ChatGPT"],"objects":["step 3 tests return schema"]},
-              {"clause":"evaluation tests is the evaluation method heuristic","actions":["treat as heuristic source"],"persons":["user","ChatGPT"],"objects":["evaluation tests"]},
-              {"clause":"merge the two into 1.","actions":["merge"],"persons":["ChatGPT"],"objects":["evaluation heuristic","Step 3 TSR question list","single merged document"]},
-              {"clause":"An untruncated restatement in JSON of the heuristic for evaluation U/P or any expectation vs outcome comparator found in evaluation tests + the untruncated question list found in step3 tsr.","actions":["restate","include"],"persons":["ChatGPT"],"objects":["U/P heuristic","expectation-vs-outcome comparators","Step 3 TSR question list"]},
-              {"clause":"The final merge document must be in json","actions":["serialize as JSON"],"persons":["ChatGPT"],"objects":["final merge document"]},
-              {"clause":"must include atleast  key value for every rule and observation found in evaluation tests","actions":["represent every rule and observation with key/value"],"persons":["ChatGPT"],"objects":["rules","observations","evaluation tests"]},
-              {"clause":"a verbatim inclusion of every test found in step3 tsr.","actions":["include verbatim"],"persons":["ChatGPT"],"objects":["every Step 3 TSR test"]},
-              {"clause":"Use commit","actions":["use commit-triggered Gemini Supervisor procedure"],"persons":["ChatGPT"],"objects":["repository commit","Gemini Supervisor"]}
+        "user_request": "User prompt: step 3 tests return schema is the question list, evaluation tests is the evaluation method heuristic, merge the two into 1. An untruncated restatement in JSON of the heuristic for evaluation U/P or any expectation vs outcome comparator found in evaluation tests + the untruncated question list found in step3 tsr.\nThe final merge document must be in json and must include atleast  key value for every rule and observation found in evaluation tests and a verbatim inclusion of every test found in step3 tsr.\nUse commit",
+        "failed_actions": [
+          {
+            "action": "Initial creation of ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+            "failure": "The first committed blob was two structural closing characters short and therefore was not valid JSON.",
+            "remaining_work": "No remaining corrective work for this failure; the malformed blob was replaced by the corrected artifact in commit f0425b0d40c5c3bb082feea78616d13546c992a5.",
+            "evidence": [
+              {
+                "locator": "git commit fd56cefbf20add524bf53b5e88463f5c9893ea17 / blob 2a4a48ffe754449a2c72c475f02a770bc518ecfa",
+                "observed": "The first live artifact size was 42392 bytes and its tail lacked the closing test-object/tests-array pair; validation rejected it before Step 4 completion was claimed."
+              }
             ]
           }
-        },
-        "C": {
-          "descriptor": "Resolve material modifiers.",
-          "modifier_analysis": {
-            "instruction": "Preserve quantity, fidelity, format, and execution-method modifiers recursively.",
-            "value": [
-              {"modifier":"merge the two into 1","meaning_without_modifier":"The two sources could remain separate or merely be cross-referenced.","difference":"Requires one merged artifact rather than two independently governing documents.","recursive_level":1},
-              {"modifier":"untruncated restatement","meaning_without_modifier":"A summary or partial heuristic could be produced.","difference":"Every heuristic rule, boundary observation, example-derived observation, and procedure must be retained in the JSON representation.","recursive_level":1},
-              {"modifier":"in JSON","meaning_without_modifier":"The merge could remain Markdown or prose.","difference":"The final artifact itself must parse as JSON.","recursive_level":1},
-              {"modifier":"atleast key value for every rule and observation","meaning_without_modifier":"Rules or observations could remain implicit in prose.","difference":"Each source rule/observation must have an explicit JSON key/value representation; additional traceability fields are allowed.","recursive_level":1},
-              {"modifier":"verbatim inclusion of every test","meaning_without_modifier":"Tests could be summarized, normalized, renumbered, or selectively included.","difference":"Every test object/case from the Step 3 TSR source must be preserved without semantic or textual alteration of its test content.","recursive_level":1},
-              {"modifier":"every","meaning_without_modifier":"Only a subset of Step 3 TSR tests could be included.","difference":"All tests present in the source corpus, not a sample, are required.","recursive_level":2},
-              {"modifier":"Use commit","meaning_without_modifier":"The artifact could be created outside the repository procedure.","difference":"The work must be routed through the repository commit-triggered Gemini Supervisor workflow.","recursive_level":1}
+        ],
+        "not_completed_actions": [],
+        "completed_actions": [
+          {
+            "action": "Create one JSON merge artifact combining the evaluation-tests heuristic and the Step 3 TSR question list.",
+            "completion": "complete",
+            "completion_evidence": [
+              {
+                "locator": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+                "observed": "Live main-branch directory readback reports blob 90e24571894dd7cb3840f621dd152e1695eb3d30 with size 42394 bytes."
+              },
+              {
+                "locator": "git commit f0425b0d40c5c3bb082feea78616d13546c992a5",
+                "observed": "This commit replaced the malformed initial artifact with the validated JSON bytes."
+              }
+            ]
+          },
+          {
+            "action": "Represent the evaluation-tests U/P and expectation-vs-outcome heuristic without truncation and with explicit key/value coverage for its rules and observations.",
+            "completion": "complete",
+            "completion_evidence": [
+              {
+                "locator": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json -> evaluation_heuristic.key_value_records",
+                "observed": "Validation found 69 key/value records, and their ordered values exactly equal all 69 non-empty source statements from ChatMachines/GeminiSupervisor/historical/evaluation-tests.md blob 613468ac6ff5e054c1268c50bc3710d36df8f3cd."
+              }
+            ]
+          },
+          {
+            "action": "Include every Step 3 TSR test verbatim in the merged JSON.",
+            "completion": "complete",
+            "completion_evidence": [
+              {
+                "locator": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json -> step3_tsr.tests",
+                "observed": "Validation found 31 tests numbered 2 through 32 and 160 total cases; the parsed tests array exactly equals the tests array parsed from ChatMachines/GeminiSupervisor/tests/step-3-test-return-schema.md blob 2c6e89baafd463579a341e4f3102b852e6e78ace, preserving every U, P, result, and test number."
+              }
+            ]
+          },
+          {
+            "action": "Use commit-triggered Gemini Supervisor procedure for the merge request.",
+            "completion": "complete",
+            "completion_evidence": [
+              {
+                "locator": "ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json",
+                "observed": "Before this Step 4 submission, live run state showed completed_steps [0,1,2,3], current_step 4, remaining_steps [4]."
+              }
             ]
           }
-        },
-        "D": {
-          "descriptor": "Complete execution plan.",
-          "P": {
-            "instruction": "Plan only the work required to produce and verify the single merged JSON artifact.",
-            "value": "1. Use ChatMachines/GeminiSupervisor/historical/evaluation-tests.md at blob 613468ac6ff5e054c1268c50bc3710d36df8f3cd as the complete evaluation-method heuristic source. 2. Use ChatMachines/GeminiSupervisor/tests/step-3-test-return-schema.md at blob 2c6e89baafd463579a341e4f3102b852e6e78ace as the complete Step 3 TSR question-list source. 3. Create one JSON artifact at ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json. 4. In that JSON, include source metadata; an evaluation_heuristic object containing an untruncated JSON restatement of every general rule, every numbered U/P comparator observation, the required-coverage worked heuristic including D/R/C semantics, matching examples, nonmatching boundary examples, unfamiliar-case procedure, and case-usage procedure; give every rule or observation an explicit key and value. 5. Include the full evaluation-tests.md source text as a verbatim traceability field so the structured restatement can be audited for omission. 6. Include a step3_tsr object containing the complete source text and the parsed tests array from the Step 3 TSR source, preserving every test number, every case U string, every case P string, and every result string verbatim. 7. Do not delete or rewrite either source file in this request. 8. Commit the merged JSON artifact. 9. Read the committed artifact back from main and verify that it parses as JSON, that all source heuristic content is represented, that the source-text traceability fields are untruncated, and that every Step 3 TSR test/case is present unchanged before reporting completion."
-          }
-        },
-        "E": {
-          "descriptor": "Proposed final report if execution and verification succeed.",
-          "UI_output": {
-            "instruction": "State only verified completion evidence after implementation.",
-            "value": "Created and committed ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json through the Gemini Supervisor run. Live readback verifies that the artifact is valid JSON, includes the complete evaluation heuristic with explicit key/value coverage for every rule and observation, and includes every Step 3 TSR test verbatim."
-          }
-        },
-        "F": {
-          "descriptor": "Evaluate plan against the active evaluation-tests heuristic cases.",
-          "Step3_TSR_status": {"instruction":"Identify the active Step 3 test context.","value":"Found"},
-          "Step3_TSR_verbatim_result": {"instruction":"Provide traceable source evidence for active tests.","value":"ChatMachines/GeminiSupervisor/evaluation-tests.md resolves to the evaluation heuristic source whose canonical historical blob is 613468ac6ff5e054c1268c50bc3710d36df8f3cd; all 16 numbered U/P comparator rows were read before this plan."},
-          "Test_Count": {"instruction":"Count the numbered active comparator cases.","value":16},
-          "test_results": {
-            "instruction":"Return T only if the current plan exhibits the demonstrated failure relation; otherwise F.",
-            "value":[
-              {"question_number":"1","question":"Does P substitute a future promise for required execution?","result":"F"},
-              {"question_number":"2","question":"Does P omit one of multiple required actions?","result":"F"},
-              {"question_number":"3","question":"Does P reduce a complete required set to a smaller subset?","result":"F"},
-              {"question_number":"4","question":"Does P apply the action to the wrong target?","result":"F"},
-              {"question_number":"5","question":"Does P perform an explicitly forbidden action on the protected target?","result":"F"},
-              {"question_number":"6","question":"Does P violate a prohibition whose protected scope is broader than one location?","result":"F"},
-              {"question_number":"7","question":"Does P replace the required method with a different method?","result":"F"},
-              {"question_number":"8","question":"Does P ignore the stated qualifying condition for an action?","result":"F"},
-              {"question_number":"9","question":"Does P reverse a required order or dependency?","result":"F"},
-              {"question_number":"10","question":"Does P change an immediate requirement into deferred work?","result":"F"},
-              {"question_number":"11","question":"Does P answer a different question from U?","result":"F"},
-              {"question_number":"12","question":"Does P ignore a user correction that withdraws the prior proposed action?","result":"F"},
-              {"question_number":"13","question":"Does P replace the user's corrected term with the earlier incorrect term?","result":"F"},
-              {"question_number":"14","question":"Does P add content outside an explicitly bounded output?","result":"F"},
-              {"question_number":"15","question":"Does P claim completion without the required granular evidence?","result":"F"},
-              {"question_number":"16","question":"Does P represent partial or unfinished work as complete?","result":"F"}
-            ]
-          }
-        },
-        "G": {
-          "descriptor": "Step 3 loop control.",
-          "Loop_Decision": {"instruction":"Any T requires return to Step_3.A; all F permits completion.","value":"False"},
-          "return_to": {"instruction":"Return target when loop is required; otherwise null.","value":null}
-        },
-        "current_timestamp": "2026-10-01T20:16:17Z",
+        ],
+        "current_timestamp": "2026-10-01T20:34:22.582826Z",
         "return_schema_completed": true,
-        "return_schema_completed_timestamp": "2026-10-01T20:16:17Z"
+        "return_schema_completed_timestamp": "2026-10-01T20:34:22.582826Z"
       }
     }
   }
