@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ChatMachines/GeminiEvaluation/evaluator-nextmessage/nextmessage.json
+      - ChatMachines/GeminiEvaluation/evaluator-nextmessage/**
 
 permissions:
   contents: write
@@ -27,10 +27,11 @@ jobs:
           node-version: '22'
 
       - name: Evaluate or revise Gemini Supervisor against Agents.md
+        working-directory: ChatMachines/GeminiEvaluation
         env:
           GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
-        run: node ChatMachines/GeminiEvaluation/evaluate-supervisor.js
+        run: node evaluate-supervisor.js
 
       - name: Commit evaluator response
         run: |
@@ -44,6 +45,9 @@ jobs:
           fi
           if [ -f ChatMachines/GeminiEvaluation/revised-send-to-gemini.js ]; then
             git add ChatMachines/GeminiEvaluation/revised-send-to-gemini.js
+          fi
+          if [ -f ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json ]; then
+            git add ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json
           fi
           if git diff --cached --quiet; then
             echo "No evaluator output change."
