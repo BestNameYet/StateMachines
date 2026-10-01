@@ -97,6 +97,94 @@ function appendNextMessage(messages, nextmessage) {
   return messages;
 }
 
+function loadGenericInputs() {
+  const descriptors = Array.isArray(config.generic_inputs) ? config.generic_inputs : [];
+  return descriptors.map((input, index) => {
+    if (!input || typeof input !== 'object') {
+      throw new Error(`generic_inputs[${index}] must be an object.`);
+    }
+    const key = typeof input.key === 'string' && input.key.trim() ? input.key.trim() : `input_${index + 1}`;
+    const type = input.type || 'file';
+    if (type === 'literal') {
+      return { key, type, source: 'config.literal', content: String(input.value ?? '') };
+    }
+    if (type === 'file') {
+      if (typeof input.path !== 'string' || input.path.trim() === '') {
+        throw new Error(`generic_inputs[${index}] file input requires path.`);
+      }
+      const absolutePath = path.resolve(evaluationRoot, input.path);
+      return { key, type, source: absolutePath, content: readText(absolutePath) };
+    }
+    throw new Error(`Unsupported generic input type: ${type}`);
+  });
+}
+
+function buildGenericEvaluationInstruction(genericInputs) {
+  if (typeof config.evaluation_heuristic !== 'string' || config.evaluation_heuristic.trim() === '') {
+    throw new Error('Generic evaluation requires non-empty config.evaluation_heuristic.');
+  }
+
+  const schema = {
+    response_type: 'generic_evaluation',
+    overall_result: 'PASS | FAIL | PARTIAL | INDETERMINATE',
+    evaluation_heuristic: 'verbatim configured heuristic used',
+    input_inventory: [
+      { key: 'string', source: 'string', role_in_evaluation: 'string' }
+    ],
+    coverage_evaluation: {
+      ground_truth_commit_count: 'integer | null',
+      artifact_commit_count: 'integer | null',
+      missing_commits: [{ sha: 'string', explanation: 'string' }],
+      extra_commits: [{ sha: 'string', explanation: 'string' }],
+      duplicate_commits: [{ sha: 'string', explanation: 'string' }],
+      ordering_errors: [{ sha: 'string', explanation: 'string' }],
+      result: 'PASS | FAIL | PARTIAL | INDETERMINATE',
+      explanation: 'string'
+    },
+    contract_evaluation: [
+      { requirement: 'string', result: 'PASS | FAIL | PARTIAL | INDETERMINATE', evidence: 'string', required_change: 'string | null' }
+    ],
+    semantic_evaluations: [
+      {
+        commit_number: 'integer | null',
+        commit_sha: 'string',
+        recorded_status: 'SUCCESS | FAILURE | other',
+        evaluator_result: 'AGREE | DISAGREE | INDETERMINATE',
+        corrected_status: 'SUCCESS | FAILURE | INDETERMINATE',
+        rationale: 'string',
+        evidence: 'string'
+      }
+    ],
+    semantic_summary: {
+      evaluations_expected: 'integer',
+      evaluations_returned: 'integer',
+      agreements: 'integer',
+      disagreements: 'integer',
+      indeterminate: 'integer'
+    },
+    required_corrections: [
+      { scope: 'string', correction: 'string', reason: 'string' }
+    ]
+  };
+
+  const sections = [
+    'You are an independent generic evaluator. The runtime supplies labeled inputs without assigning semantics to them.',
+    'The evaluation heuristic is supplied by config and is authoritative for how the inputs are interpreted.',
+    'Use only the supplied inputs and the configured heuristic. Do not silently import assumptions from the normal GeminiSupervisor Agents/source evaluation mode.',
+    'Return one JSON object matching this schema:',
+    JSON.stringify(schema, null, 2),
+    'Configured evaluation heuristic:',
+    config.evaluation_heuristic,
+    'Configured inputs:'
+  ];
+
+  for (const input of genericInputs) {
+    sections.push(`===== INPUT: ${input.key} | source: ${input.source} =====`, input.content);
+  }
+
+  return sections.join('\n\n');
+}
+
 function decodePointerToken(token) {
   return token.replace(/~1/g, '/').replace(/~0/g, '~');
 }
@@ -301,11 +389,25 @@ async function callGemini(messages, systemInstruction) {
 async function main() {
   if (!apiKey) throw new Error('GEMINI_API_KEY is missing from the GitHub Actions environment.');
 
-  const agents = readText(agentsPath);
-  const program = readText(programPath);
-  const step3Evaluation = readJson(step3EvaluationPath);
   const messages = appendNextMessage(readJson(messagesPath), readJson(nextPath).nextmessage);
-  const result = await callGemini(messages, buildSystemInstruction(agents, program, step3Evaluation));
+  const useGenericEvaluation = config.evaluation_mode === 'generic';
+  let agents = null;
+  let program = null;
+  let step3Evaluation = null;
+  let genericInputs = [];
+  let systemInstruction;
+
+  if (useGenericEvaluation) {
+    genericInputs = loadGenericInputs();
+    systemInstruction = buildGenericEvaluationInstruction(genericInputs);
+  } else {
+    agents = readText(agentsPath);
+    program = readText(programPath);
+    step3Evaluation = readJson(step3EvaluationPath);
+    systemInstruction = buildSystemInstruction(agents, program, step3Evaluation);
+  }
+
+  const result = await callGemini(messages, systemInstruction);
 
   messages.contents.push(result.reply);
   writeJson(messagesPath, messages);
@@ -361,7 +463,10 @@ async function main() {
     message_stream: messagesPath,
     evaluated_program: programPath,
     specification: agentsPath,
-    step3_evaluation: step3EvaluationPath,
+    evaluation_mode: config.evaluation_mode || 'supervisor',
+    generic_inputs: genericInputs.map(input => ({ key: input.key, source: input.source })),
+    evaluation_heuristic_configured: typeof config.evaluation_heuristic === 'string' && config.evaluation_heuristic.trim() !== '',
+    step3_evaluation: useGenericEvaluation ? null : step3EvaluationPath,
     output: evaluationOutputPath,
     revision_deliverables_output_path: revisionDeliverablesOutputPath,
     response_type: result.payload.response_type ?? null,

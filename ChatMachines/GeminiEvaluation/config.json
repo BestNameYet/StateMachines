@@ -21,5 +21,24 @@
     "/step3_tsr"
   ],
   "default_model": "gemini-3.8-flash",
-  "request_timeout_ms": 180000
+  "request_timeout_ms": 180000,
+  "evaluation_mode": "generic",
+  "generic_inputs": [
+    {
+      "key": "git_log",
+      "type": "file",
+      "path": "../GeminiSupervisor/commit history/git-log.txt"
+    },
+    {
+      "key": "commit_history",
+      "type": "file",
+      "path": "../GeminiSupervisor/commit history/commit-history.md"
+    },
+    {
+      "key": "original_user_request",
+      "type": "literal",
+      "value": "In commit history create a file that contains a commit by commit record for every commit on GeminiSupervisor or it's predecessor folder and the contents of that folder...track commits until the contents is no longer stored in the dir or it's sub dir. For every commit include the commit number, its description, all files that were effected, how each file was changed, why each change was made, date time. If the commit was part of a wider movement or pattern or goal note that as well, and an evaluation of the success or failure of the commit wrt the user prompt that initiated it, where success is defined as meeting the goal of the user prompt such that the user was satisfied with the commit, and failure is defined as not meeting the goal and/or necessitates additional work to meet goal."
+    }
+  ],
+  "evaluation_heuristic": "Evaluate the configured commit_history artifact against original_user_request. For commit coverage, treat git_log as the authoritative commit sequence for the lineage and cutoff represented by that log. First determine whether every commit represented by git_log that is in scope under the original request is represented exactly once in commit_history, in correct chronological order; report all missing, extra, duplicate, or misordered commits explicitly. Then evaluate every semantic SUCCESS/FAILURE judgment contained in commit_history. Do not sample. For each recorded commit judgment, determine whether the status and rationale are supported by available evidence and by the original request definition: SUCCESS means the initiating user goal was met such that the user was satisfied with that commit; FAILURE means the goal was not met and/or additional work was necessary to meet it. Do not infer user satisfaction merely from absence of an immediate corrective commit. When the initiating user prompt or subsequent user feedback is not present in the supplied inputs, mark the semantic judgment INDETERMINATE unless the supplied evidence independently establishes the requested success/failure condition. Distinguish a commit that is merely an intermediate implementation step from a commit that itself failed its own initiating user request. Additional later work is evidence of FAILURE only when that later work was necessary to satisfy the same initiating user goal. Also evaluate whether every per-commit field required by original_user_request is present and semantically supported: commit number, description, all affected files, how each file changed, why each change was made, date/time, wider movement/pattern/goal when applicable, and success/failure evaluation relative to the initiating prompt. Return an exhaustive result. Do not truncate, sample, or collapse individual semantic evaluations."
 }
