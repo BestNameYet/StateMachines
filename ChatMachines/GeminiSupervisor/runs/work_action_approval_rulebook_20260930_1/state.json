@@ -3,16 +3,16 @@
     "run_nonce": "work_action_approval_rulebook_20260930_1",
     "status": "awaiting_chatgpt_execution",
     "created_at": "2026-10-01T06:41:00.103Z",
-    "updated_at": "2026-10-01T06:42:06.791Z",
-    "event_count": 2,
+    "updated_at": "2026-10-01T06:42:59.032Z",
+    "event_count": 3,
     "procedure": {
-      "current_step": 2,
+      "current_step": 3,
       "completed_steps": [
         0,
-        1
+        1,
+        2
       ],
       "remaining_steps": [
-        2,
         3,
         4
       ],
@@ -432,11 +432,375 @@
           "transition_key": "supervisory_gate.gate_result",
           "transition_value": "PASS",
           "updated_at": "2026-10-01T06:42:06.790Z"
+        },
+        "2": {
+          "latest_attempt": 1,
+          "attempts": [
+            {
+              "attempt": 1,
+              "received_at": "2026-10-01T06:42:59.032Z",
+              "execution_source_role": "ChatGPT model",
+              "execution_return": {
+                "step_2_record": {
+                  "role_required": "ChatGPT model",
+                  "role_forbidden": "Gemini model",
+                  "role_completed": "ChatGPT model",
+                  "role_verification": {
+                    "method": "ChatGPT execution locus via connected GitHub tool",
+                    "evidence": "This Step 2 execution return was authored in ChatGPT from the verbatim Step 0 user request and committed through the connected GitHub tool."
+                  },
+                  "run_nonce": "work_action_approval_rulebook_20260930_1",
+                  "user_request_nonce": "req_work_action_approval_rulebook_20260930_1",
+                  "stated_requirements": [
+                    "<Instruction: Write the rule book below as in Json.  Use a array and allow each rule to be an element.  Each rule must include evaluation of rule breaking and rule following with examples for each case>",
+                    "I need a rule book that I can load every turn.",
+                    "It's format must be  json.",
+                    "No action can be taken before its is approved by a selected safe word by the user.  If the safe word is not selected then no action is authorized.",
+                    "Definition of action set: Actions include any creation, mutation, or deletion of data and includes checking, inspecting, reviewing, and similar acts and any act that shares the pattern, shape, or is analogous to these examples.",
+                    "<Instruction: Insert 25 unique but typical actions here, each action must include an evaluation of why it is an action based on the definition above>",
+                    "Definition of pre-action set: A pre-actions include deciding an action plan, printing an action plan to the UI, printing a definiton of an action or pre-action to the UI.",
+                    "Before requesting permission to take any action, all agents must print an action plan to UI, in the action plan each action must include a definiton, and any terms with uncertain or ambiguous meaning must also be defined. All definitions in an action plan must be printed to the UI with the action plan.",
+                    "<Instruction: Create return json schema for action plan.  Action plan must include any action that falls under the permission request, subactions that are necessary for main actions, the defintions of every action, subaction, uncertain or ambiguous term. A finally a dependency list of subaction to action that explains why a subaction is required. >",
+                    "After an action plan has been approved, no actions or subactions can be added to it.  Its shape can only change by removing uncompleted actions."
+                  ],
+                  "current_timestamp": "2026-10-01T06:42:30Z",
+                  "return_schema_completed": true,
+                  "return_schema_completed_timestamp": "2026-10-01T06:42:30Z"
+                }
+              },
+              "deterministic_validation_failures": [],
+              "supervisory_return": {
+                "supervisory_gate": {
+                  "role_required": "Gemini model",
+                  "role_forbidden": "ChatGPT model",
+                  "role_completed": "Gemini model",
+                  "role_verification": {
+                    "method": "Direct Gemini API supervisory evaluation call",
+                    "evidence": "Supervisory evaluation executed by Gemini model within the supervisory runtime boundary without simulating or executing ChatGPT actions."
+                  },
+                  "instruction": "Evaluate only the supplied execution candidate against Agents.md. For every terminal execution key K use K_eval, preserve K and its exact value, then populate supervisor_eval_result and supervisor_eval_comment. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step.",
+                  "granular_evaluation": {
+                    "step_2_record": {
+                      "role_required_eval": {
+                        "role_required": "ChatGPT model",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Exact required role string 'ChatGPT model' is correctly specified."
+                      },
+                      "role_forbidden_eval": {
+                        "role_forbidden": "Gemini model",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Exact forbidden role string 'Gemini model' is correctly specified."
+                      },
+                      "role_completed_eval": {
+                        "role_completed": "ChatGPT model",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Role completed matches role required and respects role separation boundaries."
+                      },
+                      "role_verification": {
+                        "method_eval": {
+                          "method": "ChatGPT execution locus via connected GitHub tool",
+                          "supervisor_eval_result": "PASS",
+                          "supervisor_eval_comment": "Valid runtime execution verification method identifying ChatGPT authoring locus."
+                        },
+                        "evidence_eval": {
+                          "evidence": "This Step 2 execution return was authored in ChatGPT from the verbatim Step 0 user request and committed through the connected GitHub tool.",
+                          "supervisor_eval_result": "PASS",
+                          "supervisor_eval_comment": "Credible execution evidence establishing ChatGPT authorship via connected GitHub workflow."
+                        }
+                      },
+                      "run_nonce_eval": {
+                        "run_nonce": "work_action_approval_rulebook_20260930_1",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Valid path-safe run nonce consistent across the procedure container."
+                      },
+                      "user_request_nonce_eval": {
+                        "user_request_nonce": "req_work_action_approval_rulebook_20260930_1",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Valid stable request nonce matching active procedure trace."
+                      },
+                      "stated_requirements": [
+                        {
+                          "0_eval": {
+                            "0": "<Instruction: Write the rule book below as in Json.  Use a array and allow each rule to be an element.  Each rule must include evaluation of rule breaking and rule following with examples for each case>",
+                            "supervisor_eval_result": "PASS",
+                            "supervisor_eval_comment": "Preserves verbatim instruction requirement for JSON array formatting and rule-following/rule-breaking evaluation with examples."
+                          }
+                        },
+                        {
+                          "1_eval": {
+                            "1": "I need a rule book that I can load every turn.",
+                            "supervisor_eval_result": "PASS",
+                            "supervisor_eval_comment": "Preserves verbatim user requirement for per-turn rulebook loading."
+                          }
+                        },
+                        {
+                          "2_eval": {
+                            "2": "It's format must be  json.",
+                            "supervisor_eval_result": "PASS",
+                            "supervisor_eval_comment": "Preserves verbatim user requirement for JSON format."
+                          }
+                        },
+                        {
+                          "3_eval": {
+                            "3": "No action can be taken before its is approved by a selected safe word by the user.  If the safe word is not selected then no action is authorized.",
+                            "supervisor_eval_result": "PASS",
+                            "supervisor_eval_comment": "Preserves verbatim safe-word authorization constraint."
+                          }
+                        },
+                        {
+                          "4_eval": {
+                            "4": "Definition of action set: Actions include any creation, mutation, or deletion of data and includes checking, inspecting, reviewing, and similar acts and any act that shares the pattern, shape, or is analogous to these examples.",
+                            "supervisor_eval_result": "PASS",
+                            "supervisor_eval_comment": "Preserves verbatim user definition of action set scope."
+                          }
+                        },
+                        {
+                          "5_eval": {
+                            "5": "<Instruction: Insert 25 unique but typical actions here, each action must include an evaluation of why it is an action based on the definition above>",
+                            "supervisor_eval_result": "PASS",
+                            "supervisor_eval_comment": "Preserves verbatim instruction requirement for 25 unique evaluated actions."
+                          }
+                        },
+                        {
+                          "6_eval": {
+                            "6": "Definition of pre-action set: A pre-actions include deciding an action plan, printing an action plan to the UI, printing a definiton of an action or pre-action to the UI.",
+                            "supervisor_eval_result": "PASS",
+                            "supervisor_eval_comment": "Preserves verbatim user definition of pre-action set scope."
+                          }
+                        },
+                        {
+                          "7_eval": {
+                            "7": "Before requesting permission to take any action, all agents must print an action plan to UI, in the action plan each action must include a definiton, and any terms with uncertain or ambiguous meaning must also be defined. All definitions in an action plan must be printed to the UI with the action plan.",
+                            "supervisor_eval_result": "PASS",
+                            "supervisor_eval_comment": "Preserves verbatim UI action plan printing and definition requirements."
+                          }
+                        },
+                        {
+                          "8_eval": {
+                            "8": "<Instruction: Create return json schema for action plan.  Action plan must include any action that falls under the permission request, subactions that are necessary for main actions, the defintions of every action, subaction, uncertain or ambiguous term. A finally a dependency list of subaction to action that explains why a subaction is required. >",
+                            "supervisor_eval_result": "PASS",
+                            "supervisor_eval_comment": "Preserves verbatim instruction requirement for action plan return JSON schema with subactions, definitions, and dependencies."
+                          }
+                        },
+                        {
+                          "9_eval": {
+                            "9": "After an action plan has been approved, no actions or subactions can be added to it.  Its shape can only change by removing uncompleted actions.",
+                            "supervisor_eval_result": "PASS",
+                            "supervisor_eval_comment": "Preserves verbatim requirement regarding post-approval immutability and reduction-only modification."
+                          }
+                        }
+                      ],
+                      "current_timestamp_eval": {
+                        "current_timestamp": "2026-10-01T06:42:30Z",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Valid ISO 8601 execution timestamp."
+                      },
+                      "return_schema_completed_eval": {
+                        "return_schema_completed": true,
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Return schema completion flag is true and all required Step 2 fields are populated."
+                      },
+                      "return_schema_completed_timestamp_eval": {
+                        "return_schema_completed_timestamp": "2026-10-01T06:42:30Z",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Valid ISO 8601 completion timestamp matching execution timestamp."
+                      }
+                    }
+                  },
+                  "step_level_evaluation": {
+                    "supervisor_eval_result": "PASS",
+                    "supervisor_eval_comment": "All user-stated requirements are extracted verbatim without omission, paraphrase, or invented additions. Role boundaries, nonces, timestamps, and return schema completeness meet all Agents.md Step 2 requirements."
+                  },
+                  "failures": [],
+                  "gate_result": "PASS"
+                }
+              },
+              "transition_key": "supervisory_gate.gate_result",
+              "transition_value": "PASS"
+            }
+          ],
+          "execution_return": {
+            "step_2_record": {
+              "role_required": "ChatGPT model",
+              "role_forbidden": "Gemini model",
+              "role_completed": "ChatGPT model",
+              "role_verification": {
+                "method": "ChatGPT execution locus via connected GitHub tool",
+                "evidence": "This Step 2 execution return was authored in ChatGPT from the verbatim Step 0 user request and committed through the connected GitHub tool."
+              },
+              "run_nonce": "work_action_approval_rulebook_20260930_1",
+              "user_request_nonce": "req_work_action_approval_rulebook_20260930_1",
+              "stated_requirements": [
+                "<Instruction: Write the rule book below as in Json.  Use a array and allow each rule to be an element.  Each rule must include evaluation of rule breaking and rule following with examples for each case>",
+                "I need a rule book that I can load every turn.",
+                "It's format must be  json.",
+                "No action can be taken before its is approved by a selected safe word by the user.  If the safe word is not selected then no action is authorized.",
+                "Definition of action set: Actions include any creation, mutation, or deletion of data and includes checking, inspecting, reviewing, and similar acts and any act that shares the pattern, shape, or is analogous to these examples.",
+                "<Instruction: Insert 25 unique but typical actions here, each action must include an evaluation of why it is an action based on the definition above>",
+                "Definition of pre-action set: A pre-actions include deciding an action plan, printing an action plan to the UI, printing a definiton of an action or pre-action to the UI.",
+                "Before requesting permission to take any action, all agents must print an action plan to UI, in the action plan each action must include a definiton, and any terms with uncertain or ambiguous meaning must also be defined. All definitions in an action plan must be printed to the UI with the action plan.",
+                "<Instruction: Create return json schema for action plan.  Action plan must include any action that falls under the permission request, subactions that are necessary for main actions, the defintions of every action, subaction, uncertain or ambiguous term. A finally a dependency list of subaction to action that explains why a subaction is required. >",
+                "After an action plan has been approved, no actions or subactions can be added to it.  Its shape can only change by removing uncompleted actions."
+              ],
+              "current_timestamp": "2026-10-01T06:42:30Z",
+              "return_schema_completed": true,
+              "return_schema_completed_timestamp": "2026-10-01T06:42:30Z"
+            }
+          },
+          "supervisory_return": {
+            "supervisory_gate": {
+              "role_required": "Gemini model",
+              "role_forbidden": "ChatGPT model",
+              "role_completed": "Gemini model",
+              "role_verification": {
+                "method": "Direct Gemini API supervisory evaluation call",
+                "evidence": "Supervisory evaluation executed by Gemini model within the supervisory runtime boundary without simulating or executing ChatGPT actions."
+              },
+              "instruction": "Evaluate only the supplied execution candidate against Agents.md. For every terminal execution key K use K_eval, preserve K and its exact value, then populate supervisor_eval_result and supervisor_eval_comment. Do not execute, repair, retry, complete, or simulate the ChatGPT-owned execution step.",
+              "granular_evaluation": {
+                "step_2_record": {
+                  "role_required_eval": {
+                    "role_required": "ChatGPT model",
+                    "supervisor_eval_result": "PASS",
+                    "supervisor_eval_comment": "Exact required role string 'ChatGPT model' is correctly specified."
+                  },
+                  "role_forbidden_eval": {
+                    "role_forbidden": "Gemini model",
+                    "supervisor_eval_result": "PASS",
+                    "supervisor_eval_comment": "Exact forbidden role string 'Gemini model' is correctly specified."
+                  },
+                  "role_completed_eval": {
+                    "role_completed": "ChatGPT model",
+                    "supervisor_eval_result": "PASS",
+                    "supervisor_eval_comment": "Role completed matches role required and respects role separation boundaries."
+                  },
+                  "role_verification": {
+                    "method_eval": {
+                      "method": "ChatGPT execution locus via connected GitHub tool",
+                      "supervisor_eval_result": "PASS",
+                      "supervisor_eval_comment": "Valid runtime execution verification method identifying ChatGPT authoring locus."
+                    },
+                    "evidence_eval": {
+                      "evidence": "This Step 2 execution return was authored in ChatGPT from the verbatim Step 0 user request and committed through the connected GitHub tool.",
+                      "supervisor_eval_result": "PASS",
+                      "supervisor_eval_comment": "Credible execution evidence establishing ChatGPT authorship via connected GitHub workflow."
+                    }
+                  },
+                  "run_nonce_eval": {
+                    "run_nonce": "work_action_approval_rulebook_20260930_1",
+                    "supervisor_eval_result": "PASS",
+                    "supervisor_eval_comment": "Valid path-safe run nonce consistent across the procedure container."
+                  },
+                  "user_request_nonce_eval": {
+                    "user_request_nonce": "req_work_action_approval_rulebook_20260930_1",
+                    "supervisor_eval_result": "PASS",
+                    "supervisor_eval_comment": "Valid stable request nonce matching active procedure trace."
+                  },
+                  "stated_requirements": [
+                    {
+                      "0_eval": {
+                        "0": "<Instruction: Write the rule book below as in Json.  Use a array and allow each rule to be an element.  Each rule must include evaluation of rule breaking and rule following with examples for each case>",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Preserves verbatim instruction requirement for JSON array formatting and rule-following/rule-breaking evaluation with examples."
+                      }
+                    },
+                    {
+                      "1_eval": {
+                        "1": "I need a rule book that I can load every turn.",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Preserves verbatim user requirement for per-turn rulebook loading."
+                      }
+                    },
+                    {
+                      "2_eval": {
+                        "2": "It's format must be  json.",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Preserves verbatim user requirement for JSON format."
+                      }
+                    },
+                    {
+                      "3_eval": {
+                        "3": "No action can be taken before its is approved by a selected safe word by the user.  If the safe word is not selected then no action is authorized.",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Preserves verbatim safe-word authorization constraint."
+                      }
+                    },
+                    {
+                      "4_eval": {
+                        "4": "Definition of action set: Actions include any creation, mutation, or deletion of data and includes checking, inspecting, reviewing, and similar acts and any act that shares the pattern, shape, or is analogous to these examples.",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Preserves verbatim user definition of action set scope."
+                      }
+                    },
+                    {
+                      "5_eval": {
+                        "5": "<Instruction: Insert 25 unique but typical actions here, each action must include an evaluation of why it is an action based on the definition above>",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Preserves verbatim instruction requirement for 25 unique evaluated actions."
+                      }
+                    },
+                    {
+                      "6_eval": {
+                        "6": "Definition of pre-action set: A pre-actions include deciding an action plan, printing an action plan to the UI, printing a definiton of an action or pre-action to the UI.",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Preserves verbatim user definition of pre-action set scope."
+                      }
+                    },
+                    {
+                      "7_eval": {
+                        "7": "Before requesting permission to take any action, all agents must print an action plan to UI, in the action plan each action must include a definiton, and any terms with uncertain or ambiguous meaning must also be defined. All definitions in an action plan must be printed to the UI with the action plan.",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Preserves verbatim UI action plan printing and definition requirements."
+                      }
+                    },
+                    {
+                      "8_eval": {
+                        "8": "<Instruction: Create return json schema for action plan.  Action plan must include any action that falls under the permission request, subactions that are necessary for main actions, the defintions of every action, subaction, uncertain or ambiguous term. A finally a dependency list of subaction to action that explains why a subaction is required. >",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Preserves verbatim instruction requirement for action plan return JSON schema with subactions, definitions, and dependencies."
+                      }
+                    },
+                    {
+                      "9_eval": {
+                        "9": "After an action plan has been approved, no actions or subactions can be added to it.  Its shape can only change by removing uncompleted actions.",
+                        "supervisor_eval_result": "PASS",
+                        "supervisor_eval_comment": "Preserves verbatim requirement regarding post-approval immutability and reduction-only modification."
+                      }
+                    }
+                  ],
+                  "current_timestamp_eval": {
+                    "current_timestamp": "2026-10-01T06:42:30Z",
+                    "supervisor_eval_result": "PASS",
+                    "supervisor_eval_comment": "Valid ISO 8601 execution timestamp."
+                  },
+                  "return_schema_completed_eval": {
+                    "return_schema_completed": true,
+                    "supervisor_eval_result": "PASS",
+                    "supervisor_eval_comment": "Return schema completion flag is true and all required Step 2 fields are populated."
+                  },
+                  "return_schema_completed_timestamp_eval": {
+                    "return_schema_completed_timestamp": "2026-10-01T06:42:30Z",
+                    "supervisor_eval_result": "PASS",
+                    "supervisor_eval_comment": "Valid ISO 8601 completion timestamp matching execution timestamp."
+                  }
+                }
+              },
+              "step_level_evaluation": {
+                "supervisor_eval_result": "PASS",
+                "supervisor_eval_comment": "All user-stated requirements are extracted verbatim without omission, paraphrase, or invented additions. Role boundaries, nonces, timestamps, and return schema completeness meet all Agents.md Step 2 requirements."
+              },
+              "failures": [],
+              "gate_result": "PASS"
+            }
+          },
+          "transition_key": "supervisory_gate.gate_result",
+          "transition_value": "PASS",
+          "updated_at": "2026-10-01T06:42:59.032Z"
         }
       },
       "awaiting": {
         "type": "chatgpt_execution",
-        "step": 2
+        "step": 3
       }
     }
   }
