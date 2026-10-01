@@ -3,10 +3,35 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const root = 'ChatMachines/GeminiSupervisor';
-const triggerPath = `${root}/nextmessage/nextmessage.json`;
-const agentsPath = `${root}/Agents.md`;
-const testsPath = `${root}/evaluation-tests.md`;
+const configPath = `${root}/config.json`;
 const repoRoot = path.resolve(process.cwd());
+
+function readText(p) {
+  return fs.readFileSync(p, 'utf8');
+}
+
+function readJson(p) {
+  return JSON.parse(readText(p));
+}
+
+function loadSupervisorConfig() {
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Supervisor configuration file not found at ${configPath}`);
+  }
+  const cfg = readJson(configPath);
+  return {
+    raw: cfg,
+    triggerPath: path.resolve(repoRoot, cfg.trigger_file || `${root}/nextmessage/nextmessage.json`),
+    agentsPath: path.resolve(repoRoot, cfg.agents_file || `${root}/Agents.md`),
+    runsRoot: path.resolve(repoRoot, cfg.runs_directory || `${root}/runs`),
+    step3EvalPath: path.resolve(repoRoot, cfg.external_files?.step3_evaluation_artifact?.path || `${root}/tests/step-3-evaluation.json`)
+  };
+}
+
+const supervisorConfig = loadSupervisorConfig();
+const triggerPath = supervisorConfig.triggerPath;
+const agentsPath = supervisorConfig.agentsPath;
+const step3EvalPath = supervisorConfig.step3EvalPath;
 
 const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
@@ -19,8 +44,6 @@ const supRole = 'Gemini model';
 const supForbidden = 'ChatGPT model';
 
 const now = () => new Date().toISOString();
-const readText = p => fs.readFileSync(p, 'utf8');
-const readJson = p => JSON.parse(readText(p));
 const nonEmpty = v => typeof v === 'string' && v.trim().length > 0;
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -63,11 +86,23 @@ function stepBlock(agents, step) {
 }
 
 function contextFiles(step) {
-  return step === 3 ? ['Agents.md', 'evaluation-tests.md'] : ['Agents.md'];
+  const relStep3Artifact = path.relative(repoRoot, step3EvalPath).replace(/\\/g, '/');
+  return step === 3 ? ['Agents.md', relStep3Artifact] : ['Agents.md'];
+}
+
+function loadStep3Evaluation() {
+  if (!fs.existsSync(step3EvalPath)) {
+    throw new Error(`Step 3 evaluation artifact not found at ${step3EvalPath}`);
+  }
+  const artifact = readJson(step3EvalPath);
+  if (!artifact.evaluation_heuristic || !artifact.step3_tsr) {
+    throw new Error(`Invalid step 3 evaluation artifact at ${step3EvalPath}: missing evaluation_heuristic or step3_tsr.`);
+  }
+  return artifact;
 }
 
 function initRun(runNonce, steps) {
-  const dir = path.join(root, 'runs', runNonce);
+  const dir = path.join(supervisorConfig.runsRoot, runNonce);
   const stateFile = path.join(dir, 'state.json');
   const messagesFile = path.join(dir, 'messages.json');
   const storeFile = path.join(dir, 'store', 'store.json');
@@ -871,10 +906,11 @@ function gateTemplate(returnSchema, groundTruth) {
 function systemText(step, agents, groundTruth) {
   const parts = [agents];
   if (step === 3) {
+    const step3Artifact = loadStep3Evaluation();
     parts.unshift([
-      '===== ACTIVE STEP3_TSR TEST SOURCE: evaluation-tests.md =====',
-      readText(testsPath),
-      '===== END ACTIVE STEP3_TSR TEST SOURCE ====='
+      '===== ACTIVE STEP 3 EVALUATION ARTIFACT (tests/step-3-evaluation.json) =====',
+      JSON.stringify(step3Artifact, null, 2),
+      '===== END ACTIVE STEP 3 EVALUATION ARTIFACT ====='
     ].join('\n'));
   }
   parts.push('Agents.md is the canonical source for evaluation definitions, pass/fail criteria, procedure schemas, role controls, live-ground-truth requirements, and transition semantics. Do not require evaluator-definitions.md or any external evaluation-definition read tracker.');
@@ -899,9 +935,7 @@ async function callGemini(contents, extra, step, agents, groundTruth) {
         'x-goog-api-key': apiKey
       },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: [systemText(step, agents, groundTruth), extra].filter(Boolean).join('\n\n') }]
-        },
+        system_instruction: { parts: [{ text: [systemText(step, agents, groundTruth), extra].filter(Boolean).join('\n\n') }] },
         contents
       }),
       signal: AbortSignal.timeout(180000)
@@ -1073,7 +1107,7 @@ async function supervise({
     'Return only valid JSON.'
   ];
   if (step === 3) {
-    prompt.splice(1, 0, 'Use the complete evaluation-tests.md corpus supplied in system context as the Step3_TSR test source. Agents.md contains canonical evaluation definitions. Do not require or emit evaluation_documents_read.');
+    prompt.splice(1, 0, 'Use the canonical evaluation artifact (tests/step-3-evaluation.json) supplied in system context as the combined evaluation_heuristic and Step3_TSR question corpus. Agents.md contains canonical evaluation definitions. Do not require or emit evaluation_documents_read.');
   }
   if ((step === 3 || step === 4) && requirements.length) {
     prompt.push('Step 2 stated requirements:', JSON.stringify(requirements, null, 2));
