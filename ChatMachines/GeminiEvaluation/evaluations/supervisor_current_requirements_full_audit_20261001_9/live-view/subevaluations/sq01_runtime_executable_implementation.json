@@ -1,0 +1,155 @@
+{
+  "response_type": "historical_audit_subresult",
+  "subquestion_id": "sq01_runtime_executable_implementation",
+  "answer_summary": "The current runtime executable baseline consists of a single GitHub Actions workflow (.github/workflows/gemini-chat.yml), a configuration file (ChatMachines/GeminiSupervisor/config.json), and a Node.js controller (ChatMachines/GeminiSupervisor/send-to-gemini.js). Execution is triggered exclusively on push to main affecting nextmessage/nextmessage.json. The runtime deterministically parses steps from Agents.md headings, validates the triggering execution against strict role and step-specific schemas (Steps 0–4), extracts empirical path/SHA claims from the execution return to verify workspace files and local Git objects, constructs an immutable ground-truth findings report, and injects it into a Gemini API call (model default gemini-3.8-flash via REST v1beta generateContent). The supervisory response is subjected to a deterministic shape and role validation loop (up to 4 attempts), enforcing that any blocking ground-truth finding forbids a PASS gate. Upon PASS, the machine advances to the next step or marks the run 'complete'; upon FAIL, it preserves the current step with reason supervisory_gate_fail. Results are persisted to runs/<run_nonce>/{state.json, messages.json, store/store.json} and committed/pushed back to main by the workflow bot.",
+  "historical_facts": [
+    {
+      "fact_id": "fact_sq01_workflow_trigger",
+      "statement": "gemini-chat.yml triggers on pushes to the main branch whose changed paths include ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json, runs under concurrency group 'gemini-supervisor-state-machine' with cancel-in-progress disabled, and requests write permissions for contents.",
+      "source_archive_path": ".github/workflows/gemini-chat.yml",
+      "evidence_locator": ".github/workflows/gemini-chat.yml:3-13"
+    },
+    {
+      "fact_id": "fact_sq01_workflow_env_and_node",
+      "statement": "The workflow sets up Node.js version 22 and executes 'node ChatMachines/GeminiSupervisor/send-to-gemini.js' with environment variables GEMINI_API_KEY and GEMINI_MODEL sourced from GitHub Actions repository variables (${{ vars.GEMINI_API_KEY }} and ${{ vars.GEMINI_MODEL }}), not from secrets.",
+      "source_archive_path": ".github/workflows/gemini-chat.yml",
+      "evidence_locator": ".github/workflows/gemini-chat.yml:23-28"
+    },
+    {
+      "fact_id": "fact_sq01_workflow_persistence_commit",
+      "statement": "After send-to-gemini.js executes, the workflow stages only 'ChatMachines/GeminiSupervisor/runs', extracts trigger run_nonce, step, and transition value using an inline Node script, and commits with message 'Gemini Supervisor checkpoint: <run_nonce> Step <step> <gate>' before pushing to origin HEAD:main.",
+      "source_archive_path": ".github/workflows/gemini-chat.yml",
+      "evidence_locator": ".github/workflows/gemini-chat.yml:30-49"
+    },
+    {
+      "fact_id": "fact_sq01_config_ingestion",
+      "statement": "send-to-gemini.js checks that ChatMachines/GeminiSupervisor/config.json exists, reads trigger_file, agents_file, runs_directory, and external_files.step3_evaluation_artifact.path (falling back to hardcoded default paths if unset), but does not validate or consume the config keys 'version', 'description', or 'external_files.step3_evaluation_artifact.keys'.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "ChatMachines/GeminiSupervisor/send-to-gemini.js:15-28"
+    },
+    {
+      "fact_id": "fact_sq01_nonce_and_step_initialization",
+      "statement": "send-to-gemini.js requires run_nonce to match /^[a-zA-Z0-9_-]+$/, extracts numerical step IDs from Agents.md using regex /^## Step\\s+(\\d+)\\s*$/gm, and initializes runs/<nonce> containing state.json, messages.json, and store/store.json if none exist, or verifies consistency across all three files if existing.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "ChatMachines/GeminiSupervisor/send-to-gemini.js:52-140"
+    },
+    {
+      "fact_id": "fact_sq01_role_control_checks",
+      "statement": "Every execution return schema must contain an object defining role_required === 'ChatGPT model', role_forbidden === 'Gemini model', role_completed === 'ChatGPT model', non-empty role_verification.method, non-empty role_verification.evidence, and return_schema_completed resolving to true.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "ChatMachines/GeminiSupervisor/send-to-gemini.js:166-193"
+    },
+    {
+      "fact_id": "fact_sq01_step_validation_rules",
+      "statement": "send-to-gemini.js enforces deterministic schema validation per step: Step 0 requires start_of_turn with 5 specific string keys; Step 1 requires step_1_record with 5 string keys; Step 2 requires step_2_record with 4 string keys and stated_requirements as an array of non-empty strings; Step 3 requires Step_3 with 22 specific string keys, clause/modifier arrays, test results matching Test_Count, and strict Loop_Decision/return_to consistency; Step 4 requires Step_4 with user_request, timestamps, and completed/failed/not_completed action arrays.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "ChatMachines/GeminiSupervisor/send-to-gemini.js:203-316"
+    },
+    {
+      "fact_id": "fact_sq01_ground_truth_verification_engine",
+      "statement": "The deterministic ground-truth engine verifies active run container nonces, reads Git HEAD commit, inspects structured evidence objects ({source, locator, observed_content}), and scans claim strings for repo paths and 40-character Git SHAs. File claims are verified against the local workspace and Git status/ls-files (matching verbatim observed text); Git SHAs are verified via git cat-file -e for blobs and commits. Findings with status CONTRADICTED, PARTIAL, UNKNOWN, or NOT_EXECUTED are flagged as blocking, causing aggregate_status to become FAIL.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "ChatMachines/GeminiSupervisor/send-to-gemini.js:336-547"
+    },
+    {
+      "fact_id": "fact_sq01_gemini_api_call_and_repair_loop",
+      "statement": "callGemini executes an HTTP POST to https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent with an AbortSignal timeout of 180 seconds. The supervisor loop checks valid JSON, gate_result in {'PASS', 'FAIL'}, supervisor role verification, exact mirroring of execution keys in *_eval, exact mirroring of deterministic findings in ground_truth_verification_eval, and enforces that gate_result cannot be PASS if groundTruth.aggregate_status is not PASS; up to 4 attempts are allowed before throwing an error.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "ChatMachines/GeminiSupervisor/send-to-gemini.js:636-664, 735-802"
+    },
+    {
+      "fact_id": "fact_sq01_state_transitions_and_persistence",
+      "statement": "When gate_result is PASS, the step is added to completed_steps, current_step advances to the next remaining step (or null if complete, setting state.status to 'complete'), and last_supervisory_failure is deleted. When gate_result is FAIL, current_step remains unchanged, awaiting is set to { type: 'chatgpt_execution', step, reason: 'supervisory_gate_fail' }, status remains 'awaiting_chatgpt_execution', and state.last_supervisory_failure is recorded. State is persisted to state.json, messages.json, and store/store.json.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "ChatMachines/GeminiSupervisor/send-to-gemini.js:862-892"
+    },
+    {
+      "fact_id": "fact_sq01_codebase_function_coverage",
+      "statement": "All 43 functions declared in send-to-gemini.js are invoked directly or indirectly during execution; there are no dead or unreferenced function declarations.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "ChatMachines/GeminiSupervisor/send-to-gemini.js:9-906"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "interp_sq01_ground_truth_preeminence",
+      "statement": "The implementation enforces ground-truth checks as a hard deterministic pre-condition: the Gemini model is programmatically prevented from granting a PASS gate whenever any empirical finding (file existence, exact text match, git object SHA) returns UNKNOWN, PARTIAL, NOT_EXECUTED, or CONTRADICTED.",
+      "depends_on_fact_ids": [
+        "fact_sq01_ground_truth_verification_engine",
+        "fact_sq01_gemini_api_call_and_repair_loop"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_sq01_config_divergence",
+      "statement": "While config.json provides path indirection for trigger_file, agents_file, runs_directory, and step3_evaluation_artifact, metadata fields ('version', 'description', and 'keys') are declarative documentation that is ignored by send-to-gemini.js, which hardcodes the Step 3 keys check for 'evaluation_heuristic' and 'step3_tsr'.",
+      "depends_on_fact_ids": [
+        "fact_sq01_config_ingestion"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_sq01_no_tool_calls",
+      "statement": "The runtime does not support dynamic function calling or Gemini tools. Interaction with the Gemini API is limited to raw prompt text and JSON schema repair dialogue; external tool execution by either agent does not exist in executable code.",
+      "depends_on_fact_ids": [
+        "fact_sq01_gemini_api_call_and_repair_loop"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_sq01_trigger_file_persistence_gap",
+      "statement": "The workflow commits changes only in ChatMachines/GeminiSupervisor/runs. The triggering file nextmessage/nextmessage.json is neither deleted, modified, nor staged during the commit step, leaving the repository with the latest trigger message committed on main.",
+      "depends_on_fact_ids": [
+        "fact_sq01_workflow_trigger",
+        "fact_sq01_workflow_persistence_commit"
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "decision_sq01_deterministic_behavior_identified",
+      "statement": "The runtime executable implementation deterministically defines all trigger constraints, input schema validations for Steps 0–4, role control checks, ground-truth verifications against workspace files and Git objects, Gemini API invocation with repair retries, state machine advancement rules, and repository persistence operations.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_sq01_ground_truth_preeminence",
+        "interp_sq01_config_divergence",
+        "interp_sq01_no_tool_calls",
+        "interp_sq01_trigger_file_persistence_gap"
+      ],
+      "current_fact_evidence": [
+        "fact_sq01_workflow_trigger",
+        "fact_sq01_workflow_env_and_node",
+        "fact_sq01_workflow_persistence_commit",
+        "fact_sq01_config_ingestion",
+        "fact_sq01_nonce_and_step_initialization",
+        "fact_sq01_role_control_checks",
+        "fact_sq01_step_validation_rules",
+        "fact_sq01_ground_truth_verification_engine",
+        "fact_sq01_gemini_api_call_and_repair_loop",
+        "fact_sq01_state_transitions_and_persistence",
+        "fact_sq01_codebase_function_coverage"
+      ]
+    },
+    {
+      "decision_id": "decision_sq01_dead_code_absence",
+      "statement": "There is no dead function or unimplemented code path inside send-to-gemini.js, although config.json contains descriptive and schema-checking properties ('version', 'description', 'keys') that are unused by the runtime loader.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_sq01_config_divergence"
+      ],
+      "current_fact_evidence": [
+        "fact_sq01_config_ingestion",
+        "fact_sq01_codebase_function_coverage"
+      ]
+    }
+  ],
+  "unresolved_questions": [
+    "Whether GEMINI_API_KEY in the GitHub repository is populated under GitHub Actions Variables ('vars') or Secrets ('secrets'), since gemini-chat.yml strictly reads ${{ vars.GEMINI_API_KEY }}."
+  ],
+  "context_files_used": [
+    "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+    "ChatMachines/GeminiSupervisor/config.json",
+    ".github/workflows/gemini-chat.yml"
+  ]
+}
