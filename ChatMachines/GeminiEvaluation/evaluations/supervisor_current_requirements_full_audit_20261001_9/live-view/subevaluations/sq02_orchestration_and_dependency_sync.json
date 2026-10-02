@@ -1,0 +1,119 @@
+{
+  "response_type": "historical_audit_subresult",
+  "subquestion_id": "sq02_orchestration_and_dependency_sync",
+  "answer_summary": "The dependency synchronization workflow (.github/workflows/gemini-supervisor-dependency-sync.yml) is a dedicated machine-maintenance system strictly separated from user-facing conversational runtime execution (.github/workflows/gemini-chat.yml). Triggered exclusively by push commits on main that modify either ChatMachines/GeminiSupervisor/Agents.md or send-to-gemini.js, it enforces a single-file base change constraint, evaluates mapped dependents via ChatMachines/GeminiEvaluation using an external LLM alignment prompt, and writes replacement files with a two-phase sentinel toggling mechanism to prevent recursive CI loops. The dependency map (dependency-map.json) maintains bidirectional mappings between Agents.md and send-to-gemini.js, designating config.json as an aligned dependent and tests/step-3-evaluation.json as read-only context. Orchestration evolved historically from an Apps Script message-stream echoer to an Apps Script transport layer, then to a direct GitHub Actions Node runner persisting run-scoped state, and finally separating maintenance automation from execution.",
+  "historical_facts": [
+    {
+      "fact_id": "fact_dep_sync_workflow_triggers",
+      "statement": "Workflow gemini-supervisor-dependency-sync.yml triggers on pushes to main modifying either ChatMachines/GeminiSupervisor/Agents.md or ChatMachines/GeminiSupervisor/send-to-gemini.js, with concurrency group gemini-supervisor-dependency-sync and cancel-in-progress set to false.",
+      "source_archive_path": "repo/.github/workflows/gemini-supervisor-dependency-sync.yml",
+      "evidence_locator": "lines 3-14"
+    },
+    {
+      "fact_id": "fact_dep_sync_sentinel_and_single_base_guard",
+      "statement": "The workflow checks ChatMachines/GeminiSupervisor/dependency-sync-sentinel.json; if enabled is false, it skips execution. It verifies git diff against BEFORE/SHA and throws a fatal error if COUNT of changed trigger files is not exactly 1.",
+      "source_archive_path": "repo/.github/workflows/gemini-supervisor-dependency-sync.yml",
+      "evidence_locator": "lines 36-68"
+    },
+    {
+      "fact_id": "fact_dep_sync_evaluator_invocation",
+      "statement": "The workflow dynamically configures ChatMachines/GeminiEvaluation/config.json with evaluation_mode 'generic', passes the authoritative base, mapped dependents, and read-only context files into generic_inputs, runs node evaluate-supervisor.js, and validates the response schema before writing file replacements.",
+      "source_archive_path": "repo/.github/workflows/gemini-supervisor-dependency-sync.yml",
+      "evidence_locator": "lines 104-206"
+    },
+    {
+      "fact_id": "fact_dep_sync_two_phase_commit",
+      "statement": "When applying updates, the workflow first stages changes with sentinel enabled=false in commit 'Align GeminiSupervisor dependencies to <BASE>', pushes to main, and then commits enabled=true in commit 'Restore GeminiSupervisor dependency sync sentinel'.",
+      "source_archive_path": "repo/.github/workflows/gemini-supervisor-dependency-sync.yml",
+      "evidence_locator": "lines 222-278"
+    },
+    {
+      "fact_id": "fact_dependency_map_contents",
+      "statement": "dependency-map.json configures sentinel_file 'ChatMachines/GeminiSupervisor/dependency-sync-sentinel.json' and mappings for ChatMachines/GeminiSupervisor/Agents.md (dependents: send-to-gemini.js, config.json; context: tests/step-3-evaluation.json) and send-to-gemini.js (dependents: Agents.md, config.json; context: tests/step-3-evaluation.json).",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/dependency-map.json",
+      "evidence_locator": "lines 1-24"
+    },
+    {
+      "fact_id": "fact_workflow_evolution_timeline",
+      "statement": "gemini-chat.yml originated on 2026-09-29 as GeminiChatGPTAppScript/send-to-gemini.js appending to MessageStream/messages.json, was renamed to GeminiSupervisor, moved nextmessage to nextmessage/nextmessage.json, migrated to an Apps Script web app endpoint, pivoted on 2026-09-30 to direct GitHub Actions Node execution with run-scoped directory persistence, briefly branched for gemini-edit-agents.js, and added step gate metadata checkpoint commit messages.",
+      "source_archive_path": "generated/git/by-entry/state_machine_workflow.patch.log",
+      "evidence_locator": "commits d224768 to 88241bc"
+    },
+    {
+      "fact_id": "fact_dep_sync_creation_date",
+      "statement": "dependency-map.json and gemini-supervisor-dependency-sync.yml were committed on 2026-10-01 (commits b899191 and 7839cfd), following the creation of supervisor config.json (commit 7cf2f4c).",
+      "source_archive_path": "generated/git/by-entry/dependency_sync_workflow.patch.log",
+      "evidence_locator": "commit 7839cfdfcefe5289b0a632de59086107ec438d90"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "interp_maintenance_vs_runtime_separation",
+      "statement": "The repository enforces an architectural separation between user-facing runtime execution (gemini-chat.yml, triggered by nextmessage/nextmessage.json) and peer artifact synchronization (gemini-supervisor-dependency-sync.yml, triggered by specification/code modifications). Maintenance operations do not run during conversational turn execution.",
+      "depends_on_fact_ids": [
+        "fact_dep_sync_workflow_triggers",
+        "fact_workflow_evolution_timeline"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_dependency_map_validity_and_asymmetry",
+      "statement": "dependency-map.json accurately reflects active supervisor dependencies (Agents.md, send-to-gemini.js, config.json, and tests/step-3-evaluation.json) without obsolete paths. However, it establishes an asymmetric alignment architecture: while Agents.md and send-to-gemini.js act as bidirectional authoritative bases that update config.json, config.json and tests/step-3-evaluation.json are neither triggers nor authoritative bases, meaning changes originating directly in those files do not trigger automated synchronization.",
+      "depends_on_fact_ids": [
+        "fact_dependency_map_contents",
+        "fact_dep_sync_workflow_triggers",
+        "fact_dep_sync_creation_date"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_sentinel_loop_prevention",
+      "statement": "The two-step sentinel toggle (setting enabled: false in the alignment commit and enabled: true in a secondary restoration commit) combined with the single-base diff constraint deterministically prevents infinite workflow re-triggering loops when GitHub Actions commits modifications back to main.",
+      "depends_on_fact_ids": [
+        "fact_dep_sync_sentinel_and_single_base_guard",
+        "fact_dep_sync_two_phase_commit"
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "dec_dependency_sync_operational_and_deterministic",
+      "statement": "The dependency synchronization workflow operates deterministically via strict trigger path filters, single-base validation, isolated evaluator execution, and sentinel suppression.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_maintenance_vs_runtime_separation",
+        "interp_sentinel_loop_prevention"
+      ],
+      "current_fact_evidence": [
+        "fact_dep_sync_workflow_triggers",
+        "fact_dep_sync_sentinel_and_single_base_guard",
+        "fact_dep_sync_evaluator_invocation",
+        "fact_dep_sync_two_phase_commit"
+      ]
+    },
+    {
+      "decision_id": "dec_mappings_accurate_with_asymmetric_peer_coverage",
+      "statement": "dependency-map.json accurately maps repository paths without obsolete linkages, though peer artifacts config.json and step-3-evaluation.json are strictly reactive dependents or read-only context rather than base triggers.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_dependency_map_validity_and_asymmetry"
+      ],
+      "current_fact_evidence": [
+        "fact_dependency_map_contents",
+        "fact_dep_sync_workflow_triggers"
+      ]
+    }
+  ],
+  "unresolved_questions": [
+    "Whether direct manual edits to config.json or tests/step-3-evaluation.json have occurred without a corresponding trigger run on Agents.md or send-to-gemini.js cannot be determined from workflow definitions alone without complete repository commit logs."
+  ],
+  "context_files_used": [
+    ".github/workflows/gemini-supervisor-dependency-sync.yml",
+    "ChatMachines/GeminiSupervisor/dependency-map.json",
+    "generated/git/by-entry/dependency_sync_workflow.patch.log",
+    "generated/git/by-entry/state_machine_workflow.patch.log",
+    "generated/git/by-entry/dependency_map.patch.log",
+    "generated/git/by-entry/supervisor_config.patch.log"
+  ]
+}
