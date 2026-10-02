@@ -98,8 +98,9 @@ function chooseDamageIndices(items) {
   return [...selected].sort((a, b) => a - b);
 }
 
-function damageProjection(full) {
+function reverseAndDamageProjection(full) {
   const damaged = structuredClone(full);
+  damaged.items.reverse();
   for (const index of chooseDamageIndices(damaged.items)) {
     damaged.items[index] = { [PLACEHOLDER_KEY]: PLACEHOLDER_VALUE };
   }
@@ -140,9 +141,9 @@ function issue(commitSha) {
   rm(p.pass);
 
   writeJson(p.canonical, full);
-  writeJson(p.active, damageProjection(full));
+  writeJson(p.active, reverseAndDamageProjection(full));
 
-  console.log(`[live-ground-truth] issued ${path.basename(p.active)}`);
+  console.log(`[live-ground-truth] issued reverse-order ${path.basename(p.active)}`);
 }
 
 function parseChallengePath(challengePath) {
@@ -183,8 +184,8 @@ function verify(challengePath, evaluationCommitSha) {
 
   writeJson(resultPaths.failed, { status: 'FAILED' });
   const canonical = JSON.parse(canonicalBytes.toString('utf8'));
-  writeJson(resultPaths.active, damageProjection(canonical));
-  console.log(`[live-ground-truth] FAILED ${evaluationSha}; issued fresh random damage`);
+  writeJson(resultPaths.active, reverseAndDamageProjection(canonical));
+  console.log(`[live-ground-truth] FAILED ${evaluationSha}; issued fresh reverse-order random damage`);
   return false;
 }
 
