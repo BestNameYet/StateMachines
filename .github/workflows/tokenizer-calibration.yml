@@ -29,6 +29,12 @@ jobs:
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
         run: node ChatMachines/TokenizerCalibration/run.js
 
+      - name: Count and divide Stage-1 corpus
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: node ChatMachines/TokenizerCalibration/stage1-divide.js
+
       - name: Commit tokenizer results
         run: |
           git config user.name "github-actions[bot]"
@@ -36,6 +42,8 @@ jobs:
           git add ChatMachines/TokenizerCalibration/agents-by-header.json
           git add ChatMachines/TokenizerCalibration/agents-by-header-roundtrip.json
           git add ChatMachines/TokenizerCalibration/tokenizer-results.json
+          git add ChatMachines/TokenizerCalibration/stage1-corpus-analysis.json
+          git add ChatMachines/TokenizerCalibration/stage1-batches/
           if git diff --cached --quiet; then
             echo "No tokenizer result change."
             exit 0
