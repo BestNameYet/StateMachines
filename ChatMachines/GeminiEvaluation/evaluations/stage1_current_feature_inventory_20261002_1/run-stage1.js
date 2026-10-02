@@ -37,6 +37,46 @@ function approximateTokens(value) {
   return text ? Math.ceil(text.length / charsPerToken) : 0;
 }
 
+function parseJsonWithRepairs(text) {
+  const attempts = [];
+  const trimmed = String(text || '').trim();
+  if (!trimmed) return null;
+  attempts.push(trimmed);
+  attempts.push(trimmed.replace(/\\(?!["\\/bfnrtu])/g, '\\\\'));
+
+  for (const candidate of [...attempts]) {
+    attempts.push(candidate.replace(/,\s*([}\]])/g, '$1'));
+  }
+
+  const seen = new Set();
+  for (const candidate of attempts) {
+    if (seen.has(candidate)) continue;
+    seen.add(candidate);
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && typeof parsed === 'object') return parsed;
+    } catch {}
+  }
+  return null;
+}
+
+function recoverRequiredFields({rawResponse}) {
+  if (typeof rawResponse !== 'string') return null;
+  const text = rawResponse.trim();
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fence) {
+    const parsed = parseJsonWithRepairs(fence[1]);
+    if (parsed) return parsed;
+  }
+
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    return parseJsonWithRepairs(text.slice(firstBrace, lastBrace + 1));
+  }
+  return null;
+}
+
 function stripTemporaryCompactness(evaluator) {
   if (!evaluator) return;
   if (typeof evaluator.task === 'string' && evaluator.task.endsWith(temporaryCompactTaskSuffix)) {
@@ -281,7 +321,8 @@ async function main() {
   writeJson(configPath, config);
 
   const dependencies = {
-    countTokens: value => approximateTokens(value)
+    countTokens: value => approximateTokens(value),
+    recoverRequiredFields
   };
 
   const state = runtime.createRuntimeState(null);
