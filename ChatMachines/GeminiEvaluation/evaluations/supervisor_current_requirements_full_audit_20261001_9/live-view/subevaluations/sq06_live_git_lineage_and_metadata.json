@@ -1,0 +1,116 @@
+{
+  "response_type": "historical_audit_subresult",
+  "subquestion_id": "sq06_live_git_lineage_and_metadata",
+  "answer_summary": "Analysis of the live Git lineage and archive metadata establishes a complete chronological sequence of 242 commits across the GeminiSupervisor lifecycle from September 29, 2026 to October 1, 2026. The lifecycle transitioned through six primary architectural phases: (1) inception as GeminiChatGPTAppScript, (2) renaming to GeminiSupervisor and evaluator definition drafting, (3) Apps Script/Drive bridging and migration to Node.js on GitHub Actions, (4) self-evaluator loops and supervisor runtime promotion, (5) run-scoped execution and nonce containerization across 16 verified execution runs, and (6) Step 3 evaluation consolidation, manifest addition, and file-level dependency synchronization. The archive manifest defines a hierarchical evidence precedence model establishing raw Git objects, executable source, workflows, and persisted nonce states as primary evidence, normative specifications (Agents.md) as specified behavior rather than execution proof, and narrative summaries (commit-history.md) as secondary interpretations.",
+  "historical_facts": [
+    {
+      "fact_id": "fact_sq06_commit_count_and_boundaries",
+      "statement": "The live Git lineage log generated for ChatMachines/GeminiChatGPTAppScript and ChatMachines/GeminiSupervisor contains exactly 242 commits, beginning with commit c0f0b0ca45d9099dd36459d4bbe9cff24cacadc0 on 2026-09-29T11:37:57-07:00 ('Add GeminiChatGPTAppScript folder') and terminating with commit 9b4c1a7c83e96e2883ccb6be665551ca0912c4c4 on 2026-10-01T18:14:34-07:00 ('Add historical audit data source map').",
+      "source_archive_path": "generated/git/live-supervisor-lineage.log",
+      "evidence_locator": "commit c0f0b0ca45d9099dd36459d4bbe9cff24cacadc0 and commit 9b4c1a7c83e96e2883ccb6be665551ca0912c4c4"
+    },
+    {
+      "fact_id": "fact_sq06_rename_predecessor",
+      "statement": "Commit 5b7c2b70f48f122dfd256daad97a087aa3f282b4 on 2026-09-29T13:55:07-07:00 ('Rename chat machine folder to GeminiSupervisor') renamed files from ChatMachines/GeminiChatGPTAppScript to ChatMachines/GeminiSupervisor.",
+      "source_archive_path": "generated/git/live-supervisor-lineage.log",
+      "evidence_locator": "commit 5b7c2b70f48f122dfd256daad97a087aa3f282b4"
+    },
+    {
+      "fact_id": "fact_sq06_authorship_breakdown",
+      "statement": "The 242 commits were authored by two entities: BestNameYet <samuel.john.nixon@gmail.com> (183 commits) and github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com> (59 commits).",
+      "source_archive_path": "generated/git/live-supervisor-lineage.log",
+      "evidence_locator": "Full live-supervisor-lineage.log author headers"
+    },
+    {
+      "fact_id": "fact_sq06_manifest_entry_authorities",
+      "statement": "The manifest metadata/historical-audit-data.json registers 15 entry items and 2 generated sources, assigning authority tiers: 'primary_git_history' for live logs, 'primary_current_implementation' for send-to-gemini.js, 'current_normative_specification' for Agents.md, 'primary_for_persisted_run_state' for runs/, 'current_step3_evaluation_contract' for step-3-evaluation.json, 'historical_specification_evidence' for historical/, 'artifact_existence_primary_behavior_secondary' for work-action-approval-rulebook.json, and 'secondary' for commit-history.md.",
+      "source_archive_path": "metadata/historical-audit-data.json",
+      "evidence_locator": "metadata/historical-audit-data.json entries and generated_sources arrays"
+    },
+    {
+      "fact_id": "fact_sq06_evidence_precedence_rules",
+      "statement": "metadata/historical-audit-data.json defines four explicit evidence precedence rules: (1) Raw Git objects, diffs, tree state, and executable source/workflows override generated narratives; (2) Persisted nonce records are primary evidence of what was recorded, but model statements remain testimony unless corroborated; (3) Agents.md and evaluation artifacts prove requested behavior, not executable enforcement; (4) commit-history.md is a secondary historical interpretation artifact containing non-authoritative semantic judgments.",
+      "source_archive_path": "metadata/historical-audit-data.json",
+      "evidence_locator": "metadata/historical-audit-data.json evidence_precedence_guidance"
+    },
+    {
+      "fact_id": "fact_sq06_nonce_origins_verified",
+      "statement": "All 16 supervisor run nonces specified in historical-audit-trigger.json correlate directly to Git commit sequences where BestNameYet committed trigger messages into nextmessage.json and github-actions[bot] committed resulting run state/messages/store into ChatMachines/GeminiSupervisor/runs/<nonce>/.",
+      "source_archive_path": "generated/git/live-supervisor-lineage.log",
+      "evidence_locator": "ChatMachines/GeminiSupervisor/runs/ commit diffs and log messages matching each nonce"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "interp_sq06_architectural_phases",
+      "statement": "The Git commit record reflects six clear architectural eras: (1) Predecessor setup (commits 1-8: Apps Script envelope); (2) Evaluation contract design (commits 9-36: initial evaluator-definitions.md, current_state.json, and test plans); (3) Google Drive bridge & GitHub runner migration (commits 37-82: importing Agents.md from Drive, moving execution to GitHub Actions Node runner); (4) Autonomous self-evaluation loop (commits 70-109: evaluate-supervisor.js revising send-to-gemini.js and Agents.md); (5) Run-scoped state persistence (commits 100-216: containerized execution in runs/<nonce>/, multi-step gate supervision, and skill implementations); and (6) System stabilization & dependency routing (commits 217-242: consolidating Step 3 TSR evaluation, retirement of old evaluation docs, MANIFEST.md, dependency map, and audit source map).",
+      "depends_on_fact_ids": [
+        "fact_sq06_commit_count_and_boundaries",
+        "fact_sq06_rename_predecessor",
+        "fact_sq06_authorship_breakdown"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_sq06_audit_routing_authority",
+      "statement": "The archive manifest enforces an audit routing architecture designed to prevent halo effects and model hallucination by separating claims from mechanisms: specification text (Agents.md) cannot be cited as proof of execution; historical commit narrative (commit-history.md) cannot be cited as ground truth; and model outputs within persisted nonce runs are evidentiary of interaction events rather than factual authority.",
+      "depends_on_fact_ids": [
+        "fact_sq06_manifest_entry_authorities",
+        "fact_sq06_evidence_precedence_rules"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_sq06_nonce_execution_provenance",
+      "statement": "The 16 nonce execution runs fall into three distinct functional categories: (a) initial prototype/interface exploration (demo_20260930T155153_eadd5e5248, skill_interface_20260930T155700, skill_reeval_20260930T170100, skill_bootstrap_update_20260930T170700, skill_revision_20260930T180700, skill_revision_schema_reject_20260930T181100, role_separation_20260930T181400); (b) Step 0 rejection calibration probes (step0_raw_fail_20260930T132500, step0_raw_fail_20260930T1325_2, step0_raw_fail_20260930_3, step0_raw_fail_20260930_4); and (c) multi-step production migrations (agents_schema_migration_20260930_1, ground_truth_verification_skill_20260930_1, work_action_approval_rulebook_20260930_1, live_ground_truth_integration_20261001_1, merge_step3_tsr_evaluation_heuristic_20261001_1).",
+      "depends_on_fact_ids": [
+        "fact_sq06_nonce_origins_verified"
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "dec_sq06_git_lineage_completeness",
+      "statement": "The Git commit lineage is complete, unbroken, and accounts for all historical changes, predecessor origins, developer intentions, and execution checkpoints.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_sq06_architectural_phases"
+      ],
+      "current_fact_evidence": [
+        "fact_sq06_commit_count_and_boundaries",
+        "fact_sq06_rename_predecessor",
+        "fact_sq06_authorship_breakdown"
+      ]
+    },
+    {
+      "decision_id": "dec_sq06_manifest_authority_framework",
+      "statement": "The archive manifest provides a sound and unambiguous evidence routing framework that strictly ranks ground truth by artifact type.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_sq06_audit_routing_authority"
+      ],
+      "current_fact_evidence": [
+        "fact_sq06_manifest_entry_authorities",
+        "fact_sq06_evidence_precedence_rules"
+      ]
+    },
+    {
+      "decision_id": "dec_sq06_all_16_nonces_verified",
+      "statement": "All 16 supervisor run nonces are verified to originate from specific user triggers in the commit history and produce corresponding recorded run directories.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_sq06_nonce_execution_provenance"
+      ],
+      "current_fact_evidence": [
+        "fact_sq06_nonce_origins_verified"
+      ]
+    }
+  ],
+  "unresolved_questions": [],
+  "context_files_used": [
+    "generated/git/live-supervisor-lineage.log",
+    "metadata/historical-audit-data.json",
+    "metadata/historical-audit-trigger.json"
+  ]
+}

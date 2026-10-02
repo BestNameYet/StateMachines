@@ -1,0 +1,1655 @@
+[
+  {
+    "round": 1,
+    "computation_id": "parse_lineage_and_manifest",
+    "purpose": "Parse commits from live-supervisor-lineage.log, correlate with the 16 nonces and manifest entries, and extract chronological milestones.",
+    "code": "const logText = context['generated/git/live-supervisor-lineage.log'];\nconst manifest = JSON.parse(context['metadata/historical-audit-data.json']);\nconst trigger = JSON.parse(context['metadata/historical-audit-trigger.json']);\n\n// Parse commits from git log\nconst commitBlocks = logText.split(/\\n(?=commit [0-9a-f]{40})/);\nconst commits = [];\n\nfor (const block of commitBlocks) {\n  const lines = block.trim().split('\\n');\n  const commitMatch = lines[0].match(/^commit ([0-9a-f]{40})/);\n  if (!commitMatch) continue;\n  const hash = commitMatch[1];\n  let author = '', authorDate = '', commitAuthor = '', commitDate = '';\n  let i = 1;\n  while (i < lines.length && lines[i].length > 0) {\n    if (lines[i].startsWith('Author:')) author = lines[i].replace('Author:', '').trim();\n    if (lines[i].startsWith('AuthorDate:')) authorDate = lines[i].replace('AuthorDate:', '').trim();\n    if (lines[i].startsWith('Commit:')) commitAuthor = lines[i].replace('Commit:', '').trim();\n    if (lines[i].startsWith('CommitDate:')) commitDate = lines[i].replace('CommitDate:', '').trim();\n    i++;\n  }\n  while (i < lines.length && lines[i].trim() === '') i++;\n  \n  const msgLines = [];\n  while (i < lines.length && !lines[i].match(/^[A-Z0-9]{1,4}\\t/)) {\n    msgLines.push(lines[i].trim());\n    i++;\n  }\n  const message = msgLines.filter(l => l.length > 0).join(' ');\n  \n  const changedFiles = [];\n  while (i < lines.length) {\n    const line = lines[i].trim();\n    if (line.match(/^[A-Z0-9]{1,4}\\t/)) {\n      changedFiles.push(line);\n    }\n    i++;\n  }\n  \n  commits.push({\n    hash,\n    author,\n    authorDate,\n    commitDate,\n    message,\n    changedFiles\n  });\n}\n\n// Correlate with the 16 nonces\nconst nonces = trigger.archive_selection.supervisor_run_nonces;\nconst nonceCommitMap = {};\nfor (const nonce of nonces) {\n  nonceCommitMap[nonce] = [];\n  for (const c of commits) {\n    const matchInMsg = c.message.includes(nonce);\n    const matchInFiles = c.changedFiles.some(f => f.includes(nonce));\n    if (matchInMsg || matchInFiles) {\n      nonceCommitMap[nonce].push({\n        hash: c.hash,\n        author: c.author,\n        authorDate: c.authorDate,\n        message: c.message,\n        matchType: matchInMsg && matchInFiles ? 'both' : (matchInMsg ? 'message' : 'files')\n      });\n    }\n  }\n}\n\nreturn {\n  totalCommits: commits.length,\n  commitsSummary: commits.map((c, idx) => ({\n    index: idx + 1,\n    hash: c.hash.substring(0, 10),\n    fullHash: c.hash,\n    date: c.authorDate,\n    author: c.author,\n    message: c.message,\n    changedFilesCount: c.changedFiles.length,\n    sampleFiles: c.changedFiles\n  })),\n  manifestEntries: manifest.entries.map(e => ({\n    id: e.id,\n    path: e.path,\n    category: e.category,\n    authority: e.authority\n  })),\n  generatedSources: manifest.generated_sources,\n  evidencePrecedenceGuidance: manifest.evidence_precedence_guidance,\n  nonceCommitMap\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "parse_lineage_and_manifest",
+      "ok": false,
+      "error": "\"undefined\" is not valid JSON"
+    },
+    "timestamp": "2026-10-02T03:28:10.528Z"
+  },
+  {
+    "round": 2,
+    "computation_id": "check_context_keys",
+    "purpose": "Check the keys and types available in variable context.",
+    "code": "return Object.keys(context);",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "check_context_keys",
+      "ok": true,
+      "result": [
+        "subquestion",
+        "files"
+      ]
+    },
+    "timestamp": "2026-10-02T03:28:11.530Z"
+  },
+  {
+    "round": 3,
+    "computation_id": "parse_lineage_and_manifest_v2",
+    "purpose": "Parse commits from live-supervisor-lineage.log, correlate with nonces and manifest entries.",
+    "code": "const files = context.files;\nconst fileKeys = Object.keys(files);\nconst logFile = files['generated/git/live-supervisor-lineage.log'] || files[fileKeys.find(k => k.includes('live-supervisor-lineage.log'))];\nconst manifestFile = files['metadata/historical-audit-data.json'] || files[fileKeys.find(k => k.includes('historical-audit-data.json'))];\nconst triggerFile = files['metadata/historical-audit-trigger.json'] || files[fileKeys.find(k => k.includes('historical-audit-trigger.json'))];\n\nconst logText = logFile.content || logFile;\nconst manifest = typeof manifestFile.content === 'string' ? JSON.parse(manifestFile.content) : (typeof manifestFile === 'string' ? JSON.parse(manifestFile) : manifestFile);\nconst trigger = typeof triggerFile.content === 'string' ? JSON.parse(triggerFile.content) : (typeof triggerFile === 'string' ? JSON.parse(triggerFile) : triggerFile);\n\n// Parse commits from git log\nconst commitBlocks = logText.split(/\\n(?=commit [0-9a-f]{40})/);\nconst commits = [];\n\nfor (const block of commitBlocks) {\n  const lines = block.trim().split('\\n');\n  const commitMatch = lines[0].match(/^commit ([0-9a-f]{40})/);\n  if (!commitMatch) continue;\n  const hash = commitMatch[1];\n  let author = '', authorDate = '', commitAuthor = '', commitDate = '';\n  let i = 1;\n  while (i < lines.length && lines[i].length > 0) {\n    if (lines[i].startsWith('Author:')) author = lines[i].replace('Author:', '').trim();\n    if (lines[i].startsWith('AuthorDate:')) authorDate = lines[i].replace('AuthorDate:', '').trim();\n    if (lines[i].startsWith('Commit:')) commitAuthor = lines[i].replace('Commit:', '').trim();\n    if (lines[i].startsWith('CommitDate:')) commitDate = lines[i].replace('CommitDate:', '').trim();\n    i++;\n  }\n  while (i < lines.length && lines[i].trim() === '') i++;\n  \n  const msgLines = [];\n  while (i < lines.length && !lines[i].match(/^[A-Z0-9]{1,4}\\t/)) {\n    msgLines.push(lines[i].trim());\n    i++;\n  }\n  const message = msgLines.filter(l => l.length > 0).join(' ');\n  \n  const changedFiles = [];\n  while (i < lines.length) {\n    const line = lines[i].trim();\n    if (line.match(/^[A-Z0-9]{1,4}\\t/)) {\n      changedFiles.push(line);\n    }\n    i++;\n  }\n  \n  commits.push({\n    hash,\n    author,\n    authorDate,\n    commitDate,\n    message,\n    changedFiles\n  });\n}\n\n// Correlate with the 16 nonces\nconst nonces = trigger.archive_selection.supervisor_run_nonces;\nconst nonceCommitMap = {};\nfor (const nonce of nonces) {\n  nonceCommitMap[nonce] = [];\n  for (const c of commits) {\n    const matchInMsg = c.message.includes(nonce);\n    const matchInFiles = c.changedFiles.some(f => f.includes(nonce));\n    if (matchInMsg || matchInFiles) {\n      nonceCommitMap[nonce].push({\n        hash: c.hash,\n        author: c.author,\n        authorDate: c.authorDate,\n        message: c.message,\n        matchType: matchInMsg && matchInFiles ? 'both' : (matchInMsg ? 'message' : 'files'),\n        changedFiles: c.changedFiles\n      });\n    }\n  }\n}\n\nreturn {\n  totalCommits: commits.length,\n  manifestEntries: manifest.entries.map(e => ({\n    id: e.id,\n    path: e.path,\n    category: e.category,\n    authority: e.authority\n  })),\n  evidencePrecedenceGuidance: manifest.evidence_precedence_guidance,\n  noncesCount: nonces.length,\n  nonceCommitMap,\n  firstCommit: commits[0],\n  lastCommit: commits[commits.length - 1]\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "parse_lineage_and_manifest_v2",
+      "ok": false,
+      "error": "Cannot read properties of undefined (reading 'content')"
+    },
+    "timestamp": "2026-10-02T03:28:15.271Z"
+  },
+  {
+    "round": 4,
+    "computation_id": "inspect_files_structure",
+    "purpose": "Inspect the structure and keys of context.files",
+    "code": "return {\n  isFilesArray: Array.isArray(context.files),\n  filesKeys: Array.isArray(context.files) ? context.files.map(f => f.path || f.source_path || f.name || Object.keys(f)) : Object.keys(context.files),\n  fileSample: Array.isArray(context.files) ? Object.keys(context.files[0]) : typeof context.files\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "inspect_files_structure",
+      "ok": true,
+      "result": {
+        "isFilesArray": true,
+        "filesKeys": [
+          [
+            "metadata",
+            "content"
+          ],
+          [
+            "metadata",
+            "content"
+          ],
+          [
+            "metadata",
+            "content"
+          ]
+        ],
+        "fileSample": [
+          "metadata",
+          "content"
+        ]
+      }
+    },
+    "timestamp": "2026-10-02T03:28:16.534Z"
+  },
+  {
+    "round": 5,
+    "computation_id": "inspect_files_metadata",
+    "purpose": "Inspect file metadata in context.files",
+    "code": "return context.files.map(f => f.metadata);",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "inspect_files_metadata",
+      "ok": true,
+      "result": [
+        {
+          "archive_path": "generated/git/live-supervisor-lineage.log",
+          "source_path": null,
+          "entry_id": null,
+          "category": "generated_raw_git_history",
+          "description": "Fresh complete Git lineage for the Supervisor and predecessor paths at the workflow checkout, generated directly from Git with rename/copy detection.",
+          "authority": "primary_git_history",
+          "size_bytes": 98781,
+          "sha256": "ee97681e296444f40fd234e2d4a9a271a804318be3b60cf4c913201b0a5363f4",
+          "generated": true
+        },
+        {
+          "archive_path": "metadata/historical-audit-data.json",
+          "source_path": "ChatMachines/GeminiSupervisor/historical-audit-data.json",
+          "entry_id": null,
+          "category": "evidence_routing_metadata",
+          "description": "Exact historical-audit source map used to construct this packet, including descriptions and authority guidance.",
+          "authority": "routing_metadata",
+          "size_bytes": 11857,
+          "sha256": "52641ca6a607e84f06d38d73b2143f2220645f45fc012606da1bdb878dcf45cc",
+          "generated": false
+        },
+        {
+          "archive_path": "metadata/historical-audit-trigger.json",
+          "source_path": "ChatMachines/GeminiEvaluation/historical-audit-nextmessage/nextmessage.json",
+          "entry_id": null,
+          "category": "audit_request_metadata",
+          "description": "Exact trigger/request and archive selection used for this historical-audit run.",
+          "authority": "run_request",
+          "size_bytes": 4843,
+          "sha256": "113787684aad7c1ccfc7d69369ac4ac055cb38b6619aa3c268d73a5569798078",
+          "generated": false
+        }
+      ]
+    },
+    "timestamp": "2026-10-02T03:28:17.593Z"
+  },
+  {
+    "round": 6,
+    "computation_id": "process_all_commit_data",
+    "purpose": "Analyze all commits, map 16 nonces, and extract manifest authority rules.",
+    "code": "const logText = context.files.find(f => f.metadata.archive_path.includes('live-supervisor-lineage.log')).content;\nconst manifest = JSON.parse(context.files.find(f => f.metadata.archive_path.includes('historical-audit-data.json')).content);\nconst trigger = JSON.parse(context.files.find(f => f.metadata.archive_path.includes('historical-audit-trigger.json')).content);\n\n// Parse commits from git log\nconst commitBlocks = logText.split(/\\n(?=commit [0-9a-f]{40})/);\nconst commits = [];\n\nfor (const block of commitBlocks) {\n  const lines = block.trim().split('\\n');\n  const commitMatch = lines[0].match(/^commit ([0-9a-f]{40})/);\n  if (!commitMatch) continue;\n  const hash = commitMatch[1];\n  let author = '', authorDate = '', commitAuthor = '', commitDate = '';\n  let i = 1;\n  while (i < lines.length && lines[i].length > 0) {\n    if (lines[i].startsWith('Author:')) author = lines[i].replace('Author:', '').trim();\n    if (lines[i].startsWith('AuthorDate:')) authorDate = lines[i].replace('AuthorDate:', '').trim();\n    if (lines[i].startsWith('Commit:')) commitAuthor = lines[i].replace('Commit:', '').trim();\n    if (lines[i].startsWith('CommitDate:')) commitDate = lines[i].replace('CommitDate:', '').trim();\n    i++;\n  }\n  while (i < lines.length && lines[i].trim() === '') i++;\n  \n  const msgLines = [];\n  while (i < lines.length && !lines[i].match(/^[A-Z0-9]{1,4}\\t/)) {\n    msgLines.push(lines[i].trim());\n    i++;\n  }\n  const message = msgLines.filter(l => l.length > 0).join(' ');\n  \n  const changedFiles = [];\n  while (i < lines.length) {\n    const line = lines[i].trim();\n    if (line.match(/^[A-Z0-9]{1,4}\\t/)) {\n      changedFiles.push(line);\n    }\n    i++;\n  }\n  \n  commits.push({\n    hash,\n    author,\n    authorDate,\n    commitDate,\n    message,\n    changedFiles\n  });\n}\n\n// Correlate with the 16 nonces\nconst nonces = trigger.archive_selection.supervisor_run_nonces;\nconst nonceCommitMap = {};\nfor (const nonce of nonces) {\n  nonceCommitMap[nonce] = [];\n  for (const c of commits) {\n    const matchInMsg = c.message.includes(nonce);\n    const matchInFiles = c.changedFiles.some(f => f.includes(nonce));\n    if (matchInMsg || matchInFiles) {\n      nonceCommitMap[nonce].push({\n        hash: c.hash,\n        author: c.author,\n        authorDate: c.authorDate,\n        message: c.message,\n        matchType: matchInMsg && matchInFiles ? 'both' : (matchInMsg ? 'message' : 'files'),\n        files: c.changedFiles\n      });\n    }\n  }\n}\n\nreturn {\n  totalCommits: commits.length,\n  noncesCount: nonces.length,\n  nonceCommitMap,\n  manifestEntries: manifest.entries.map(e => ({\n    id: e.id,\n    path: e.path,\n    authority: e.authority,\n    category: e.category\n  })),\n  evidencePrecedenceGuidance: manifest.evidence_precedence_guidance\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "process_all_commit_data",
+      "ok": true,
+      "result": {
+        "totalCommits": 242,
+        "noncesCount": 16,
+        "nonceCommitMap": {
+          "agents_schema_migration_20260930_1": [
+            {
+              "hash": "cae8729672b28d6ec1699a2a428037976ecd2283",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T23:18:22Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "81ba7de36b9854861234b23f9bdc96eeaeb3b510",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T23:19:14Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "7ffb39f6e4fc62be1371a34851c73ad6c99ed9fc",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T23:20:03Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "df70083417964c0e28969e1ee481fbab3320e15d",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T23:27:32Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "1b5139c2829d5932d1ca3604434893cb99fd1860",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T23:32:53Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "aa392663bc4e0289c6b45093839aac264724524e",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T01:17:00Z",
+              "message": "Gemini Supervisor checkpoint: agents_schema_migration_20260930_1 Step 4 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json"
+              ]
+            }
+          ],
+          "demo_20260930T155153_eadd5e5248": [
+            {
+              "hash": "23c08f97b0750db4c9adf19e0b2ccf4cd36e253b",
+              "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+              "authorDate": "2026-09-30T08:53:16-07:00",
+              "message": "Trigger Gemini Supervisor demo run demo_20260930T155153_eadd5e5248",
+              "matchType": "message",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/nextmessage/nextmessage.json"
+              ]
+            },
+            {
+              "hash": "55569517a9c821903a7393691cf625f8b44cb232",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T15:56:50Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/store/store.json"
+              ]
+            }
+          ],
+          "ground_truth_verification_skill_20260930_1": [
+            {
+              "hash": "ead5cb7d8bc326cd1c021c667a38fe8b0fd6aa67",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T01:58:14Z",
+              "message": "Gemini Supervisor checkpoint: ground_truth_verification_skill_20260930_1 Step 0 PASS",
+              "matchType": "both",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "847d9ac1d71f01ff7a062df26e0f7d990cba5d67",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T01:59:02Z",
+              "message": "Gemini Supervisor checkpoint: ground_truth_verification_skill_20260930_1 Step 1 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "a2af426d81883ba646dd064ff42025707fd77b3f",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T01:59:48Z",
+              "message": "Gemini Supervisor checkpoint: ground_truth_verification_skill_20260930_1 Step 2 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "bbddde73638fc6c44fc396926deafb8642cf5acd",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T02:05:31Z",
+              "message": "Gemini Supervisor checkpoint: ground_truth_verification_skill_20260930_1 Step 3 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "cbce2976f9787f07860e14c2fbbbde3815f7340e",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T02:08:28Z",
+              "message": "Gemini Supervisor checkpoint: ground_truth_verification_skill_20260930_1 Step 4 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json"
+              ]
+            }
+          ],
+          "live_ground_truth_integration_20261001_1": [
+            {
+              "hash": "99df3af5b07b37925061cf2b7cfb6f936de4edfb",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T07:27:02Z",
+              "message": "Gemini Supervisor checkpoint: live_ground_truth_integration_20261001_1 Step 0 PASS",
+              "matchType": "both",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "68634eeb5465a96f09153d4cc8eb0e2e4ab22641",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T07:27:46Z",
+              "message": "Gemini Supervisor checkpoint: live_ground_truth_integration_20261001_1 Step 1 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "c66f3b5d92b0f67126dcd0c0b7c9b273e621cf0e",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T07:28:29Z",
+              "message": "Gemini Supervisor checkpoint: live_ground_truth_integration_20261001_1 Step 2 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "08d43df2b760610655988a23a72a7a53e033b276",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T07:31:10Z",
+              "message": "Gemini Supervisor checkpoint: live_ground_truth_integration_20261001_1 Step 3 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "b8272c3540bcb7950e23a91014c78acde92d69ae",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T07:51:12Z",
+              "message": "Gemini Supervisor checkpoint: live_ground_truth_integration_20261001_1 Step 4 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json"
+              ]
+            }
+          ],
+          "merge_step3_tsr_evaluation_heuristic_20261001_1": [
+            {
+              "hash": "75c01338250a9150d5f6b0b9128f8c5293d391ba",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:13:03Z",
+              "message": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 0 PASS",
+              "matchType": "both",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "d3c08cf6d3fa625056a87df3629759e059b831c3",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:13:51Z",
+              "message": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 1 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "1b51a050a8a5f61eeb6e6cdcb67b35fa3f0a335f",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:14:48Z",
+              "message": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 2 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "1422c317a97fecc2b8944e1ef94cf9170e851eab",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:17:53Z",
+              "message": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 3 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "9e614f98660304c6dbcaec02122654cb009e0f7b",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:35:41Z",
+              "message": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 4 FAIL",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "256de71f652ca331f420e5a02bdc5a35a2236a11",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:37:43Z",
+              "message": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 4 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json"
+              ]
+            }
+          ],
+          "role_separation_20260930T181400": [
+            {
+              "hash": "b0d4d9fd425adb4a39b3b267c5de66dd7c80b844",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T18:25:02Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/store/store.json"
+              ]
+            }
+          ],
+          "skill_bootstrap_update_20260930T170700": [
+            {
+              "hash": "f3f6a5c4985edf0210fae5d71c6867f3633971dd",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T17:30:54Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/store/store.json"
+              ]
+            }
+          ],
+          "skill_interface_20260930T155700": [
+            {
+              "hash": "36d40cce574fe1731960687a64100ef27914b74b",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T16:01:02Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/store/store.json"
+              ]
+            }
+          ],
+          "skill_reeval_20260930T170100": [
+            {
+              "hash": "ff29c1d9d9d9bd2de2e43d8254807b47d2380ed4",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T17:05:03Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/store/store.json"
+              ]
+            }
+          ],
+          "skill_revision_20260930T180700": [
+            {
+              "hash": "50f9074948a87de0501fc55e1ba0fa76743999fa",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T18:10:31Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/store/store.json"
+              ]
+            }
+          ],
+          "skill_revision_schema_reject_20260930T181100": [
+            {
+              "hash": "eebea6f2772239c508bc294db735f81aeb052379",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T18:12:48Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/store/store.json"
+              ]
+            }
+          ],
+          "step0_raw_fail_20260930T132500": [
+            {
+              "hash": "0cf99324a660e1f3ae0150eb76d647f9796d3a49",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T20:29:23Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/store/store.json"
+              ]
+            }
+          ],
+          "step0_raw_fail_20260930T1325_2": [
+            {
+              "hash": "efad3a636163d6eeda47bc453058a5f9a0850c8b",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T21:02:40Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/store/store.json"
+              ]
+            }
+          ],
+          "step0_raw_fail_20260930_3": [
+            {
+              "hash": "286a7cd1c7b0debe6c71eafb5e3bae15d40582fe",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T21:13:31Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/store/store.json"
+              ]
+            },
+            {
+              "hash": "c505bd97e4cd32fd5df9a8c8043f0ccd0f17f4b2",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T21:15:51Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/store/store.json"
+              ]
+            }
+          ],
+          "step0_raw_fail_20260930_4": [
+            {
+              "hash": "2759e1c5113ec40f166de49887f22f191781adba",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T22:11:41Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json"
+              ]
+            },
+            {
+              "hash": "5f1967f5ea348012cf4e921a7759225b71d69806",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T22:13:59Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json"
+              ]
+            },
+            {
+              "hash": "a405f5b68df6d5d34b75d97b1ccf141787b6d19c",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T22:14:50Z",
+              "message": "Advance Gemini Supervisor run",
+              "matchType": "files",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json"
+              ]
+            }
+          ],
+          "work_action_approval_rulebook_20260930_1": [
+            {
+              "hash": "2c7ffdd7e18f5e8ae10ebe056d5aa4248daf1024",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T06:41:09Z",
+              "message": "Gemini Supervisor checkpoint: work_action_approval_rulebook_20260930_1 Step 0 PASS",
+              "matchType": "both",
+              "files": [
+                "A\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json",
+                "A\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/state.json",
+                "A\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "6ff04156ac14cabf13e03733e43dd492e934f9a1",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T06:42:06Z",
+              "message": "Gemini Supervisor checkpoint: work_action_approval_rulebook_20260930_1 Step 1 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "f6135b33b94d11f4f5881f2402e5cbdcdb2be578",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T06:42:59Z",
+              "message": "Gemini Supervisor checkpoint: work_action_approval_rulebook_20260930_1 Step 2 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "fdd7195919aa7446f1dc2f21203bccbf0cb264cd",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T06:45:26Z",
+              "message": "Gemini Supervisor checkpoint: work_action_approval_rulebook_20260930_1 Step 3 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json"
+              ]
+            },
+            {
+              "hash": "6887f04048dc868f6cff41d7228430c2ed8d52a2",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T06:51:39Z",
+              "message": "Gemini Supervisor checkpoint: work_action_approval_rulebook_20260930_1 Step 4 PASS",
+              "matchType": "both",
+              "files": [
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json",
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/state.json",
+                "M\tChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json"
+              ]
+            }
+          ]
+        },
+        "manifestEntries": [
+          {
+            "id": "commit_history_record",
+            "path": "ChatMachines/GeminiSupervisor/commit history/commit-history.md",
+            "authority": "secondary",
+            "category": "historical_interpretation"
+          },
+          {
+            "id": "lineage_git_log_snapshot",
+            "path": "ChatMachines/GeminiSupervisor/commit history/git-log.txt",
+            "authority": "primary_for_covered_git_facts",
+            "category": "historical_git_snapshot"
+          },
+          {
+            "id": "persisted_nonce_runs",
+            "path": "ChatMachines/GeminiSupervisor/runs",
+            "authority": "primary_for_persisted_run_state",
+            "category": "historical_execution_records"
+          },
+          {
+            "id": "retired_evaluation_documents",
+            "path": "ChatMachines/GeminiSupervisor/historical",
+            "authority": "historical_specification_evidence",
+            "category": "retired_specification"
+          },
+          {
+            "id": "agents_md",
+            "path": "ChatMachines/GeminiSupervisor/Agents.md",
+            "authority": "current_normative_specification",
+            "category": "current_specification_and_requirement_history"
+          },
+          {
+            "id": "runtime_source",
+            "path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "authority": "primary_current_implementation",
+            "category": "current_executable_and_implementation_history"
+          },
+          {
+            "id": "step3_evaluation",
+            "path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+            "authority": "current_step3_evaluation_contract",
+            "category": "current_evaluation_artifact_and_history"
+          },
+          {
+            "id": "supervisor_config",
+            "path": "ChatMachines/GeminiSupervisor/config.json",
+            "authority": "primary_current_configuration",
+            "category": "current_runtime_configuration_and_history"
+          },
+          {
+            "id": "state_machine_workflow",
+            "path": ".github/workflows/gemini-chat.yml",
+            "authority": "primary_current_orchestration",
+            "category": "current_execution_orchestration_and_history"
+          },
+          {
+            "id": "dependency_sync_workflow",
+            "path": ".github/workflows/gemini-supervisor-dependency-sync.yml",
+            "authority": "primary_current_maintenance_behavior",
+            "category": "current_dependency_maintenance"
+          },
+          {
+            "id": "dependency_map",
+            "path": "ChatMachines/GeminiSupervisor/dependency-map.json",
+            "authority": "primary_current_dependency_routing",
+            "category": "current_dependency_routing"
+          },
+          {
+            "id": "dependency_sync_sentinel",
+            "path": "ChatMachines/GeminiSupervisor/dependency-sync-sentinel.json",
+            "authority": "primary_current_guard_state",
+            "category": "current_dependency_guard"
+          },
+          {
+            "id": "supervisor_nextmessage",
+            "path": "ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json",
+            "authority": "primary_for_committed_trigger_payloads",
+            "category": "trigger_and_user_instruction_history"
+          },
+          {
+            "id": "work_action_approval_rulebook",
+            "path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+            "authority": "artifact_existence_primary_behavior_secondary",
+            "category": "requested_control_artifact"
+          },
+          {
+            "id": "live_ground_truth_skill",
+            "path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+            "authority": "specification_supporting_evidence",
+            "category": "requested_skill_artifact"
+          },
+          {
+            "id": "tests_directory",
+            "path": "ChatMachines/GeminiSupervisor/tests",
+            "authority": "artifact_evidence",
+            "category": "test_and_analysis_artifacts"
+          }
+        ],
+        "evidencePrecedenceGuidance": [
+          "Raw Git objects, diffs, tree state, and current executable source/workflows are stronger evidence of repository facts than generated narrative summaries.",
+          "Persisted nonce state/messages/store are primary evidence of what the Supervisor recorded during those runs, but model statements inside them remain testimony unless corroborated by repository/runtime evidence.",
+          "Agents.md and evaluation artifacts are evidence of specified or requested behavior; they do not alone prove executable enforcement.",
+          "commit-history.md is a secondary historical interpretation artifact and is known to contain semantic judgments that must not be treated as raw ground truth."
+        ]
+      }
+    },
+    "timestamp": "2026-10-02T03:28:21.230Z"
+  },
+  {
+    "round": 7,
+    "computation_id": "inspect_commit_count_and_list",
+    "purpose": "Check the exact count of commits and list milestones/ranges.",
+    "code": "const logText = context.files.find(f => f.metadata.archive_path.includes('live-supervisor-lineage.log')).content;\nconst commitBlocks = logText.split(/\\n(?=commit [0-9a-f]{40})/);\nconst commits = [];\n\nfor (const block of commitBlocks) {\n  const lines = block.trim().split('\\n');\n  const commitMatch = lines[0].match(/^commit ([0-9a-f]{40})/);\n  if (!commitMatch) continue;\n  const hash = commitMatch[1];\n  let author = '', authorDate = '', commitDate = '';\n  let i = 1;\n  while (i < lines.length && lines[i].length > 0) {\n    if (lines[i].startsWith('Author:')) author = lines[i].replace('Author:', '').trim();\n    if (lines[i].startsWith('AuthorDate:')) authorDate = lines[i].replace('AuthorDate:', '').trim();\n    if (lines[i].startsWith('CommitDate:')) commitDate = lines[i].replace('CommitDate:', '').trim();\n    i++;\n  }\n  while (i < lines.length && lines[i].trim() === '') i++;\n  const msg = lines[i] || '';\n  commits.push({ hash, author, authorDate, commitDate, msg });\n}\n\nreturn {\n  count: commits.length,\n  first5: commits.slice(0, 5),\n  last5: commits.slice(-5)\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "inspect_commit_count_and_list",
+      "ok": true,
+      "result": {
+        "count": 242,
+        "first5": [
+          {
+            "hash": "c0f0b0ca45d9099dd36459d4bbe9cff24cacadc0",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-29T11:37:57-07:00",
+            "commitDate": "2026-09-29T11:37:57-07:00",
+            "msg": "    Add GeminiChatGPTAppScript folder"
+          },
+          {
+            "hash": "fc0cedc22617036f17d049a204e7dfe265f9ec98",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-29T11:38:57-07:00",
+            "commitDate": "2026-09-29T11:38:57-07:00",
+            "msg": "    Add Gemini chat messages structure"
+          },
+          {
+            "hash": "34322f0abbe3c125f4f87765f5bd3d77c8664c0a",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-29T11:40:39-07:00",
+            "commitDate": "2026-09-29T11:40:39-07:00",
+            "msg": "    Add nextmessage JSON payload"
+          },
+          {
+            "hash": "042bf800c29a585b80aaa4bef30c21253ebec425",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-29T11:41:41-07:00",
+            "commitDate": "2026-09-29T11:41:41-07:00",
+            "msg": "    Add endpoint JSON fields"
+          },
+          {
+            "hash": "713cbfd3a5cbf48675f43a267a8d2468367e352b",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-29T11:42:34-07:00",
+            "commitDate": "2026-09-29T11:42:34-07:00",
+            "msg": "    Move messages into MessageStream"
+          }
+        ],
+        "last5": [
+          {
+            "hash": "344cc8c50e519ec71f13bcd729ed3663096045a2",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-10-01T17:08:09-07:00",
+            "commitDate": "2026-10-01T17:08:09-07:00",
+            "msg": "    Add GeminiSupervisor dependency group map"
+          },
+          {
+            "hash": "bc4459f1e0418f3dc7f662e2de703edb1f14c755",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-10-01T17:08:18-07:00",
+            "commitDate": "2026-10-01T17:08:18-07:00",
+            "msg": "    Add GeminiSupervisor dependency sync sentinel"
+          },
+          {
+            "hash": "b89919141004738305d9ebadeccc39065bfc1d51",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-10-01T17:09:24-07:00",
+            "commitDate": "2026-10-01T17:09:24-07:00",
+            "msg": "    Add standalone GeminiSupervisor dependency map"
+          },
+          {
+            "hash": "d369818ea4c7c34afe1fd6ec9c04a16d4650c812",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-10-01T17:10:25-07:00",
+            "commitDate": "2026-10-01T17:10:25-07:00",
+            "msg": "    Remove redundant GeminiSupervisor dependency group file"
+          },
+          {
+            "hash": "9b4c1a7c83e96e2883ccb6be665551ca0912c4c4",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-10-01T18:14:34-07:00",
+            "commitDate": "2026-10-01T18:14:34-07:00",
+            "msg": "    Add historical audit data source map"
+          }
+        ]
+      }
+    },
+    "timestamp": "2026-10-02T03:28:24.202Z"
+  },
+  {
+    "round": 8,
+    "computation_id": "analyze_all_commits_flow",
+    "purpose": "Analyze commit messages, dates, authors across all 242 commits",
+    "code": "const logText = context.files.find(f => f.metadata.archive_path.includes('live-supervisor-lineage.log')).content;\nconst commitBlocks = logText.split(/\\n(?=commit [0-9a-f]{40})/);\nconst commits = [];\n\nfor (const block of commitBlocks) {\n  const lines = block.trim().split('\\n');\n  const commitMatch = lines[0].match(/^commit ([0-9a-f]{40})/);\n  if (!commitMatch) continue;\n  const hash = commitMatch[1];\n  let author = '', authorDate = '', commitDate = '';\n  let i = 1;\n  while (i < lines.length && lines[i].length > 0) {\n    if (lines[i].startsWith('Author:')) author = lines[i].replace('Author:', '').trim();\n    if (lines[i].startsWith('AuthorDate:')) authorDate = lines[i].replace('AuthorDate:', '').trim();\n    if (lines[i].startsWith('CommitDate:')) commitDate = lines[i].replace('CommitDate:', '').trim();\n    i++;\n  }\n  while (i < lines.length && lines[i].trim() === '') i++;\n  const msg = lines[i] ? lines[i].trim() : '';\n  commits.push({ hash, author, authorDate, commitDate, msg });\n}\n\n// Group commits by author or date or key milestones\nconst authorCounts = {};\nfor (const c of commits) {\n  const authName = c.author.split('<')[0].trim();\n  authorCounts[authName] = (authorCounts[authName] || 0) + 1;\n}\n\n// Look at milestone commits\nconst milestones = commits.filter(c => \n  c.msg.includes('Rename') || \n  c.msg.includes('Agents.md') || \n  c.msg.includes('rulebook') || \n  c.msg.includes('ground-truth') || \n  c.msg.includes('manifest') || \n  c.msg.includes('dependency') || \n  c.msg.includes('step3') || \n  c.msg.includes('Step 3') ||\n  c.msg.includes('bootstrap') ||\n  c.msg.includes('checkpoint')\n);\n\nreturn {\n  totalCommits: commits.length,\n  authorCounts,\n  milestoneCount: milestones.length,\n  milestones: milestones.slice(0, 30)\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "analyze_all_commits_flow",
+      "ok": true,
+      "result": {
+        "totalCommits": 242,
+        "authorCounts": {
+          "BestNameYet": 183,
+          "github-actions[bot]": 59
+        },
+        "milestoneCount": 86,
+        "milestones": [
+          {
+            "hash": "5b7c2b70f48f122dfd256daad97a087aa3f282b4",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-29T13:55:07-07:00",
+            "commitDate": "2026-09-29T13:55:07-07:00",
+            "msg": "Rename chat machine folder to GeminiSupervisor"
+          },
+          {
+            "hash": "6b480df36a91cdfc44149228d0bb7cec999b5f7d",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-29T18:28:23-07:00",
+            "commitDate": "2026-09-29T18:28:23-07:00",
+            "msg": "Copy Step 3 test return schema from Agents.md sheet"
+          },
+          {
+            "hash": "20e1fc8a8e0871cb421bd6427cf9c26b10033629",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T00:53:17-07:00",
+            "commitDate": "2026-09-30T00:53:17-07:00",
+            "msg": "Add Agents.md to Gemini Supervisor"
+          },
+          {
+            "hash": "f6359a59901c40e7d1b42f59933d643180bbe7a7",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T01:11:14-07:00",
+            "commitDate": "2026-09-30T01:11:14-07:00",
+            "msg": "Rename Code (3).gs to Code.gs"
+          },
+          {
+            "hash": "3d941bcfe3f3c637e7a4f120721a92f7080fba4d",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T01:45:36-07:00",
+            "commitDate": "2026-09-30T01:45:36-07:00",
+            "msg": "Retrieve raw Agents.md from Drive"
+          },
+          {
+            "hash": "5ce3d0aad31e084302ddac00aab33e2eb445ad70",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T02:49:04-07:00",
+            "commitDate": "2026-09-30T02:49:04-07:00",
+            "msg": "Use folder lookup for Agents.md transfer"
+          },
+          {
+            "hash": "ce19acc66206e87c2a2eefaa9edbaa841c14ce0f",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T02:55:15-07:00",
+            "commitDate": "2026-09-30T02:55:15-07:00",
+            "msg": "Trigger Agents.md folder transfer"
+          },
+          {
+            "hash": "ef665db08051181f9ca421ecb576788031643367",
+            "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+            "authorDate": "2026-09-30T09:55:27Z",
+            "commitDate": "2026-09-30T09:55:27Z",
+            "msg": "Transfer Agents.md from Drive"
+          },
+          {
+            "hash": "e5951ebff19ff8f4cc4bd301ceb3e6f75c3c395f",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T02:58:54-07:00",
+            "commitDate": "2026-09-30T02:58:54-07:00",
+            "msg": "Trigger corrected Agents.md transfer"
+          },
+          {
+            "hash": "58b675628b31eeb8cbcd89b39070276f93250e97",
+            "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+            "authorDate": "2026-09-30T09:59:09Z",
+            "commitDate": "2026-09-30T09:59:09Z",
+            "msg": "Transfer Agents.md from Drive"
+          },
+          {
+            "hash": "7c62f3d81da1fe60ebe50f0424d848fa8b021c91",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T04:01:03-07:00",
+            "commitDate": "2026-09-30T04:01:03-07:00",
+            "msg": "Add Step 3 evaluation-doc patch utility"
+          },
+          {
+            "hash": "17488615fe44eaeec7655d2cd83e604cb3b62ec0",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T04:01:19-07:00",
+            "commitDate": "2026-09-30T04:01:19-07:00",
+            "msg": "Trigger Step 3 evaluation-doc patch"
+          },
+          {
+            "hash": "cc905efbc0f506fb5fa96c5ea105c8d67cbad5a5",
+            "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+            "authorDate": "2026-09-30T11:01:29Z",
+            "commitDate": "2026-09-30T11:01:29Z",
+            "msg": "Require Step 3 evaluation document reads"
+          },
+          {
+            "hash": "052043c791c100360c325c219db9ac243efae1d8",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T04:02:10-07:00",
+            "commitDate": "2026-09-30T04:02:10-07:00",
+            "msg": "Remove temporary Step 3 patch utility"
+          },
+          {
+            "hash": "af6a5ac41136a5c263d45f7d56cc4458f73577bd",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T04:02:24-07:00",
+            "commitDate": "2026-09-30T04:02:24-07:00",
+            "msg": "Remove temporary Step 3 patch trigger"
+          },
+          {
+            "hash": "7de06e65c05349c38f84ac9bc3cac32c5d3a7896",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T04:46:15-07:00",
+            "commitDate": "2026-09-30T04:46:15-07:00",
+            "msg": "Add Gemini Supervisor run bootstrap migration"
+          },
+          {
+            "hash": "67750564f40dadc5b9533b7c94953172f2498293",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T04:46:32-07:00",
+            "commitDate": "2026-09-30T04:46:32-07:00",
+            "msg": "Trigger Gemini Supervisor bootstrap migration"
+          },
+          {
+            "hash": "5660bd5e6a7c23ec00a89a2292b6bd2ab7d25f86",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T04:47:23-07:00",
+            "commitDate": "2026-09-30T04:47:23-07:00",
+            "msg": "Fix Gemini Supervisor bootstrap migration script"
+          },
+          {
+            "hash": "b5734a0dde52ab07469d7d33998f8da538048ce0",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T04:47:33-07:00",
+            "commitDate": "2026-09-30T04:47:33-07:00",
+            "msg": "Retry Gemini Supervisor bootstrap migration"
+          },
+          {
+            "hash": "1f773f109426ff37391b2ec23b01df74511f6c75",
+            "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+            "authorDate": "2026-09-30T11:47:43Z",
+            "commitDate": "2026-09-30T11:47:43Z",
+            "msg": "Add Gemini Supervisor run bootstrap procedure"
+          },
+          {
+            "hash": "60b8e66667fc3690f2b5f0a7cb10e6b9cb5cda60",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T04:52:49-07:00",
+            "commitDate": "2026-09-30T04:52:49-07:00",
+            "msg": "Remove Gemini Supervisor bootstrap migration trigger"
+          },
+          {
+            "hash": "4e40da9349106585f929cee46611aa4d0a17061f",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T04:53:08-07:00",
+            "commitDate": "2026-09-30T04:53:08-07:00",
+            "msg": "Remove Gemini Supervisor bootstrap migration script"
+          },
+          {
+            "hash": "d33bcb92f01955e5ae3bc71a5138a44fb5799fc5",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T10:27:35-07:00",
+            "commitDate": "2026-09-30T10:27:35-07:00",
+            "msg": "Begin bootstrap skill update procedure"
+          },
+          {
+            "hash": "71ced945a883ec37ce681c9ea1bed68efe726bb0",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T10:43:39-07:00",
+            "commitDate": "2026-09-30T10:43:39-07:00",
+            "msg": "Evaluate Agents.md against observed gate failures"
+          },
+          {
+            "hash": "a5d68e0f51159519022cef36fa16efbf24c13928",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T10:53:53-07:00",
+            "commitDate": "2026-09-30T10:53:53-07:00",
+            "msg": "Allow evaluator to revise Agents.md and runtime together"
+          },
+          {
+            "hash": "0c5120635e6ccb8b9ea7d98d6e37bb278acf5a4f",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T15:07:42-07:00",
+            "commitDate": "2026-09-30T15:07:42-07:00",
+            "msg": "Make Agents.md canonical for supervisor eval records"
+          },
+          {
+            "hash": "19b7be73a6b0e717759f839064d837005bb54cdf",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T15:09:23-07:00",
+            "commitDate": "2026-09-30T15:09:23-07:00",
+            "msg": "Make Agents.md authoritative for supervisor format"
+          },
+          {
+            "hash": "2f2896097e01a3052f7ce19ee346e0edad84c32d",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T15:54:10-07:00",
+            "commitDate": "2026-09-30T15:54:10-07:00",
+            "msg": "Ask Gemini to add turn-continuation rules to Agents.md"
+          },
+          {
+            "hash": "1639d4d092b4a33fbaabac5f6c6160b3fa1a7f78",
+            "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+            "authorDate": "2026-09-30T22:54:29Z",
+            "commitDate": "2026-09-30T22:54:29Z",
+            "msg": "Apply Gemini turn-continuation rules to Agents.md"
+          },
+          {
+            "hash": "1c7f29a471f24588cfd6a876289fa01c0c78ea89",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T16:27:01-07:00",
+            "commitDate": "2026-09-30T16:27:01-07:00",
+            "msg": "Submit Step 3 migration candidate for Gemini evaluation"
+          }
+        ]
+      }
+    },
+    "timestamp": "2026-10-02T03:28:27.570Z"
+  },
+  {
+    "round": 9,
+    "computation_id": "correlate_triggers_and_runs",
+    "purpose": "Find the trigger commit and bot execution commit for each of the 16 nonces.",
+    "code": "const logText = context.files.find(f => f.metadata.archive_path.includes('live-supervisor-lineage.log')).content;\nconst trigger = JSON.parse(context.files.find(f => f.metadata.archive_path.includes('historical-audit-trigger.json')).content);\nconst nonces = trigger.archive_selection.supervisor_run_nonces;\n\nconst commitBlocks = logText.split(/\\n(?=commit [0-9a-f]{40})/);\nconst commits = [];\n\nfor (let i = 0; i < commitBlocks.length; i++) {\n  const block = commitBlocks[i];\n  const lines = block.trim().split('\\n');\n  const commitMatch = lines[0].match(/^commit ([0-9a-f]{40})/);\n  if (!commitMatch) continue;\n  const hash = commitMatch[1];\n  let author = '', authorDate = '';\n  let j = 1;\n  while (j < lines.length && lines[j].length > 0) {\n    if (lines[j].startsWith('Author:')) author = lines[j].replace('Author:', '').trim();\n    if (lines[j].startsWith('AuthorDate:')) authorDate = lines[j].replace('AuthorDate:', '').trim();\n    j++;\n  }\n  while (j < lines.length && lines[j].trim() === '') j++;\n  const msg = lines[j] ? lines[j].trim() : '';\n  \n  const changedFiles = [];\n  while (j < lines.length) {\n    const line = lines[j].trim();\n    if (line.match(/^[A-Z0-9]{1,4}\\t/)) {\n      changedFiles.push(line);\n    }\n    j++;\n  }\n  \n  commits.push({ index: i, hash, author, authorDate, msg, changedFiles });\n}\n\n// For each nonce, find all associated commits (both trigger commits and bot advancement commits)\nconst nonceDetails = {};\nfor (const nonce of nonces) {\n  const matched = commits.filter(c => \n    c.msg.includes(nonce) || \n    c.changedFiles.some(f => f.includes(nonce))\n  );\n  // Also check if the immediately preceding commit triggered it\n  const firstCommit = matched[0];\n  let preceding = null;\n  if (firstCommit && firstCommit.index > 0) {\n    preceding = commits[firstCommit.index - 1];\n  }\n  nonceDetails[nonce] = {\n    matchedCommits: matched.map(m => ({ index: m.index, hash: m.hash, author: m.author, authorDate: m.authorDate, msg: m.msg })),\n    precedingCommit: preceding ? { index: preceding.index, hash: preceding.hash, author: preceding.author, authorDate: preceding.authorDate, msg: preceding.msg } : null\n  };\n}\n\nreturn nonceDetails;",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "correlate_triggers_and_runs",
+      "ok": true,
+      "result": {
+        "agents_schema_migration_20260930_1": {
+          "matchedCommits": [
+            {
+              "index": 157,
+              "hash": "cae8729672b28d6ec1699a2a428037976ecd2283",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T23:18:22Z",
+              "msg": "Advance Gemini Supervisor run"
+            },
+            {
+              "index": 159,
+              "hash": "81ba7de36b9854861234b23f9bdc96eeaeb3b510",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T23:19:14Z",
+              "msg": "Advance Gemini Supervisor run"
+            },
+            {
+              "index": 161,
+              "hash": "7ffb39f6e4fc62be1371a34851c73ad6c99ed9fc",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T23:20:03Z",
+              "msg": "Advance Gemini Supervisor run"
+            },
+            {
+              "index": 163,
+              "hash": "df70083417964c0e28969e1ee481fbab3320e15d",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T23:27:32Z",
+              "msg": "Advance Gemini Supervisor run"
+            },
+            {
+              "index": 165,
+              "hash": "1b5139c2829d5932d1ca3604434893cb99fd1860",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T23:32:53Z",
+              "msg": "Advance Gemini Supervisor run"
+            },
+            {
+              "index": 168,
+              "hash": "aa392663bc4e0289c6b45093839aac264724524e",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T01:17:00Z",
+              "msg": "Gemini Supervisor checkpoint: agents_schema_migration_20260930_1 Step 4 PASS"
+            }
+          ],
+          "precedingCommit": {
+            "index": 156,
+            "hash": "c0168d1bf0305087eef0cdf8a2c90f81872d9575",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T16:18:04-07:00",
+            "msg": "Start Agents schema migration run"
+          }
+        },
+        "demo_20260930T155153_eadd5e5248": {
+          "matchedCommits": [
+            {
+              "index": 110,
+              "hash": "23c08f97b0750db4c9adf19e0b2ccf4cd36e253b",
+              "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+              "authorDate": "2026-09-30T08:53:16-07:00",
+              "msg": "Trigger Gemini Supervisor demo run demo_20260930T155153_eadd5e5248"
+            },
+            {
+              "index": 111,
+              "hash": "55569517a9c821903a7393691cf625f8b44cb232",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T15:56:50Z",
+              "msg": "Advance Gemini Supervisor run"
+            }
+          ],
+          "precedingCommit": {
+            "index": 109,
+            "hash": "4e40da9349106585f929cee46611aa4d0a17061f",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T04:53:08-07:00",
+            "msg": "Remove Gemini Supervisor bootstrap migration script"
+          }
+        },
+        "ground_truth_verification_skill_20260930_1": {
+          "matchedCommits": [
+            {
+              "index": 172,
+              "hash": "ead5cb7d8bc326cd1c021c667a38fe8b0fd6aa67",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T01:58:14Z",
+              "msg": "Gemini Supervisor checkpoint: ground_truth_verification_skill_20260930_1 Step 0 PASS"
+            },
+            {
+              "index": 174,
+              "hash": "847d9ac1d71f01ff7a062df26e0f7d990cba5d67",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T01:59:02Z",
+              "msg": "Gemini Supervisor checkpoint: ground_truth_verification_skill_20260930_1 Step 1 PASS"
+            },
+            {
+              "index": 176,
+              "hash": "a2af426d81883ba646dd064ff42025707fd77b3f",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T01:59:48Z",
+              "msg": "Gemini Supervisor checkpoint: ground_truth_verification_skill_20260930_1 Step 2 PASS"
+            },
+            {
+              "index": 178,
+              "hash": "bbddde73638fc6c44fc396926deafb8642cf5acd",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T02:05:31Z",
+              "msg": "Gemini Supervisor checkpoint: ground_truth_verification_skill_20260930_1 Step 3 PASS"
+            },
+            {
+              "index": 181,
+              "hash": "cbce2976f9787f07860e14c2fbbbde3815f7340e",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T02:08:28Z",
+              "msg": "Gemini Supervisor checkpoint: ground_truth_verification_skill_20260930_1 Step 4 PASS"
+            }
+          ],
+          "precedingCommit": {
+            "index": 171,
+            "hash": "ceb6df1cd00c0e52982d774aed5a4777976cfee0",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T18:57:56-07:00",
+            "msg": "Submit ground-truth verification skill request"
+          }
+        },
+        "live_ground_truth_integration_20261001_1": {
+          "matchedCommits": [
+            {
+              "index": 200,
+              "hash": "99df3af5b07b37925061cf2b7cfb6f936de4edfb",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T07:27:02Z",
+              "msg": "Gemini Supervisor checkpoint: live_ground_truth_integration_20261001_1 Step 0 PASS"
+            },
+            {
+              "index": 202,
+              "hash": "68634eeb5465a96f09153d4cc8eb0e2e4ab22641",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T07:27:46Z",
+              "msg": "Gemini Supervisor checkpoint: live_ground_truth_integration_20261001_1 Step 1 PASS"
+            },
+            {
+              "index": 204,
+              "hash": "c66f3b5d92b0f67126dcd0c0b7c9b273e621cf0e",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T07:28:29Z",
+              "msg": "Gemini Supervisor checkpoint: live_ground_truth_integration_20261001_1 Step 2 PASS"
+            },
+            {
+              "index": 206,
+              "hash": "08d43df2b760610655988a23a72a7a53e033b276",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T07:31:10Z",
+              "msg": "Gemini Supervisor checkpoint: live_ground_truth_integration_20261001_1 Step 3 PASS"
+            },
+            {
+              "index": 210,
+              "hash": "b8272c3540bcb7950e23a91014c78acde92d69ae",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T07:51:12Z",
+              "msg": "Gemini Supervisor checkpoint: live_ground_truth_integration_20261001_1 Step 4 PASS"
+            }
+          ],
+          "precedingCommit": {
+            "index": 199,
+            "hash": "956554df41149e4dd3b9d03b76dc2aa24228e911",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-10-01T00:26:44-07:00",
+            "msg": "Submit live ground-truth integration objective"
+          }
+        },
+        "merge_step3_tsr_evaluation_heuristic_20261001_1": {
+          "matchedCommits": [
+            {
+              "index": 218,
+              "hash": "75c01338250a9150d5f6b0b9128f8c5293d391ba",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:13:03Z",
+              "msg": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 0 PASS"
+            },
+            {
+              "index": 220,
+              "hash": "d3c08cf6d3fa625056a87df3629759e059b831c3",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:13:51Z",
+              "msg": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 1 PASS"
+            },
+            {
+              "index": 222,
+              "hash": "1b51a050a8a5f61eeb6e6cdcb67b35fa3f0a335f",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:14:48Z",
+              "msg": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 2 PASS"
+            },
+            {
+              "index": 224,
+              "hash": "1422c317a97fecc2b8944e1ef94cf9170e851eab",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:17:53Z",
+              "msg": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 3 PASS"
+            },
+            {
+              "index": 228,
+              "hash": "9e614f98660304c6dbcaec02122654cb009e0f7b",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:35:41Z",
+              "msg": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 4 FAIL"
+            },
+            {
+              "index": 230,
+              "hash": "256de71f652ca331f420e5a02bdc5a35a2236a11",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T20:37:43Z",
+              "msg": "Gemini Supervisor checkpoint: merge_step3_tsr_evaluation_heuristic_20261001_1 Step 4 PASS"
+            }
+          ],
+          "precedingCommit": {
+            "index": 217,
+            "hash": "809a8226551b1db156e280f4bb3a045dbc987f4e",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-10-01T13:12:41-07:00",
+            "msg": "Submit Step 0 merged Step 3 evaluation corpus request"
+          }
+        },
+        "role_separation_20260930T181400": {
+          "matchedCommits": [
+            {
+              "index": 132,
+              "hash": "b0d4d9fd425adb4a39b3b267c5de66dd7c80b844",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T18:25:02Z",
+              "msg": "Advance Gemini Supervisor run"
+            }
+          ],
+          "precedingCommit": {
+            "index": 131,
+            "hash": "457f251ce37ed3e3783997a3b369be9b937eb64b",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T11:22:41-07:00",
+            "msg": "Add model-role gate requirements"
+          }
+        },
+        "skill_bootstrap_update_20260930T170700": {
+          "matchedCommits": [
+            {
+              "index": 120,
+              "hash": "f3f6a5c4985edf0210fae5d71c6867f3633971dd",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T17:30:54Z",
+              "msg": "Advance Gemini Supervisor run"
+            }
+          ],
+          "precedingCommit": {
+            "index": 119,
+            "hash": "d33bcb92f01955e5ae3bc71a5138a44fb5799fc5",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T10:27:35-07:00",
+            "msg": "Begin bootstrap skill update procedure"
+          }
+        },
+        "skill_interface_20260930T155700": {
+          "matchedCommits": [
+            {
+              "index": 113,
+              "hash": "36d40cce574fe1731960687a64100ef27914b74b",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T16:01:02Z",
+              "msg": "Advance Gemini Supervisor run"
+            }
+          ],
+          "precedingCommit": {
+            "index": 112,
+            "hash": "9d3682d8370ff7032a6db5bdbb81976a25be7c7d",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T08:58:38-07:00",
+            "msg": "Consult Gemini Supervisor on skill interface design"
+          }
+        },
+        "skill_reeval_20260930T170100": {
+          "matchedCommits": [
+            {
+              "index": 115,
+              "hash": "ff29c1d9d9d9bd2de2e43d8254807b47d2380ed4",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T17:05:03Z",
+              "msg": "Advance Gemini Supervisor run"
+            }
+          ],
+          "precedingCommit": {
+            "index": 114,
+            "hash": "e7a69ed3545c108ccac01494c9bbcd02c3fe1243",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T10:01:59-07:00",
+            "msg": "Trigger Gemini Supervisor skill reevaluation"
+          }
+        },
+        "skill_revision_20260930T180700": {
+          "matchedCommits": [
+            {
+              "index": 128,
+              "hash": "50f9074948a87de0501fc55e1ba0fa76743999fa",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T18:10:31Z",
+              "msg": "Advance Gemini Supervisor run"
+            }
+          ],
+          "precedingCommit": {
+            "index": 127,
+            "hash": "43474351271f6509f3a7815226ad7bfc45118b0d",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T11:09:07-07:00",
+            "msg": "Start skill revision repo run"
+          }
+        },
+        "skill_revision_schema_reject_20260930T181100": {
+          "matchedCommits": [
+            {
+              "index": 130,
+              "hash": "eebea6f2772239c508bc294db735f81aeb052379",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T18:12:48Z",
+              "msg": "Advance Gemini Supervisor run"
+            }
+          ],
+          "precedingCommit": {
+            "index": 129,
+            "hash": "307adf67b3ce959542af79fde1cbb0b8e6284cf0",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T11:10:54-07:00",
+            "msg": "Test Step 0 schema rejection"
+          }
+        },
+        "step0_raw_fail_20260930T132500": {
+          "matchedCommits": [
+            {
+              "index": 135,
+              "hash": "0cf99324a660e1f3ae0150eb76d647f9796d3a49",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T20:29:23Z",
+              "msg": "Advance Gemini Supervisor run"
+            }
+          ],
+          "precedingCommit": {
+            "index": 134,
+            "hash": "8cb849abacd36805afc9fe43f48dc5a8b2f246ed",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T13:27:07-07:00",
+            "msg": "Test raw verbatim Step 0 failure"
+          }
+        },
+        "step0_raw_fail_20260930T1325_2": {
+          "matchedCommits": [
+            {
+              "index": 138,
+              "hash": "efad3a636163d6eeda47bc453058a5f9a0850c8b",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T21:02:40Z",
+              "msg": "Advance Gemini Supervisor run"
+            }
+          ],
+          "precedingCommit": {
+            "index": 137,
+            "hash": "6ab7ec33d278c5b0e3f376edd42683b1a4842429",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T14:02:31-07:00",
+            "msg": "Test raw user prompt rejection at Step 0"
+          }
+        },
+        "step0_raw_fail_20260930_3": {
+          "matchedCommits": [
+            {
+              "index": 141,
+              "hash": "286a7cd1c7b0debe6c71eafb5e3bae15d40582fe",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T21:13:31Z",
+              "msg": "Advance Gemini Supervisor run"
+            },
+            {
+              "index": 143,
+              "hash": "c505bd97e4cd32fd5df9a8c8043f0ccd0f17f4b2",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T21:15:51Z",
+              "msg": "Advance Gemini Supervisor run"
+            }
+          ],
+          "precedingCommit": {
+            "index": 140,
+            "hash": "ff7695e8635562f7cbd30013ddca5050719564aa",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T14:13:15-07:00",
+            "msg": "Test raw Step 0 failure after validation system-message change"
+          }
+        },
+        "step0_raw_fail_20260930_4": {
+          "matchedCommits": [
+            {
+              "index": 148,
+              "hash": "2759e1c5113ec40f166de49887f22f191781adba",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T22:11:41Z",
+              "msg": "Advance Gemini Supervisor run"
+            },
+            {
+              "index": 150,
+              "hash": "5f1967f5ea348012cf4e921a7759225b71d69806",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T22:13:59Z",
+              "msg": "Advance Gemini Supervisor run"
+            },
+            {
+              "index": 151,
+              "hash": "a405f5b68df6d5d34b75d97b1ccf141787b6d19c",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-09-30T22:14:50Z",
+              "msg": "Advance Gemini Supervisor run"
+            }
+          ],
+          "precedingCommit": {
+            "index": 147,
+            "hash": "df3910ee89022b89ca160066b0936419d3ad0f81",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T15:11:21-07:00",
+            "msg": "Submit raw Step 0 test message"
+          }
+        },
+        "work_action_approval_rulebook_20260930_1": {
+          "matchedCommits": [
+            {
+              "index": 189,
+              "hash": "2c7ffdd7e18f5e8ae10ebe056d5aa4248daf1024",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T06:41:09Z",
+              "msg": "Gemini Supervisor checkpoint: work_action_approval_rulebook_20260930_1 Step 0 PASS"
+            },
+            {
+              "index": 191,
+              "hash": "6ff04156ac14cabf13e03733e43dd492e934f9a1",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T06:42:06Z",
+              "msg": "Gemini Supervisor checkpoint: work_action_approval_rulebook_20260930_1 Step 1 PASS"
+            },
+            {
+              "index": 193,
+              "hash": "f6135b33b94d11f4f5881f2402e5cbdcdb2be578",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T06:42:59Z",
+              "msg": "Gemini Supervisor checkpoint: work_action_approval_rulebook_20260930_1 Step 2 PASS"
+            },
+            {
+              "index": 195,
+              "hash": "fdd7195919aa7446f1dc2f21203bccbf0cb264cd",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T06:45:26Z",
+              "msg": "Gemini Supervisor checkpoint: work_action_approval_rulebook_20260930_1 Step 3 PASS"
+            },
+            {
+              "index": 198,
+              "hash": "6887f04048dc868f6cff41d7228430c2ed8d52a2",
+              "author": "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+              "authorDate": "2026-10-01T06:51:39Z",
+              "msg": "Gemini Supervisor checkpoint: work_action_approval_rulebook_20260930_1 Step 4 PASS"
+            }
+          ],
+          "precedingCommit": {
+            "index": 188,
+            "hash": "eb41706dc7232c5399f66881398a7578110339cd",
+            "author": "BestNameYet <samuel.john.nixon@gmail.com>",
+            "authorDate": "2026-09-30T23:40:48-07:00",
+            "msg": "Submit Work action-approval rulebook request"
+          }
+        }
+      }
+    },
+    "timestamp": "2026-10-02T03:28:32.053Z"
+  },
+  {
+    "round": 10,
+    "computation_id": "extract_architectural_phases",
+    "purpose": "Group the 242 commits into distinct architectural phases and milestone shifts.",
+    "code": "const logText = context.files.find(f => f.metadata.archive_path.includes('live-supervisor-lineage.log')).content;\nconst commitBlocks = logText.split(/\\n(?=commit [0-9a-f]{40})/);\nconst commits = [];\n\nfor (let i = 0; i < commitBlocks.length; i++) {\n  const block = commitBlocks[i];\n  const lines = block.trim().split('\\n');\n  const commitMatch = lines[0].match(/^commit ([0-9a-f]{40})/);\n  if (!commitMatch) continue;\n  const hash = commitMatch[1];\n  let author = '', authorDate = '';\n  let j = 1;\n  while (j < lines.length && lines[j].length > 0) {\n    if (lines[j].startsWith('Author:')) author = lines[j].replace('Author:', '').trim();\n    if (lines[j].startsWith('AuthorDate:')) authorDate = lines[j].replace('AuthorDate:', '').trim();\n    j++;\n  }\n  while (j < lines.length && lines[j].trim() === '') j++;\n  const msg = lines[j] ? lines[j].trim() : '';\n  \n  const changedFiles = [];\n  while (j < lines.length) {\n    const line = lines[j].trim();\n    if (line.match(/^[A-Z0-9]{1,4}\\t/)) {\n      changedFiles.push(line);\n    }\n    j++;\n  }\n  \n  commits.push({ index: i, hash, author, authorDate, msg, changedFiles });\n}\n\n// We can characterize key phases:\n// 1. Initial GeminiChatGPTAppScript inception: index 0 to 7 (c0f0b0c to ff80cca)\n// 2. Rename to GeminiSupervisor & Evaluator Contract Definitions: index 8 to 36 (5b7c2b7 to 89a84da)\n// 3. Drive / AppsScript bridge & GitHub node runner transition: index 37 to 82 (20e1fc8 to da7a445...)\n// 4. Standalone evaluator loop & self-evaluation: index 70 to 109\n// 5. Run-scoped architecture & nonced execution runs: index 99 to 216\n// 6. Step 3 evaluation consolidation, manifest & dependency sync architecture: index 217 to 241\n\nreturn {\n  phase1_predecessor: commits.slice(0, 8).map(c => ({ idx: c.index, hash: c.hash.slice(0, 8), msg: c.msg, date: c.authorDate })),\n  phase2_rename_and_evaldefs: { start: commits[8].msg, end: commits[36].msg, count: 29 },\n  totalCommits: commits.length\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "extract_architectural_phases",
+      "ok": true,
+      "result": {
+        "phase1_predecessor": [
+          {
+            "idx": 0,
+            "hash": "c0f0b0ca",
+            "msg": "Add GeminiChatGPTAppScript folder",
+            "date": "2026-09-29T11:37:57-07:00"
+          },
+          {
+            "idx": 1,
+            "hash": "fc0cedc2",
+            "msg": "Add Gemini chat messages structure",
+            "date": "2026-09-29T11:38:57-07:00"
+          },
+          {
+            "idx": 2,
+            "hash": "34322f0a",
+            "msg": "Add nextmessage JSON payload",
+            "date": "2026-09-29T11:40:39-07:00"
+          },
+          {
+            "idx": 3,
+            "hash": "042bf800",
+            "msg": "Add endpoint JSON fields",
+            "date": "2026-09-29T11:41:41-07:00"
+          },
+          {
+            "idx": 4,
+            "hash": "713cbfd3",
+            "msg": "Move messages into MessageStream",
+            "date": "2026-09-29T11:42:34-07:00"
+          },
+          {
+            "idx": 5,
+            "hash": "3b8dea0e",
+            "msg": "Remove old messages location",
+            "date": "2026-09-29T11:42:39-07:00"
+          },
+          {
+            "idx": 6,
+            "hash": "7375605c",
+            "msg": "Add Gemini message stream processor",
+            "date": "2026-09-29T11:44:57-07:00"
+          },
+          {
+            "idx": 7,
+            "hash": "ff80cca7",
+            "msg": "Add Apps Script Gemini caller with conversation shapes",
+            "date": "2026-09-29T11:50:58-07:00"
+          }
+        ],
+        "phase2_rename_and_evaldefs": {
+          "start": "Rename chat machine folder to GeminiSupervisor",
+          "end": "Add Agents.md to Gemini Supervisor",
+          "count": 29
+        },
+        "totalCommits": 242
+      }
+    },
+    "timestamp": "2026-10-02T03:28:36.220Z"
+  }
+]
