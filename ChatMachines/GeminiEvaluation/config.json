@@ -22,59 +22,77 @@
   "request_timeout_ms": 180000,
   "evaluation_mode": "generic",
   "generic_inputs": [
-    {"key":"runtime_spec","type":"file","path":"hierarchical-runtime-request/spec.json"},
-    {"key":"hierarchical_runtime_config","type":"file","path":"hierarchical-runtime/config.json"},
-    {"key":"hierarchical_runtime_js","type":"file","path":"hierarchical-runtime/audit.js"},
-    {"key":"gemini_supervisor_manifest","type":"file","path":"../GeminiSupervisor/MANIFEST.md"},
-    {"key":"gemini_supervisor_dependency_map","type":"file","path":"../GeminiSupervisor/dependency-map.json"},
-    {"key":"gemini_supervisor_shared_config","type":"file","path":"../GeminiSupervisor/config.json"},
-    {"key":"gemini_supervisor_workflow","type":"file","path":"../../.github/workflows/gemini-chat.yml"}
+    {"key":"stage1_final_inventory","type":"file","path":"evaluations/stage1_current_feature_inventory_20261002_1/execution/final.json"},
+    {"key":"agents_contract","type":"file","path":"../GeminiSupervisor/Agents.md"},
+    {"key":"runtime_source","type":"file","path":"../GeminiSupervisor/send-to-gemini.js"},
+    {"key":"manifest","type":"file","path":"../GeminiSupervisor/MANIFEST.md"},
+    {"key":"readme","type":"file","path":"../GeminiSupervisor/README.md"}
   ],
-  "evaluation_heuristic": "STAGE-1 CONFIGURATION PLANNING TASK. Prepare the first use of the generic hierarchical evaluation runtime against the CURRENT GeminiSupervisor implementation. The later Stage-1 run must produce a canonical inventory of features and behaviors actually implemented now. This planning run must NOT perform that inventory. Use runtime_spec plus hierarchical_runtime_config and hierarchical_runtime_js as the authoritative runtime/configurable surface. Use the GeminiSupervisor manifest, dependency map, shared config, and workflow to determine the exact repository corpus the Stage-1 runtime should consume. Decide which current files are authoritative implementation evidence, which supporting files should be included, and which historical, generated, persisted-run, or obsolete files should be excluded or optionally sampled. Include external workflow files when they materially implement current behavior. Propose a COMPLETE Stage-1 config.json compatible with audit.js. The proposed config must set concrete values where supportable, including B rules, divider.max_tokens, evaluator model/task/criteria, evaluator response contracts, normalization, mechanical acceptance, retry behavior, termination, failed-b stopping policy, provenance, and program_return envelope. The Stage-1 evaluator response contracts and final feature-inventory return schema belong INSIDE proposed_config.content. Configure B=0 to extract implementation-backed feature records from current source evidence. Configure B>0 to merge, deduplicate, normalize, and consolidate those feature records while preserving proof/provenance. Stage-1 must identify distinct implemented features, behaviors, control mechanisms, state transitions, integrations, persistence mechanisms, evaluation mechanisms, and other current capabilities. Every retained feature must be supported by current-repository evidence. Stage-1 must not search for historical missing requirements, infer historical intent, decide whether a feature should exist, or classify absent behavior as a defect. The terminal round uses the ordinary B>0 reduction path; do not create a separate final evaluator. Recommend exact corpus construction/order and serialization into runtime context. Planning nonce: stage1_current_feature_inventory_20261002_1. Proposed config target: ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1/config.json. Return STRICT valid JSON only. proposed_config.content must be a native JSON object, not serialized JSON text.",
+  "evaluation_heuristic": "LIVE GROUND-TRUTH FULL IMPLEMENTATION DESIGN. Analyze exactly the five supplied artifacts: the final Stage-1 current feature inventory, current Agents.md contract, current send-to-gemini.js runtime source, current MANIFEST.md, and current README.md. Treat runtime_source as the actual implementation under test; treat agents_contract as the governing intended contract; use stage1_final_inventory as a consolidated map of currently observed capabilities; use MANIFEST and README as current documentation/operational context. Do not silently import behavior not supported by these inputs. The objective is to determine how Gemini Supervisor can fully and mechanically implement live ground-truth verification so that execution/completion/status claims cannot pass merely because an agent says it read, checked, ran, wrote, committed, pushed, or observed something. Distinguish existing implementation from proposed additions. Evaluate whether all evidence-bearing reads/observations should be forced through a programmatic evidence gateway that logs each read/query/tool observation; whether an append-only per-run observation ledger should record target, operation, timestamp, exact ref/version, content hash, optional bounded excerpt, result status, claim IDs, and provenance; whether the ledger should be hash-chained and/or anchored by Git commits/checkpoints; and compare per-read commits, batched checkpoint commits, hash-chain-only, and hybrid approaches. Design a non-bypassable binding from model claims to runtime-generated observation IDs so model-authored evidence text alone is never authoritative. Address direct fs/git/API reads that might bypass a gateway and propose deterministic enforcement such as source-level wrappers plus AST/static checks or runtime capability boundaries. Also design a randomized adversarial test harness: select hidden questions from live repository/runtime state after the model's prompt is formed, require answers whose truth can be deterministically checked, include stale-memory traps, nonexistent paths, dirty/untracked files, exact-content questions, commit/ref questions, partial-completion modifiers, and intentionally contradictory self-reports. Propose a reproducible random-seed strategy and persist the seed/questions/oracles after the attempt so tests are auditable without exposing them beforehand. Include at least 16 concrete sample randomized test cases/questions with setup, hidden oracle, expected verification behavior, and pass/fail condition. Recommend exact source-level components/functions/data structures, Agents.md contract changes, persistence schema changes, workflow/commit changes if needed, README/MANIFEST changes, migration order, deterministic acceptance tests, and failure modes. Prefer minimal trusted-computing-base mechanisms that are enforceable by code rather than prose. Explicitly identify what current live-ground-truth behavior already exists and what remains incomplete. Return STRICT valid JSON only matching the configured schema.",
   "evaluation_output_schema": {
-    "response_type": "stage1_feature_inventory_configuration_plan",
-    "nonce": "stage1_current_feature_inventory_20261002_1",
-    "objective": "string",
-    "input_plan": [
-      {
-        "path": "string",
-        "classification": "required | supporting | exclude | optional_sample",
-        "purpose": "string",
-        "reason": "string",
-        "serialization_order": 0
-      }
-    ],
-    "corpus_construction": {
-      "root_scope": "string",
-      "ordering_rule": "string",
-      "serialization_format": "string",
-      "boundary_guidance": "string",
-      "excluded_classes": ["string"]
+    "response_type": "live_ground_truth_full_implementation_design",
+    "nonce": "live_ground_truth_full_implementation_20261002_1",
+    "executive_summary": "string",
+    "current_state": {
+      "already_implemented": [{"capability":"string","evidence":["string"],"mechanical_or_policy":"mechanical | policy | mixed"}],
+      "incomplete_or_bypassable": [{"gap":"string","evidence":["string"],"consequence":"string"}]
     },
-    "proposed_config": {
-      "target_path": "ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1/config.json",
-      "content": {}
+    "design_invariants": ["string"],
+    "architecture_options": [{"name":"string","mechanism":"string","advantages":["string"],"disadvantages":["string"],"failure_or_bypass_risks":["string"]}],
+    "recommended_architecture": {
+      "name": "string",
+      "trusted_computing_base": ["string"],
+      "components": [{"component":"string","responsibility":"string","inputs":["string"],"outputs":["string"]}],
+      "execution_flow": ["string"],
+      "non_bypassability_strategy": ["string"]
     },
-    "runtime_invocation": {
-      "runtime_file": "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
-      "input_construction": "string",
-      "config_loading": "string",
-      "expected_terminal_behavior": "string"
+    "observation_ledger": {
+      "storage_path_pattern": "string",
+      "append_only_strategy": "string",
+      "record_schema": {},
+      "hash_chain_strategy": "string",
+      "commit_anchor_strategy": "string",
+      "retention_and_excerpt_policy": "string"
     },
-    "configuration_rationale": [
-      {
-        "setting": "string",
-        "value": "string",
-        "reason": "string"
-      }
-    ],
-    "unresolved_decisions": [
-      {
-        "setting": "string",
-        "reason": "string",
-        "recommended_resolution": "string"
-      }
-    ]
+    "claim_binding": {
+      "claim_to_observation_mechanism": "string",
+      "required_runtime_fields": ["string"],
+      "supervisory_gate_rules": ["string"],
+      "rejection_conditions": ["string"]
+    },
+    "read_and_tool_interception": {
+      "operations_that_must_be_intercepted": ["string"],
+      "wrapper_or_gateway_functions": [{"name":"string","purpose":"string"}],
+      "direct_access_bypass_controls": ["string"],
+      "static_or_ast_checks": ["string"]
+    },
+    "commit_and_provenance_strategy": {
+      "recommended_model": "string",
+      "why": "string",
+      "per_read_commit_assessment": "string",
+      "batched_commit_assessment": "string",
+      "hash_chain_only_assessment": "string",
+      "hybrid_assessment": "string"
+    },
+    "randomized_adversarial_test_harness": {
+      "generation_strategy": "string",
+      "seed_strategy": "string",
+      "when_questions_are_selected": "string",
+      "oracle_generation": "string",
+      "anti_leakage_strategy": "string",
+      "persistence_strategy": "string",
+      "test_categories": ["string"],
+      "sample_tests": [{"test_id":"string","category":"string","setup":"string","question":"string","hidden_oracle":"string","expected_verification_behavior":"string","pass_condition":"string"}]
+    },
+    "source_change_plan": [{"file":"string","symbol_or_section":"string","change":"string","reason":"string","deterministic_check":"string"}],
+    "agents_contract_changes": [{"section":"string","change":"string","enforced_by":"string"}],
+    "persistence_and_schema_changes": [{"artifact":"string","change":"string","reason":"string"}],
+    "workflow_changes": [{"file":"string","change":"string","reason":"string"}],
+    "documentation_changes": [{"file":"string","change":"string"}],
+    "deterministic_acceptance_tests": [{"test":"string","setup":"string","expected":"string"}],
+    "implementation_order": [{"order":0,"change":"string","dependency":"string","completion_evidence":"string"}],
+    "known_failure_modes": [{"failure_mode":"string","mitigation":"string"}],
+    "unresolved_questions": [{"question":"string","recommended_resolution":"string"}]
   },
   "generic_messages_file": "generic-evaluator-messages.json",
   "generic_reuse_message_history": false,
