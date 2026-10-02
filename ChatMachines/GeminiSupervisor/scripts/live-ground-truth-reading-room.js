@@ -9,7 +9,6 @@ const supervisorRoot = path.join(repoRoot, 'ChatMachines/GeminiSupervisor');
 const sourcePath = path.join(supervisorRoot, 'Agents.md');
 const requestPath = path.join(supervisorRoot, 'live-ground-truth/read-request.json');
 const readingRoom = path.join(supervisorRoot, 'live-ground-truth/reading-room');
-const baselineRoom = path.join(supervisorRoot, 'live-ground-truth/baselines');
 
 const DOC_NAME = 'Agents.reader.json';
 const PLACEHOLDER_KEY = '^MISSING_KEY^';
@@ -34,18 +33,17 @@ function gitBlobSha(bytes) {
   return crypto.createHash('sha1').update(header).update(bytes).digest('hex');
 }
 
-function projectText(bytes, sourceCommitSha) {
+function projectAgents() {
+  const bytes = fs.readFileSync(sourcePath);
   const text = bytes.toString('utf8');
   const items = [];
   const re = /(.*?)(\r\n|\n|\r|$)/g;
   let match;
-  let lineNumber = 1;
 
   while ((match = re.exec(text)) !== null) {
     if (match[0] === '' && re.lastIndex === text.length) break;
     items.push({
       type: 'content',
-      line_number: lineNumber++,
       text: match[1],
       eol: match[2]
     });
@@ -55,11 +53,7 @@ function projectText(bytes, sourceCommitSha) {
   return {
     doc_id: 'agents',
     canonical_path: 'ChatMachines/GeminiSupervisor/Agents.md',
-    format: 'text',
-    source_provenance: {
-      source_blob_sha: gitBlobSha(bytes),
-      source_commit_sha: sourceCommitSha
-    },
+    source_blob_sha: gitBlobSha(bytes),
     items
   };
 }
@@ -68,7 +62,6 @@ function substantial(item) {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
   const text = typeof item.text === 'string' ? item.text.trim() : '';
   if (!text) return false;
-  if (/^[{}\[\],:]+$/.test(text)) return false;
   return text.length >= 4;
 }
 
@@ -118,14 +111,13 @@ function validateCommitSha(value) {
   return value.toLowerCase();
 }
 
-function pathsFor(requestCommitSha) {
-  const sha = validateCommitSha(requestCommitSha);
+function pathsFor(commitSha) {
+  const sha = validateCommitSha(commitSha);
   return {
     canonical: path.join(readingRoom, DOC_NAME),
     active: path.join(readingRoom, `${DOC_NAME}-${sha}`),
     failed: path.join(readingRoom, `${DOC_NAME}-${sha}-FAILED`),
-    pass: path.join(readingRoom, `${DOC_NAME}-${sha}-PASS`),
-    baseline: path.join(baselineRoom, `${DOC_NAME}-${sha}.json`)
+    pass: path.join(readingRoom, `${DOC_NAME}-${sha}-PASS`)
   };
 }
 
@@ -133,28 +125,22 @@ function rm(filePath) {
   if (fs.existsSync(filePath)) fs.rmSync(filePath, { force: true });
 }
 
-function issue(requestCommitSha) {
+function issue(commitSha) {
   const request = readJson(requestPath);
   if (request['Agents.md'] !== true) {
-    console.log('[live-ground-truth] Agents.md is not requested; nothing to issue.');
-    return;
+    throw new Error('read-request.json must contain "Agents.md": true');
   }
 
-  const p = pathsFor(requestCommitSha);
-  const sourceBytes = fs.readFileSync(sourcePath);
-  const full = projectText(sourceBytes, requestCommitSha);
-  const damaged = damageProjection(full);
+  const p = pathsFor(commitSha);
+  const full = projectAgents();
 
   fs.mkdirSync(readingRoom, { recursive: true });
-  fs.mkdirSync(baselineRoom, { recursive: true });
-
   rm(p.active);
   rm(p.failed);
   rm(p.pass);
 
   writeJson(p.canonical, full);
-  writeJson(p.active, damaged);
-  writeJson(p.baseline, damaged);
+  writeJson(p.active, damageProjection(full));
 
   console.log(`[live-ground-truth] issued ${path.basename(p.active)}`);
 }
@@ -165,59 +151,60 @@ function parseChallengePath(challengePath) {
   if (!normalized.startsWith(prefix)) throw new Error('Challenge path is outside the reading room');
 
   const name = path.posix.basename(normalized);
-  const match = /^Agents\.reader\.json-([0-9a-f]{40})(-FAILED)?$/i.exec(name);
+  const match = /^Agents\.reader\.json-([0-9a-f]{40})$/i.exec(name);
   if (!match) throw new Error(`Not an active Live Ground Truth challenge: ${name}`);
 
-  return { requestCommitSha: match[1].toLowerCase(), wasFailed: Boolean(match[2]) };
+  return { challengeCommitSha: match[1].toLowerCase() };
 }
 
-function verify(challengePath) {
-  const { requestCommitSha } = parseChallengePath(challengePath);
-  const p = pathsFor(requestCommitSha);
+function verify(challengePath, evaluationCommitSha) {
+  parseChallengePath(challengePath);
+  const evaluationSha = validateCommitSha(evaluationCommitSha);
+  const resultPaths = pathsFor(evaluationSha);
   const absoluteChallenge = path.join(repoRoot, challengePath);
 
   if (!fs.existsSync(absoluteChallenge)) throw new Error(`Challenge file not found: ${challengePath}`);
-  if (!fs.existsSync(p.baseline)) throw new Error(`Trusted damaged baseline not found for ${requestCommitSha}`);
+  if (!fs.existsSync(resultPaths.canonical)) throw new Error(`Canonical ${DOC_NAME} is missing`);
 
-  const sourceBytes = fs.readFileSync(sourcePath);
-  const expectedFull = projectText(sourceBytes, requestCommitSha);
-  const expectedFullBytes = jsonBytes(expectedFull);
-
-  // Canonical and challenge JSON are intentionally serialized without formatting
-  // whitespace or a trailing newline, so verification has no whitespace ambiguity.
-  fs.writeFileSync(p.canonical, expectedFullBytes);
-
+  const canonicalBytes = fs.readFileSync(resultPaths.canonical);
   const submittedBytes = fs.readFileSync(absoluteChallenge);
-  const pass = submittedBytes.equals(expectedFullBytes);
+  const pass = submittedBytes.equals(canonicalBytes);
 
-  rm(p.active);
-  rm(p.failed);
-  rm(p.pass);
+  rm(absoluteChallenge);
+  rm(resultPaths.active);
+  rm(resultPaths.failed);
+  rm(resultPaths.pass);
 
   if (pass) {
-    fs.writeFileSync(p.pass, expectedFullBytes);
-    rm(p.baseline);
-    console.log(`[live-ground-truth] PASS ${requestCommitSha}`);
+    fs.writeFileSync(resultPaths.pass, canonicalBytes);
+    console.log(`[live-ground-truth] PASS ${evaluationSha}`);
     return true;
   }
 
-  fs.copyFileSync(p.baseline, p.failed);
-  console.log(`[live-ground-truth] FAILED ${requestCommitSha}; damaged projection reset`);
+  writeJson(resultPaths.failed, { status: 'FAILED' });
+  const canonical = JSON.parse(canonicalBytes.toString('utf8'));
+  writeJson(resultPaths.active, damageProjection(canonical));
+  console.log(`[live-ground-truth] FAILED ${evaluationSha}; issued fresh random damage`);
   return false;
 }
 
 function main() {
   const mode = process.argv[2];
+
   if (mode === 'issue') {
     issue(process.argv[3]);
     return;
   }
+
   if (mode === 'verify') {
-    const ok = verify(process.argv[3]);
+    const ok = verify(process.argv[3], process.argv[4]);
     process.exitCode = ok ? 0 : 2;
     return;
   }
-  throw new Error('Usage: live-ground-truth-reading-room.js issue <request-commit-sha> | verify <challenge-path>');
+
+  throw new Error(
+    'Usage: live-ground-truth-reading-room.js issue <commit-sha> | verify <challenge-path> <evaluation-commit-sha>'
+  );
 }
 
 try {
