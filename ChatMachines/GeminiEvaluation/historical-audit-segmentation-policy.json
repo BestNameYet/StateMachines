@@ -1,7 +1,7 @@
 {
-  "version": 2,
-  "name": "semantic-preserving bounded segmentation with capped crosscheck redundancy",
-  "purpose": "Predefine how the historical evidence corpus is segmented and how large evaluator batches may be before any evaluator sees raw evidence. The lead evaluator may choose semantic grouping and crosscheck selection only within these fixed bounds.",
+  "version": 3,
+  "name": "semantic-preserving bounded segmentation with capped crosscheck redundancy and hierarchical synthesis",
+  "purpose": "Predefine how the historical evidence corpus is segmented, how large evaluator batches may be, and how compact batch results are hierarchically synthesized. Raw evidence is evaluated in isolated fresh processes and is never reintroduced after the batch layer.",
   "heuristic": {
     "principle": "Create small stable evidence units that preserve local meaning, then group them into bounded batches sized to keep a single evaluator request far below the model's input-token-per-minute ceiling.",
     "preferred_boundary_order": [
@@ -45,9 +45,34 @@
   "fresh_evaluator_isolation": {
     "required": true,
     "process_boundary": true,
-    "rule": "Every planner, primary batch, crosscheck batch, and final synthesis evaluation is executed in a newly instantiated Node process and a new Gemini request.",
+    "rule": "Every planner, primary batch, crosscheck batch, quarter synthesis, dyad synthesis, and final synthesis is executed in a newly instantiated Node process and a new Gemini request.",
     "batch_input_rule": "A batch evaluator receives only the common audit instruction plus the materialized raw segments assigned to that one batch. It receives no other batch raw context, no previous model conversation, and no previous batch result.",
-    "synthesis_input_rule": "The synthesis evaluator receives compact batch results and the validated plan, but no raw historical corpus."
+    "synthesis_input_rule": "Synthesis evaluators receive only compact outputs from their direct child nodes and the audit objective. They receive no raw historical corpus and no model conversation from any prior node."
+  },
+  "synthesis_tree": {
+    "stage_1": {
+      "node_count": 4,
+      "node_type": "quarter_synthesis",
+      "input": "all compact primary and crosscheck batch results",
+      "partition_rule": "Measure serialized result bytes and distribute results into four approximately equal groups using deterministic largest-result-first balancing into the currently smallest group.",
+      "fresh_evaluator_per_node": true
+    },
+    "stage_2": {
+      "node_count": 2,
+      "node_type": "dyad_synthesis",
+      "mapping": {
+        "D1": ["Q1", "Q2"],
+        "D2": ["Q3", "Q4"]
+      },
+      "fresh_evaluator_per_node": true
+    },
+    "stage_3": {
+      "node_count": 1,
+      "node_type": "final_synthesis",
+      "input": ["D1", "D2"],
+      "fresh_evaluator_per_node": true
+    },
+    "compression_rule": "Each synthesis node must remove redundant prose while preserving provenance identifiers, substantive facts, interpretations, truth decisions, requirement findings, implementation findings, contradictions, and unresolved ambiguity needed by its parent node."
   },
   "evaluation_pipeline": [
     "segment raw evidence deterministically",
@@ -57,14 +82,18 @@
     "instantiate a fresh evaluator process and evaluate that primary batch exactly once",
     "destroy that process and repeat with a fresh process for the next primary batch",
     "repeat the same fresh-process isolation for every crosscheck batch",
-    "instantiate a fresh synthesis evaluator using only compact batch outputs",
-    "persist final result"
+    "measure compact batch-result byte sizes and deterministically balance them into four quarter-synthesis groups",
+    "instantiate four fresh quarter-synthesis evaluators, one per quarter",
+    "instantiate two fresh dyad-synthesis evaluators: Q1+Q2 and Q3+Q4",
+    "instantiate one fresh final evaluator receiving only D1+D2 and the audit objective",
+    "persist the synthesis tree and final result"
   ],
   "prohibited": [
-    "recursive Gemini calls from within a batch evaluation",
+    "recursive Gemini calls from within any evaluator",
     "model-directed compute request loops that resend the same raw context",
-    "conversation reuse between batches",
+    "conversation reuse between batches or synthesis nodes",
     "passing prior batch results into a later raw-evidence batch evaluator",
+    "passing raw historical corpus into quarter, dyad, or final synthesis",
     "whole-audit restart after a later batch failure",
     "unbounded raw-evidence duplication",
     "implicit overlap not represented in the validated batch plan"
