@@ -1,0 +1,159 @@
+{
+  "response_type": "historical_audit_subresult",
+  "subquestion_id": "subq_current_machine_executable",
+  "answer_summary": "The current GeminiSupervisor runtime is an automated supervisor orchestrator implemented in send-to-gemini.js and driven by GitHub Actions. It ingests ChatGPT execution returns from nextmessage.json, runs strict deterministic schema and role validations for Steps 0 through 4, deterministically evaluates empirical ground truth against the local Git tree and workspace files, invokes the Gemini API (POST generativelanguage.googleapis.com, model defaulting to gemini-3.8-flash) under a structured repair loop (up to 4 attempts), validates that Gemini's supervisory gate response preserves exact execution keys and adheres to deterministic ground truth, advances procedure state upon PASS or retains step upon FAIL, and persists all messages, audit records, and state transitions to disk under runs/<run_nonce>/, which is then committed to git by gemini-chat.yml.",
+  "historical_facts": [
+    {
+      "fact_id": "fact_cfg_paths",
+      "statement": "loadSupervisorConfig() reads config.json to resolve triggerPath (defaulting to nextmessage/nextmessage.json), agentsPath (Agents.md), runsRoot (runs), and step3EvalPath (tests/step-3-evaluation.json).",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "lines 14-25"
+    },
+    {
+      "fact_id": "fact_env_vars",
+      "statement": "The runtime expects process.env.GEMINI_API_KEY (throwing an error in main() if absent) and process.env.GEMINI_MODEL (defaulting to 'gemini-3.8-flash'). In the GitHub workflow, these are injected from repository variables (${{ vars.GEMINI_API_KEY }} and ${{ vars.GEMINI_MODEL }}).",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "lines 32-33, line 586, and .github/workflows/gemini-chat.yml lines 30-31"
+    },
+    {
+      "fact_id": "fact_step_extraction",
+      "statement": "stepsFrom(agents) extracts ascending integer steps dynamically from Agents.md using the regular expression /^## Step\\s+(\\d+)\\s*$/gm.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "lines 50-65"
+    },
+    {
+      "fact_id": "fact_run_container_structure",
+      "statement": "initRun(runNonce, steps) creates or validates three files inside runs/<runNonce>/: state.json (containing current_state), messages.json (contents array), and store/store.json (records array). If existing, all three files must exist and match runNonce.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "lines 85-151"
+    },
+    {
+      "fact_id": "fact_role_controls",
+      "statement": "controlFailures(schema) locates role/control blocks recursively and enforces: role_required === 'ChatGPT model', role_forbidden === 'Gemini model', role_completed === 'ChatGPT model', non-empty role_verification.method and evidence, and return_schema_completed resolving to boolean true.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "lines 198-212"
+    },
+    {
+      "fact_id": "fact_deterministic_step_validation",
+      "statement": "validateStep(step, schema) enforces strict field types and contents: Step 0 requires start_of_turn with 5 non-empty string properties; Step 1 requires step_1_record with 5 string properties; Step 2 requires step_2_record with 4 strings and stated_requirements non-empty string array; Step 3 requires Step_3 with detailed sub-objects A-G, array lengths matching Test_Count.value, result values in ['T','F'], and Loop_Decision boolean logic with return_to routing; Step 4 requires Step_4 with failed_actions, not_completed_actions, and completed_actions arrays with verified completion fields.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "lines 222-349"
+    },
+    {
+      "fact_id": "fact_ground_truth_verification",
+      "statement": "collectGroundTruth deterministically checks live run container nonces, current git HEAD SHA, regular workspace files existence and verbatim content matching via fs.readFileSync/git ls-files, and git commit/blob SHAs via git cat-file -e. Any material finding with status CONTRADICTED, PARTIAL, UNKNOWN, or NOT_EXECUTED is marked blocking, causing aggregate_status to be FAIL.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "lines 420-561"
+    },
+    {
+      "fact_id": "fact_gemini_api_call",
+      "statement": "callGemini invokes Google Gemini API via POST to https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent with header x-goog-api-key, system_instruction containing Agents.md (and tests/step-3-evaluation.json for Step 3) plus deterministic ground-truth findings, and AbortSignal timeout of 180000ms.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "lines 615-645"
+    },
+    {
+      "fact_id": "fact_repair_loop",
+      "statement": "supervise() executes up to 4 attempts (1 initial call plus up to 3 repair attempts). If Gemini returns unparseable JSON or fails role validation (role_completed must be 'Gemini model'), structural evalShape preservation, or ground truth consistency checks, a system correction message is fed back to Gemini.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "lines 730-802"
+    },
+    {
+      "fact_id": "fact_gate_evaluation_constraints",
+      "statement": "evalValid prevents gate_result from being PASS if aggregate ground-truth status is not PASS or if ground_truth_verification_eval.supervisor_eval_result is not PASS. It also enforces that granular_evaluation preserves every terminal execution key/value with PASS/FAIL and non-empty comment.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "lines 699-724"
+    },
+    {
+      "fact_id": "fact_state_transition",
+      "statement": "On gate_result PASS, the current step is added to completed_steps, current_step advances to the next remaining step (or null if all complete), status becomes 'complete' or 'awaiting_chatgpt_execution', and last_supervisory_failure is deleted. On FAIL, current_step is retained, awaiting.reason is set to 'supervisory_gate_fail', and last_supervisory_failure is recorded.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "evidence_locator": "lines 855-877"
+    },
+    {
+      "fact_id": "fact_gemini_chat_workflow",
+      "statement": "Workflow gemini-chat.yml triggers on push to main affecting ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json, runs on ubuntu-latest with concurrency group gemini-supervisor-state-machine (cancel-in-progress: false), runs send-to-gemini.js on Node 22, stages ChatMachines/GeminiSupervisor/runs, and commits with message 'Gemini Supervisor checkpoint: <run> Step <step> <gate>'.",
+      "source_archive_path": "repo/.github/workflows/gemini-chat.yml",
+      "evidence_locator": "lines 3-56"
+    },
+    {
+      "fact_id": "fact_dependency_sync_workflow",
+      "statement": "Workflow gemini-supervisor-dependency-sync.yml triggers on push to main modifying Agents.md or send-to-gemini.js. It checks ChatMachines/GeminiSupervisor/dependency-sync-sentinel.json (skipping if enabled is not true), ensures exactly one mapped trigger file changed, configures ChatMachines/GeminiEvaluation in generic mode to evaluate updates, runs evaluate-supervisor.js, applies updates, and toggles the sentinel off then on across git commits.",
+      "source_archive_path": "repo/.github/workflows/gemini-supervisor-dependency-sync.yml",
+      "evidence_locator": "lines 3-189"
+    },
+    {
+      "fact_id": "fact_external_artifact_references",
+      "statement": "config.json defines external_files.step3_evaluation_artifact pointing to ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json with keys ['evaluation_heuristic', 'step3_tsr']. dependency-map.json designates dependency-sync-sentinel.json as sentinel_file, and lists tests/step-3-evaluation.json as a read-only context_file for both Agents.md and send-to-gemini.js mappings.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/config.json",
+      "evidence_locator": "config.json lines 7-16 and dependency-map.json lines 4-21"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "interp_enforced_vs_mock",
+      "statement": "All validation rules implemented in inspect(), validateStep(), and collectGroundTruth() are strictly enforced deterministic code paths executed prior to the Gemini API call; there are no mock routines, stubs, or bypass flags in send-to-gemini.js.",
+      "depends_on_fact_ids": [
+        "fact_role_controls",
+        "fact_deterministic_step_validation",
+        "fact_ground_truth_verification"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_ground_truth_preeminence",
+      "statement": "The runtime code enforces ground truth preeminence over agent self-report by deterministically verifying referenced workspace paths and git SHAs, injecting findings into the model prompt as immutable evidence, and mechanically blocking any PASS gate if material ground truth findings fail or are contradicted.",
+      "depends_on_fact_ids": [
+        "fact_ground_truth_verification",
+        "fact_gate_evaluation_constraints"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_workflow_persistence_scope",
+      "statement": "The gemini-chat.yml workflow deliberately commits only the runs directory, preserving historical run state, messages, and store records across executions, but leaves nextmessage.json untouched in the repository tree until externally rewritten by a subsequent step or process.",
+      "depends_on_fact_ids": [
+        "fact_run_container_structure",
+        "fact_gemini_chat_workflow"
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "dec_current_runtime_execution_baseline",
+      "statement": "The current GeminiSupervisor runtime orchestrates deterministic pre-validation, empirical git/filesystem ground-truth checks, Gemini API supervisory gating with automated repair, and disk/git persistence as active executable logic.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_enforced_vs_mock",
+        "interp_ground_truth_preeminence",
+        "interp_workflow_persistence_scope"
+      ],
+      "current_fact_evidence": [
+        "fact_cfg_paths",
+        "fact_env_vars",
+        "fact_step_extraction",
+        "fact_run_container_structure",
+        "fact_role_controls",
+        "fact_deterministic_step_validation",
+        "fact_ground_truth_verification",
+        "fact_gemini_api_call",
+        "fact_repair_loop",
+        "fact_gate_evaluation_constraints",
+        "fact_state_transition",
+        "fact_gemini_chat_workflow",
+        "fact_dependency_sync_workflow",
+        "fact_external_artifact_references"
+      ]
+    }
+  ],
+  "unresolved_questions": [
+    "How nextmessage.json is updated or reset between steps outside of git commits performed by gemini-chat.yml is not defined within the assigned workflow context."
+  ],
+  "context_files_used": [
+    "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+    "repo/ChatMachines/GeminiSupervisor/config.json",
+    "repo/.github/workflows/gemini-chat.yml",
+    "repo/.github/workflows/gemini-supervisor-dependency-sync.yml",
+    "repo/ChatMachines/GeminiSupervisor/dependency-map.json"
+  ]
+}
