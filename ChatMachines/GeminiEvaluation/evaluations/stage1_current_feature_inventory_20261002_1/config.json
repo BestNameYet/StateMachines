@@ -1,7 +1,9 @@
 {
   "version": "1.0",
   "token_counter": {
-    "implementation": "heuristic_regex"
+    "implementation": "linear_chars_divisor",
+    "characters_per_token": 3.9,
+    "formula": "Math.ceil(text.length / 3.9)"
   },
   "B_rules": [
     {
@@ -16,7 +18,7 @@
           "boundary_strategy": "shift_divisions_until_all_batches_fit"
         },
         "evaluator": {
-          "model": "gemini-1.5-flash",
+          "model": "gemini-3.8-flash",
           "task": "Extract an exhaustive inventory of actual features, mechanisms, state transitions, supervisory gates, error handlings, and persistence behaviors backed strictly by current implementation evidence in the assigned context. Every feature record must cite concrete source evidence (file path, symbol/section, exact line or snippet context). Do not infer historical intent or report absent features as defects.",
           "criteria": "1. Evidence-backed: Every capability must cite specific implementation evidence in the assigned context.\n2. Concrete classification: Assign each feature to a recognized category (orchestration, supervisory_gate, state_transition, persistence, external_integration, error_handling, validation).\n3. Strict schema adherence: Return valid JSON matching the Stage-1 extraction response contract.\n4. No hallucinated requirements: Report only what is observed in the context.",
           "response_contract": {
@@ -234,9 +236,9 @@
           "boundary_strategy": "shift_divisions_until_all_batches_fit"
         },
         "evaluator": {
-          "model": "gemini-1.5-flash",
-          "task": "Deduplicate, normalize, merge, and reconcile the extracted feature inventory records from previous batches. Merge overlapping features under a unified name and comprehensive description while unioning all supporting evidence references and provenance batch IDs. Eliminate exact duplicate entries. Ensure canonical categories are maintained.",
-          "criteria": "1. Evidence preservation: Retain all valid source citations and provenance tags from merged entries.\n2. Deduplication: Merge redundant or overlapping feature descriptions into unified records.\n3. Canonical naming: Use clear, descriptive, consistent naming conventions across all consolidated features.\n4. Strict schema compliance: Return valid JSON matching the consolidated feature inventory schema.",
+          "model": "gemini-3.8-flash",
+          "task": "Deduplicate, normalize, merge, and reconcile the extracted feature inventory records from previous batches. Merge overlapping features under a unified name and comprehensive description while unioning all supporting evidence references and provenance batch IDs. Eliminate exact duplicate entries. Ensure canonical categories are maintained. Return a compact consolidation. The complete serialized response must remain below 6000 estimated tokens under Math.ceil(characters / 3.9). Prefer merging overlapping records over retaining near-duplicates. Keep names concise, descriptions to one or two sentences, mechanic_summary values to one concise sentence, and include only evidence necessary to preserve distinct implementation support.",
+          "criteria": "1. Evidence preservation: Retain all valid source citations and provenance tags from merged entries.\n2. Deduplication: Merge redundant or overlapping feature descriptions into unified records.\n3. Canonical naming: Use clear, descriptive, consistent naming conventions across all consolidated features.\n4. Strict schema compliance: Return valid JSON matching the consolidated feature inventory schema.\n5. Compactness: The complete serialized response must remain below 6000 estimated tokens using Math.ceil(characters / 3.9); remove redundant wording and redundant evidence while preserving distinct source support.",
           "response_contract": {
             "required_fields": [
               "inventory_round",
