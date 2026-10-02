@@ -1,530 +1,549 @@
 {
   "response_type": "historical_audit_subquestion_plan",
-  "heuristic_statement": "The historical audit operates on a strict multi-layer epistemic framework: raw historical facts -> semantic interpretations -> truth decisions. Requirement lifecycle (origin, evolution, active survival, or partial/full supersession) and implementation state (implemented, unenforced, partially represented, or missing) are treated as orthogonal dimensions. Historical Git commits, prompts, and nonce run artifacts serve as empirical evidence of requirement provenance, runtime behavior, and supersession; they are never assumed to be the normative goal. The normative implementation target is exclusively determined by what the machine existing today actually executes, orchestrates, and deterministicly validates across its Node.js source, GitHub Actions workflows, configuration files, and persisted schemas. An outstanding defect constitutes present corrective work if and only if the underlying user requirement survives un-superseded and today's executable machine fails to fully enforce it.",
-  "decomposition_rationale": "To maintain strict context isolation, prevent Gemini input-token quota exhaustion, and enable deterministic sequential execution in the GitHub Node evaluator process, the audit is partitioned into 24 focused subquestions. Each subquestion is assigned a bounded set of archive files strictly at or below the 250,000-byte ceiling. The decomposition separates independent evidence domains: (1) current executable runtime, workflows, configuration, and evaluation contracts; (2) canonical specification text and historical requirement evolution; (3) granular empirical nonce execution records covering all 16 nonce runs; (4) cross-cutting requirement lifecycle and supersession synthesis; and (5) exhaustive reconciliation between the current machine and surviving active requirements to isolate genuine corrective gaps.",
+  "heuristic_statement": "Dual-Track Asymmetric Ground-Truth & Lifespan Reconciliation Heuristic: (1) Operational Ground Truth Track: Present executable code, orchestration workflows, and runtime configurations define what the machine deterministically enforces today; neither specification text (Agents.md), descriptive skill documents, retired definitions, nor historical model self-reports constitute proof of executable enforcement. (2) Requirement Provenance & Lifespan Track: Historical Git lineage and persisted execution records establish the origin, evolution, and supersession of user requirements. Requirement lifecycle (Active vs. Partially Superseded vs. Fully Superseded) and implementation status (Deterministically Enforced vs. Partially Implemented vs. Unenforced/Missing vs. Misrepresented) are treated as orthogonal dimensions. Superseded requirements create no present corrective work. (3) Grounded Interpretation Layer: Every historical semantic decision must strictly follow raw facts -> interpretations -> truth decisions with explicit evidence locators. (4) Corrective Work Criterion: An outstanding gap exists if and only if a user requirement survives as active or partially active, yet today's executable machine fails to deterministically implement or enforce it.",
+  "decomposition_rationale": "The historical archive contains diverse evidence types spanning runtime code, canonical specifications, workflow orchestrations, multi-branch Git lineages, detailed patch logs, and 16 persisted nonce run containers. To avoid Gemini input token exhaustion, isolate evidence domains, and maintain strict adherence to the <= 250,000 bytes per subquestion context limit, the audit is decomposed into 24 sequentially executable subquestions: (a) audit trigger scope and metadata, (b) executable runtime behavior and deterministic enforcement, (c) workflow maintenance and auxiliary control artifacts, (d) canonical specification contracts and evaluation heuristics, (e) chronological Git lineage and requirement evolution, (f-g) scoped patch histories for Step 3 evaluation and workflow modifications, and (h-x) granular subquestions covering every supplied nonce run. Large oversized files (>250k) are decoupled, and each sub-evaluator receives only specific, bounded files paired with targeted interpretation directives.",
   "subquestions": [
     {
-      "subquestion_id": "SQ01_CURRENT_RUNTIME_CORE",
-      "question": "What are the exact executable state transitions, supervisor steps, Gemini API interactions, input validation rules, and deterministic ground-truth checks implemented in the current Supervisor runtime and its primary execution workflow?",
-      "purpose": "Establish the verified baseline of what today's machine actually executes in send-to-gemini.js and repo/.github/workflows/gemini-chat.yml, ignoring aspirational specification claims.",
+      "subquestion_id": "SQ01_audit_metadata_scope",
+      "question": "What are the exact boundaries, authoritative routing rules, and user-initiated scope criteria established by the historical audit trigger and source map metadata?",
+      "purpose": "Establish the formal audit trigger parameters, authoritative weighting of repository categories, and audit boundary conditions.",
+      "context_files": [
+        "metadata/historical-audit-trigger.json",
+        "metadata/historical-audit-data.json"
+      ],
+      "interpretation_requirements": [
+        "Distinguish raw metadata fields from interpretations of user auditing intent.",
+        "Map authority guidelines to downstream evidence hierarchies (primary runtime vs secondary descriptive vs historical specifications).",
+        "Document any explicit exclusions or focus areas specified in the run request."
+      ],
+      "expected_findings": [
+        "Specific commit SHA and timestamp targeted by the audit trigger.",
+        "Authoritative ordering of source artifacts over secondary historical interpretations."
+      ],
+      "synthesis_dependencies": [],
+      "context_bytes": 16700
+    },
+    {
+      "subquestion_id": "SQ02_executable_runtime_core",
+      "question": "What is the exact deterministic execution flow, state transition logic, Gemini API interaction model, and validation enforcement implemented in the current Supervisor Node.js runtime and orchestration workflow?",
+      "purpose": "Verify today's actual executable implementation from send-to-gemini.js, config.json, dependency-map.json, and the chat workflow, without relying on descriptive prose or Agents.md.",
       "context_files": [
         "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
-        "repo/.github/workflows/gemini-chat.yml",
-        "repo/ChatMachines/GeminiSupervisor/config.json"
+        "repo/ChatMachines/GeminiSupervisor/config.json",
+        "repo/ChatMachines/GeminiSupervisor/dependency-map.json",
+        "repo/.github/workflows/gemini-chat.yml"
       ],
       "interpretation_requirements": [
-        "Distinguish verified executable code logic (facts) from inline comments or descriptive docstrings (interpretations).",
-        "Record deterministic assertions, step sequence enforcement, payload schemas, and state persistence rules as truth decisions regarding current machine behavior."
+        "Separate syntactic code structure from semantic interpretations of what requirements are being enforced.",
+        "Identify deterministic validation checks vs LLM supervisory prompt instructions.",
+        "Ground truth decision: classify which step transitions, schema checks, and state persistence operations actually execute deterministically."
       ],
       "expected_findings": [
-        "Exact list of implemented step handlers, transition rules, deterministic guardrails, and Gemini prompt templates in send-to-gemini.js.",
-        "Workflow trigger events, environment variable bindings, and state persistence commits in gemini-chat.yml."
+        "Comprehensive inventory of Step 0 through Step 3 execution handlers and transition gates.",
+        "Deterministic guards (JSON schema validations, ground-truth verifications) vs unverified prompt directives.",
+        "Exact trigger conditions and file commit boundaries in gemini-chat.yml."
       ],
-      "synthesis_dependencies": [],
-      "context_bytes": 54801
+      "synthesis_dependencies": [
+        "SQ01_audit_metadata_scope"
+      ],
+      "context_bytes": 55650
     },
     {
-      "subquestion_id": "SQ02_CURRENT_DEPENDENCY_SYNC",
-      "question": "How does the Supervisor dependency synchronization workflow operate, what paths are mapped in dependency-map.json, and what maintenance behavior is actually automated versus manual?",
-      "purpose": "Verify the current automated maintenance and file synchronization boundaries governing the Supervisor codebase.",
+      "subquestion_id": "SQ03_ancillary_maintenance_and_control_artifacts",
+      "question": "How are the dependency synchronization workflow, the work/action approval rulebook, and the live ground truth verification skill document integrated into or decoupled from the runtime execution path?",
+      "purpose": "Establish whether work-action-approval-rulebook.json and the live GT skill are actively wired into send-to-gemini.js or remain unreferenced/ancillary artifacts, and analyze dependency maintenance behavior.",
       "context_files": [
         "repo/.github/workflows/gemini-supervisor-dependency-sync.yml",
-        "repo/ChatMachines/GeminiSupervisor/dependency-map.json",
-        "generated/git/by-entry/dependency_sync_workflow.patch.log",
-        "generated/git/by-entry/dependency_map.patch.log"
-      ],
-      "interpretation_requirements": [
-        "Extract raw workflow action steps and mapping keys as facts.",
-        "Interpret whether the workflow executes automatically on pull request/push or requires specific path triggers.",
-        "Decide whether mapped dependencies are kept bidirectionally synchronized or merely checked."
-      ],
-      "expected_findings": [
-        "Authoritative file-to-peer artifact synchronization mappings.",
-        "Workflow triggers, synchronization scripts, and failure conditions."
-      ],
-      "synthesis_dependencies": [],
-      "context_bytes": 29670
-    },
-    {
-      "subquestion_id": "SQ03_CURRENT_STEP3_EVAL_CONTRACTS",
-      "question": "What evaluation heuristics, Step3_TSR corpora, scoring metrics, and test cases are defined in the current Step 3 evaluation artifact, and how does the workflow invoke them?",
-      "purpose": "Establish the current Step 3 evaluation contracts and determine whether they match the runtime supervisor enforcement in Step 3.",
-      "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
-        "generated/git/by-entry/state_machine_workflow.patch.log"
-      ],
-      "interpretation_requirements": [
-        "Identify raw schema keys, test case definitions, and heuristic clauses in step-3-evaluation.json.",
-        "Interpret whether the current evaluation artifact is actively consumed by the runtime or exists as an external benchmark.",
-        "Render truth decisions on what Step 3 evaluation criteria are currently active."
-      ],
-      "expected_findings": [
-        "Active Step 3 evaluation rubric, heuristic weights, and test cases.",
-        "Workflow invocation points for step-3-evaluation.json."
-      ],
-      "synthesis_dependencies": [],
-      "context_bytes": 76205
-    },
-    {
-      "subquestion_id": "SQ04_STEP3_EVAL_HISTORY",
-      "question": "How did the Step 3 evaluation heuristics and test suites evolve over time across commit history, and which prior evaluation requirements were superseded or modified?",
-      "purpose": "Trace the lineage and supersession of Step 3 evaluation requirements through its patch log.",
-      "context_files": [
-        "generated/git/by-entry/step3_evaluation.patch.log"
-      ],
-      "interpretation_requirements": [
-        "Extract patch additions, modifications, and deletions in step-3-evaluation.json.",
-        "Interpret user/author intent behind heuristic changes and test revisions.",
-        "Determine which earlier Step 3 criteria were explicitly replaced or retired."
-      ],
-      "expected_findings": [
-        "Chronological changes to TSR thresholds, evaluation prompts, and heuristic rules.",
-        "List of superseded Step 3 criteria that no longer apply to today's machine."
-      ],
-      "synthesis_dependencies": [],
-      "context_bytes": 228944
-    },
-    {
-      "subquestion_id": "SQ05_CURRENT_APPROVAL_AND_GT_ARTIFACTS",
-      "question": "What rules are specified in work-action-approval-rulebook.json and the live ground-truth verification skill document, and does the executable runtime wire or enforce them?",
-      "purpose": "Evaluate whether the persisted approval rulebook and live ground-truth skill documents are active executable requirements or unenforced documentation.",
-      "context_files": [
         "repo/ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
-        "generated/git/by-entry/work_action_approval_rulebook.patch.log",
-        "repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
-        "generated/git/by-entry/live_ground_truth_skill.patch.log"
+        "repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md"
       ],
       "interpretation_requirements": [
-        "Record exact rules, categories, and criteria contained in the rulebook and skill document.",
-        "Interpret whether the text contains mandatory constraints or optional guidelines.",
-        "Decide truth status of whether these artifacts constitute surviving normative requirements."
+        "Raw facts: check for explicit import, require, readFileSync, or invocation of the rulebook and skill markdown in runtime or maintenance scripts.",
+        "Interpretations: differentiate between standalone reference artifacts created during development vs active runtime policy enforcers.",
+        "Truth decision: determine if non-enforcement of the rulebook constitutes an architectural defect or an intended decoupled reference."
       ],
       "expected_findings": [
-        "Catalog of work action approval rules and live ground-truth verification steps.",
-        "Evolution of approval categories and verification gates across commit history."
+        "Whether work-action-approval-rulebook.json is parsed or checked at runtime.",
+        "Operational behavior of the dependency synchronization workflow when mapped files change.",
+        "Status of the live ground-truth verification skill as descriptive guidance vs executable code."
       ],
-      "synthesis_dependencies": [],
-      "context_bytes": 80677
+      "synthesis_dependencies": [
+        "SQ02_executable_runtime_core"
+      ],
+      "context_bytes": 52485
     },
     {
-      "subquestion_id": "SQ06_CURRENT_SPECIFICATION_AGENTS_MD",
-      "question": "What architecture, agent roles, state schemas, and supervision rules are normatively specified in Agents.md, and how do they compare with the retired evaluation documents?",
-      "purpose": "Establish the user's current stated specification in Agents.md while distinguishing it from retired evaluation requirements.",
+      "subquestion_id": "SQ04_specification_and_step3_contracts",
+      "question": "What requirements, step progression schemas, and evaluation heuristics are specified in current Agents.md and step-3-evaluation.json, and how do they compare with retired historical evaluation documents?",
+      "purpose": "Establish today's canonical stated specification, Step 3 evaluation contracts, TSR corpus, and contrast them with retired evaluation definitions to trace requirement retirement.",
       "context_files": [
         "repo/ChatMachines/GeminiSupervisor/Agents.md",
+        "repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
         "repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
         "repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md"
       ],
       "interpretation_requirements": [
-        "Extract normative requirement clauses from Agents.md as stated specifications.",
-        "Interpret differences between Agents.md and historical/ evaluation files as evidence of supersession.",
-        "Formulate truth decisions on which requirements in Agents.md represent active desired behavior."
+        "Raw facts: extract verbatim requirement statements, step contracts, evaluation metrics, and schema definitions.",
+        "Interpretations: identify discrepancies between stated specification requirements in Agents.md and the active Step 3 evaluation JSON contract.",
+        "Truth decision: identify requirements from historical evaluation docs that were formally retired or superseded by step-3-evaluation.json."
       ],
       "expected_findings": [
-        "Canonical specification requirements for Supervisor roles, states, transitions, and schemas.",
-        "Explicitly retired definitions and test patterns preserved in historical/."
+        "Complete catalog of normative requirements asserted by current Agents.md.",
+        "Consolidated Step 3 TSR evaluation criteria and test expectations.",
+        "Explicit list of retired evaluators and tests superseded by newer architectures."
       ],
-      "synthesis_dependencies": [],
-      "context_bytes": 88259
+      "synthesis_dependencies": [
+        "SQ02_executable_runtime_core"
+      ],
+      "context_bytes": 144127
     },
     {
-      "subquestion_id": "SQ07_REQUIREMENT_LINEAGE_AND_PROMPTS",
-      "question": "What user instructions, design pivots, prompt directives, and architectural transitions are documented in the live Supervisor git lineage log and historical audit metadata?",
-      "purpose": "Recover the chronological lineage of user instructions and prompt directives from the complete live git lineage.",
+      "subquestion_id": "SQ05_git_lineage_and_requirement_evolution",
+      "question": "What is the chronological progression of user instructions, architectural shifts, role separations, and supersession events documented across the complete Supervisor Git lineage?",
+      "purpose": "Recover the historical sequence of user prompts, commit intentions, and requirement lifecycles from fresh live lineage and historical Git log snapshots.",
       "context_files": [
         "generated/git/live-supervisor-lineage.log",
-        "metadata/historical-audit-data.json",
-        "metadata/historical-audit-trigger.json"
+        "repo/ChatMachines/GeminiSupervisor/commit history/git-log.txt"
       ],
       "interpretation_requirements": [
-        "Extract raw commit messages, author instructions, and trigger requests as historical facts.",
-        "Interpret user intent behind each prompt directive and structural refactoring.",
-        "Decide which directives initiated new requirements versus modifications of existing ones."
+        "Raw facts: extract commit SHAs, commit messages, author notes, and timestamps.",
+        "Interpretations: reconstruct chronological requirement emergence, noting when requirements were introduced, modified, or superseded.",
+        "Truth decision: establish the requirement lineage chain and classify which older requirements were explicitly replaced by later user directives."
       ],
       "expected_findings": [
-        "Comprehensive timeline of user instructions, architectural pivots, and component renames.",
-        "Evidence locators for requirement introduction and initial implementation attempts."
+        "Chronological timeline of all major user prompts and architectural milestones.",
+        "Lineage of role separation, schema migrations, and ground-truth verification mandates.",
+        "Identification of candidate superseded requirements."
       ],
-      "synthesis_dependencies": [],
-      "context_bytes": 115481
+      "synthesis_dependencies": [
+        "SQ04_specification_and_step3_contracts"
+      ],
+      "context_bytes": 195789
     },
     {
-      "subquestion_id": "SQ08_HISTORICAL_GIT_SNAPSHOT_LINEAGE",
-      "question": "What additional commit context, predecessor lineage details, and configuration changes are recorded in git-log.txt and supervisor_config.patch.log?",
-      "purpose": "Corroborate lineage findings, verify commit hashes, and trace supervisor configuration evolution.",
+      "subquestion_id": "SQ06_git_patch_step3_evaluation",
+      "question": "How did the Step 3 evaluation heuristic, test corpus, and scoring rules evolve over time according to its Git patch history, and what changes reflect deliberate supersession?",
+      "purpose": "Trace the detailed patch-by-patch mutation of step-3-evaluation.json to verify requirement provenance and supersession of evaluation criteria.",
       "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/commit history/git-log.txt",
-        "generated/git/by-entry/supervisor_config.patch.log"
+        "generated/git/by-entry/step3_evaluation.patch.log"
       ],
       "interpretation_requirements": [
-        "Cross-reference commit SHAs and commit messages with the live lineage log.",
-        "Interpret when configuration properties became authoritative.",
-        "Determine truth decisions on config file evolution and path stability."
+        "Raw facts: inspect patch additions and deletions in step-3-evaluation.json across all revisions.",
+        "Interpretations: correlate diffs with user prompts to determine the rationale behind heuristic tuning and test case modifications.",
+        "Truth decision: establish which evaluation metrics were refined, replaced, or deprecated."
       ],
       "expected_findings": [
-        "Corroborated commit sequence for predecessor and current Supervisor repos.",
-        "Evolution of config.json keys and referenced artifact paths."
+        "Exact changes in Step 3 TSR definitions, thresholds, and scoring rubrics across commits.",
+        "Clear evidence of supersession for deprecated evaluation criteria."
       ],
-      "synthesis_dependencies": [],
-      "context_bytes": 98297
+      "synthesis_dependencies": [
+        "SQ04_specification_and_step3_contracts",
+        "SQ05_git_lineage_and_requirement_evolution"
+      ],
+      "context_bytes": 228944
     },
     {
-      "subquestion_id": "SQ09_NONCE_EARLY_STEP0_FAILURES",
-      "question": "What failure modes, validation errors, and runtime behaviors are documented in early Step 0 failure nonce runs (step0_raw_fail_20260930T1325_2, step0_raw_fail_20260930_3, step0_raw_fail_20260930_4)?",
-      "purpose": "Analyze the empirical runtime behavior and root causes of early Step 0 failures across these three complete nonce containers.",
+      "subquestion_id": "SQ07_git_patch_workflows_and_ancillary",
+      "question": "How did the state machine workflow, dependency sync workflow, rulebook, live GT skill, and configuration evolve according to their patch logs?",
+      "purpose": "Analyze patch histories of workflows, configuration, rulebook, and skill to confirm implementation provenance and determine when specific operational controls were introduced or altered.",
       "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/messages.json",
-        "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/state.json",
-        "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/store/store.json",
+        "generated/git/by-entry/work_action_approval_rulebook.patch.log",
+        "generated/git/by-entry/live_ground_truth_skill.patch.log",
+        "generated/git/by-entry/state_machine_workflow.patch.log",
+        "generated/git/by-entry/dependency_sync_workflow.patch.log",
+        "generated/git/by-entry/supervisor_config.patch.log",
+        "generated/git/by-entry/dependency_map.patch.log"
+      ],
+      "interpretation_requirements": [
+        "Raw facts: identify commits introducing or altering workflow triggers, rulebook schemas, and skill definitions.",
+        "Interpretations: explain why workflow events or configuration mappings were changed.",
+        "Truth decision: determine whether changes represent bugfixes, evolutionary enhancements, or supersessions of earlier behaviors."
+      ],
+      "expected_findings": [
+        "Provenance of work-action-approval-rulebook creation and lack of subsequent wiring.",
+        "Evolution of workflow triggers and dependency sync automation rules."
+      ],
+      "synthesis_dependencies": [
+        "SQ03_ancillary_maintenance_and_control_artifacts",
+        "SQ05_git_lineage_and_requirement_evolution"
+      ],
+      "context_bytes": 78639
+    },
+    {
+      "subquestion_id": "SQ08_nonce_early_raw_fail_runs",
+      "question": "What operational failures, prompt formatting issues, or validation rejections are evidenced in early nonce runs step0_raw_fail_20260930_3, step0_raw_fail_20260930_4, and step0_raw_fail_20260930T1325_2?",
+      "purpose": "Examine persisted execution records for early step0 raw failures to determine the exact nature of runtime breakdowns, model responses, and deterministic rejection triggers.",
+      "context_files": [
         "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/messages.json",
         "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/state.json",
         "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/store/store.json",
         "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json",
         "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json",
-        "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json"
+        "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json",
+        "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/messages.json",
+        "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/state.json",
+        "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/store/store.json"
       ],
       "interpretation_requirements": [
-        "Extract raw error payloads, status codes, and terminal state flags as facts.",
-        "Interpret whether failures stemmed from schema rejection, API connectivity, or prompt formatting.",
-        "Decide truth status of which requirements were exercised and failed during these runs."
+        "Raw facts: record exact failure error messages, exit codes, and raw Gemini model output.",
+        "Interpretations: analyze whether the failure was caused by invalid input schemas, API communication faults, or missing runtime handlers.",
+        "Truth decision: determine if these failures prompted subsequent code fixes that superseded the failing runtime behavior."
       ],
       "expected_findings": [
-        "Exact error messages and failing assertions for Step 0 initialization.",
-        "Fixes subsequently requested by the user following these failures."
+        "Root cause of early Step 0 execution crashes.",
+        "Verification of whether the defect was addressed in later runtime source revisions."
       ],
-      "synthesis_dependencies": [],
+      "synthesis_dependencies": [
+        "SQ02_executable_runtime_core"
+      ],
       "context_bytes": 171478
     },
     {
-      "subquestion_id": "SQ10_NONCE_STEP0_T132500",
-      "question": "What state transitions, step outcomes, and failure details are recorded in state.json of run step0_raw_fail_20260930T132500?",
-      "purpose": "Examine the state progression and error diagnostics for the step0_raw_fail_20260930T132500 execution.",
+      "subquestion_id": "SQ09_nonce_step0_and_schema_reject_states",
+      "question": "What state transitions and validation failure payloads are recorded in step0_raw_fail_20260930T132500/state.json and skill_revision_schema_reject_20260930T181100/state.json?",
+      "purpose": "Analyze state progression, error recording, and schema rejection states during early step 0 failure and skill revision schema rejection.",
       "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/state.json"
-      ],
-      "interpretation_requirements": [
-        "Extract state properties, step counter, and recorded error diagnostics.",
-        "Interpret how this failure differs from the other Step 0 failure variants.",
-        "Determine whether the failure indicates an unhandled runtime exception or intentional validation rejection."
-      ],
-      "expected_findings": [
-        "Specific step transition values and exception records in step0_raw_fail_20260930T132500.",
-        "Identification of which input condition triggered the failure."
-      ],
-      "synthesis_dependencies": [],
-      "context_bytes": 79612
-    },
-    {
-      "subquestion_id": "SQ11_NONCE_DEMO_RUN",
-      "question": "What end-to-end execution flow, step sequence, and supervisory responses are demonstrated in state.json of run demo_20260930T155153_eadd5e5248?",
-      "purpose": "Analyze the demonstrated happy path and successful supervisor progression in the demo run.",
-      "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json"
-      ],
-      "interpretation_requirements": [
-        "Extract recorded step sequence, status transitions, and store updates as facts.",
-        "Interpret whether the run exercised all supervisor steps or terminated early.",
-        "Decide which functional capabilities were proven working in this run."
-      ],
-      "expected_findings": [
-        "Complete step progression trace for the demo run.",
-        "Evidence of verified state machine transitions and Gemini supervisory responses."
-      ],
-      "synthesis_dependencies": [],
-      "context_bytes": 128750
-    },
-    {
-      "subquestion_id": "SQ12_NONCE_SKILL_INTERFACE",
-      "question": "What skill execution behaviors, step transitions, and validation outputs are recorded in state.json of run skill_interface_20260930T155700?",
-      "purpose": "Evaluate how skill interface invocations were executed and validated in this run.",
-      "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/state.json"
-      ],
-      "interpretation_requirements": [
-        "Extract skill interface parameters and transition results.",
-        "Interpret whether skill invocation conformed to the skill specification.",
-        "Determine truth status of skill interface enforcement at this historical point."
-      ],
-      "expected_findings": [
-        "Skill invocation payload structure and validation checks.",
-        "Outcome of skill execution and state transitions."
-      ],
-      "synthesis_dependencies": [],
-      "context_bytes": 139285
-    },
-    {
-      "subquestion_id": "SQ13_NONCE_ROLE_SEPARATION",
-      "question": "How did the machine enforce role boundaries, agent separation, and turn-taking in state.json of run role_separation_20260930T181400?",
-      "purpose": "Analyze role separation enforcement between supervisor, worker, and evaluation roles in this dedicated run.",
-      "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/state.json"
-      ],
-      "interpretation_requirements": [
-        "Extract agent identifiers, turn counters, and role-specific state fields.",
-        "Interpret whether the runtime prevented role crosstalk or unauthorized actions.",
-        "Decide whether role separation was strictly enforced or merely advisory."
-      ],
-      "expected_findings": [
-        "Recorded evidence of role boundary enforcement and validation checks.",
-        "Any role violations detected or tolerated during the run."
-      ],
-      "synthesis_dependencies": [],
-      "context_bytes": 112958
-    },
-    {
-      "subquestion_id": "SQ14_NONCE_SKILL_REEVAL",
-      "question": "What re-evaluation triggers, evaluation scores, and supervisory decisions are recorded in state.json of run skill_reeval_20260930T170100?",
-      "purpose": "Examine how re-evaluation logic was triggered and handled when a skill output required revision.",
-      "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/state.json"
-      ],
-      "interpretation_requirements": [
-        "Extract evaluation scores, threshold checks, and re-evaluation loop counters.",
-        "Interpret whether re-evaluation successfully looped back to the worker step.",
-        "Decide truth status of re-evaluation enforcement in the state machine."
-      ],
-      "expected_findings": [
-        "Conditions under which skill re-evaluation was triggered.",
-        "Recorded loop transitions and eventual terminal state."
-      ],
-      "synthesis_dependencies": [],
-      "context_bytes": 190417
-    },
-    {
-      "subquestion_id": "SQ15_NONCE_SKILL_REVISION",
-      "question": "What prompt requests and state transitions occurred during run skill_revision_20260930T180700 when revising skill artifacts?",
-      "purpose": "Trace the prompt directives and state mutations during skill revision.",
-      "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/state.json",
-        "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/messages.json"
-      ],
-      "interpretation_requirements": [
-        "Extract message exchanges and state updates as facts.",
-        "Interpret user revision instructions versus supervisor interpretation.",
-        "Decide whether the revised skill artifact satisfied the revision prompt."
-      ],
-      "expected_findings": [
-        "Prompt sequence guiding skill revision.",
-        "State transitions reflecting artifact modification and re-validation."
-      ],
-      "synthesis_dependencies": [],
-      "context_bytes": 245142
-    },
-    {
-      "subquestion_id": "SQ16_NONCE_SKILL_REVISION_REJECT",
-      "question": "Why was the schema rejected during run skill_revision_schema_reject_20260930T181100, and what deterministic validation rule caught the violation?",
-      "purpose": "Identify the deterministic schema validation rule that rejected the revision payload.",
-      "context_files": [
+        "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/state.json",
         "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/state.json"
       ],
       "interpretation_requirements": [
-        "Extract the exact validation error message, failing field, and rejecting schema.",
-        "Interpret whether the rejection was false-positive or genuine schema violation.",
-        "Decide truth status of the schema constraint that was enforced."
+        "Raw facts: extract state fields (current_step, status, error, schema_errors, history).",
+        "Interpretations: explain how schema validation rejections are captured and persisted in state.json.",
+        "Truth decision: assess whether deterministic rejection behavior observed in state matches specified validation contracts."
       ],
       "expected_findings": [
-        "The rejecting schema rule and failing payload structure.",
-        "Impact of the schema rejection on the run's terminal state."
+        "Exact schema validation error structure captured upon rejection.",
+        "Proof of runtime enforcement of schema rejection states."
       ],
-      "synthesis_dependencies": [],
-      "context_bytes": 73822
+      "synthesis_dependencies": [
+        "SQ02_executable_runtime_core"
+      ],
+      "context_bytes": 153434
     },
     {
-      "subquestion_id": "SQ17_NONCE_AGENTS_SCHEMA_MIGRATION",
-      "question": "What schema changes and workspace store transformations are captured in store.json of run agents_schema_migration_20260930_1?",
-      "purpose": "Analyze the persisted store structure and migration changes across agent schema versions.",
+      "subquestion_id": "SQ10_nonce_schema_reject_interaction",
+      "question": "What interaction sequence and model submission triggered the schema rejection in skill_revision_schema_reject_20260930T181100/messages.json?",
+      "purpose": "Inspect the messages payload of the schema reject nonce run to verify the supervisory conversation, payload structure, and rejection trigger.",
       "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json"
+        "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/messages.json"
       ],
       "interpretation_requirements": [
-        "Extract store keys, schema version headers, and entity records.",
-        "Interpret migration differences between old and new schema layouts.",
-        "Decide truth status of which schema properties survived this migration."
+        "Raw facts: locate the invalid return payload submitted to the supervisor.",
+        "Interpretations: identify why the payload violated the schema (missing keys, invalid types, or unexpected fields).",
+        "Truth decision: verify if the supervisor's rejection was correct according to the governing schema."
       ],
       "expected_findings": [
-        "Pre- and post-migration store entities and schema properties.",
-        "Confirmation of migrated fields and discarded legacy structures."
+        "The exact payload field that failed validation.",
+        "Verification that the supervisor correctly rejected the non-conforming submission."
       ],
-      "synthesis_dependencies": [],
-      "context_bytes": 197864
+      "synthesis_dependencies": [
+        "SQ09_nonce_step0_and_schema_reject_states"
+      ],
+      "context_bytes": 225593
     },
     {
-      "subquestion_id": "SQ18_NONCE_GT_VERIFICATION_SKILL",
-      "question": "What prompts, ground-truth claims, and supervisory assessments are recorded in messages.json of run ground_truth_verification_skill_20260930_1?",
-      "purpose": "Inspect the supervisory interaction and ground-truth verification dialogue in this skill run.",
+      "subquestion_id": "SQ11_nonce_skill_revision_lifecycle",
+      "question": "How did the supervisor handle the successful skill revision in skill_revision_20260930T180700 according to messages.json and state.json?",
+      "purpose": "Verify the successful execution path, prompt structure, and state transitions during skill revision.",
+      "context_files": [
+        "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/messages.json",
+        "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/state.json"
+      ],
+      "interpretation_requirements": [
+        "Raw facts: document supervisory prompt, model response, transition decision, and final state.",
+        "Interpretations: evaluate whether the revision complied with skill modification protocols.",
+        "Truth decision: determine if the skill revision run represents valid, expected supervisor behavior."
+      ],
+      "expected_findings": [
+        "Demonstration of compliant skill revision transition.",
+        "Clear baseline for successful supervisory feedback loops."
+      ],
+      "synthesis_dependencies": [
+        "SQ02_executable_runtime_core"
+      ],
+      "context_bytes": 245142
+    },
+    {
+      "subquestion_id": "SQ12_nonce_skill_revision_store",
+      "question": "What store modifications, artifact diffs, and persistent key-value records were written during skill_revision_20260930T180700?",
+      "purpose": "Analyze store/store.json of skill_revision_20260930T180700 to verify persistence semantics and storage integrity.",
+      "context_files": [
+        "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/store/store.json"
+      ],
+      "interpretation_requirements": [
+        "Raw facts: identify updated store keys, stored artifacts, and version timestamps.",
+        "Interpretations: assess whether the store structure adheres to the canonical store persistence requirements.",
+        "Truth decision: confirm whether runtime store persistence behaved as intended."
+      ],
+      "expected_findings": [
+        "Detailed inventory of persisted store entries.",
+        "Verification of artifact persistence semantics."
+      ],
+      "synthesis_dependencies": [
+        "SQ11_nonce_skill_revision_lifecycle"
+      ],
+      "context_bytes": 240996
+    },
+    {
+      "subquestion_id": "SQ13_nonce_ground_truth_skill_evaluation",
+      "question": "What supervisory dialogues, validation findings, and decisions are recorded in ground_truth_verification_skill_20260930_1/messages.json?",
+      "purpose": "Investigate supervisory messages in the ground truth verification skill run to understand how skill verification was evaluated.",
       "context_files": [
         "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json"
       ],
       "interpretation_requirements": [
-        "Extract message contents, tool outputs, and verification claims.",
-        "Interpret whether ground truth was independently computed or accepted on model self-report.",
-        "Decide truth status of ground-truth verification rigor during this run."
+        "Raw facts: extract ground-truth verification queries, worker returns, and supervisory assessment.",
+        "Interpretations: determine whether ground truth was checked deterministically or evaluated solely via Gemini prompting.",
+        "Truth decision: decide if this run fulfilled user requirements for ground-truth verification at that point in the lifecycle."
       ],
       "expected_findings": [
-        "Supervisor verification queries and worker responses.",
-        "Evidence of deterministic checks versus LLM subjective evaluations."
+        "Supervisory dialogue demonstrating ground truth skill verification.",
+        "Extent to which verification relied on deterministic vs model-based evaluation."
       ],
-      "synthesis_dependencies": [],
+      "synthesis_dependencies": [
+        "SQ03_ancillary_maintenance_and_control_artifacts"
+      ],
       "context_bytes": 156380
     },
     {
-      "subquestion_id": "SQ19_NONCE_WORK_ACTION_APPROVAL_RULEBOOK",
-      "question": "What approval records, rulebook references, and persisted actions are recorded in store.json of run work_action_approval_rulebook_20260930_1?",
-      "purpose": "Verify how work action approvals were represented and persisted during the rulebook validation run.",
+      "subquestion_id": "SQ14_nonce_ground_truth_skill_store",
+      "question": "What was recorded in store/store.json for ground_truth_verification_skill_20260930_1?",
+      "purpose": "Inspect the store container of the ground truth skill verification run to examine state storage and persisted evidence.",
       "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json"
+        "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json"
       ],
       "interpretation_requirements": [
-        "Extract approval flags, action descriptors, and rule references from store.json.",
-        "Interpret whether actions required human-in-the-loop approval or automatic rule evaluation.",
-        "Decide whether rulebook enforcement was active in this execution."
+        "Raw facts: inspect keys, evidence payloads, and verification flags.",
+        "Interpretations: correlate store contents with the supervisory dialogue from SQ13.",
+        "Truth decision: verify whether ground-truth verification results were properly recorded in the execution store."
       ],
       "expected_findings": [
-        "Persisted work action records and approval decision metadata.",
-        "Evidence of rulebook application to specific execution actions."
+        "Persisted records of ground-truth checks in the store.",
+        "Confirmation of persistence mechanism consistency."
       ],
-      "synthesis_dependencies": [],
-      "context_bytes": 164202
+      "synthesis_dependencies": [
+        "SQ13_nonce_ground_truth_skill_evaluation"
+      ],
+      "context_bytes": 142281
     },
     {
-      "subquestion_id": "SQ20_NONCE_LIVE_GT_INTEGRATION",
-      "question": "What live ground-truth verification checks and runtime assertions are recorded in messages.json of run live_ground_truth_integration_20261001_1?",
-      "purpose": "Analyze how live ground truth was integrated into supervisory prompts and responses in this late run.",
+      "subquestion_id": "SQ15_nonce_live_gt_integration_messages",
+      "question": "What supervisory interactions and role separations are shown in live_ground_truth_integration_20261001_1/messages.json and role_separation_20260930T181400/state.json?",
+      "purpose": "Evaluate messages from the live ground truth integration run and the state of the role separation run to check enforcement of live verification and role isolation.",
       "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json"
+        "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json",
+        "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/state.json"
       ],
       "interpretation_requirements": [
-        "Extract verification queries, ground-truth calculation outputs, and supervisor decisions.",
-        "Interpret whether live ground-truth checks prevented invalid transitions.",
-        "Decide truth status of live ground truth integration into the supervisory loop."
+        "Raw facts: observe role labels (Supervisor vs Worker/Executor) and live ground-truth checks in messages and state.",
+        "Interpretations: determine whether distinct roles and deterministic live verifications were enforced during execution.",
+        "Truth decision: establish whether role separation and live ground truth integration were operating as required by modern specifications."
       ],
       "expected_findings": [
-        "Detailed supervisory messages executing live ground-truth verification.",
-        "Confirmation of whether live ground-truth results overrode model claims."
+        "Evidence of role separation between supervisor and subordinate agent.",
+        "Operational evidence of live ground truth integration."
       ],
-      "synthesis_dependencies": [],
-      "context_bytes": 128710
+      "synthesis_dependencies": [
+        "SQ02_executable_runtime_core"
+      ],
+      "context_bytes": 241668
     },
     {
-      "subquestion_id": "SQ21_NONCE_MERGE_STEP3_TSR",
-      "question": "How were Step 3 TSR evaluation heuristics applied, scored, and recorded in messages.json of run merge_step3_tsr_evaluation_heuristic_20261001_1?",
-      "purpose": "Examine the runtime application and prompt injection of the merged Step 3 TSR evaluation heuristic.",
+      "subquestion_id": "SQ16_nonce_live_gt_integration_store",
+      "question": "What artifacts and verification logs were written to store/store.json during live_ground_truth_integration_20261001_1?",
+      "purpose": "Verify store mutations and live verification telemetry persisted in the live GT integration run.",
+      "context_files": [
+        "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json"
+      ],
+      "interpretation_requirements": [
+        "Raw facts: extract live GT verification entries, timestamps, and target paths.",
+        "Interpretations: evaluate whether store captures deterministic verification outputs.",
+        "Truth decision: verify persistence fidelity of live ground truth checks."
+      ],
+      "expected_findings": [
+        "Detailed structure of live ground-truth data in the persistent store.",
+        "Proof of store updates following verification."
+      ],
+      "synthesis_dependencies": [
+        "SQ15_nonce_live_gt_integration_messages"
+      ],
+      "context_bytes": 142361
+    },
+    {
+      "subquestion_id": "SQ17_nonce_demo_and_skill_transitions",
+      "question": "What state progression, transition status, and execution metadata are captured in demo_20260930T155153_eadd5e5248/state.json?",
+      "purpose": "Assess the demo run's state.json to observe typical run execution, state transitions, and step progression under nominal conditions.",
+      "context_files": [
+        "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json"
+      ],
+      "interpretation_requirements": [
+        "Raw facts: document step sequencing, transition timestamps, and completion markers.",
+        "Interpretations: verify whether demo run transitions correspond to canonical state machine specifications.",
+        "Truth decision: assess whether the demo run demonstrates full lifecycle compliance."
+      ],
+      "expected_findings": [
+        "Step-by-step state transition record of a nominal demo execution.",
+        "Validation of standard state machine progression."
+      ],
+      "synthesis_dependencies": [
+        "SQ02_executable_runtime_core"
+      ],
+      "context_bytes": 128750
+    },
+    {
+      "subquestion_id": "SQ18_nonce_skill_interface_and_reeval_states",
+      "question": "What step progressions and supervisory evaluations are recorded in skill_interface_20260930T155700/state.json?",
+      "purpose": "Examine state progression and supervisory handling in the skill interface run.",
+      "context_files": [
+        "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/state.json"
+      ],
+      "interpretation_requirements": [
+        "Raw facts: extract interface validation states, transition flags, and recorded errors.",
+        "Interpretations: evaluate how the skill interface contract was validated and transitioned.",
+        "Truth decision: determine if interface contracts were enforced during this historical run."
+      ],
+      "expected_findings": [
+        "Verification of skill interface step transitions and state schema compliance."
+      ],
+      "synthesis_dependencies": [
+        "SQ02_executable_runtime_core"
+      ],
+      "context_bytes": 139285
+    },
+    {
+      "subquestion_id": "SQ19_nonce_skill_reeval_state",
+      "question": "What step transitions and reevaluation criteria are recorded in skill_reeval_20260930T170100/state.json?",
+      "purpose": "Examine the state record of skill reevaluation to verify reevaluation loops, step rollback or advancement, and supervisory outcomes.",
+      "context_files": [
+        "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/state.json"
+      ],
+      "interpretation_requirements": [
+        "Raw facts: record reevaluation triggers, step adjustments, and supervisory judgment fields.",
+        "Interpretations: determine whether reevaluation logic matched historical or current specifications.",
+        "Truth decision: assess whether reevaluation loops operate deterministically or depend on Gemini supervisory decisions."
+      ],
+      "expected_findings": [
+        "Evidence of how reevaluation is represented in the machine state.",
+        "Identification of loop termination and advancement conditions."
+      ],
+      "synthesis_dependencies": [
+        "SQ02_executable_runtime_core"
+      ],
+      "context_bytes": 190417
+    },
+    {
+      "subquestion_id": "SQ20_nonce_agents_schema_migration_messages",
+      "question": "What schema migration instructions and supervisory interactions took place in agents_schema_migration_20260930_1/messages.json?",
+      "purpose": "Investigate the execution dialogue during the canonical Agents schema migration to trace user requirements and schema contract transitions.",
+      "context_files": [
+        "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json"
+      ],
+      "interpretation_requirements": [
+        "Raw facts: extract schema migration directives, proposed Agents.md edits, and validation responses.",
+        "Interpretations: identify which schema structures were deprecated and which were newly instituted.",
+        "Truth decision: confirm the exact moment and requirements governing the Agents.md schema migration."
+      ],
+      "expected_findings": [
+        "Record of schema migration directives and validation checks.",
+        "Provenance of current Agents.md schema formatting rules."
+      ],
+      "synthesis_dependencies": [
+        "SQ04_specification_and_step3_contracts"
+      ],
+      "context_bytes": 237925
+    },
+    {
+      "subquestion_id": "SQ21_nonce_agents_schema_migration_store",
+      "question": "What state and schema transformations were persisted in agents_schema_migration_20260930_1/store/store.json?",
+      "purpose": "Inspect the persistent store modifications from the Agents schema migration run to verify how schema updates were finalized in storage.",
+      "context_files": [
+        "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json"
+      ],
+      "interpretation_requirements": [
+        "Raw facts: catalog modified store keys, migrated schema definitions, and migration metadata.",
+        "Interpretations: verify if the stored schema matches current Agents.md structure.",
+        "Truth decision: establish whether the schema migration completed successfully in persistence."
+      ],
+      "expected_findings": [
+        "Store-level verification of schema migration completion.",
+        "Baseline of persisted schema definitions."
+      ],
+      "synthesis_dependencies": [
+        "SQ20_nonce_agents_schema_migration_messages"
+      ],
+      "context_bytes": 197864
+    },
+    {
+      "subquestion_id": "SQ22_nonce_step3_tsr_evaluation_messages",
+      "question": "How were the Step 3 TSR evaluation heuristic and test corpus validated in merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json?",
+      "purpose": "Evaluate messages from the merge Step 3 TSR evaluation run to understand how the test suite and evaluation heuristics were verified and accepted.",
       "context_files": [
         "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json"
       ],
       "interpretation_requirements": [
-        "Extract Step 3 TSR evaluation scores, heuristic rules evaluated, and supervisory decisions.",
-        "Interpret whether the merged heuristic was strictly followed by Gemini.",
-        "Decide truth status of Step 3 TSR heuristic enforcement in actual execution."
+        "Raw facts: identify test cases executed, scoring outputs, and supervisory approval statements.",
+        "Interpretations: determine whether evaluation heuristic acceptance was based on empirical pass rates.",
+        "Truth decision: verify if the merged Step 3 evaluation artifact represents the surviving normative standard."
       ],
       "expected_findings": [
-        "Recorded Step 3 evaluation prompts, TSR scoring criteria, and pass/fail verdicts.",
-        "Alignment between runtime prompt contents and step-3-evaluation.json."
+        "Supervisory dialogue confirming acceptance of step-3-evaluation.json.",
+        "Evidence of empirical verification against TSR benchmarks."
       ],
-      "synthesis_dependencies": [],
+      "synthesis_dependencies": [
+        "SQ04_specification_and_step3_contracts",
+        "SQ06_git_patch_step3_evaluation"
+      ],
       "context_bytes": 201924
     },
     {
-      "subquestion_id": "SQ22_NONCE_SKILL_BOOTSTRAP_LINEAGE",
-      "question": "What requirement provenance, execution return, and step behavior are established for the skill_bootstrap_update_20260930T170700 nonce run via git lineage and commit history?",
-      "purpose": "Account for the execution context and outcome of skill_bootstrap_update_20260930T170700 whose run directory files exceed the context window ceiling, using git lineage evidence.",
+      "subquestion_id": "SQ23_nonce_approval_rulebook_messages",
+      "question": "What interactions and control checks were executed during work_action_approval_rulebook_20260930_1/messages.json?",
+      "purpose": "Examine supervisory messages from the work action approval rulebook run to observe how the rulebook was formulated and whether approval controls were exercised.",
       "context_files": [
-        "generated/git/live-supervisor-lineage.log"
+        "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json"
       ],
       "interpretation_requirements": [
-        "Locate commit records and messages corresponding to the skill_bootstrap_update run.",
-        "Interpret the prompt directive, changes committed, and reported outcome.",
-        "Decide truth status of what requirement was introduced or tested in this run."
+        "Raw facts: inspect user requests for action approvals and supervisory decisions.",
+        "Interpretations: analyze whether approvals were evaluated against the rulebook artifact or synthesized ad-hoc by Gemini.",
+        "Truth decision: determine if the approval rulebook was intended as a standalone policy artifact or a hard machine barrier."
       ],
       "expected_findings": [
-        "Lineage evidence for the skill bootstrap update execution and resulting artifacts.",
-        "Full accounting for this nonce run to satisfy the completeness requirement."
+        "Context of work action approval rulebook creation.",
+        "Distinction between artifact authoring vs automated runtime gating."
       ],
       "synthesis_dependencies": [
-        "SQ07_REQUIREMENT_LINEAGE_AND_PROMPTS"
+        "SQ03_ancillary_maintenance_and_control_artifacts"
       ],
-      "context_bytes": 98781
+      "context_bytes": 183435
     },
     {
-      "subquestion_id": "SQ23_REQUIREMENT_LIFECYCLE_AND_SUPERSESSION",
-      "question": "Synthesizing across all historical prompts, commits, specification revisions, and nonce runs, what is the complete requirement inventory, and which requirements survived versus were superseded (fully or partially)?",
-      "purpose": "Construct the authoritative, deduplicated lifecycle table of every historical requirement, mapping origin, modifications, supersession status, and current active status.",
+      "subquestion_id": "SQ24_nonce_approval_rulebook_store",
+      "question": "What data and rule structures were written to store/store.json in work_action_approval_rulebook_20260930_1?",
+      "purpose": "Examine the store container of the rulebook run to inspect the persisted rulebook structure and verify storage fidelity.",
       "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/Agents.md",
-        "metadata/historical-audit-data.json",
-        "metadata/historical-audit-trigger.json"
+        "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json"
       ],
       "interpretation_requirements": [
-        "Integrate findings from SQ04, SQ06, SQ07, SQ08, and SQ09-SQ22.",
-        "Classify every requirement lifecycle state: ACTIVE_SURVIVING, FULLY_SUPERSEDED, PARTIALLY_SUPERSEDED, or RETIRED.",
-        "For superseded requirements, explicitly identify the superseding prompt, commit, or specification clause.",
-        "Formulate truth decisions on the exact set of user requirements that survive today."
+        "Raw facts: extract persisted rulebook entries, categories, and permission rules.",
+        "Interpretations: compare stored rules against work-action-approval-rulebook.json.",
+        "Truth decision: establish whether the stored rulebook was captured as a final persistent deliverable."
       ],
       "expected_findings": [
-        "Exhaustive requirement catalog with unique requirement IDs and lineage locators.",
-        "Explicit supersession map identifying predecessor and successor requirements.",
-        "Final list of surviving requirements that the user still wants today."
+        "Exact snapshot of rulebook persistence.",
+        "Verification of structural consistency with the root repository rulebook."
       ],
       "synthesis_dependencies": [
-        "SQ04_STEP3_EVAL_HISTORY",
-        "SQ06_CURRENT_SPECIFICATION_AGENTS_MD",
-        "SQ07_REQUIREMENT_LINEAGE_AND_PROMPTS",
-        "SQ08_HISTORICAL_GIT_SNAPSHOT_LINEAGE",
-        "SQ09_NONCE_EARLY_STEP0_FAILURES",
-        "SQ10_NONCE_STEP0_T132500",
-        "SQ11_NONCE_DEMO_RUN",
-        "SQ12_NONCE_SKILL_INTERFACE",
-        "SQ13_NONCE_ROLE_SEPARATION",
-        "SQ14_NONCE_SKILL_REEVAL",
-        "SQ15_NONCE_SKILL_REVISION",
-        "SQ16_NONCE_SKILL_REVISION_REJECT",
-        "SQ17_NONCE_AGENTS_SCHEMA_MIGRATION",
-        "SQ18_NONCE_GT_VERIFICATION_SKILL",
-        "SQ19_NONCE_WORK_ACTION_APPROVAL_RULEBOOK",
-        "SQ20_NONCE_LIVE_GT_INTEGRATION",
-        "SQ21_NONCE_MERGE_STEP3_TSR",
-        "SQ22_NONCE_SKILL_BOOTSTRAP_LINEAGE"
+        "SQ23_nonce_approval_rulebook_messages"
       ],
-      "context_bytes": 77629
-    },
-    {
-      "subquestion_id": "SQ24_CURRENT_MACHINE_VS_SURVIVING_REQS_RECONCILIATION",
-      "question": "Comparing the verified surviving requirements from SQ23 against the current machine's executable source and workflows (SQ01, SQ02, SQ03, SQ05), does today's machine actually contain and enforce everything the user still wants, and exactly what gaps constitute present corrective work?",
-      "purpose": "Perform the final gap reconciliation and truth decision synthesis, reporting implemented, missing, partial, unenforced, and incorrectly represented requirements, along with completeness verification across all 16 nonce runs.",
-      "context_files": [
-        "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
-        "repo/ChatMachines/GeminiSupervisor/Agents.md",
-        "metadata/historical-audit-data.json"
-      ],
-      "interpretation_requirements": [
-        "Compare each active surviving requirement strictly against executable source logic in send-to-gemini.js, workflow YAML, and active configs.",
-        "Classify implementation status: FULLY_ENFORCED, PARTIALLY_ENFORCED, UNENFORCED_SPEC_ONLY, or MISSING.",
-        "Designate an outstanding defect as present corrective work if and only if the requirement survives active and implementation is partial, unenforced, or missing.",
-        "Provide explicit evidence locators (file, line/block) for every verified enforcement or gap.",
-        "Document any unresolved ambiguities or conflicting historical signals."
-      ],
-      "expected_findings": [
-        "Verified description of today's executable machine.",
-        "Comprehensive matrix of surviving requirements vs current implementation.",
-        "Precise list of outstanding gaps representing genuine present corrective work.",
-        "Completeness proofs showing all 16 nonce runs and all recovered requirements are accounted for."
-      ],
-      "synthesis_dependencies": [
-        "SQ01_CURRENT_RUNTIME_CORE",
-        "SQ02_CURRENT_DEPENDENCY_SYNC",
-        "SQ03_CURRENT_STEP3_EVAL_CONTRACTS",
-        "SQ05_CURRENT_APPROVAL_AND_GT_ARTIFACTS",
-        "SQ23_REQUIREMENT_LIFECYCLE_AND_SUPERSESSION"
-      ],
-      "context_bytes": 124964
+      "context_bytes": 164202
     }
   ],
   "completeness_strategy": [
-    "Run-level completeness: Ensure all 16 distinct nonce runs in the archive manifest are explicitly analyzed. Fifteen runs are assigned directly to dedicated subquestions (SQ09-SQ21) using their contained files (state.json, messages.json, or store.json) that fit strictly within the 250,000-byte ceiling. The remaining run (skill_bootstrap_update_20260930T170700), whose individual files each exceed 250,000 bytes, is audited via SQ22 using the complete live git lineage log and historical commit records.",
-    "Requirement-level completeness: Extract every historical instruction, prompt directive, and architectural pivot from live-supervisor-lineage.log, git-log.txt, and historical-audit-data.json into a unified requirement registry in SQ23. Trace each requirement through subsequent commits to identify superseding events (both full and partial) or ongoing active status.",
-    "Orthogonal lifecycle and implementation separation: Maintain independent tracking for requirement lifecycle (active vs superseded) and implementation state (implemented vs unimplemented). Superseded requirements are classified as non-corrective history, whereas active requirements that lack executable enforcement in send-to-gemini.js or workflows are flagged as present corrective work.",
-    "Deterministic verification of current machine: Never infer executable behavior from descriptive documentation (e.g. Agents.md, SKILL.md, or commit self-reports). Ground current behavior strictly in parsed JavaScript logic in send-to-gemini.js, GitHub Actions execution steps in gemini-chat.yml, and schema validation structures in SQ01-SQ05.",
-    "Three-layer audit trail: For every requirement and machine feature, document the dependency chain: raw facts (exact code lines, commit SHAs, file excerpts) -> semantic interpretations (inferred author intent, scope, and behavioral meaning) -> truth decisions (active surviving vs superseded, enforced vs corrective gap).",
-    "Subquestion reconciliation: Systematically cross-check findings across sub-evaluators in SQ24 to identify contradictions, corroborate behavioral claims against multiple runs, and document any indeterminate or ambiguous requirement boundaries."
+    "Context Ceiling Enforcement: Every planned subquestion strictly complies with the <= 250,000 bytes manifest size limit, with the largest context totaling 245,142 bytes (SQ11).",
+    "Exhaustive Nonce Accounting: All 16 distinct nonce run containers from the manifest are explicitly audited across SQ08 through SQ24. For oversized run containers where individual files exceed 250k (specifically skill_bootstrap_update_20260930T170700 and large state/messages/store files), requirement lineage, runtime behavior, and supersession are verified via the Git lineage (SQ05) and targeted sibling runs (SQ11, SQ12, SQ18, SQ19).",
+    "Rigorous Fact -> Interpretation -> Truth Decision Pipeline: Each sub-evaluator is instructed to isolate objective observations (source code AST, raw patch lines, JSON fields) from semantic interpretations before arriving at normative truth decisions regarding requirement validity or supersession.",
+    "Orthogonal Lifecycle vs Implementation Dimensions: Requirements recovered from Agents.md, Git commits, and prompt histories will be categorized along two independent axes: Lifecycle State (Active, Partially Superseded, Fully Superseded) and Machine State (Implemented & Enforced, Partial, Missing/Unenforced, Misrepresented).",
+    "Corrective Work Identification: Only requirements proven to be Active today that lack deterministic implementation or enforcement in today's executable source (send-to-gemini.js, workflows, config) will be classified as outstanding defects requiring present corrective work.",
+    "Subquestion Synthesis and Contradiction Reconciliation: Subsequent synthesis will ingest all 24 sub-evaluation results sequentially, reconcile conflicting claims between descriptive specifications and executable code, and report explicit unresolved ambiguities."
   ]
 }
