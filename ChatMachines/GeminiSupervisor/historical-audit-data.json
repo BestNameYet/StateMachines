@@ -1,0 +1,198 @@
+{
+  "version": 1,
+  "description": "Source map for the GeminiSupervisor current-machine and requirement-lineage audit. This file identifies historical and current evidence sources, describes what each source can establish, and supplies the dedicated historical-audit workflow with the exact repository paths to archive. The source map is evidence-routing metadata only; it does not itself decide requirement meaning, supersession, implementation, or compliance.",
+  "archive_policy": {
+    "copy_repo_paths": true,
+    "preserve_repo_relative_paths": true,
+    "generate_sha256_manifest": true,
+    "generate_live_git_history_for_flagged_entries": true,
+    "generate_full_supervisor_lineage_log": true,
+    "include_predecessor_path": "ChatMachines/GeminiChatGPTAppScript",
+    "current_path": "ChatMachines/GeminiSupervisor"
+  },
+  "evidence_precedence_guidance": [
+    "Raw Git objects, diffs, tree state, and current executable source/workflows are stronger evidence of repository facts than generated narrative summaries.",
+    "Persisted nonce state/messages/store are primary evidence of what the Supervisor recorded during those runs, but model statements inside them remain testimony unless corroborated by repository/runtime evidence.",
+    "Agents.md and evaluation artifacts are evidence of specified or requested behavior; they do not alone prove executable enforcement.",
+    "commit-history.md is a secondary historical interpretation artifact and is known to contain semantic judgments that must not be treated as raw ground truth."
+  ],
+  "entries": [
+    {
+      "id": "commit_history_record",
+      "path": "ChatMachines/GeminiSupervisor/commit history/commit-history.md",
+      "kind": "file",
+      "category": "historical_interpretation",
+      "description": "Generated commit-by-commit narrative for the Supervisor lineage. Useful for locating candidate initiating prompts, design movements, and prior semantic interpretations. Its SUCCESS/FAILURE judgments are not authoritative and were previously shown to over-infer semantics; corroborate claims with raw Git, nonce records, or verbatim user evidence.",
+      "authority": "secondary",
+      "include_git_history": false,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "lineage_git_log_snapshot",
+      "path": "ChatMachines/GeminiSupervisor/commit history/git-log.txt",
+      "kind": "file",
+      "category": "historical_git_snapshot",
+      "description": "Previously generated raw Git log snapshot for the GeminiSupervisor and predecessor lineage through its recorded cutoff. Useful as a fixed historical snapshot, but the workflow also generates a fresh live lineage log so later commits are not omitted.",
+      "authority": "primary_for_covered_git_facts",
+      "include_git_history": false,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "persisted_nonce_runs",
+      "path": "ChatMachines/GeminiSupervisor/runs",
+      "kind": "directory",
+      "recursive": true,
+      "category": "historical_execution_records",
+      "description": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+      "authority": "primary_for_persisted_run_state",
+      "include_git_history": false,
+      "default_evaluator_input": false
+    },
+    {
+      "id": "retired_evaluation_documents",
+      "path": "ChatMachines/GeminiSupervisor/historical",
+      "kind": "directory",
+      "recursive": true,
+      "category": "retired_specification",
+      "description": "Retired evaluation documents preserved after later architecture changes. These are historical evidence of earlier desired/evaluative structures and are useful for requirement lineage and supersession analysis, but they are not current governing requirements merely because they remain in the repository.",
+      "authority": "historical_specification_evidence",
+      "include_git_history": false,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "agents_md",
+      "path": "ChatMachines/GeminiSupervisor/Agents.md",
+      "kind": "file",
+      "category": "current_specification_and_requirement_history",
+      "description": "Current canonical Supervisor specification. Its present contents are evidence of today's stated requirements. Its Git history is generated into the archive to show how requested requirements and schemas changed over time. Specification text alone does not prove runtime enforcement.",
+      "authority": "current_normative_specification",
+      "include_git_history": true,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "runtime_source",
+      "path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "kind": "file",
+      "category": "current_executable_and_implementation_history",
+      "description": "Current Node.js Supervisor runtime. The current file is primary evidence of implemented validation, Gemini supervision, state transitions, persistence, and ground-truth checks. Its generated Git history is evidence of implementation changes over time.",
+      "authority": "primary_current_implementation",
+      "include_git_history": true,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "step3_evaluation",
+      "path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "kind": "file",
+      "category": "current_evaluation_artifact_and_history",
+      "description": "Current consolidated Step 3 evaluation heuristic and Step3_TSR corpus. It is injected into Step 3 supervision by the current runtime. Its Git history helps identify changes in desired evaluation behavior and test coverage.",
+      "authority": "current_step3_evaluation_contract",
+      "include_git_history": true,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "supervisor_config",
+      "path": "ChatMachines/GeminiSupervisor/config.json",
+      "kind": "file",
+      "category": "current_runtime_configuration_and_history",
+      "description": "Current shared Supervisor path/dependency configuration consumed by the runtime. Its history can show when external artifacts and runtime surfaces became canonical.",
+      "authority": "primary_current_configuration",
+      "include_git_history": true,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "state_machine_workflow",
+      "path": ".github/workflows/gemini-chat.yml",
+      "kind": "file",
+      "category": "current_execution_orchestration_and_history",
+      "description": "Current GitHub Actions entrypoint for normal Supervisor execution. Establishes the actual repository event that starts the machine, Node runtime setup, environment, and which run-state changes are committed.",
+      "authority": "primary_current_orchestration",
+      "include_git_history": true,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "dependency_sync_workflow",
+      "path": ".github/workflows/gemini-supervisor-dependency-sync.yml",
+      "kind": "file",
+      "category": "current_dependency_maintenance",
+      "description": "Current maintenance workflow that synchronizes mapped Supervisor dependency files after Agents.md or runtime-source changes. It is part of the machine-maintenance architecture, not the normal user-request execution path.",
+      "authority": "primary_current_maintenance_behavior",
+      "include_git_history": true,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "dependency_map",
+      "path": "ChatMachines/GeminiSupervisor/dependency-map.json",
+      "kind": "file",
+      "category": "current_dependency_routing",
+      "description": "Standalone file-to-file dependency map consumed by the dependency synchronization workflow. Establishes which peer artifacts are expected to remain aligned when a mapped authoritative file changes.",
+      "authority": "primary_current_dependency_routing",
+      "include_git_history": true,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "dependency_sync_sentinel",
+      "path": "ChatMachines/GeminiSupervisor/dependency-sync-sentinel.json",
+      "kind": "file",
+      "category": "current_dependency_guard",
+      "description": "Guard state used by the dependency synchronization workflow to suppress recursive synchronization commits while peer files are being rewritten.",
+      "authority": "primary_current_guard_state",
+      "include_git_history": true,
+      "default_evaluator_input": false
+    },
+    {
+      "id": "supervisor_nextmessage",
+      "path": "ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json",
+      "kind": "file",
+      "category": "trigger_and_user_instruction_history",
+      "description": "Current Supervisor trigger envelope. Its Git history is especially useful for recovering historical run nonces, step submissions, and user/request payloads that drove workflow executions.",
+      "authority": "primary_for_committed_trigger_payloads",
+      "include_git_history": true,
+      "default_evaluator_input": false
+    },
+    {
+      "id": "work_action_approval_rulebook",
+      "path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+      "kind": "file",
+      "category": "requested_control_artifact",
+      "description": "Persisted work/action approval rulebook produced during Supervisor development. Its existence proves the artifact was created; whether the current runtime actually enforces it must be decided from executable wiring, not from this file alone.",
+      "authority": "artifact_existence_primary_behavior_secondary",
+      "include_git_history": true,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "live_ground_truth_skill",
+      "path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+      "kind": "file",
+      "category": "requested_skill_artifact",
+      "description": "Skill document defining live ground-truth verification concepts used during development. The current runtime contains deterministic ground-truth mechanisms, but this document itself is descriptive evidence rather than executable enforcement.",
+      "authority": "specification_supporting_evidence",
+      "include_git_history": true,
+      "default_evaluator_input": true
+    },
+    {
+      "id": "tests_directory",
+      "path": "ChatMachines/GeminiSupervisor/tests",
+      "kind": "directory",
+      "recursive": true,
+      "category": "test_and_analysis_artifacts",
+      "description": "Current test and analysis artifacts, including Step 3 evaluation materials and plan/action datasets. Useful for determining what evaluation structures were actually persisted and what supporting examples/tests exist.",
+      "authority": "artifact_evidence",
+      "include_git_history": false,
+      "default_evaluator_input": false
+    }
+  ],
+  "generated_sources": [
+    {
+      "id": "live_supervisor_lineage_git_log",
+      "category": "generated_raw_git_history",
+      "description": "Fresh full Git lineage generated at workflow runtime for both ChatMachines/GeminiChatGPTAppScript and ChatMachines/GeminiSupervisor. This avoids relying on the cutoff of the previously stored git-log.txt.",
+      "authority": "primary_git_history"
+    },
+    {
+      "id": "per_entry_patch_histories",
+      "category": "generated_file_history",
+      "description": "For every file-list entry with include_git_history=true, the workflow generates a path-scoped chronological git log with patches. These histories are evidence for how the artifact changed; semantic conclusions such as supersession still require interpretation.",
+      "authority": "primary_git_history"
+    }
+  ]
+}
