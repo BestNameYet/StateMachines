@@ -1,21 +1,21 @@
-name: GeminiSupervisor truth challenge
+name: GeminiSupervisor truth-reader repair gate
 
 on:
   push:
     branches: [main]
     paths:
-      - ChatMachines/GeminiSupervisor/truth-selector.json
-      - ChatMachines/GeminiSupervisor/active-projections/**
+      - ChatMachines/GeminiSupervisor/runs/*/step-0-form.json
+      - ChatMachines/GeminiSupervisor/runs/*/truth-reader/*.repair.json
 
 permissions:
   contents: write
 
 concurrency:
-  group: gemini-supervisor-truth-challenge
+  group: gemini-supervisor-truth-reader-repair
   cancel-in-progress: false
 
 jobs:
-  truth-challenge:
+  truth-reader-repair:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Determine challenge phase
+      - name: Determine run and phase
         id: phase
         shell: bash
         run: |
@@ -43,64 +43,88 @@ jobs:
             CHANGED=$(git diff --name-only "$BEFORE" "$SHA")
           fi
 
-          SELECTOR_CHANGED=false
-          ACTIVE_CHANGED=false
+          RELEVANT=$(printf '%s\n' "$CHANGED" | grep '^ChatMachines/GeminiSupervisor/runs/' || true)
+          RUNS=$(printf '%s\n' "$RELEVANT" | sed -n 's#^ChatMachines/GeminiSupervisor/runs/\([^/]*\)/.*#\1#p' | sort -u)
+          RUN_COUNT=$(printf '%s\n' "$RUNS" | sed '/^$/d' | wc -l | tr -d ' ')
 
-          if printf '%s\n' "$CHANGED" | grep -qx 'ChatMachines/GeminiSupervisor/truth-selector.json'; then
-            SELECTOR_CHANGED=true
-          fi
-
-          if printf '%s\n' "$CHANGED" | grep -q '^ChatMachines/GeminiSupervisor/active-projections/'; then
-            ACTIVE_CHANGED=true
-          fi
-
-          if [ "$SELECTOR_CHANGED" = true ] && [ "$ACTIVE_CHANGED" = true ]; then
-            echo 'A worker commit may change either the selector or active puzzle projections, not both.' >&2
+          if [ "$RUN_COUNT" -ne 1 ]; then
+            echo "Truth-reader commit must address exactly one run_nonce; found $RUN_COUNT." >&2
             exit 1
           fi
 
-          if [ "$ACTIVE_CHANGED" = true ]; then
-            echo 'mode=verify' >> "$GITHUB_OUTPUT"
-          elif [ "$SELECTOR_CHANGED" = true ]; then
-            echo 'mode=generate' >> "$GITHUB_OUTPUT"
-          else
-            echo 'mode=noop' >> "$GITHUB_OUTPUT"
+          RUN_NONCE=$(printf '%s\n' "$RUNS" | head -n1)
+          FORM_PATH="ChatMachines/GeminiSupervisor/runs/${RUN_NONCE}/step-0-form.json"
+          FORM_CHANGED=false
+          REPAIR_CHANGED=false
+
+          if printf '%s\n' "$CHANGED" | grep -qx "$FORM_PATH"; then
+            FORM_CHANGED=true
+          fi
+          if printf '%s\n' "$CHANGED" | grep -q "^ChatMachines/GeminiSupervisor/runs/${RUN_NONCE}/truth-reader/.*\.repair\.json$"; then
+            REPAIR_CHANGED=true
           fi
 
-      - name: Generate seeded puzzle projections
-        if: steps.phase.outputs.mode == 'generate'
-        run: node ChatMachines/GeminiSupervisor/scripts/truth-challenge-engine.js generate
+          if [ "$FORM_CHANGED" = true ] && [ "$REPAIR_CHANGED" = true ]; then
+            echo 'A worker commit may edit the Step 0 form or repair projections, not both.' >&2
+            exit 1
+          fi
 
-      - name: Commit issued puzzle projections
+          if [ "$REPAIR_CHANGED" = true ]; then
+            INVALID=$(printf '%s\n' "$CHANGED" | grep "^ChatMachines/GeminiSupervisor/runs/${RUN_NONCE}/truth-reader/" | grep -v '\.repair\.json$' || true)
+            if [ -n "$INVALID" ]; then
+              echo 'Worker repair commits may modify only *.repair.json files:' >&2
+              printf '%s\n' "$INVALID" >&2
+              exit 1
+            fi
+            MODE=verify
+          elif [ "$FORM_CHANGED" = true ]; then
+            MODE=generate
+          else
+            MODE=noop
+          fi
+
+          echo "run_nonce=$RUN_NONCE" >> "$GITHUB_OUTPUT"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+
+      - name: Validate Step 0 form
+        if: steps.phase.outputs.mode == 'generate'
+        run: node ChatMachines/GeminiSupervisor/scripts/generate-step-0-form.js validate '${{ steps.phase.outputs.run_nonce }}'
+
+      - name: Generate nonce-scoped full and repair projections
+        if: steps.phase.outputs.mode == 'generate'
+        run: node ChatMachines/GeminiSupervisor/scripts/truth-challenge-engine.js generate-from-form '${{ steps.phase.outputs.run_nonce }}'
+
+      - name: Commit issued repair challenge or zero-document PASS
         if: steps.phase.outputs.mode == 'generate'
         shell: bash
         run: |
           set -euo pipefail
+          RUN='${{ steps.phase.outputs.run_nonce }}'
+          ROOT="ChatMachines/GeminiSupervisor/runs/${RUN}/truth-reader"
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add -A \
-            ChatMachines/GeminiSupervisor/active-projections \
-            ChatMachines/GeminiSupervisor/.truth-challenges \
-            ChatMachines/GeminiSupervisor/.truth-challenge-state.json \
-            ChatMachines/GeminiSupervisor/truth-status.json
+          git add -A "$ROOT"
 
           if git diff --cached --quiet; then
-            echo 'No challenge generated.'
+            echo 'No truth-reader state change to commit.'
             exit 0
           fi
 
-          git commit -m 'Issue GeminiSupervisor truth-reading puzzle'
+          if [ -f "$ROOT/PASS.json" ]; then
+            git commit -m "Complete GeminiSupervisor truth-reading gate: ${RUN}"
+          else
+            git commit -m "Issue GeminiSupervisor truth-reading repair challenge: ${RUN}"
+          fi
           git push origin HEAD:main
 
-      - name: Verify seed/proof swaps
+      - name: Verify repaired projections
         if: steps.phase.outputs.mode == 'verify'
         id: verify
         shell: bash
         run: |
           set +e
-          node ChatMachines/GeminiSupervisor/scripts/truth-challenge-engine.js verify
+          node ChatMachines/GeminiSupervisor/scripts/truth-challenge-engine.js verify '${{ steps.phase.outputs.run_nonce }}'
           CODE=$?
           set -e
 
@@ -112,35 +136,31 @@ jobs:
             exit "$CODE"
           fi
 
-      - name: Commit PASS cleanup or FAIL restoration
+      - name: Commit PASS cleanup or exact FAIL restoration
         if: steps.phase.outputs.mode == 'verify'
         shell: bash
         run: |
           set -euo pipefail
+          RUN='${{ steps.phase.outputs.run_nonce }}'
+          ROOT="ChatMachines/GeminiSupervisor/runs/${RUN}/truth-reader"
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add -A \
-            ChatMachines/GeminiSupervisor/active-projections \
-            ChatMachines/GeminiSupervisor/.truth-challenges \
-            ChatMachines/GeminiSupervisor/.truth-challenge-state.json \
-            ChatMachines/GeminiSupervisor/truth-selector.json \
-            ChatMachines/GeminiSupervisor/truth-status.json
+          git add -A "$ROOT"
 
           if git diff --cached --quiet; then
-            echo 'No truth-challenge state change to commit.'
+            echo 'No truth-reader state change to commit.'
           else
             if [ '${{ steps.verify.outputs.result }}' = 'PASS' ]; then
-              git commit -m 'Complete GeminiSupervisor truth-reading puzzle'
+              git commit -m "Complete GeminiSupervisor truth-reading gate: ${RUN}"
             else
-              git commit -m 'Restore GeminiSupervisor truth-reading puzzle after failed proof'
+              git commit -m "Restore GeminiSupervisor truth-reading repair challenge: ${RUN}"
             fi
             git push origin HEAD:main
           fi
 
-      - name: Mark failed proof
+      - name: Mark failed repair
         if: steps.phase.outputs.mode == 'verify' && steps.verify.outputs.result == 'FAIL'
         run: |
-          echo 'Truth-reading puzzle failed; original seeded projections were restored.' >&2
+          echo 'Truth-reader repair failed; the exact original damaged repair projection was restored.' >&2
           exit 1
