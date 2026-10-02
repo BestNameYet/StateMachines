@@ -1,0 +1,278 @@
+{
+  "response_type": "hierarchical_runtime_implementation",
+  "artifacts": [
+    {
+      "path": "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+      "action": "create",
+      "content_type": "application/json",
+      "content": "{\n  \"version\": \"1.0\",\n  \"token_counter\": {\n    \"implementation\": null\n  },\n  \"B_rules\": [\n    {\n      \"when\": {\"B\": {\"eq\": 0}},\n      \"iterator\": {\n        \"divider\": {\n          \"max_tokens\": null,\n          \"boundary_strategy\": \"shift_divisions_until_all_batches_fit\"\n        },\n        \"evaluator\": {\n          \"model\": null,\n          \"task\": null,\n          \"criteria\": null,\n          \"response_contract\": {\n            \"required_fields\": [],\n            \"schema\": {}\n          }\n        },\n        \"normalization\": {\n          \"enabled\": true,\n          \"strategies\": [\"recover_required_fields_from_malformed_serialization\"]\n        },\n        \"acceptance\": {\n          \"conditions\": [\n            {\n              \"id\": \"invocation_succeeded\",\n              \"source\": \"invocation.status\",\n              \"operator\": \"eq\",\n              \"value\": \"success\"\n            },\n            {\n              \"id\": \"required_fields_recoverable\",\n              \"source\": \"response\",\n              \"operator\": \"required_fields_recoverable\",\n              \"value\": true\n            },\n            {\n              \"id\": \"response_below_hard_token_limit\",\n              \"source\": \"response.tokens\",\n              \"operator\": \"lt\",\n              \"value\": {\"source\": \"divider.max_tokens\", \"divide_by\": 2}\n            }\n          ]\n        },\n        \"retry\": {\n          \"conditionals\": [\n            {\n              \"id\": \"system_error_retry\",\n              \"when\": {\"condition\": \"system_error\", \"retry_number\": {\"eq\": 0}},\n              \"invoke\": {\"fresh\": true, \"inputs\": [\"original_invocation\"]},\n              \"on_success\": {\"retain\": \"retry_response\", \"stop_retry_sequence\": true},\n              \"on_failure\": {\"status\": \"failed\", \"retain\": null, \"stop_retry_sequence\": true}\n            },\n            {\n              \"id\": \"mechanical_response_retry\",\n              \"when\": {\"condition\": \"mechanical_response_failure\", \"retry_number\": {\"eq\": 0}},\n              \"invoke\": {\n                \"fresh\": true,\n                \"inputs\": [\"context\", \"previous_response\", \"mechanical_error\", \"task\", \"criteria\", \"response_contract\"]\n              },\n              \"on_success\": {\"retain\": \"retry_response\", \"stop_retry_sequence\": true},\n              \"on_failure\": {\"retain\": \"latest_response\", \"include_failure_metadata\": true, \"stop_retry_sequence\": true}\n            }\n          ]\n        },\n        \"termination\": {\n          \"condition\": {\n            \"left\": {\"source\": \"round.aggregate_response_tokens\"},\n            \"operator\": \"lte\",\n            \"right\": {\"source\": \"divider.max_tokens\"}\n          },\n          \"on_true\": {\"set\": {\"terminal_round\": true}},\n          \"on_false\": {\"set\": {\"terminal_round\": false}}\n        },\n        \"failed_b_stop\": {\n          \"condition\": {\n            \"source\": \"supervisory.failed_b_count\",\n            \"operator\": \"gte\",\n            \"value\": null\n          },\n          \"on_true\": \"program_failure_return\",\n          \"on_false\": \"continue\"\n        }\n      }\n    },\n    {\n      \"when\": {\"B\": {\"gt\": 0}},\n      \"iterator\": {\n        \"divider\": {\n          \"max_tokens\": null,\n          \"boundary_strategy\": \"shift_divisions_until_all_batches_fit\"\n        },\n        \"evaluator\": {\n          \"model\": null,\n          \"task\": null,\n          \"criteria\": null,\n          \"response_contract\": {\n            \"required_fields\": [],\n            \"schema\": {}\n          }\n        },\n        \"normalization\": {\n          \"enabled\": true,\n          \"strategies\": [\"recover_required_fields_from_malformed_serialization\"]\n        },\n        \"acceptance\": {\n          \"conditions\": [\n            {\"id\": \"invocation_succeeded\", \"source\": \"invocation.status\", \"operator\": \"eq\", \"value\": \"success\"},\n            {\"id\": \"required_fields_recoverable\", \"source\": \"response\", \"operator\": \"required_fields_recoverable\", \"value\": true},\n            {\"id\": \"response_below_hard_token_limit\", \"source\": \"response.tokens\", \"operator\": \"lt\", \"value\": {\"source\": \"divider.max_tokens\", \"divide_by\": 2}}\n          ]\n        },\n        \"retry\": {\n          \"conditionals\": [\n            {\n              \"id\": \"system_error_retry\",\n              \"when\": {\"condition\": \"system_error\", \"retry_number\": {\"eq\": 0}},\n              \"invoke\": {\"fresh\": true, \"inputs\": [\"original_invocation\"]},\n              \"on_success\": {\"retain\": \"retry_response\", \"stop_retry_sequence\": true},\n              \"on_failure\": {\"status\": \"failed\", \"retain\": null, \"stop_retry_sequence\": true}\n            },\n            {\n              \"id\": \"mechanical_response_retry\",\n              \"when\": {\"condition\": \"mechanical_response_failure\", \"retry_number\": {\"eq\": 0}},\n              \"invoke\": {\n                \"fresh\": true,\n                \"inputs\": [\"context\", \"previous_response\", \"mechanical_error\", \"task\", \"criteria\", \"response_contract\"]\n              },\n              \"on_success\": {\"retain\": \"retry_response\", \"stop_retry_sequence\": true},\n              \"on_failure\": {\"retain\": \"latest_response\", \"include_failure_metadata\": true, \"stop_retry_sequence\": true}\n            }\n          ]\n        },\n        \"termination\": {\n          \"condition\": {\n            \"left\": {\"source\": \"round.aggregate_response_tokens\"},\n            \"operator\": \"lte\",\n            \"right\": {\"source\": \"divider.max_tokens\"}\n          },\n          \"on_true\": {\"set\": {\"terminal_round\": true}},\n          \"on_false\": {\"set\": {\"terminal_round\": false}}\n        },\n        \"failed_b_stop\": {\n          \"condition\": {\n            \"source\": \"supervisory.failed_b_count\",\n            \"operator\": \"gte\",\n            \"value\": null\n          },\n          \"on_true\": \"program_failure_return\",\n          \"on_false\": \"continue\"\n        }\n      }\n    }\n  ],\n  \"supervisory_state\": {\n    \"track\": {\n      \"B\": true,\n      \"b\": true,\n      \"b_terminal_status\": true,\n      \"failed_b_count\": true,\n      \"retries\": true,\n      \"response_tokens\": true,\n      \"provenance\": true\n    }\n  },\n  \"provenance\": {\n    \"enabled\": true,\n    \"retain_batch_identity\": true,\n    \"retain_ancestry\": true\n  },\n  \"program_return\": {\n    \"envelope\": null\n  }\n}"
+    },
+    {
+      "path": "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
+      "action": "create",
+      "content_type": "text/javascript",
+      "content": "'use strict';\n\n/** Generic hierarchical evaluation runtime implementation. */\n\nasync function runHierarchicalEvaluation({context, config, gemini, dependencies = {}}) {\n  const state = createRuntimeState(context);\n  while (true) {\n    const iterator = resolveIteratorForB(state.B, config);\n    const batches = await divideContextIntoBatches({context: state.currentContext, divider: iterator.divider, config, dependencies, gemini, B: state.B});\n    state.b = 0;\n    const round = createRoundState({B: state.B, batches, iterator});\n\n    while (state.b < batches.length) {\n      const batch = batches[state.b];\n      const batchResult = await processBatch({B: state.B, b: state.b, batch, iterator, config, gemini, dependencies});\n      commitBatchResult({round, batchResult});\n      updateSupervisoryState({runtimeState: state, batchResult});\n\n      if (evaluateFailedBatchStopCondition({runtimeState: state, iterator, config})) {\n        state.status = 'failed_b_stop';\n        round.status = 'failed_b_stop';\n        return assembleProgramReturn({reason: 'failed_b_stop', runtimeState: state, round, aggregate: null, config});\n      }\n      state.b += 1;\n    }\n\n    const aggregate = await aggregateSuccessfulBatchResults({round, config, dependencies, gemini});\n    round.status = 'complete';\n    state.rounds.push(round);\n\n    if (state.terminalRound === true) {\n      state.status = 'complete';\n      return assembleProgramReturn({reason: 'terminal_round_complete', runtimeState: state, round, aggregate, config});\n    }\n\n    if (evaluateTerminationCondition({aggregate, iterator, runtimeState: state, config})) {\n      state.terminalRound = true;\n    }\n\n    state.currentContext = aggregate.context;\n    state.B += 1;\n  }\n}\n\nfunction createRuntimeState(initialContext) {\n  return {\n    B: 0,\n    b: 0,\n    terminalRound: false,\n    currentContext: initialContext,\n    status: 'running',\n    rounds: [],\n    supervisory: {batches: [], failedBCount: 0, successfulBCount: 0}\n  };\n}\n\nfunction createRoundState({B, batches, iterator}) {\n  return {B, iterator, assignedBatchCount: batches.length, batches: [], aggregateResponseTokens: 0, status: 'running'};\n}\n\nfunction resolveIteratorForB(B, config) {\n  const rules = config.B_rules || [];\n  for (const rule of rules) {\n    if (evaluateConfigCondition(rule.when, {B})) return resolveIteratorDefinition(rule.iterator, config);\n  }\n  throw new Error(`No B rule matched B=${B}`);\n}\n\nfunction resolveIteratorDefinition(definition, config) {\n  if (typeof definition === 'string') {\n    const resolved = config.iterators?.[definition];\n    if (!resolved) throw new Error(`Unknown iterator configuration: ${definition}`);\n    return resolved;\n  }\n  if (definition && typeof definition === 'object') return definition;\n  throw new Error('Invalid iterator configuration');\n}\n\nfunction evaluateConfigCondition(condition, scope) {\n  if (!condition) return false;\n  for (const [field, comparison] of Object.entries(condition)) {\n    if (!evaluateComparison(resolveSourceValue(field, scope), comparison, scope)) return false;\n  }\n  return true;\n}\n\nfunction evaluateComparison(actual, comparison, scope = {}) {\n  if (comparison === null || typeof comparison !== 'object' || Array.isArray(comparison)) return actual === comparison;\n  for (const [operator, configuredValue] of Object.entries(comparison)) {\n    const expected = resolveConfiguredValue(configuredValue, scope);\n    if (!compareValues(actual, operator, expected)) return false;\n  }\n  return true;\n}\n\nasync function countTokens({value, config, dependencies, gemini}) {\n  if (typeof dependencies?.countTokens === 'function') {\n    return dependencies.countTokens(value, config);\n  }\n  if (typeof gemini?.countTokens === 'function') {\n    try {\n      const res = await gemini.countTokens({contents: value});\n      if (typeof res?.totalTokens === 'number') return res.totalTokens;\n      if (typeof res === 'number') return res;\n    } catch {}\n  }\n\n  let text = '';\n  if (typeof value === 'string') {\n    text = value;\n  } else if (value !== null && value !== undefined) {\n    try {\n      text = JSON.stringify(value);\n    } catch {\n      text = String(value);\n    }\n  }\n  if (!text) return 0;\n  const matches = text.match(/\\w+|[^\\s\\w]|\\s+/g);\n  return matches ? matches.length : Math.ceil(text.length / 4);\n}\n\nasync function divideContextIntoBatches({context, divider, config, dependencies, gemini, B}) {\n  const maxTokens = divider.max_tokens;\n  if (!Number.isFinite(maxTokens) || maxTokens <= 0) throw new Error('divider.max_tokens must be positive');\n  const units = await createDivisionUnits({context, divider, config, dependencies});\n  const assignments = await shiftDivisionBoundariesUntilFit({units, maxTokens, divider, config, dependencies, gemini});\n  const batches = [];\n  for (let b = 0; b < assignments.length; b++) {\n    const assignment = assignments[b];\n    const assignedTokens = assignment.tokens ?? await countTokens({value: assignment.context, config, dependencies, gemini});\n    if (assignedTokens > maxTokens) {\n      throw new Error(`Assigned b context tokens (${assignedTokens}) exceeds divider.max_tokens (${maxTokens})`);\n    }\n    batches.push({\n      id: createBatchId(B, b),\n      B,\n      b,\n      context: assignment.context,\n      assignedContextTokens: assignedTokens,\n      provenance: assignment.provenance || []\n    });\n  }\n  return batches;\n}\n\nasync function createDivisionUnits({context, divider, config, dependencies}) {\n  if (typeof dependencies?.createDivisionUnits === 'function') {\n    return dependencies.createDivisionUnits({context, divider, config});\n  }\n  if (Array.isArray(context)) {\n    return context.map((item, index) => {\n      const prov = item?.provenance || (item?.batch_id ? [item.batch_id] : [`unit_${index}`]);\n      return {value: item, provenance: Array.isArray(prov) ? prov : [prov]};\n    });\n  }\n  if (typeof context === 'string') {\n    try {\n      const parsed = JSON.parse(context);\n      if (Array.isArray(parsed)) {\n        return parsed.map((item, index) => {\n          const prov = item?.provenance || (item?.batch_id ? [item.batch_id] : [`unit_${index}`]);\n          return {value: item, provenance: Array.isArray(prov) ? prov : [prov]};\n        });\n      }\n    } catch {}\n    const segments = context.split(/\\n\\n+/).filter(s => s.trim().length > 0);\n    if (segments.length > 1) {\n      return segments.map((seg, idx) => ({value: seg, provenance: [`chunk_${idx}`]}));\n    }\n  }\n  return [{value: context, provenance: []}];\n}\n\nfunction combineUnitsContext(unitValues) {\n  if (unitValues.length === 0) return '';\n  if (unitValues.every(u => typeof u === 'string')) return unitValues.join('\\n\\n');\n  if (unitValues.length === 1) return unitValues[0];\n  return unitValues;\n}\n\nasync function ensureUnitFits({unit, maxTokens, config, dependencies, gemini}) {\n  const tokenCount = await countTokens({value: unit.value, config, dependencies, gemini});\n  if (tokenCount <= maxTokens) {\n    return [{value: unit.value, tokens: tokenCount, provenance: unit.provenance || []}];\n  }\n  if (typeof unit.value === 'string') {\n    const lines = unit.value.split('\\n');\n    if (lines.length > 1) {\n      const subUnits = [];\n      let currentChunk = [];\n      for (const line of lines) {\n        currentChunk.push(line);\n        const chunkStr = currentChunk.join('\\n');\n        const cTokens = await countTokens({value: chunkStr, config, dependencies, gemini});\n        if (cTokens > maxTokens && currentChunk.length > 1) {\n          currentChunk.pop();\n          subUnits.push({value: currentChunk.join('\\n'), provenance: unit.provenance || []});\n          currentChunk = [line];\n        }\n      }\n      if (currentChunk.length > 0) {\n        subUnits.push({value: currentChunk.join('\\n'), provenance: unit.provenance || []});\n      }\n      const result = [];\n      for (const sub of subUnits) {\n        const fits = await ensureUnitFits({unit: sub, maxTokens, config, dependencies, gemini});\n        result.push(...fits);\n      }\n      return result;\n    } else {\n      const words = unit.value.split(/\\s+/);\n      if (words.length > 1) {\n        const subUnits = [];\n        let currentChunk = [];\n        for (const word of words) {\n          currentChunk.push(word);\n          const chunkStr = currentChunk.join(' ');\n          const cTokens = await countTokens({value: chunkStr, config, dependencies, gemini});\n          if (cTokens > maxTokens && currentChunk.length > 1) {\n            currentChunk.pop();\n            subUnits.push({value: currentChunk.join(' '), provenance: unit.provenance || []});\n            currentChunk = [word];\n          }\n        }\n        if (currentChunk.length > 0) {\n          subUnits.push({value: currentChunk.join(' '), provenance: unit.provenance || []});\n        }\n        const result = [];\n        for (const sub of subUnits) {\n          const fits = await ensureUnitFits({unit: sub, maxTokens, config, dependencies, gemini});\n          result.push(...fits);\n        }\n        return result;\n      } else {\n        const charStep = Math.max(1, Math.floor(maxTokens * 2));\n        const subUnits = [];\n        for (let i = 0; i < unit.value.length; i += charStep) {\n          subUnits.push({value: unit.value.slice(i, i + charStep), provenance: unit.provenance || []});\n        }\n        const result = [];\n        for (const sub of subUnits) {\n          const fits = await ensureUnitFits({unit: sub, maxTokens, config, dependencies, gemini});\n          result.push(...fits);\n        }\n        return result;\n      }\n    }\n  } else {\n    const jsonStr = JSON.stringify(unit.value);\n    return ensureUnitFits({unit: {value: jsonStr, provenance: unit.provenance || []}, maxTokens, config, dependencies, gemini});\n  }\n}\n\nasync function shiftDivisionBoundariesUntilFit({units, maxTokens, divider, config, dependencies, gemini}) {\n  if (typeof dependencies?.shiftDivisionBoundariesUntilFit === 'function') {\n    return dependencies.shiftDivisionBoundariesUntilFit({\n      units,\n      maxTokens,\n      divider,\n      countTokens: value => countTokens({value, config, dependencies, gemini})\n    });\n  }\n\n  const atomicUnits = [];\n  for (const unit of units) {\n    const fitting = await ensureUnitFits({unit, maxTokens, config, dependencies, gemini});\n    atomicUnits.push(...fitting);\n  }\n\n  if (atomicUnits.length === 0) {\n    return [{context: null, tokens: 0, provenance: []}];\n  }\n\n  const assignments = [];\n  let currentGroup = [];\n  let currentProvenances = [];\n\n  for (let i = 0; i < atomicUnits.length; i++) {\n    const candidateGroup = [...currentGroup, atomicUnits[i].value];\n    const candidateContext = combineUnitsContext(candidateGroup);\n    const candidateTokens = await countTokens({value: candidateContext, config, dependencies, gemini});\n\n    if (candidateTokens <= maxTokens) {\n      currentGroup = candidateGroup;\n      currentProvenances.push(...(atomicUnits[i].provenance || []));\n    } else {\n      if (currentGroup.length > 0) {\n        const finalContext = combineUnitsContext(currentGroup);\n        const finalTokens = await countTokens({value: finalContext, config, dependencies, gemini});\n        assignments.push({\n          context: finalContext,\n          tokens: finalTokens,\n          provenance: [...new Set(currentProvenances)]\n        });\n        currentGroup = [atomicUnits[i].value];\n        currentProvenances = [...(atomicUnits[i].provenance || [])];\n      } else {\n        assignments.push({\n          context: atomicUnits[i].value,\n          tokens: atomicUnits[i].tokens,\n          provenance: [...new Set(atomicUnits[i].provenance || [])]\n        });\n        currentGroup = [];\n        currentProvenances = [];\n      }\n    }\n  }\n\n  if (currentGroup.length > 0) {\n    const finalContext = combineUnitsContext(currentGroup);\n    const finalTokens = await countTokens({value: finalContext, config, dependencies, gemini});\n    assignments.push({\n      context: finalContext,\n      tokens: finalTokens,\n      provenance: [...new Set(currentProvenances)]\n    });\n  }\n\n  return assignments;\n}\n\nasync function processBatch({B, b, batch, iterator, config, gemini, dependencies}) {\n  const evaluator = resolveEvaluatorConfiguration(iterator.evaluator, config);\n  let attempt = await executeEvaluatorAttempt({B, b, batch, evaluator, iterator, retryInput: null, config, gemini, dependencies});\n  if (!attempt.accepted) {\n    attempt = await executeRetryConditionals({initialAttempt: attempt, B, b, batch, evaluator, iterator, config, gemini, dependencies});\n  }\n  return createTerminalBatchResult({B, b, batch, attempt});\n}\n\nfunction resolveEvaluatorConfiguration(definition, config) {\n  if (typeof definition === 'string') {\n    const evaluator = config.evaluators?.[definition];\n    if (!evaluator) throw new Error(`Unknown evaluator: ${definition}`);\n    return evaluator;\n  }\n  return definition;\n}\n\nfunction assembleEvaluatorInput({batch, evaluator, retryInput = null}) {\n  if (retryInput) {\n    if (retryInput.original_invocation && Object.keys(retryInput).length === 1) {\n      return retryInput.original_invocation;\n    }\n    return retryInput;\n  }\n  return {context: batch.context, task: evaluator.task, criteria: evaluator.criteria, response_contract: evaluator.response_contract};\n}\n\nasync function invokeGemini({input, evaluator, gemini}) {\n  if (gemini) {\n    if (typeof gemini.invoke === 'function') {\n      return await gemini.invoke({model: evaluator.model, input});\n    }\n    if (typeof gemini.generateContent === 'function') {\n      const response = await gemini.generateContent({\n        model: evaluator.model,\n        contents: typeof input === 'string' ? input : JSON.stringify(input)\n      });\n      return response?.text?.() || response?.response?.text?.() || response;\n    }\n    if (typeof gemini.getGenerativeModel === 'function') {\n      const modelInstance = gemini.getGenerativeModel({model: evaluator.model});\n      const response = await modelInstance.generateContent(\n        typeof input === 'string' ? input : JSON.stringify(input)\n      );\n      return response?.response?.text?.() || response?.text?.() || response;\n    }\n    if (typeof gemini === 'function') {\n      return await gemini({model: evaluator.model, input});\n    }\n  }\n\n  const apiKey = process.env.GEMINI_API_KEY;\n  if (apiKey) {\n    const model = evaluator.model || 'gemini-1.5-flash';\n    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;\n    const promptText = typeof input === 'string' ? input : JSON.stringify(input);\n    const body = {\n      contents: [{parts: [{text: promptText}]}]\n    };\n    const res = await fetch(url, {\n      method: 'POST',\n      headers: {'Content-Type': 'application/json'},\n      body: JSON.stringify(body)\n    });\n    if (!res.ok) {\n      const errText = await res.text();\n      throw new Error(`Gemini API error (${res.status}): ${errText}`);\n    }\n    const data = await res.json();\n    const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;\n    if (candidateText !== undefined) return candidateText;\n    return JSON.stringify(data);\n  }\n\n  throw new Error('Gemini API interface is required');\n}\n\nasync function executeEvaluatorAttempt({B, b, batch, evaluator, iterator, retryInput, config, gemini, dependencies}) {\n  const input = assembleEvaluatorInput({batch, evaluator, retryInput});\n  let rawResponse;\n  try {\n    rawResponse = await invokeGemini({input, evaluator, gemini});\n  } catch (error) {\n    return {accepted: false, failureType: 'system_error', mechanicalError: normalizeSystemError(error), rawResponse: null, normalizedResponse: null, responseTokens: null};\n  }\n\n  const normalized = await normalizeEvaluatorResponse({rawResponse, evaluator, iterator, config, dependencies});\n  const acceptance = await evaluateAcceptanceConditions({normalizedResponse: normalized.response, normalization: normalized, evaluator, iterator, config, dependencies, gemini});\n  return {\n    accepted: acceptance.accepted,\n    failureType: acceptance.accepted ? null : 'mechanical_response_failure',\n    mechanicalError: acceptance.error,\n    rawResponse,\n    normalizedResponse: normalized.response,\n    responseTokens: acceptance.responseTokens,\n    acceptance\n  };\n}\n\nasync function normalizeEvaluatorResponse({rawResponse, evaluator, iterator, config, dependencies}) {\n  const contract = resolveResponseContract(evaluator.response_contract, config);\n  const parsed = tryParseJson(rawResponse);\n  if (parsed.ok && requiredFieldsRecoverable(parsed.value, contract)) return {response: parsed.value, normalized: false, recovered: true};\n\n  const strategies = iterator.normalization?.strategies || evaluator.normalization?.strategies || config.normalization?.strategies || [];\n  for (const strategy of strategies) {\n    const recovered = await applyNormalizationStrategy({strategy, rawResponse, contract, dependencies});\n    if (recovered && requiredFieldsRecoverable(recovered, contract)) return {response: recovered, normalized: true, recovered: true};\n  }\n  return {response: parsed.ok ? parsed.value : rawResponse, normalized: false, recovered: false};\n}\n\nfunction resolveResponseContract(definition, config) {\n  if (typeof definition === 'string') {\n    const contract = config.response_contracts?.[definition];\n    if (!contract) throw new Error(`Unknown response contract: ${definition}`);\n    return contract;\n  }\n  return definition;\n}\n\nfunction tryParseJson(value) {\n  if (value && typeof value === 'object') return {ok: true, value};\n  try { return {ok: true, value: JSON.parse(value)}; }\n  catch { return {ok: false, value: null}; }\n}\n\nfunction requiredFieldsRecoverable(value, contract) {\n  const requiredFields = contract?.required_fields || [];\n  if (!requiredFields.length) return true;\n  if (!value || typeof value !== 'object') return false;\n  return requiredFields.every(field => getPath(value, field) !== undefined);\n}\n\nfunction extractFieldsFromMalformedSerialization(rawResponse, contract) {\n  if (typeof rawResponse !== 'string') return null;\n  let text = rawResponse.trim();\n  const fenceMatch = text.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/i);\n  if (fenceMatch) {\n    const candidate = fenceMatch[1].trim();\n    try {\n      const parsed = JSON.parse(candidate);\n      if (typeof parsed === 'object' && parsed !== null) return parsed;\n    } catch {}\n    text = candidate;\n  }\n\n  const firstBrace = text.indexOf('{');\n  const lastBrace = text.lastIndexOf('}');\n  if (firstBrace !== -1 && lastBrace > firstBrace) {\n    const substring = text.substring(firstBrace, lastBrace + 1);\n    try {\n      const parsed = JSON.parse(substring);\n      if (typeof parsed === 'object' && parsed !== null) return parsed;\n    } catch {\n      try {\n        const cleaned = substring.replace(/,\\s*([}\\]])/g, '$1');\n        const parsed = JSON.parse(cleaned);\n        if (typeof parsed === 'object' && parsed !== null) return parsed;\n      } catch {}\n    }\n  }\n\n  const requiredFields = contract?.required_fields || [];\n  if (requiredFields.length > 0) {\n    const recovered = {};\n    let allFound = true;\n    for (const field of requiredFields) {\n      const escapedField = field.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n      const regex = new RegExp(`[\"']?${escapedField}[\"']?\\\\s*:\\\\s*(?:\"([^\"\\\\\\\\]*(?:\\\\\\\\.[^\"\\\\\\\\]*)*)\"|'([^'\\\\\\\\]*(?:\\\\\\\\.[^'\\\\\\\\]*)*)'|(-?\\\\d+(?:\\\\.\\\\d+)?)|(true|false|null)|(\\\\[[^\\]]*\\\\])|(\\\\{[^}]*\\\\}))`, 'i');\n      const match = text.match(regex);\n      if (match) {\n        if (match[1] !== undefined) recovered[field] = match[1].replace(/\\\\\"/g, '\"').replace(/\\\\\\\\/g, '\\\\');\n        else if (match[2] !== undefined) recovered[field] = match[2];\n        else if (match[3] !== undefined) recovered[field] = Number(match[3]);\n        else if (match[4] !== undefined) recovered[field] = match[4] === 'true' ? true : match[4] === 'false' ? false : null;\n        else if (match[5] !== undefined) {\n          try { recovered[field] = JSON.parse(match[5]); } catch { recovered[field] = match[5]; }\n        } else if (match[6] !== undefined) {\n          try { recovered[field] = JSON.parse(match[6]); } catch { recovered[field] = match[6]; }\n        }\n      } else {\n        allFound = false;\n        break;\n      }\n    }\n    if (allFound) return recovered;\n  }\n\n  return null;\n}\n\nasync function applyNormalizationStrategy({strategy, rawResponse, contract, dependencies}) {\n  switch (strategy) {\n    case 'recover_required_fields_from_malformed_serialization':\n      if (typeof dependencies?.recoverRequiredFields === 'function') return dependencies.recoverRequiredFields({rawResponse, contract});\n      return extractFieldsFromMalformedSerialization(rawResponse, contract);\n    default:\n      throw new Error(`Unknown normalization strategy: ${strategy}`);\n  }\n}\n\nasync function evaluateAcceptanceConditions({normalizedResponse, normalization, evaluator, iterator, config, dependencies, gemini}) {\n  const acceptance = iterator.acceptance || evaluator.acceptance || config.acceptance || {conditions: []};\n  let responseTokens = null;\n  for (const condition of acceptance.conditions || []) {\n    const result = await evaluateAcceptanceCondition({condition, normalizedResponse, normalization, evaluator, iterator, config, dependencies, gemini, responseTokens});\n    if (result.responseTokens !== undefined && result.responseTokens !== null) responseTokens = result.responseTokens;\n    if (!result.passed) return {accepted: false, error: {condition: condition.id, details: result.details}, responseTokens};\n  }\n  return {accepted: true, error: null, responseTokens};\n}\n\nasync function evaluateAcceptanceCondition({condition, normalizedResponse, normalization, evaluator, iterator, config, dependencies, gemini, responseTokens}) {\n  switch (condition.source) {\n    case 'invocation.status':\n      return {passed: evaluateScalarCondition('success', condition)};\n    case 'response':\n      if (condition.operator === 'required_fields_recoverable') {\n        const contract = resolveResponseContract(evaluator.response_contract, config);\n        const recoverable = normalization.recovered === true || requiredFieldsRecoverable(normalizedResponse, contract);\n        return {passed: recoverable === condition.value};\n      }\n      break;\n    case 'response.tokens': {\n      let tokens = responseTokens;\n      if (tokens === null || tokens === undefined) tokens = await countTokens({value: normalizedResponse, config, dependencies, gemini});\n      const expected = resolveConfiguredValue(condition.value, {divider: iterator.divider});\n      return {passed: compareValues(tokens, condition.operator, expected), responseTokens: tokens};\n    }\n  }\n  const actual = resolveSourceValue(condition.source, {invocation: {status: 'success'}, response: normalizedResponse, normalization, evaluator, iterator});\n  if (actual !== undefined) {\n    const expected = resolveConfiguredValue(condition.value, {divider: iterator.divider});\n    return {passed: compareValues(actual, condition.operator, expected)};\n  }\n  throw new Error(`Unsupported acceptance condition: ${condition.id}`);\n}\n\nasync function executeRetryConditionals({initialAttempt, B, b, batch, evaluator, iterator, config, gemini, dependencies}) {\n  const conditionals = iterator.retry?.conditionals || [];\n  let current = initialAttempt;\n  let retryNumber = 0;\n  for (const conditional of conditionals) {\n    if (!retryConditionalMatches({conditional, attempt: current, retryNumber})) continue;\n    const retryInput = buildRetryInput({inputs: conditional.invoke?.inputs || [], B, b, batch, evaluator, attempt: current, retryNumber});\n    const retried = await executeEvaluatorAttempt({B, b, batch, evaluator, iterator, retryInput, config, gemini, dependencies});\n    retryNumber += 1;\n    retried.retryCount = retryNumber;\n    if (retried.accepted) return applyRetrySuccess({conditional, attempt: retried});\n    current = retried;\n    current.retryCount = retryNumber;\n    if (conditional.on_failure?.stop_retry_sequence === true) return applyRetryFailureTerminal({conditional, attempt: current});\n  }\n  current.retryCount = retryNumber;\n  return current;\n}\n\nfunction retryConditionalMatches({conditional, attempt, retryNumber}) {\n  const when = conditional.when || {};\n  if (when.condition && when.condition !== attempt.failureType) return false;\n  if (when.retry_number && !evaluateComparison(retryNumber, when.retry_number)) return false;\n  return true;\n}\n\nfunction buildRetryInput({inputs, B, b, batch, evaluator, attempt, retryNumber}) {\n  const available = {\n    context: batch.context,\n    previous_response: attempt.normalizedResponse ?? attempt.rawResponse,\n    mechanical_error: attempt.mechanicalError,\n    task: evaluator.task,\n    criteria: evaluator.criteria,\n    response_contract: evaluator.response_contract,\n    original_invocation: {context: batch.context, task: evaluator.task, criteria: evaluator.criteria, response_contract: evaluator.response_contract},\n    attempt_number: retryNumber,\n    B,\n    b\n  };\n  const result = {};\n  for (const name of inputs) {\n    if (!Object.prototype.hasOwnProperty.call(available, name)) throw new Error(`Unknown retry input: ${name}`);\n    result[name] = available[name];\n  }\n  return result;\n}\n\nfunction applyRetrySuccess({attempt}) { return attempt; }\nfunction applyRetryFailureTerminal({conditional, attempt}) { return {...attempt, terminalRetryBehavior: conditional.on_failure || {}}; }\n\nfunction createTerminalBatchResult({B, b, batch, attempt}) {\n  const terminalBehavior = attempt.terminalRetryBehavior || {};\n  let successful = attempt.accepted === true;\n  if (terminalBehavior.status === 'failed') successful = false;\n\n  let response = attempt.normalizedResponse ?? attempt.rawResponse ?? null;\n  if (terminalBehavior.retain === null) {\n    response = null;\n  } else if (terminalBehavior.retain === 'retry_response' || terminalBehavior.retain === 'latest_response') {\n    response = attempt.normalizedResponse ?? attempt.rawResponse ?? null;\n  }\n\n  return {\n    id: createBatchId(B, b),\n    B,\n    b,\n    status: successful ? 'success' : 'failed',\n    assignedContextTokens: batch.assignedContextTokens,\n    response,\n    responseTokens: attempt.responseTokens,\n    error: attempt.mechanicalError || null,\n    failureMetadata: terminalBehavior.include_failure_metadata ? {\n      failureType: attempt.failureType,\n      mechanicalError: attempt.mechanicalError\n    } : null,\n    retries: attempt.retryCount || 0,\n    provenance: batch.provenance || []\n  };\n}\n\nfunction commitBatchResult({round, batchResult}) { round.batches.push(batchResult); }\n\nfunction updateSupervisoryState({runtimeState, batchResult}) {\n  runtimeState.supervisory.batches.push({\n    id: batchResult.id,\n    B: batchResult.B,\n    b: batchResult.b,\n    status: batchResult.status,\n    error: batchResult.error,\n    responseTokens: batchResult.responseTokens,\n    retries: batchResult.retries,\n    provenance: batchResult.provenance\n  });\n  if (batchResult.status === 'failed') runtimeState.supervisory.failedBCount += 1;\n  else runtimeState.supervisory.successfulBCount += 1;\n}\n\nfunction evaluateFailedBatchStopCondition({runtimeState, iterator}) {\n  const stop = iterator.failed_b_stop;\n  if (!stop?.condition) return false;\n  const configuredValue = stop.condition.value;\n  if (configuredValue === null || configuredValue === undefined) return false;\n  return evaluateDeclarativeCondition({\n    condition: stop.condition,\n    scope: {supervisory: {failed_b_count: runtimeState.supervisory.failedBCount}}\n  });\n}\n\nasync function aggregateSuccessfulBatchResults({round, config, dependencies, gemini}) {\n  const successful = round.batches.filter(batch => batch.status === 'success');\n  let aggregateResponseTokens = 0;\n  const records = [];\n  for (const batch of successful) {\n    let tokens = batch.responseTokens;\n    if (tokens === null || tokens === undefined) {\n      tokens = await countTokens({value: batch.response, config, dependencies, gemini});\n    }\n    aggregateResponseTokens += tokens;\n    const provenanceAncestry = [batch.id, ...(batch.provenance || [])];\n    records.push({\n      batch_id: batch.id,\n      response: batch.response,\n      provenance: [...new Set(provenanceAncestry)]\n    });\n  }\n  round.aggregateResponseTokens = aggregateResponseTokens;\n  return {records, context: serializeAggregateContext(records), aggregateResponseTokens};\n}\n\nfunction serializeAggregateContext(records) { return JSON.stringify(records); }\n\nfunction evaluateTerminationCondition({aggregate, iterator, runtimeState}) {\n  const termination = iterator.termination;\n  if (!termination?.condition) throw new Error('Termination condition is required');\n  return evaluateDeclarativeCondition({\n    condition: termination.condition,\n    scope: {round: {aggregate_response_tokens: aggregate.aggregateResponseTokens}, divider: iterator.divider, B: runtimeState.B}\n  });\n}\n\nfunction evaluateDeclarativeCondition({condition, scope}) {\n  const left = resolveConfiguredValue(condition.left ?? (condition.source ? {source: condition.source} : undefined), scope);\n  const right = resolveConfiguredValue(condition.right ?? condition.value, scope);\n  return compareValues(left, condition.operator, right);\n}\n\nfunction resolveConfiguredValue(definition, scope) {\n  if (definition === null || definition === undefined) return definition;\n  if (typeof definition !== 'object' || Array.isArray(definition)) return definition;\n  if (definition.source) {\n    let value = resolveSourceValue(definition.source, scope);\n    if (definition.divide_by !== undefined && typeof value === 'number') value /= definition.divide_by;\n    if (definition.multiply_by !== undefined && typeof value === 'number') value *= definition.multiply_by;\n    return value;\n  }\n  return definition;\n}\n\nfunction resolveSourceValue(path, source) { return getPath(source, path); }\nfunction evaluateScalarCondition(actual, condition) { return compareValues(actual, condition.operator, resolveConfiguredValue(condition.value, {})); }\n\nfunction compareValues(actual, operator, expected) {\n  switch (operator) {\n    case 'eq': return actual === expected;\n    case 'neq': return actual !== expected;\n    case 'gt': return actual !== null && expected !== null && actual > expected;\n    case 'gte': return actual !== null && expected !== null && actual >= expected;\n    case 'lt': return actual !== null && expected !== null && actual < expected;\n    case 'lte': return actual !== null && expected !== null && actual <= expected;\n    default: throw new Error(`Unsupported operator: ${operator}`);\n  }\n}\n\nfunction createBatchId(B, b) { return `B${B}-b${b}`; }\n\nfunction assembleProgramReturn({reason, runtimeState, round, aggregate, config}) {\n  const envelope = config.program_return?.envelope;\n  const scope = {reason, runtime: runtimeState, round, aggregate};\n  if (!envelope) return scope;\n  return resolveReturnEnvelope(envelope, scope);\n}\n\nfunction resolveReturnEnvelope(definition, scope) {\n  if (Array.isArray(definition)) return definition.map(value => resolveReturnEnvelope(value, scope));\n  if (definition && typeof definition === 'object') {\n    if (Object.keys(definition).length === 1 && definition.source) return resolveSourceValue(definition.source, scope);\n    const output = {};\n    for (const [key, value] of Object.entries(definition)) output[key] = resolveReturnEnvelope(value, scope);\n    return output;\n  }\n  return definition;\n}\n\nfunction getPath(object, path) {\n  if (object === null || object === undefined) return undefined;\n  if (path === null || path === undefined || path === '') return object;\n  return String(path).split('.').reduce((value, key) => value === null || value === undefined ? undefined : value[key], object);\n}\n\nfunction normalizeSystemError(error) {\n  return {name: error?.name || 'Error', message: error?.message || String(error)};\n}\n\nmodule.exports = {\n  runHierarchicalEvaluation,\n  createRuntimeState,\n  createRoundState,\n  resolveIteratorForB,\n  resolveIteratorDefinition,\n  evaluateConfigCondition,\n  evaluateComparison,\n  countTokens,\n  divideContextIntoBatches,\n  createDivisionUnits,\n  combineUnitsContext,\n  ensureUnitFits,\n  shiftDivisionBoundariesUntilFit,\n  processBatch,\n  resolveEvaluatorConfiguration,\n  assembleEvaluatorInput,\n  invokeGemini,\n  executeEvaluatorAttempt,\n  normalizeEvaluatorResponse,\n  resolveResponseContract,\n  tryParseJson,\n  requiredFieldsRecoverable,\n  extractFieldsFromMalformedSerialization,\n  applyNormalizationStrategy,\n  evaluateAcceptanceConditions,\n  evaluateAcceptanceCondition,\n  executeRetryConditionals,\n  retryConditionalMatches,\n  buildRetryInput,\n  applyRetrySuccess,\n  applyRetryFailureTerminal,\n  createTerminalBatchResult,\n  commitBatchResult,\n  updateSupervisoryState,\n  evaluateFailedBatchStopCondition,\n  aggregateSuccessfulBatchResults,\n  serializeAggregateContext,\n  evaluateTerminationCondition,\n  evaluateDeclarativeCondition,\n  resolveConfiguredValue,\n  resolveSourceValue,\n  evaluateScalarCondition,\n  compareValues,\n  createBatchId,\n  assembleProgramReturn,\n  resolveReturnEnvelope,\n  getPath,\n  normalizeSystemError\n};"
+    }
+  ],
+  "implementation_mapping": [
+    {
+      "requirement_id": "ALG-001",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "createRuntimeState initializes B to 0, terminalRound to false, sets currentContext to initialContext, and runs under supplied config in runHierarchicalEvaluation."
+    },
+    {
+      "requirement_id": "ALG-002",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json"
+      ],
+      "implementation": "resolveIteratorForB evaluates state.B at the start of each round against configured B_rules and resolves complete iterator configuration before context division."
+    },
+    {
+      "requirement_id": "ALG-003",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json"
+      ],
+      "implementation": "divideContextIntoBatches, createDivisionUnits, and shiftDivisionBoundariesUntilFit call the single runtime countTokens function to verify max_tokens once per batch assignment, shifting boundaries until fits, producing an ordered batch sequence."
+    },
+    {
+      "requirement_id": "ALG-004",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "state.b is initialized to 0 at the start of each round, indexing batches sequentially in the inner loop."
+    },
+    {
+      "requirement_id": "ALG-005",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "assembleEvaluatorInput creates a fresh invocation input containing batch.context, task, criteria, and response_contract without rechecking assigned context size."
+    },
+    {
+      "requirement_id": "ALG-006",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "invokeGemini dispatches invocation through the Gemini interface or environment convention, capturing response, status, and system errors in executeEvaluatorAttempt."
+    },
+    {
+      "requirement_id": "ALG-007",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json"
+      ],
+      "implementation": "executeRetryConditionals evaluates configured retry conditionals in sequential order, building fresh invocations with named inputs while reusing batch context without rechecking max_tokens, stopping at the first success or applying configured terminal behavior."
+    },
+    {
+      "requirement_id": "ALG-008",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "normalizeEvaluatorResponse, tryParseJson, requiredFieldsRecoverable, and extractFieldsFromMalformedSerialization parse and recover required response contract fields without extra model calls."
+    },
+    {
+      "requirement_id": "ALG-009",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json"
+      ],
+      "implementation": "evaluateAcceptanceConditions evaluates observable conditions including invocation status, field recovery, and response token count against thresholds derived from divider.max_tokens via the single countTokens function without remeasuring assigned context."
+    },
+    {
+      "requirement_id": "ALG-010",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "createTerminalBatchResult and commitBatchResult record the final terminal status, response, tokens, and metadata for b; failed batches contribute no evaluator response to subsequent rounds while remaining visible."
+    },
+    {
+      "requirement_id": "ALG-011",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json"
+      ],
+      "implementation": "evaluateFailedBatchStopCondition evaluates supervisory failed_b_count after each batch terminates, returning configured program failure return when satisfied or continuing sequential b execution."
+    },
+    {
+      "requirement_id": "ALG-012",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "runHierarchicalEvaluation advances state.b by 1 only after batch result is committed and supervisory check passes, sequentially processing all batches in the round."
+    },
+    {
+      "requirement_id": "ALG-013",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "aggregateSuccessfulBatchResults filters round batches to retain only successful responses, counts their tokens via countTokens, sets aggregateResponseTokens, serializes context, and preserves provenance."
+    },
+    {
+      "requirement_id": "ALG-014",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "Post-round logic in runHierarchicalEvaluation returns immediately if terminalRound was already true; otherwise evaluates termination condition and sets state.terminalRound = true without bypassing the normal next-round division/evaluation path."
+    },
+    {
+      "requirement_id": "ALG-015",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "When non-terminal, runHierarchicalEvaluation sets state.currentContext to aggregate.context, increments B by 1, resolves B configuration, divides and assigns b batches; completion of the terminal round returns directly without another cycle."
+    },
+    {
+      "requirement_id": "ALG-016",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "aggregateSuccessfulBatchResults, createDivisionUnits, and divideContextIntoBatches preserve batch IDs and ancestry chains across rounds without requiring full source retransmission."
+    },
+    {
+      "requirement_id": "ALG-017",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "All token sizing throughout the runtime (context assignment check, acceptance condition evaluation, round response token aggregation) routes exclusively through the single async countTokens function."
+    },
+    {
+      "requirement_id": "ALG-018",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json"
+      ],
+      "implementation": "assembleProgramReturn and resolveReturnEnvelope map runtime, round, aggregate, and reason data into the configured program return envelope upon terminal round completion or stopping condition."
+    },
+    {
+      "requirement_id": "CFG-001",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "config.json defines B_rules with B=0 and B>0 rules containing complete configurable iterator definitions for base and reduction rounds."
+    },
+    {
+      "requirement_id": "CFG-002",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "Evaluator configuration defines task, criteria, model, and response_contract as declarative data interpreted by the runtime."
+    },
+    {
+      "requirement_id": "CFG-003",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "config.json configures divider.max_tokens and boundary_strategy; audit.js checks max_tokens once at context assignment and keeps task/criteria/contract outside max_tokens."
+    },
+    {
+      "requirement_id": "CFG-004",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "Acceptance condition response_below_hard_token_limit configures response token threshold as divider.max_tokens / 2 using resolveConfiguredValue with divide_by: 2."
+    },
+    {
+      "requirement_id": "CFG-005",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "config.json defines ordered retry conditionals with condition matching, inputs, success retention, and terminal failure behaviors."
+    },
+    {
+      "requirement_id": "CFG-006",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "system_error_retry conditional repeats original invocation once on system_error, failing b if the repeat fails and advancing subject to supervisory stop logic."
+    },
+    {
+      "requirement_id": "CFG-007",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "mechanical_response_retry conditional executes one fresh corrective invocation receiving context, previous_response, mechanical_error, task, criteria, and response_contract, retaining latest response with failure metadata if still unacceptable."
+    },
+    {
+      "requirement_id": "CFG-008",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "Acceptance conditions inspect mechanically observable properties: invocation.status eq success, required_fields_recoverable eq true, and response.tokens lt divider.max_tokens / 2."
+    },
+    {
+      "requirement_id": "CFG-009",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "Termination condition evaluates round.aggregate_response_tokens <= divider.max_tokens to set terminal_round before advancing into the final round."
+    },
+    {
+      "requirement_id": "CFG-010",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "failed_b_stop configuration defines supervisory stopping threshold over supervisory.failed_b_count, evaluated while all b batches remain visible."
+    },
+    {
+      "requirement_id": "CFG-011",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "config.json configures program_return.envelope as a configurable projection assembled by assembleProgramReturn."
+    },
+    {
+      "requirement_id": "CFG-012",
+      "status": "implemented",
+      "artifact_paths": [
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
+        "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js"
+      ],
+      "implementation": "config.json configures evaluator response_contract with required_fields and schema, providing the basis for normalization and mechanical acceptance."
+    }
+  ],
+  "requirements_not_implemented": []
+}
