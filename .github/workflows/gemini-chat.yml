@@ -26,13 +26,96 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Prepare generated Step 0 form
+        id: step0
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const { generateStep0Form, validateStep0Form } = require('./ChatMachines/GeminiSupervisor/scripts/generate-step-0-form.js');
+
+          const root = 'ChatMachines/GeminiSupervisor';
+          const triggerPath = `${root}/nextmessage/nextmessage.json`;
+          const trigger = JSON.parse(fs.readFileSync(triggerPath, 'utf8'));
+          const step = trigger.execution?.step;
+          const output = process.env.GITHUB_OUTPUT;
+
+          function emit(mode, run) {
+            fs.appendFileSync(output, `mode=${mode}\n`);
+            if (run) fs.appendFileSync(output, `run_nonce=${run}\n`);
+          }
+
+          if (step !== 0) {
+            emit('continue', trigger.run_nonce || '');
+            process.exit(0);
+          }
+
+          const run = trigger.run_nonce;
+          if (typeof run !== 'string' || !/^[A-Za-z0-9_-]+$/.test(run)) {
+            throw new Error(`Invalid run_nonce: ${run}`);
+          }
+
+          const runDir = path.join(root, 'runs', run);
+          const formPath = path.join(runDir, 'step-0-form.json');
+          const passPath = path.join(runDir, 'truth-reader', 'PASS.json');
+
+          if (!fs.existsSync(formPath)) {
+            const userRequest = trigger.user_request
+              ?? trigger.execution?.return_schema?.start_of_turn?.user_request
+              ?? '';
+            if (typeof userRequest !== 'string' || !userRequest.trim()) {
+              throw new Error('A new Step 0 run requires user_request either at trigger.user_request or execution.return_schema.start_of_turn.user_request');
+            }
+            generateStep0Form(userRequest, run);
+            emit('initialized', run);
+            process.exit(0);
+          }
+
+          const form = validateStep0Form(run);
+          if (!fs.existsSync(passPath)) {
+            emit('waiting_truth_reader', run);
+            process.exit(0);
+          }
+
+          const receipt = JSON.parse(fs.readFileSync(passPath, 'utf8'));
+          if (receipt.run_nonce !== run || receipt.status !== 'PASS') {
+            throw new Error('Invalid truth-reader PASS receipt for Step 0 run');
+          }
+
+          trigger.execution.return_schema = form;
+          fs.writeFileSync(triggerPath, JSON.stringify(trigger, null, 2) + '\n');
+          emit('ready', run);
+          NODE
+
+      - name: Commit initialized Step 0 form
+        if: steps.step0.outputs.mode == 'initialized'
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN='${{ steps.step0.outputs.run_nonce }}'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            "ChatMachines/GeminiSupervisor/runs/${RUN}/step-0-form.json" \
+            "ChatMachines/GeminiSupervisor/runs/${RUN}/.step-0-form.lock.json"
+          git commit -m "Initialize GeminiSupervisor Step 0 form: ${RUN}"
+          git push origin HEAD:main
+
+      - name: Report pending Step 0 truth gate
+        if: steps.step0.outputs.mode == 'waiting_truth_reader'
+        run: echo 'Step 0 form exists but its nonce-scoped truth-reader gate has not passed yet.'
+
       - name: Run Gemini Supervisor on GitHub Node
+        if: steps.step0.outputs.mode == 'continue' || steps.step0.outputs.mode == 'ready'
         env:
           GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
         run: node ChatMachines/GeminiSupervisor/send-to-gemini.js
 
       - name: Commit returned run state, context, and store
+        if: steps.step0.outputs.mode == 'continue' || steps.step0.outputs.mode == 'ready'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
