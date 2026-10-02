@@ -1,0 +1,416 @@
+[
+  {
+    "round": 1,
+    "computation_id": "diff_analysis_1",
+    "purpose": "Analyze diffs between commits in step3_evaluation.patch.log",
+    "code": "const text = context;\n// Let's parse out each commit\nconst commits = text.split(/(?=commit [0-9a-f]{40})/);\nconst results = commits.map(c => {\n  const headerMatch = c.match(/commit ([0-9a-f]{40})\\nAuthor:\\s+([^\\n]+)\\nAuthorDate:\\s+([^\\n]+)\\nCommit:\\s+([^\\n]+)\\nCommitDate:\\s+([^\\n]+)\\n\\n\\s+([^\\n]+)/);\n  return {\n    hash: headerMatch ? headerMatch[1] : null,\n    date: headerMatch ? headerMatch[3] : null,\n    message: headerMatch ? headerMatch[6] : null,\n    length: c.length\n  };\n});\n\n// Check differences between commit 1 line and commit 2 line\nconst c1 = commits[0];\nconst c2 = commits[1];\nconst c3 = commits[2];\n\nconst c1_added = c1.match(/\\n\\+({.*})/)?.[1];\nconst c2_removed = c2.match(/\\n-({.*})/)?.[1];\nconst c2_added = c2.match(/\\n\\+({.*})/)?.[1];\n\nlet diff_c1_c2 = null;\nif (c1_added && c2_added) {\n  diff_c1_c2 = {\n    len1: c1_added.length,\n    len2: c2_added.length,\n    equal: c1_added === c2_added,\n    end1: c1_added.slice(-20),\n    end2: c2_added.slice(-20),\n    startDiffAt: [...c1_added].findIndex((ch, i) => ch !== c2_added[i])\n  };\n}\n\nreturn { results, diff_c1_c2 };",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "diff_analysis_1",
+      "ok": false,
+      "error": "text.split is not a function"
+    },
+    "timestamp": "2026-10-02T03:27:25.806Z"
+  },
+  {
+    "round": 2,
+    "computation_id": "check_context",
+    "purpose": "Check keys and type of context variable",
+    "code": "return {\n  type: typeof context,\n  keys: Object.keys(context),\n  sample: typeof context === 'string' ? context.slice(0, 100) : null\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "check_context",
+      "ok": true,
+      "result": {
+        "type": "object",
+        "keys": [
+          "subquestion",
+          "files"
+        ],
+        "sample": null
+      }
+    },
+    "timestamp": "2026-10-02T03:27:26.769Z"
+  },
+  {
+    "round": 3,
+    "computation_id": "diff_analysis_2",
+    "purpose": "Analyze diffs in step3_evaluation.patch.log",
+    "code": "const files = context.files;\nconst patchLog = files['generated/git/by-entry/step3_evaluation.patch.log'];\nconst commits = patchLog.split(/(?=commit [0-9a-f]{40})/);\n\nconst meta = commits.map((c, i) => {\n  const headerMatch = c.match(/commit ([0-9a-f]{40})\\nAuthor:\\s+([^\\n]+)\\nAuthorDate:\\s+([^\\n]+)\\nCommit:\\s+([^\\n]+)\\nCommitDate:\\s+([^\\n]+)\\n\\n\\s+([^\\n]+)/);\n  return {\n    index: i,\n    hash: headerMatch ? headerMatch[1] : null,\n    date: headerMatch ? headerMatch[3] : null,\n    message: headerMatch ? headerMatch[6] : null\n  };\n});\n\n// Look at commit 0 vs 1\nconst c0_json = commits[0].match(/\\n\\+({.*})/)?.[1];\nconst c1_json_minus = commits[1].match(/\\n-({.*})/)?.[1];\nconst c1_json_plus = commits[1].match(/\\n\\+({.*})/)?.[1];\n\n// Look at commit 2\nconst c2_json_minus = commits[2].match(/\\n-({.*})/)?.[1];\n// commit 2 adds formatted multiline json\nconst c2_lines = commits[2].split('\\n').filter(l => l.startsWith('+') && !l.startsWith('+++'));\nconst c2_full_added = c2_lines.map(l => l.slice(1)).join('\\n');\n\nlet parsed0, parsed1, parsed2;\ntry { parsed0 = JSON.parse(c0_json); } catch(e) { parsed0 = { err: e.message }; }\ntry { parsed1 = JSON.parse(c1_json_plus); } catch(e) { parsed1 = { err: e.message }; }\ntry { parsed2 = JSON.parse(c2_full_added); } catch(e) { parsed2 = { err: e.message }; }\n\nreturn {\n  meta,\n  c0_err: parsed0.err,\n  c1_err: parsed1.err,\n  c2_err: parsed2.err,\n  c0_len: c0_json ? c0_json.length : null,\n  c1_plus_len: c1_json_plus ? c1_json_plus.length : null,\n  diff_c0_c1: c0_json === c1_json_plus,\n  diff_c0_c1_ends: {\n    c0_end: c0_json ? c0_json.slice(-30) : null,\n    c1_end: c1_json_plus ? c1_json_plus.slice(-30) : null\n  },\n  c1_minus_vs_c0: c0_json === c1_json_minus,\n  c2_minus_vs_c1: c1_json_plus === c2_json_minus,\n  format_version_1: parsed1.format_version,\n  format_version_2: parsed2.format_version,\n  c1_heuristic_keys: Object.keys(parsed1.evaluation_heuristic || {}),\n  c2_heuristic_keys: Object.keys(parsed2.evaluation_heuristic || {}),\n  c1_tsr_tests_count: parsed1.step3_tsr?.tests?.length,\n  c2_tsr_tests_count: parsed2.step3_tsr?.tests?.length,\n  c1_tsr_test_ids: parsed1.step3_tsr?.tests?.map(t => t.test),\n  c2_tsr_test_ids: parsed2.step3_tsr?.tests?.map(t => t.test)\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "diff_analysis_2",
+      "ok": false,
+      "error": "Cannot read properties of undefined (reading 'split')"
+    },
+    "timestamp": "2026-10-02T03:27:30.845Z"
+  },
+  {
+    "round": 4,
+    "computation_id": "diff_analysis_3",
+    "purpose": "",
+    "code": "return {\n  filesKeys: Object.keys(context.files),\n  subquestion: context.subquestion\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "diff_analysis_3",
+      "ok": true,
+      "result": {
+        "filesKeys": [
+          "0"
+        ],
+        "subquestion": {
+          "subquestion_id": "sq05_step3_evaluation_evolution",
+          "question": "How did the Step 3 evaluation heuristics and test corpora evolve across commit history in step3_evaluation.patch.log?",
+          "purpose": "Provide concrete historical facts regarding modifications, additions, and deletions in Step 3 evaluation contracts.",
+          "context_files": [
+            "generated/git/by-entry/step3_evaluation.patch.log"
+          ],
+          "interpretation_requirements": [
+            "Trace chronological diffs in step3_evaluation.patch.log to identify initiating commits and reasons for heuristic changes.",
+            "Distinguish incremental test case additions from wholesale heuristic restructuring.",
+            "Isolate any requirements that were introduced and subsequently deleted or modified."
+          ],
+          "expected_findings": [
+            "Chronological timeline of changes to tests/step-3-evaluation.json.",
+            "Identification of commits establishing TSR evaluation criteria.",
+            "Evidence of intentional supersession of older evaluation heuristics."
+          ],
+          "synthesis_dependencies": [
+            "sq04_current_and_retired_evaluations"
+          ],
+          "context_bytes": 228944
+        }
+      }
+    },
+    "timestamp": "2026-10-02T03:27:32.422Z"
+  },
+  {
+    "round": 5,
+    "computation_id": "diff_analysis_4",
+    "purpose": "Analyze diffs in step3_evaluation.patch.log",
+    "code": "const fileObj = context.files[0];\nconst patchLog = typeof fileObj === 'string' ? fileObj : fileObj.content || fileObj.text || fileObj.data || JSON.stringify(fileObj);\n\n// Let's inspect what fileObj actually looks like\nreturn {\n  fileObjType: typeof fileObj,\n  fileObjKeys: typeof fileObj === 'object' && fileObj !== null ? Object.keys(fileObj) : null,\n  fileObjSample: typeof fileObj === 'string' ? fileObj.slice(0, 200) : null\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "diff_analysis_4",
+      "ok": true,
+      "result": {
+        "fileObjType": "object",
+        "fileObjKeys": [
+          "metadata",
+          "content"
+        ],
+        "fileObjSample": null
+      }
+    },
+    "timestamp": "2026-10-02T03:27:33.814Z"
+  },
+  {
+    "round": 6,
+    "computation_id": "diff_analysis_5",
+    "purpose": "Analyze commits and JSON structures across git history",
+    "code": "const patchLog = context.files[0].content;\nconst commits = patchLog.split(/(?=commit [0-9a-f]{40})/);\n\nconst meta = commits.map((c, i) => {\n  const headerMatch = c.match(/commit ([0-9a-f]{40})\\nAuthor:\\s+([^\\n]+)\\nAuthorDate:\\s+([^\\n]+)\\nCommit:\\s+([^\\n]+)\\nCommitDate:\\s+([^\\n]+)\\n\\n\\s+([^\\n]+)/);\n  return {\n    index: i,\n    hash: headerMatch ? headerMatch[1] : null,\n    date: headerMatch ? headerMatch[3] : null,\n    message: headerMatch ? headerMatch[6] : null\n  };\n});\n\n// Commit 0 added 1 line\nconst c0_json = commits[0].match(/\\n\\+({.*})/)?.[1];\n// Commit 1 replaced 1 line with 1 line\nconst c1_json_minus = commits[1].match(/\\n-({.*})/)?.[1];\nconst c1_json_plus = commits[1].match(/\\n\\+({.*})/)?.[1];\n\n// Commit 2 replaced 1 line with formatted json\nconst c2_json_minus = commits[2].match(/\\n-({.*})/)?.[1];\nconst c2_lines = commits[2].split('\\n').filter(l => l.startsWith('+') && !l.startsWith('+++'));\nconst c2_full_added = c2_lines.map(l => l.slice(1)).join('\\n');\n\nlet parsed0, parsed1, parsed2;\nlet err0, err1, err2;\ntry { parsed0 = JSON.parse(c0_json); } catch(e) { err0 = e.message; }\ntry { parsed1 = JSON.parse(c1_json_plus); } catch(e) { err1 = e.message; }\ntry { parsed2 = JSON.parse(c2_full_added); } catch(e) { err2 = e.message; }\n\n// Compare c0 and c1\nconst c0_len = c0_json ? c0_json.length : 0;\nconst c1_len = c1_json_plus ? c1_json_plus.length : 0;\n\n// Compare TSR test cases between parsed1 and parsed2\nlet tsr_identical = null;\nlet tsr_diff = null;\nif (parsed1 && parsed2) {\n  tsr_identical = JSON.stringify(parsed1.step3_tsr) === JSON.stringify(parsed2.step3_tsr);\n  if (!tsr_identical) {\n    tsr_diff = {\n      p1_len: parsed1.step3_tsr.tests.length,\n      p2_len: parsed2.step3_tsr.tests.length\n    };\n  }\n}\n\n// Compare evaluation_heuristic between parsed1 and parsed2\nlet heuristic_comp = null;\nif (parsed1 && parsed2) {\n  heuristic_comp = {\n    p1_keys: Object.keys(parsed1.evaluation_heuristic),\n    p2_keys: Object.keys(parsed2.evaluation_heuristic),\n    p1_record_count: parsed1.evaluation_heuristic.key_value_records ? parsed1.evaluation_heuristic.key_value_records.length : null,\n    p1_sample_record: parsed1.evaluation_heuristic.key_value_records ? parsed1.evaluation_heuristic.key_value_records[0] : null,\n    p2_sources: parsed2.sources,\n    p1_sources: parsed1.sources\n  };\n}\n\nreturn {\n  meta,\n  errors: { err0, err1, err2 },\n  c0_vs_c1_diff: {\n    c0_len,\n    c1_len,\n    c0_end: c0_json ? c0_json.slice(-40) : null,\n    c1_end: c1_json_plus ? c1_json_plus.slice(-40) : null,\n    diff_index: [...(c0_json||'')].findIndex((c, i) => c !== (c1_json_plus||'')[i])\n  },\n  tsr_identical,\n  tsr_diff,\n  heuristic_comp\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "diff_analysis_5",
+      "ok": true,
+      "result": {
+        "meta": [
+          {
+            "index": 0,
+            "hash": "fd56cefbf20add524bf53b5e88463f5c9893ea17",
+            "date": "2026-10-01T13:26:38-07:00",
+            "message": "Add merged Step 3 evaluation heuristic and question corpus"
+          },
+          {
+            "index": 1,
+            "hash": "f0425b0d40c5c3bb082feea78616d13546c992a5",
+            "date": "2026-10-01T13:32:42-07:00",
+            "message": "Fix merged Step 3 evaluation JSON closure"
+          },
+          {
+            "index": 2,
+            "hash": "fcb4522f6ce154bedeb7d197f3cf22ea3f5c694f",
+            "date": "2026-10-01T13:48:47-07:00",
+            "message": "Replace blemished Step 3 evaluation with evaluator revision"
+          }
+        ],
+        "errors": {
+          "err0": "Expected ',' or ']' after array element in JSON at position 42293 (line 1 column 42294)"
+        },
+        "c0_vs_c1_diff": {
+          "c0_len": 42294,
+          "c1_len": 42296,
+          "c0_end": "was written.\",\"result\":\"SELECT(T|F)\"}]}}",
+          "c1_end": "s written.\",\"result\":\"SELECT(T|F)\"}]}]}}",
+          "diff_index": 42293
+        },
+        "tsr_identical": true,
+        "tsr_diff": null,
+        "heuristic_comp": {
+          "p1_keys": [
+            "key_value_records"
+          ],
+          "p2_keys": [
+            "purpose_and_scope",
+            "core_question",
+            "worked_examples",
+            "worked_test_required_coverage_reduced",
+            "procedural_instructions"
+          ],
+          "p1_record_count": 69,
+          "p1_sample_record": {
+            "key": "evaluation_tests_source_statement_001",
+            "value": "# Evaluator test format: worked examples"
+          },
+          "p2_sources": {
+            "evaluation_method_heuristic": {
+              "path": "ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+              "blob_sha": "613468ac6ff5e054c1268c50bc3710d36df8f3cd"
+            },
+            "step3_tsr_question_list": {
+              "path": "ChatMachines/GeminiSupervisor/tests/step-3-test-return-schema.md",
+              "blob_sha": "2c6e89baafd463579a341e4f3102b852e6e78ace"
+            }
+          },
+          "p1_sources": {
+            "evaluation_method_heuristic": {
+              "path": "ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+              "blob_sha": "613468ac6ff5e054c1268c50bc3710d36df8f3cd"
+            },
+            "step3_tsr_question_list": {
+              "path": "ChatMachines/GeminiSupervisor/tests/step-3-test-return-schema.md",
+              "blob_sha": "2c6e89baafd463579a341e4f3102b852e6e78ace"
+            }
+          }
+        }
+      }
+    },
+    "timestamp": "2026-10-02T03:27:37.767Z"
+  },
+  {
+    "round": 7,
+    "computation_id": "tsr_check",
+    "purpose": "Verify TSR test numbers and case counts",
+    "code": "const patchLog = context.files[0].content;\nconst commits = patchLog.split(/(?=commit [0-9a-f]{40})/);\nconst c1_json_plus = commits[1].match(/\\n\\+({.*})/)?.[1];\nconst p1 = JSON.parse(c1_json_plus);\nconst c2_lines = commits[2].split('\\n').filter(l => l.startsWith('+') && !l.startsWith('+++'));\nconst p2 = JSON.parse(c2_lines.map(l => l.slice(1)).join('\\n'));\n\nconst testsInfo = p1.step3_tsr.tests.map(t => ({\n  testId: t.test,\n  caseCount: t.cases.length\n}));\n\nreturn {\n  testsInfo,\n  totalTests: testsInfo.length,\n  totalCases: testsInfo.reduce((acc, t) => acc + t.caseCount, 0)\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "tsr_check",
+      "ok": true,
+      "result": {
+        "testsInfo": [
+          {
+            "testId": 2,
+            "caseCount": 4
+          },
+          {
+            "testId": 3,
+            "caseCount": 5
+          },
+          {
+            "testId": 4,
+            "caseCount": 5
+          },
+          {
+            "testId": 5,
+            "caseCount": 5
+          },
+          {
+            "testId": 6,
+            "caseCount": 5
+          },
+          {
+            "testId": 7,
+            "caseCount": 5
+          },
+          {
+            "testId": 8,
+            "caseCount": 6
+          },
+          {
+            "testId": 9,
+            "caseCount": 5
+          },
+          {
+            "testId": 10,
+            "caseCount": 6
+          },
+          {
+            "testId": 11,
+            "caseCount": 5
+          },
+          {
+            "testId": 12,
+            "caseCount": 6
+          },
+          {
+            "testId": 13,
+            "caseCount": 6
+          },
+          {
+            "testId": 14,
+            "caseCount": 6
+          },
+          {
+            "testId": 15,
+            "caseCount": 7
+          },
+          {
+            "testId": 16,
+            "caseCount": 7
+          },
+          {
+            "testId": 17,
+            "caseCount": 6
+          },
+          {
+            "testId": 18,
+            "caseCount": 5
+          },
+          {
+            "testId": 19,
+            "caseCount": 6
+          },
+          {
+            "testId": 20,
+            "caseCount": 6
+          },
+          {
+            "testId": 21,
+            "caseCount": 4
+          },
+          {
+            "testId": 22,
+            "caseCount": 6
+          },
+          {
+            "testId": 23,
+            "caseCount": 7
+          },
+          {
+            "testId": 24,
+            "caseCount": 6
+          },
+          {
+            "testId": 25,
+            "caseCount": 4
+          },
+          {
+            "testId": 26,
+            "caseCount": 3
+          },
+          {
+            "testId": 27,
+            "caseCount": 4
+          },
+          {
+            "testId": 28,
+            "caseCount": 4
+          },
+          {
+            "testId": 29,
+            "caseCount": 4
+          },
+          {
+            "testId": 30,
+            "caseCount": 4
+          },
+          {
+            "testId": 31,
+            "caseCount": 4
+          },
+          {
+            "testId": 32,
+            "caseCount": 4
+          }
+        ],
+        "totalTests": 31,
+        "totalCases": 160
+      }
+    },
+    "timestamp": "2026-10-02T03:27:43.269Z"
+  },
+  {
+    "round": 8,
+    "computation_id": "compare_v1_v2_texts",
+    "purpose": "Check if semantic requirements changed between v1 and v2 or if it was pure restructuring",
+    "code": "const patchLog = context.files[0].content;\nconst commits = patchLog.split(/(?=commit [0-9a-f]{40})/);\nconst c1_json_plus = commits[1].match(/\\n\\+({.*})/)?.[1];\nconst p1 = JSON.parse(c1_json_plus);\nconst c2_lines = commits[2].split('\\n').filter(l => l.startsWith('+') && !l.startsWith('+++'));\nconst p2 = JSON.parse(c2_lines.map(l => l.slice(1)).join('\\n'));\n\nconst v1_records = p1.evaluation_heuristic.key_value_records;\n// Let's see all text in v1\nconst v1_texts = v1_records.map(r => r.value);\n\n// Let's check some key rules from v1\nconst v2_str = JSON.stringify(p2.evaluation_heuristic);\n\n// Check how many v1 lines have exact or near matches in v2\nconst matches = v1_texts.map(t => ({\n  text: t.slice(0, 40),\n  foundInV2: v2_str.includes(t.replace(/\\*\\*/g, '').replace(/`/g, '').slice(0, 30))\n}));\n\nreturn {\n  v1_count: v1_texts.length,\n  unmatchedCount: matches.filter(m => !m.foundInV2).length,\n  unmatchedSamples: matches.filter(m => !m.foundInV2).slice(0, 10)\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "compare_v1_v2_texts",
+      "ok": true,
+      "result": {
+        "v1_count": 69,
+        "unmatchedCount": 61,
+        "unmatchedSamples": [
+          {
+            "text": "# Evaluator test format: worked examples",
+            "foundInV2": false
+          },
+          {
+            "text": "**Question for every case:** Does the cu",
+            "foundInV2": false
+          },
+          {
+            "text": "| # | U and source | Illustrative P | Wh",
+            "foundInV2": false
+          },
+          {
+            "text": "|---|---|---|---|---|",
+            "foundInV2": false
+          },
+          {
+            "text": "| 1 | User: \"Delete the file you added t",
+            "foundInV2": false
+          },
+          {
+            "text": "| 2 | User: \"move messages.json back to ",
+            "foundInV2": false
+          },
+          {
+            "text": "| 3 | User: \"For every test with an exac",
+            "foundInV2": false
+          },
+          {
+            "text": "| 4 | User: \"Move nextmessage.json to a ",
+            "foundInV2": false
+          },
+          {
+            "text": "| 5 | User: \"No, no, you're not gonna ed",
+            "foundInV2": false
+          },
+          {
+            "text": "| 6 | User: \"For the rest of this thing,",
+            "foundInV2": false
+          }
+        ]
+      }
+    },
+    "timestamp": "2026-10-02T03:27:46.751Z"
+  },
+  {
+    "round": 9,
+    "computation_id": "compare_v1_v2_semantic",
+    "purpose": "Check semantic preservation between v1 key_value_records and v2 structured sections",
+    "code": "const patchLog = context.files[0].content;\nconst commits = patchLog.split(/(?=commit [0-9a-f]{40})/);\nconst c1_json_plus = commits[1].match(/\\n\\+({.*})/)?.[1];\nconst p1 = JSON.parse(c1_json_plus);\nconst c2_lines = commits[2].split('\\n').filter(l => l.startsWith('+') && !l.startsWith('+++'));\nconst p2 = JSON.parse(c2_lines.map(l => l.slice(1)).join('\\n'));\n\nconst v1 = p1.evaluation_heuristic.key_value_records;\nconst v2 = p2.evaluation_heuristic;\n\n// Check worked_examples length:\nconst v1_examples = v1.filter(r => r.key.startsWith('evaluation_tests_source_statement_006') || (parseInt(r.key.slice(-3)) >= 6 && parseInt(r.key.slice(-3)) <= 21));\nconst v2_examples = v2.worked_examples;\n\n// Check matching_examples:\nconst v1_m_cases = v1.filter(r => parseInt(r.key.slice(-3)) >= 36 && parseInt(r.key.slice(-3)) <= 41);\nconst v2_m_cases = v2.worked_test_required_coverage_reduced.matching_examples.cases;\n\n// Check nonmatching_examples:\nconst v1_n_cases = v1.filter(r => parseInt(r.key.slice(-3)) >= 46 && parseInt(r.key.slice(-3)) <= 53);\nconst v2_n_cases = v2.worked_test_required_coverage_reduced.nonmatching_boundary_examples.cases;\n\n// Check unfamiliar_case_evaluation_procedure:\nconst v1_proc = v1.filter(r => parseInt(r.key.slice(-3)) >= 56 && parseInt(r.key.slice(-3)) <= 61);\nconst v2_proc = v2.worked_test_required_coverage_reduced.unfamiliar_case_evaluation_procedure;\n\n// Check how_to_use_the_cases:\nconst v1_use = v1.filter(r => parseInt(r.key.slice(-3)) >= 64 && parseInt(r.key.slice(-3)) <= 68);\nconst v2_use = v2.procedural_instructions.how_to_use_the_cases;\n\nreturn {\n  v1_examples_count: v1_examples.length,\n  v2_examples_count: v2_examples.length,\n  v1_m_count: v1_m_cases.length,\n  v2_m_count: v2_m_cases.length,\n  v1_n_count: v1_n_cases.length,\n  v2_n_count: v2_n_cases.length,\n  v1_proc_count: v1_proc.length,\n  v2_proc_count: v2_proc.length,\n  v1_use_count: v1_use.length,\n  v2_use_count: v2_use.length,\n  v2_title: v2.purpose_and_scope.title,\n  v2_correction_rule: v2.procedural_instructions.correction_derivation_rule\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "compare_v1_v2_semantic",
+      "ok": true,
+      "result": {
+        "v1_examples_count": 16,
+        "v2_examples_count": 16,
+        "v1_m_count": 6,
+        "v2_m_count": 6,
+        "v1_n_count": 8,
+        "v2_n_count": 8,
+        "v1_proc_count": 6,
+        "v2_proc_count": 6,
+        "v1_use_count": 5,
+        "v2_use_count": 5,
+        "v2_title": "Evaluator test format: worked examples",
+        "v2_correction_rule": "A correction column describes how the example would satisfy its own U. It must not be copied as a command into another task. For the current U, derive the satisfying action from that U's own words and rules."
+      }
+    },
+    "timestamp": "2026-10-02T03:27:51.414Z"
+  }
+]

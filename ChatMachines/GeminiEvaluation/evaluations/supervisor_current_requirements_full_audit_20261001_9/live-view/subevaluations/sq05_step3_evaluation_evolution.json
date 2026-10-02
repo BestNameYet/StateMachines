@@ -1,0 +1,121 @@
+{
+  "response_type": "historical_audit_subresult",
+  "subquestion_id": "sq05_step3_evaluation_evolution",
+  "answer_summary": "The git history in step3_evaluation.patch.log records three commits across an 22-minute window on 2026-10-01 for ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json. Commit fd56cef introduced format_version 1, combining evaluation heuristics from historical/evaluation-tests.md and 31 TSR tests (tests 2–32, totaling 160 test cases) from tests/step-3-test-return-schema.md, but contained a JSON syntax termination error. Commit f0425b0 immediately repaired the JSON syntax closure. Commit fcb4522 executed an intentional wholesale heuristic restructuring—superseding format_version 1 with format_version 2—which converted the flat markdown-derived 'key_value_records' into structured JSON fields (purpose_and_scope, core_question, worked_examples, worked_test_required_coverage_reduced, procedural_instructions) while leaving the TSR test suite completely unaltered with zero incremental test case additions.",
+  "historical_facts": [
+    {
+      "fact_id": "fact_commit_01_init",
+      "statement": "Commit fd56cefbf20add524bf53b5e88463f5c9893ea17 (AuthorDate 2026-10-01T13:26:38-07:00, commit message 'Add merged Step 3 evaluation heuristic and question corpus') created ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json with format_version 1, evaluation_heuristic.key_value_records (69 records), and step3_tsr containing 31 test groups (numbered 2 through 32, totaling 160 cases).",
+      "source_archive_path": "generated/git/by-entry/step3_evaluation.patch.log",
+      "evidence_locator": "commit fd56cefbf20add524bf53b5e88463f5c9893ea17"
+    },
+    {
+      "fact_id": "fact_commit_01_syntax_error",
+      "statement": "In commit fd56cefbf20add524bf53b5e88463f5c9893ea17, the single-line JSON ended with '}]}}' instead of closing the 'tests' array with an additional bracket '}]}]}}', resulting in a JSON parse error at character position 42294.",
+      "source_archive_path": "generated/git/by-entry/step3_evaluation.patch.log",
+      "evidence_locator": "commit fd56cefbf20add524bf53b5e88463f5c9893ea17, diff line +{\"document_type\"...\"was written.\",\"result\":\"SELECT(T|F)\"}]}}"
+    },
+    {
+      "fact_id": "fact_commit_02_syntax_fix",
+      "statement": "Commit f0425b0d40c5c3bb082feea78616d13546c992a5 (AuthorDate 2026-10-01T13:32:42-07:00, commit message 'Fix merged Step 3 evaluation JSON closure') modified the line ending to '}]}]}}', producing valid JSON without altering any text or test contents.",
+      "source_archive_path": "generated/git/by-entry/step3_evaluation.patch.log",
+      "evidence_locator": "commit f0425b0d40c5c3bb082feea78616d13546c992a5"
+    },
+    {
+      "fact_id": "fact_commit_03_evaluator_revision",
+      "statement": "Commit fcb4522f6ce154bedeb7d197f3cf22ea3f5c694f (AuthorDate 2026-10-01T13:48:47-07:00, commit message 'Replace blemished Step 3 evaluation with evaluator revision') changed format_version from 1 to 2, replaced key_value_records with structured sections (purpose_and_scope, core_question, worked_examples, worked_test_required_coverage_reduced, procedural_instructions), and kept step3_tsr identical.",
+      "source_archive_path": "generated/git/by-entry/step3_evaluation.patch.log",
+      "evidence_locator": "commit fcb4522f6ce154bedeb7d197f3cf22ea3f5c694f"
+    },
+    {
+      "fact_id": "fact_sources_metadata",
+      "statement": "Both format_version 1 and format_version 2 cite the identical source paths and blob SHAs: evaluation_method_heuristic at ChatMachines/GeminiSupervisor/historical/evaluation-tests.md (blob_sha 613468ac6ff5e054c1268c50bc3710d36df8f3cd) and step3_tsr_question_list at ChatMachines/GeminiSupervisor/tests/step-3-test-return-schema.md (blob_sha 2c6e89baafd463579a341e4f3102b852e6e78ace).",
+      "source_archive_path": "generated/git/by-entry/step3_evaluation.patch.log",
+      "evidence_locator": "commit fd56cefbf20add524bf53b5e88463f5c9893ea17 and commit fcb4522f6ce154bedeb7d197f3cf22ea3f5c694f, 'sources' object"
+    },
+    {
+      "fact_id": "fact_semantic_invariance_tsr",
+      "statement": "The step3_tsr property across all commits comprises tests 2 through 32 with exactly 160 case pairs; no test cases were incrementally added, removed, or renumbered between commit fd56cef and commit fcb4522.",
+      "source_archive_path": "generated/git/by-entry/step3_evaluation.patch.log",
+      "evidence_locator": "commit fd56cefbf20add524bf53b5e88463f5c9893ea17 through commit fcb4522f6ce154bedeb7d197f3cf22ea3f5c694f"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "interp_wholesale_restructuring_not_incremental",
+      "statement": "The evolution of step-3-evaluation.json did not involve iterative or incremental test case additions. Instead, the test suite (Step 3 TSR) was imported wholesale in a complete state, and the evolution was characterized by representation refactoring: fixing a packaging syntax defect and then restructuring the heuristic from raw line-dump key-value pairs into a clean domain schema.",
+      "depends_on_fact_ids": [
+        "fact_commit_01_init",
+        "fact_commit_02_syntax_fix",
+        "fact_commit_03_evaluator_revision",
+        "fact_semantic_invariance_tsr"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_intentional_supersession",
+      "statement": "Commit fcb4522 represents an intentional supersession of format_version 1. The commit message 'Replace blemished Step 3 evaluation with evaluator revision' explicitly characterizes the initial representation as blemished, motivating the migration to format_version 2 where heuristic markdown tables were parsed into first-class JSON objects without altering the underlying contract rules.",
+      "depends_on_fact_ids": [
+        "fact_commit_01_syntax_error",
+        "fact_commit_03_evaluator_revision",
+        "fact_sources_metadata"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_criteria_continuity",
+      "statement": "The substantive Step 3 evaluation criteria remained continuous across all three commits. All 16 worked examples, the set-reduction test definition (sets D, R, C), 6 matching cases (M1–M6), 8 boundary cases (N1–N8), 6-step unfamiliar case evaluation procedure, and 5-step usage procedure were retained verbatim in content during the restructure from key_value_records to format_version 2.",
+      "depends_on_fact_ids": [
+        "fact_commit_01_init",
+        "fact_commit_03_evaluator_revision"
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "decision_tsr_criteria_origin",
+      "statement": "Step 3 TSR evaluation criteria were established in commit fd56cefbf20add524bf53b5e88463f5c9893ea17 and remained untouched in content across subsequent revisions.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_wholesale_restructuring_not_incremental",
+        "interp_criteria_continuity"
+      ],
+      "current_fact_evidence": [
+        "fact_commit_01_init",
+        "fact_commit_02_syntax_fix",
+        "fact_semantic_invariance_tsr"
+      ]
+    },
+    {
+      "decision_id": "decision_supersession_occurred",
+      "statement": "An intentional supersession of the initial evaluation heuristic format occurred in commit fcb4522f6ce154bedeb7d197f3cf22ea3f5c694f, replacing the raw markdown statement dump format with a structured schema revision.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_intentional_supersession"
+      ],
+      "current_fact_evidence": [
+        "fact_commit_03_evaluator_revision",
+        "fact_sources_metadata"
+      ]
+    },
+    {
+      "decision_id": "decision_incremental_additions",
+      "statement": "Test cases were added incrementally across multiple commits in the Step 3 evaluation file.",
+      "truth_value": "FALSE",
+      "depends_on_interpretation_ids": [
+        "interp_wholesale_restructuring_not_incremental"
+      ],
+      "current_fact_evidence": [
+        "fact_commit_01_init",
+        "fact_semantic_invariance_tsr"
+      ]
+    }
+  ],
+  "unresolved_questions": [
+    "Why Test 1 is absent from step3_tsr (the tests begin at test 2 and run through test 32) is not explained in the commit messages or diffs of step3_evaluation.patch.log."
+  ],
+  "context_files_used": [
+    "generated/git/by-entry/step3_evaluation.patch.log"
+  ]
+}
