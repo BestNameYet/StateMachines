@@ -1,9 +1,10 @@
 {
-  "run_nonce": "historical_audit_template_replace_with_unique_nonce",
+  "run_nonce": "supervisor_current_requirements_full_audit_20261001_1",
   "archive_selection": {
     "entry_ids": [
       "commit_history_record",
       "lineage_git_log_snapshot",
+      "persisted_nonce_runs",
       "retired_evaluation_documents",
       "agents_md",
       "runtime_source",
@@ -15,14 +16,32 @@
       "work_action_approval_rulebook",
       "live_ground_truth_skill"
     ],
-    "supervisor_run_nonces": [],
-    "max_evaluator_packet_bytes": 8000000
+    "supervisor_run_nonces": [
+      "agents_schema_migration_20260930_1",
+      "demo_20260930T155153_eadd5e5248",
+      "ground_truth_verification_skill_20260930_1",
+      "live_ground_truth_integration_20261001_1",
+      "merge_step3_tsr_evaluation_heuristic_20261001_1",
+      "role_separation_20260930T181400",
+      "skill_bootstrap_update_20260930T170700",
+      "skill_interface_20260930T155700",
+      "skill_reeval_20260930T170100",
+      "skill_revision_20260930T180700",
+      "skill_revision_schema_reject_20260930T181100",
+      "step0_raw_fail_20260930T132500",
+      "step0_raw_fail_20260930T1325_2",
+      "step0_raw_fail_20260930_3",
+      "step0_raw_fail_20260930_4",
+      "work_action_approval_rulebook_20260930_1"
+    ],
+    "max_evaluator_packet_bytes": 30000000,
+    "max_subquestion_context_bytes": 3000000
   },
   "nextmessage": {
     "role": "user",
     "parts": [
       {
-        "text": "Analyze the supplied historical-audit evidence packet for the specific audit question being asked. Separate historical facts from interpretations and make truth decisions depend explicitly on the interpretations required to derive them. State the heuristic you actually use."
+        "text": "Perform the full GeminiSupervisor current-requirements audit using the supplied historical evidence archive. The principal question is: does the GeminiSupervisor machine that exists today actually contain and enforce everything the user still wants today, and if not, exactly what surviving requirements are missing, partial, unenforced, or incorrectly represented? First independently choose and state the heuristic you believe best solves that problem; do not mechanically adopt a prewritten heuristic. Our working proposal is that historical facts should be separated from semantic interpretations, and truth decisions that depend on historical meaning should explicitly depend on those interpretations. Treat requirement lifecycle and implementation state as independent dimensions where useful: an old requirement can be implemented or unimplemented and still later be superseded; once a later user requirement replaces it, that superseded requirement does not create present corrective work. Detect partial as well as full supersession. Historical Git and nonce records should primarily establish requirement lineage, implementation provenance, exercised behavior, failures, and supersession. They are not automatically the normative target. The normative implementation question concerns the machine that exists today. Establish what today's machine actually does from executable source, workflows, configuration, persisted structures and deterministic behavior; do not infer executable behavior merely from Agents.md, filenames, historical model self-report, or prior completion claims. Recover the user's surviving desired requirements from the historical evidence, account for every relevant historical instruction, and compare each surviving requirement exhaustively against the current machine. For historical semantics preserve the dependency chain historical facts -> interpretations -> truth decisions, including explicit evidence locators and unresolved alternatives where necessary. Treat an outstanding defect as present corrective work only when the requirement remains active/current and today's machine does not adequately implement or enforce it. Use the lead-planner/sub-evaluator architecture to divide context as needed. Use model-directed JavaScript computation whenever useful rather than relying on hand inspection. Do not sample. Reconcile all sub-evaluator findings, report contradictions and indeterminate cases, and run completeness checks proving that every supplied nonce run and every recovered relevant user requirement has been accounted for. Return the final historical_audit_result with a verified description of the machine today, surviving requirements, superseded requirements, outstanding gaps, historical facts, interpretations, truth decisions, subquestion reconciliation, completeness checks, and unresolved ambiguities."
       }
     ]
   }
