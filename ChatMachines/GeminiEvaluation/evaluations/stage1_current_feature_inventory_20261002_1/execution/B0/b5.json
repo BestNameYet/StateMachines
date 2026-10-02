@@ -1,0 +1,207 @@
+{
+  "id": "B0-b5",
+  "B": 0,
+  "b": 5,
+  "status": "success",
+  "assignedContextTokens": 7572,
+  "response": {
+    "inventory_round": 1,
+    "features": [
+      {
+        "feature_id": "FEAT-PROCEDURE-STATE-TRACKING",
+        "name": "Procedure State and Step Lifecycle Tracking",
+        "category": "orchestration",
+        "description": "Tracks procedure lifecycle progression through run-level status, current step pointer, completed steps list, remaining steps list, and per-step execution records.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+            "reference_symbol_or_heading": "$.current_state",
+            "mechanic_summary": "Maintains current_state with status set to 'completed', procedure.current_step set to null, procedure.completed_steps set to [0,1,2,3,4], and procedure.remaining_steps set to []."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-GATE-GRANULAR-EVALUATIVE-MIRROR",
+        "name": "Granular Key-for-Key Evaluative Mirroring",
+        "category": "supervisory_gate",
+        "description": "Recursively mirrors every returned execution key and array element at the exact schema path, replacing raw values with an evaluative object containing an evaluation verdict (e.g., PASS/FAIL) and supervisor comment.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+            "reference_symbol_or_heading": "$.current_state.procedure.step_records.0.supervisory_return.supervisory_gate.granular_evaluation",
+            "mechanic_summary": "Specifies instruction to create an exact key-for-key, entry-by-entry evaluative mirror replacing terminal returned values with evaluation and supervisor comment across start_of_turn fields."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+            "reference_symbol_or_heading": "$.current_state.procedure.step_records.2.supervisory_return.supervisory_gate.granular_evaluation",
+            "mechanic_summary": "Mirrors array entries under stated_requirements, evaluating each individual extracted requirement separately with PASS/comment."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-GATE-STEP-LEVEL-EVALUATION",
+        "name": "Holistic Step-Level Supervisory Evaluation",
+        "category": "supervisory_gate",
+        "description": "Performs holistic step evaluation over returned entries, governing instructions, user requests, authorization context, and failure modes following granular mirroring.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+            "reference_symbol_or_heading": "$.current_state.procedure.step_records.0.supervisory_return.supervisory_gate.step_level_evaluation",
+            "mechanic_summary": "Evaluates the complete step as a unit after granular evaluation, producing an overall evaluation rating of PASS and explanatory comment."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-GATE-RESULT-TRANSITION-LOCK",
+        "name": "Supervisory Gate Result Transition Gating",
+        "category": "state_transition",
+        "description": "Blocks advancement to the subsequent step unless the supervisory gate explicitly concludes with gate_result of PASS, recording transition metadata in transition_key and transition_value.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+            "reference_symbol_or_heading": "$.current_state.procedure.step_records.0.transition_key",
+            "mechanic_summary": "Records transition_key as 'supervisory_gate.gate_result' and transition_value as 'PASS' with instruction mandating next execution step is permitted only when gate_result is PASS."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-SUPERVISOR-FAILURE-ISOLATION",
+        "name": "Granular and Step-Level Failure Recording",
+        "category": "error_handling",
+        "description": "Maintains an explicit failures list capturing independent entries for each FAIL encountered during granular or step-level evaluation without combining independent failures.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+            "reference_symbol_or_heading": "$.current_state.procedure.step_records.0.supervisory_return.supervisory_gate.failures",
+            "mechanic_summary": "Defines instruction requiring one list entry for every FAIL in granular_evaluation or step_level_evaluation with empty array value when no failures occur."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-STEP-ATTEMPT-TRACKING",
+        "name": "Per-Step Attempt Counting",
+        "category": "orchestration",
+        "description": "Tracks execution attempt counts for individual procedure steps within step records.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+            "reference_symbol_or_heading": "$.current_state.procedure.step_records.0.attempt",
+            "mechanic_summary": "Records attempt counter set to 1 for step 0 execution and verification."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-PERSISTED-RUN-CONTAINER",
+        "name": "Isolated Persisted Run Container Architecture",
+        "category": "persistence",
+        "description": "Encapsulates each execution run inside an isolated directory containing exactly three tracked artifacts: messages.json, state.json, and store/store.json.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/MANIFEST.md",
+            "reference_symbol_or_heading": "## Persisted run containers",
+            "mechanic_summary": "States that each run directory is an isolated persisted execution container containing exactly three tracked files: messages.json, state.json, and store/store.json."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-SHARED-CONFIG-CENTRALIZATION",
+        "name": "Shared Supervisor Path Configuration",
+        "category": "configuration",
+        "description": "Centralizes external path settings, trigger file locations, runs directory path, and canonical evaluation artifacts across specification and runtime.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/MANIFEST.md",
+            "reference_symbol_or_heading": "## Root files (config.json)",
+            "mechanic_summary": "Documents config.json as shared configuration declaring the Agents file, trigger file, runs directory, and canonical Step 3 evaluation artifact."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-NODE-SUPERVISOR-RUNTIME",
+        "name": "Primary Gemini Supervisor Node.js Runtime Engine",
+        "category": "orchestration",
+        "description": "Executes state machine logic, loads shared configuration and Agents contracts, validates returns, executes live-ground-truth checks, calls Gemini supervisory gates, and persists records.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/MANIFEST.md",
+            "reference_symbol_or_heading": "## Root files (send-to-gemini.js)",
+            "mechanic_summary": "Identifies send-to-gemini.js as active Node runtime that validates step returns, performs live-ground-truth checks, invokes Gemini supervisory gates, persists run records, and advances/retries state."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-APPS-SCRIPT-EVAL-BRIDGE",
+        "name": "Google Apps Script Function Evaluation Endpoint Bridge",
+        "category": "external_integration",
+        "description": "Accepts JavaScript source code and arguments via a doPost HTTP endpoint, compiles/evaluates the function, and returns JSON-serialized output.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/MANIFEST.md",
+            "reference_symbol_or_heading": "## Root files (Code.gs)",
+            "mechanic_summary": "Describes Code.gs as standalone Google Apps Script doPost endpoint accepting sourcecode and arguments, evaluating the function, and returning JSON-serialized results."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-LIVE-GROUND-TRUTH-VERIFICATION",
+        "name": "Live Ground Truth Verification Skill",
+        "category": "validation",
+        "description": "Requires agent execution, completion, and status claims to be validated strictly against authoritative live sources rather than model memory or self-reported status.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/MANIFEST.md",
+            "reference_symbol_or_heading": "## Runtime input / skills / stores (skills/live-ground-truth-verification/SKILL.md)",
+            "mechanic_summary": "Specifies skill requiring execution/completion/status claims to be verified against exact live authoritative sources rather than memory or agent self-report."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-TRIGGER-INPUT-INGESTION",
+        "name": "Workflow Trigger Payload Ingestion",
+        "category": "external_integration",
+        "description": "Ingests next-message workflow triggers supplying run_nonce, execution role/step indicators, and the ChatGPT-owned return schema consumed by the Node runtime.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/MANIFEST.md",
+            "reference_symbol_or_heading": "## Runtime input / skills / stores (nextmessage/nextmessage.json)",
+            "mechanic_summary": "Defines nextmessage.json carrying run_nonce, execution role/step, and the ChatGPT-owned return schema consumed by the Node runtime."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-WORK-ACTION-APPROVAL-RULEBOOK",
+        "name": "Work Action Approval and Safe-Word Classification",
+        "category": "validation",
+        "description": "Enforces safe-word authorization requirements, action classifications, and governance rules for work action approvals via a dedicated rulebook.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/MANIFEST.md",
+            "reference_symbol_or_heading": "## Root files (work-action-approval-rulebook.json)",
+            "mechanic_summary": "Defines work-action-approval-rulebook.json as standalone JSON rulebook defining safe-word authorization, action classification, and related work-action approval semantics."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-STEP3-EVALUATION-CORPUS",
+        "name": "Step 3 Heuristic and TSR Question Corpus Evaluation",
+        "category": "validation",
+        "description": "Combines Step 3 TSR (Test Return Schema) evaluation heuristics with a complete question corpus into a single machine-readable evaluation artifact.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/MANIFEST.md",
+            "reference_symbol_or_heading": "## Tests and evaluation artifacts (tests/step-3-evaluation.json)",
+            "mechanic_summary": "Documents step-3-evaluation.json as active combined JSON artifact containing the Step 3 evaluation heuristic plus the complete step3_tsr question corpus."
+          }
+        ]
+      }
+    ],
+    "feature_count": 14
+  },
+  "responseTokens": 2476,
+  "error": null,
+  "failureMetadata": null,
+  "retries": 0,
+  "provenance": [
+    "predivided:B0-b5"
+  ]
+}

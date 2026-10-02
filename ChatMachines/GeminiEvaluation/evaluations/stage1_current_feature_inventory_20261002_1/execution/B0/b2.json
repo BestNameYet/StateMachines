@@ -2,20 +2,258 @@
   "id": "B0-b2",
   "B": 0,
   "b": 2,
-  "status": "failed",
+  "status": "success",
   "assignedContextTokens": 11492,
-  "response": "```json\n{\n  \"inventory_round\": 1,\n  \"features\": [\n    {\n      \"feature_id\": \"deterministic_workspace_file_verification\",\n      \"name\": \"Deterministic Workspace File Ground Truth Verification\",\n      \"category\": \"validation\",\n      \"description\": \"Verifies repo-relative workspace paths by checking path safety, file existence on disk, file type, UTF-8 readability, git tracking/dirty status, and exact verbatim matching of claimed observed content against actual file content.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:fileFinding\",\n          \"mechanic_summary\": \"Evaluates safeWorkspacePath, fs.existsSync, fs.statSync, fs.readFileSync, and git ls-files/git status to assign VERIFIED, PARTIAL, NOT_EXECUTED, or UNKNOWN statuses.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"git_object_existence_verification\",\n      \"name\": \"Direct Git Object Verification\",\n      \"category\": \"validation\",\n      \"description\": \"Validates git object references (commit or blob) by executing git cat-file checks against the local git object database and capturing commit subjects or blob byte sizes.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:gitObjectFinding\",\n          \"mechanic_summary\": \"Calls git(['cat-file', '-e', spec]) where spec is sha^{blob} or sha^{commit}, and queries git show -s --format=%H%n%s or git cat-file -s sha to record observed content.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"baseline_run_nonce_and_head_findings\",\n      \"name\": \"Live Run Container and HEAD Baseline Verification\",\n      \"category\": \"validation\",\n      \"description\": \"Extracts baseline ground truth findings for state, messages, and store files by checking that their stored run nonces match the active run nonce, and validates current git HEAD commit resolution.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:baselineFindings\",\n          \"mechanic_summary\": \"Inspects stateFile, messagesFile, and storeFile JSON content for matching run_nonce values (assigning VERIFIED or CONTRADICTED) and resolves git rev-parse HEAD.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"evidence_and_path_claim_extraction\",\n      \"name\": \"Automated Evidence Record and Path Claim Discovery\",\n      \"category\": \"validation\",\n      \"description\": \"Recursively scans the execution candidate's return schema to extract structured evidence records (source, locator, observed_content) and embedded file path / git SHA claim strings in relevant dotted schema paths.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:evidenceRecords\",\n          \"mechanic_summary\": \"Traverses schema with walk() finding objects with non-empty source, locator, and observed_content properties.\"\n        },\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:pathClaimStrings\",\n          \"mechanic_summary\": \"Regex tests property paths matching /(evidence|completion|locator|observed_content|verification|Step3_TSR|source|failure|remaining_work)/i and parses file paths or SHA hashes.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"deterministic_ground_truth_aggregation\",\n      \"name\": \"Ground Truth Collection, Deduplication, and Blocking Assessment\",\n      \"category\": \"validation\",\n      \"description\": \"Combines baseline findings, structured evidence findings, and embedded path claims, deduplicates them by composite identity key, prefixes IDs with gt_XXX, and flags material findings with blocking statuses to determine aggregate PASS or FAIL.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:collectGroundTruth\",\n          \"mechanic_summary\": \"Compiles findings, invokes dedupeFindings, filters against BLOCKING_GT_STATUS, and assigns aggregate_status based on blocking finding count.\"\n        },\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:dedupeFindings\",\n          \"mechanic_summary\": \"Uses a Set of claim_path|source|locator|claimed_observed_content to drop duplicates and formats IDs as gt_001_...\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"deterministic_validation_message_generation\",\n      \"name\": \"Pre-Supervision System Validation Findings Message Generation\",\n      \"category\": \"validation\",\n      \"description\": \"Constructs a system validation message containing inspection failures and blocking ground truth IDs to inject into Gemini context as immutable pre-supervisory validation findings.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:validationMessage\",\n          \"mechanic_summary\": \"Formats a system_validation_message listing failures and blocking findings when either are non-empty.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"granular_evaluation_template_generation\",\n      \"name\": \"Granular Execution Return Evaluation Template Construction\",\n      \"category\": \"supervisory_gate\",\n      \"description\": \"Generates a structured template mirroring the candidate execution schema where each terminal key/value is wrapped in a `<key>_eval` object requiring `supervisor_eval_result` and `supervisor_eval_comment`.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:terminalEval\",\n          \"mechanic_summary\": \"Constructs [key_eval] containing [key]: value, supervisor_eval_result: null, and supervisor_eval_comment: null.\"\n        },\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:evalTemplate\",\n          \"mechanic_summary\": \"Recursively walks objects and arrays to mirror execution schema structure into terminal evaluation records.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"ground_truth_eval_template_construction\",\n      \"name\": \"Ground Truth Supervisory Evaluation Template Construction\",\n      \"category\": \"supervisory_gate\",\n      \"description\": \"Prepares the supervisory gate schema for ground truth evaluation, including per-finding claim evaluation stubs and aggregate ground truth status.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:groundTruthEvalTemplate\",\n          \"mechanic_summary\": \"Initializes deterministic_findings, claim_evaluations matching each finding, aggregate_status, and supervisor evaluation result/comment placeholders.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"supervisory_gate_payload_templating\",\n      \"name\": \"Supervisory Gate Payload Templating\",\n      \"category\": \"supervisory_gate\",\n      \"description\": \"Assembles the overall supervisory_gate contract structure containing role requirements, granular evaluation, ground truth evaluation, step-level evaluation, failure list, and gate result placeholders.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:gateTemplate\",\n          \"mechanic_summary\": \"Creates supervisory_gate with role_required, role_forbidden, role_completed, role_verification, granular_evaluation, ground_truth_verification_eval, and step_level_evaluation.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"gemini_system_instruction_context_composition\",\n      \"name\": \"Gemini System Instruction Context Assembly\",\n      \"category\": \"supervisory_gate\",\n      \"description\": \"Composes the Gemini system instruction prompt with Agents.md rules, Step 3 evaluation artifact JSON (when step is 3), ground truth operational policies, immutable deterministic ground truth findings, evaluation formats, and role boundary instructions.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:systemText\",\n          \"mechanic_summary\": \"Injects loadStep3Evaluation() if step === 3, appends Agents.md canonical rules, serializes groundTruth findings, and specifies evaluation and role boundaries.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"gemini_generative_api_client\",\n      \"name\": \"Gemini Model API Integration with Timeout\",\n      \"category\": \"external_integration\",\n      \"description\": \"Dispatches supervisory prompts to Google Generative Language API generateContent endpoint with API key authentication, system instructions, and a 180-second abort timeout.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:callGemini\",\n          \"mechanic_summary\": \"Calls fetch on https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent with signal: AbortSignal.timeout(180000) and headers {'x-goog-api-key': apiKey}.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"gemini_reply_parsing\",\n      \"name\": \"Gemini Model Reply JSON Parsing and Fence Stripping\",\n      \"category\": \"error_handling\",\n      \"description\": \"Parses Gemini model responses into JSON, automatically extracting JSON content from markdown code fences if raw JSON parsing fails.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:parseReply\",\n          \"mechanic_summary\": \"Attempts JSON.parse on reply text; if caught, regex extracts content inside ```(?:json)? ... ``` code blocks.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"supervisory_role_boundary_enforcement\",\n      \"name\": \"Supervisory Gate Role Boundary Validation\",\n      \"category\": \"supervisory_gate\",\n      \"description\": \"Enforces strict model role separation in the supervisory response, requiring role_required to match supRole, role_forbidden to match supForbidden, role_completed to match supRole, and non-empty verification method and evidence.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:roleValid\",\n          \"mechanic_summary\": \"Checks gate.role_required === supRole, gate.role_forbidden === supForbidden, gate.role_completed === supRole, and verifies non-empty method and evidence.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"evaluation_shape_and_value_preservation_validation\",\n      \"name\": \"Evaluation Schema and Execution Value Preservation Check\",\n      \"category\": \"validation\",\n      \"description\": \"Recursively verifies that Gemini's granular evaluation matches the exact structure of the execution candidate, preserves execution keys and values verbatim, and supplies a valid PASS/FAIL result and non-empty comment for each evaluated element.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:evalShape\",\n          \"mechanic_summary\": \"Compares execution schema keys/indices to evaluation records, confirms same(record[key], child), and validates supervisor_eval_result in PASSFAIL.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"ground_truth_preservation_and_consistency_validation\",\n      \"name\": \"Ground Truth Preservation and Supervisor Gate Consistency Validation\",\n      \"category\": \"validation\",\n      \"description\": \"Validates that the supervisory return preserves deterministic ground truth findings exactly, maintains deterministic statuses, evaluates every claim with PASS or FAIL, and blocks gate PASS if deterministic aggregate status or ground truth supervisory eval is not PASS.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:groundTruthEvalValid\",\n          \"mechanic_summary\": \"Validates same(gt.deterministic_findings, groundTruth.findings), aggregate_status equivalence, and claim-level PASS/FAIL evaluations.\"\n        },\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:evalValid\",\n          \"mechanic_summary\": \"Appends failure if gateResult is PASS but groundTruth.aggregate_status !== 'PASS' or ground_truth_verification_eval supervisor result !== 'PASS'.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"supervisory_repair_retry_loop\",\n      \"name\": \"Iterative Supervisory Feedback and Repair Loop\",\n      \"category\": \"error_handling\",\n      \"description\": \"Runs an iterative feedback loop sending system correction messages back to Gemini upon JSON parse failure, role violation, schema mismatch, or ground truth discrepancy, supporting up to 4 attempts before throwing an error.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:supervise\",\n          \"mechanic_summary\": \"Loops while(true) recording attempts in messages; if gate is invalid or errors occur, compiles repair string and retries until attempt >= 4.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"message_and_store_audit_persistence\",\n      \"name\": \"Multi-Turn Messages and Execution Store Append Logging\",\n      \"category\": \"persistence\",\n      \"description\": \"Records execution candidates, system validation notices, supervisory responses, and repair exchanges in messages and store JSON artifacts.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:supervise\",\n          \"mechanic_summary\": \"Invokes addMessage() for gemini_supervisory_gate and gemini_supervisory_gate_repair and addStore() on supervisory gate resolution.\"\n        },\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:main\",\n          \"mechanic_summary\": \"Appends chatgpt_execution messages and store entries, and initializes initial_user_message on Step 0.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"procedure_step_attempt_history_tracking\",\n      \"name\": \"Procedure Step Records and Attempt History Maintenance\",\n      \"category\": \"persistence\",\n      \"description\": \"Tracks detailed per-step attempt records in procedure.step_records, recording attempt index, timestamps, execution return, validation failures, ground truth verification, supervisory return, and transition value.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:main\",\n          \"mechanic_summary\": \"Pushes attemptRecord to procedure.step_records[String(step)].attempts and updates latest_attempt and summary fields.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"procedure_state_transition_engine\",\n      \"name\": \"Procedure Step Completion and Status State Transition\",\n      \"category\": \"state_transition\",\n      \"description\": \"Transitions state based on supervisory gate_result: on PASS, marks the step completed, computes remaining steps, advances current_step (or marks complete if no remaining steps), and clears failures; on FAIL, retains current step, updates awaiting status with supervisory_gate_fail reason, and sets last_supervisory_failure.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/send-to-gemini.js\",\n          \"reference_symbol_or_heading\": \"function:main\",\n          \"mechanic_summary\": \"Branch on supervisory.gate_result === 'PASS': updates completed_steps, remaining_steps, current_step, state.status, and deletes or sets state.last_supervisory_failure.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"github_actions_workflow_orchestration\",\n      \"name\": \"Push-Triggered Sequential GitHub Actions Workflow\",\n      \"category\": \"orchestration\",\n      \"description\": \"Listens for Git push events modifying nextmessage.json on branch main, enforces non-overlapping sequential job concurrency, checks out main, provisions Node 22, and executes send-to-gemini.js.\",\n      \"evidence\": [\n        {\n          \"source_path\": \".github/workflows/gemini-chat.yml\",\n          \"reference_symbol_or_heading\": \"whole\",\n          \"mechanic_summary\": \"Defines push trigger on paths ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json, concurrency group gemini-supervisor-state-machine with cancel-in-progress: false, and runs send-to-gemini.js under node: 22.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"git_automated_state_checkpoint_commit\",\n      \"name\": \"Automated Git Run State Checkpoint and Push\",\n      \"category\": \"persistence\",\n      \"description\": \"Automatically inspects git status for changes under runs/, dynamically derives a commit message containing run nonce, step, and gate result from state.json, and pushes the commit directly back to origin HEAD:main.\",\n      \"evidence\": [\n        {\n          \"source_path\": \".github/workflows/gemini-chat.yml\",\n          \"reference_symbol_or_heading\": \"whole\",\n          \"mechanic_summary\": \"Executes git add ChatMachines/GeminiSupervisor/runs, evaluates dynamic commit metadata script reading nextmessage.json and state.json, commits with github-actions[bot], and pushes to origin HEAD:main.\"\n        }\n      ]\n    },\n    {\n      \"feature_id\": \"nextmessage_trigger_payload_schema\",\n      \"name\": \"Nextmessage Execution Trigger Schema\",\n      \"category\": \"configuration\",\n      \"description\": \"Provides the input execution trigger contract containing run_nonce, source_role ('ChatGPT model'), step index, and nested Step return_schema including role controls, user_request, failed_actions, and completed_actions.\",\n      \"evidence\": [\n        {\n          \"source_path\": \"ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json\",\n          \"reference_symbol_or_heading\": \"whole\",\n          \"mechanic_summary\": \"Defines run_nonce 'merge_step3_tsr_evaluation_heuristic_20261001_1', execution.step 4, source_role 'ChatGPT model', and return_schema with Step_4 structure.\"\n        }\n      ]\n    }\n  ],\n  \"feature_count\": 22\n}\n```",
-  "responseTokens": null,
-  "error": {
-    "condition": "required_fields_recoverable"
+  "response": {
+    "inventory_round": 1,
+    "features": [
+      {
+        "feature_id": "gha_trigger_and_concurrency",
+        "name": "GitHub Actions Workflow Push Trigger with Concurrency Control",
+        "category": "orchestration",
+        "description": "Triggers supervisory execution upon pushes to the main branch modifying ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json, governed by a non-canceling concurrency group.",
+        "evidence": [
+          {
+            "source_path": ".github/workflows/gemini-chat.yml",
+            "reference_symbol_or_heading": "on.push / concurrency",
+            "mechanic_summary": "Configured to trigger only on pushes affecting `ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json` on branch `main`, with concurrency group `gemini-supervisor-state-machine` and `cancel-in-progress: false`."
+          }
+        ]
+      },
+      {
+        "feature_id": "git_automated_run_persistence",
+        "name": "Automated Git Checkpoint Commit and Push of Run Artifacts",
+        "category": "persistence",
+        "description": "Extracts run metadata (nonce, step, gate result) from nextmessage.json and state.json, and commits updated run artifacts under ChatMachines/GeminiSupervisor/runs to the main branch.",
+        "evidence": [
+          {
+            "source_path": ".github/workflows/gemini-chat.yml",
+            "reference_symbol_or_heading": "Commit returned run state, context, and store",
+            "mechanic_summary": "Uses git diff --cached to detect changes in `ChatMachines/GeminiSupervisor/runs`, evaluates trigger/state JSON using inline Node.js script to generate a commit message format `Gemini Supervisor checkpoint: <run> Step <step> <gate>`, and pushes to `origin HEAD:main`."
+          }
+        ]
+      },
+      {
+        "feature_id": "workspace_file_ground_truth_verification",
+        "name": "Workspace File Ground-Truth Deterministic Verification",
+        "category": "validation",
+        "description": "Verifies repository file claims by ensuring paths are within the safe repository workspace, checking existence, directory vs file status, reading UTF-8 content, verifying git tracked and dirty status, and testing verbatim content matching.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:fileFinding",
+            "mechanic_summary": "Executes path safety check with safeWorkspacePath(relPath), fs.existsSync, fs.statSync, and fs.readFileSync; checks git tracking via `git ls-files --error-unmatch` and working tree status via `git status --porcelain`; marks status VERIFIED, PARTIAL, UNKNOWN, or NOT_EXECUTED based on existence and verbatim match of observed content."
+          }
+        ]
+      },
+      {
+        "feature_id": "git_object_ground_truth_verification",
+        "name": "Git Object Existence Ground-Truth Verification",
+        "category": "validation",
+        "description": "Deterministically checks for the existence of 40-character SHA commits or blobs in the checkout object database using git cat-file and git show.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:gitObjectFinding",
+            "mechanic_summary": "Invokes `git cat-file -e ${sha}^{blob|commit}` to verify git object existence; if present, retrieves commit metadata via `git show -s --format=%H%n%s` or blob size via `git cat-file -s` and marks status VERIFIED."
+          }
+        ]
+      },
+      {
+        "feature_id": "runtime_baseline_findings_verification",
+        "name": "Live Run Container Baseline Nonce and HEAD Verification",
+        "category": "validation",
+        "description": "Validates active run container integrity by checking that run nonces inside state.json, messages.json, and store.json match the triggering runNonce, and captures current git HEAD commit SHA.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:baselineFindings",
+            "mechanic_summary": "Reads state, messages, and store files to verify `current_state.run_nonce` or `run_nonce` match `runNonce` yielding VERIFIED or CONTRADICTED; invokes `git rev-parse HEAD` to capture HEAD SHA as a verified finding."
+          }
+        ]
+      },
+      {
+        "feature_id": "ground_truth_claim_extraction_and_deduplication",
+        "name": "Execution Return Schema Ground-Truth Claim Extraction and Deduplication",
+        "category": "validation",
+        "description": "Recursively traverses return schemas to identify structured evidence records and string path/SHA claims, correlates them to file/git locators, and assigns deduplicated, numbered ground-truth IDs.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:evidenceRecords",
+            "mechanic_summary": "Walks returnSchema searching for objects possessing non-empty `source`, `locator`, and `observed_content` properties."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:pathClaimStrings",
+            "mechanic_summary": "Walks returnSchema searching for strings matching relevant path keywords (evidence, completion, locator, etc.) and extracts repo paths or SHA identifiers."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:dedupeFindings",
+            "mechanic_summary": "Deduplicates finding records by compound key `claim_path|source|locator|claimed_observed_content` and prefixes IDs with `gt_<index>_`."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:collectGroundTruth",
+            "mechanic_summary": "Aggregates baseline, evidence, and embedded path findings into an immutable record, flags blocking findings using BLOCKING_GT_STATUS, and assigns aggregate_status PASS or FAIL."
+          }
+        ]
+      },
+      {
+        "feature_id": "pre_supervision_validation_message",
+        "name": "Deterministic Pre-Supervision Validation Message Generation",
+        "category": "validation",
+        "description": "Constructs a system validation message when trigger schema inspections or deterministic live ground-truth checks encounter blocking failures, passing them as evidence into supervisory context.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:validationMessage",
+            "mechanic_summary": "Combines inspected trigger failures and blocking ground-truth IDs into a `system_validation_message` payload with numbered findings."
+          }
+        ]
+      },
+      {
+        "feature_id": "supervisory_gate_template_generation",
+        "name": "Granular and Ground-Truth Evaluation Template Construction",
+        "category": "supervisory_gate",
+        "description": "Constructs the expected supervisory gate schema structure, creating *_eval objects for all terminal execution key/values and pre-populating deterministic ground-truth claim templates.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:terminalEval",
+            "mechanic_summary": "Creates key-specific `{ [key + '_eval']: { [key]: value, supervisor_eval_result: null, supervisor_eval_comment: null } }`."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:evalTemplate",
+            "mechanic_summary": "Recursively clones execution return schema into matching *_eval structures across arrays and objects."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:groundTruthEvalTemplate",
+            "mechanic_summary": "Generates `deterministic_findings`, `claim_evaluations`, `aggregate_status`, and empty supervisor result/comment placeholders from groundTruth."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:gateTemplate",
+            "mechanic_summary": "Assembles top-level `supervisory_gate` object with role boundaries, instructions, granular evaluation, ground truth evaluation, step-level evaluation, failures array, and gate_result."
+          }
+        ]
+      },
+      {
+        "feature_id": "gemini_api_integration",
+        "name": "Google Generative Language (Gemini) API Client Integration",
+        "category": "external_integration",
+        "description": "Invokes the Google Generative Language v1beta generateContent API with system instructions, ground truth findings, step prompt, and a 180-second timeout.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "async function callGemini",
+            "mechanic_summary": "Posts to `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent` with API key header `x-goog-api-key`, system_instruction parts containing systemText and extra corrections, contents payload, and AbortSignal.timeout(180000)."
+          }
+        ]
+      },
+      {
+        "feature_id": "model_reply_json_parsing",
+        "name": "Supervisory Model Reply JSON and Code Block Parser",
+        "category": "validation",
+        "description": "Extracts and parses JSON from the model's reply parts, falling back to markdown code block extraction if raw parsing fails.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:parseReply",
+            "mechanic_summary": "Joins part text, attempts direct JSON.parse, and regex matches fenced code blocks `/```(?:json)?\\s*([\\s\\S]*?)```/i` before throwing a parse error."
+          }
+        ]
+      },
+      {
+        "feature_id": "supervisory_role_and_schema_validation",
+        "name": "Supervisory Gate Role and Granular Evaluation Verification",
+        "category": "supervisory_gate",
+        "description": "Verifies that the returned supervisory schema adheres to strict role requirements, exact execution value preservation, ground truth deterministic status immutability, and gate result consistency.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:roleValid",
+            "mechanic_summary": "Checks `role_required`, `role_forbidden`, `role_completed`, and non-empty `role_verification.method` and `role_verification.evidence`."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:evalShape",
+            "mechanic_summary": "Recursively verifies that execution keys/values are preserved exactly inside `*_eval` blocks and that `supervisor_eval_result` is PASS/FAIL with non-empty comments."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:groundTruthEvalValid",
+            "mechanic_summary": "Enforces that deterministic findings and aggregate status match runtime findings exactly, and checks claim-by-claim evaluation records."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:evalValid",
+            "mechanic_summary": "Disallows gate_result PASS if groundTruth.aggregate_status !== 'PASS' or if ground_truth_verification_eval.supervisor_eval_result !== 'PASS'."
+          }
+        ]
+      },
+      {
+        "feature_id": "supervisory_iterative_repair_loop",
+        "name": "Iterative Supervisory Gate Repair Loop",
+        "category": "error_handling",
+        "description": "Provides automated retry and correction feedback loops up to 4 attempts when Gemini returns invalid JSON, failing role validation, or malformed evaluation schemas.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "async function supervise",
+            "mechanic_summary": "Loops while schema or eval validation fails, compiling specific repair instructions; records intermediate replies into messages file and aborts with an error after 4 failed attempts."
+          }
+        ]
+      },
+      {
+        "feature_id": "step_context_and_stated_requirements_injection",
+        "name": "Step-Specific Context and Stated Requirements Prompt Injection",
+        "category": "orchestration",
+        "description": "Injects Step 3 evaluation artifact (step-3-evaluation.json) and Step 2 stated requirements into supervisory prompt context when evaluating steps 3 or 4.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "function:systemText / function:statedRequirements",
+            "mechanic_summary": "When step === 3, loads and stringifies `tests/step-3-evaluation.json` into system prompt; `statedRequirements` extracts `stated_requirements` from Step 2 step records and appends them to prompt for steps 3 and 4."
+          }
+        ]
+      },
+      {
+        "feature_id": "procedure_state_transition_and_step_record_management",
+        "name": "Procedure State Transitions and Step Record Updates",
+        "category": "state_transition",
+        "description": "Updates step attempts and transitions procedure state: advancing to next step and marking run complete or awaiting ChatGPT on PASS, or maintaining step and setting failure state on FAIL.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+            "reference_symbol_or_heading": "async function main",
+            "mechanic_summary": "Appends attempt record to `step_records[String(step)]`. If gate_result === 'PASS', moves step to `completed_steps`, advances `current_step` to next remaining step, and sets status to 'complete' or 'awaiting_chatgpt_execution'. If FAIL, maintains `current_step = step`, sets awaiting reason to 'supervisory_gate_fail', and records `last_supervisory_failure`."
+          }
+        ]
+      },
+      {
+        "feature_id": "nextmessage_trigger_schema_format",
+        "name": "Nextmessage Execution Trigger Schema Contract",
+        "category": "configuration",
+        "description": "Defines the input trigger contract containing run_nonce, execution source_role, step number, and return_schema with role verification, actions, and evidence locators.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json",
+            "reference_symbol_or_heading": "whole",
+            "mechanic_summary": "Provides sample trigger JSON for run `merge_step3_tsr_evaluation_heuristic_20261001_1` at step 4 containing `source_role`, `step`, and nested `return_schema` with `Step_4` role boundaries, actions, and evidence arrays."
+          }
+        ]
+      }
+    ],
+    "feature_count": 15
   },
-  "failureMetadata": {
-    "failureType": "mechanical_response_failure",
-    "mechanicalError": {
-      "condition": "required_fields_recoverable"
-    }
-  },
-  "retries": 1,
+  "responseTokens": 3394,
+  "error": null,
+  "failureMetadata": null,
+  "retries": 0,
   "provenance": [
     "predivided:B0-b2"
   ]

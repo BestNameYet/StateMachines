@@ -1,0 +1,181 @@
+{
+  "id": "B0-b3",
+  "B": 0,
+  "b": 3,
+  "status": "success",
+  "assignedContextTokens": 8806,
+  "response": {
+    "inventory_round": 1,
+    "features": [
+      {
+        "feature_id": "live_ground_truth_verification_semantic_trigger",
+        "name": "Semantic Trigger for Execution-Dependent Claims",
+        "category": "validation",
+        "description": "Evaluates incoming requests, planned responses, or execution statements against semantic patterns and analogies to determine whether a claim's correctness materially depends on actual execution or artifact state before making the claim.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+            "reference_symbol_or_heading": "## Semantic Trigger",
+            "mechanic_summary": "Defines semantic criteria and the operative evaluation question ('Would the correctness of the next answer materially depend on whether an action actually occurred, what exact result it produced, or what exact artifact/state currently exists?') to trigger verification across 25+ execution patterns without requiring literal keyword matches."
+          }
+        ]
+      },
+      {
+        "feature_id": "live_ground_truth_verification_procedure",
+        "name": "Mandatory Pre-Claim Verification Procedure",
+        "category": "supervisory_gate",
+        "description": "Enforces a mandatory 10-step verification sequence requiring claim extraction, authoritative live source retrieval, verbatim evidence reading, scope/freshness checking, and evidence classification prior to answering or asserting completion.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+            "reference_symbol_or_heading": "## Mandatory Verification Procedure",
+            "mechanic_summary": "Specifies a sequential protocol: extract claims, map live sources, retrieve now, read verbatim evidence, check scope, check freshness, resolve conflicts, classify status, answer solely from evidence, and provide locators."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+            "reference_symbol_or_heading": "## Sources That Are Never Ground Truth",
+            "mechanic_summary": "Explicitly invalidates model memory, conversation memory, prior assistant statements, self-reports, generated summaries, plans, intentions, and unverified acknowledgments as ground truth."
+          }
+        ]
+      },
+      {
+        "feature_id": "ground_truth_evidence_status_classification",
+        "name": "Ground-Truth Evidence Status Classification",
+        "category": "validation",
+        "description": "Standardizes the status of every execution assertion into one of five mutually exclusive states: VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, or NOT EXECUTED, preventing inference of success from partial steps or unknown state.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+            "reference_symbol_or_heading": "## Evidence Status",
+            "mechanic_summary": "Mandates resolution into VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, or NOT EXECUTED, and prohibits translating UNKNOWN, intermediate steps, or action attempts into verified completion."
+          }
+        ]
+      },
+      {
+        "feature_id": "conflicting_sources_resolution_mechanism",
+        "name": "Conflicting Ground-Truth Resolution and Fallback",
+        "category": "error_handling",
+        "description": "Handles contradictory live evidence sources by evaluating freshness, authority, proximity, and specificity, prohibiting silent selection and defaulting unresolvable conflicts to UNKNOWN or PARTIAL.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+            "reference_symbol_or_heading": "## Conflicting Sources",
+            "mechanic_summary": "Preserves conflicting values verbatim, identifies locators, assesses authority and freshness, and classifies claims as UNKNOWN or PARTIAL if a more authoritative source cannot conclusively resolve the conflict."
+          }
+        ]
+      },
+      {
+        "feature_id": "composite_completion_modifier_verification",
+        "name": "Qualified Completion Claim Decomposition",
+        "category": "validation",
+        "description": "Decomposes compound or modified completion claims (e.g., 'done except X', 'committed but not pushed') into separate assertions and independently verifies each component rather than collapsing to binary success/failure.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+            "reference_symbol_or_heading": "## Completion Claims With Modifiers or Exceptions",
+            "mechanic_summary": "Mandates independent verification for each material sub-claim (e.g., local blob existence VERIFIED vs branch commit NOT EXECUTED) while preserving user-facing modifiers."
+          }
+        ]
+      },
+      {
+        "feature_id": "artifact_state_verification_gate",
+        "name": "Authoritative Artifact Verification Gate",
+        "category": "supervisory_gate",
+        "description": "Enforces inspection of canonical path, file existence, content/hash, ref/version, and persistence tier (local draft, committed, uploaded, persisted, or sent) before making artifact assertions.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+            "reference_symbol_or_heading": "## Artifact Verification",
+            "mechanic_summary": "Requires verifying canonical location, exact filename/path/ID, current version/ref, content excerpt, and persistence/transit state, explicitly forbidding invented paths, URLs, or file IDs."
+          }
+        ]
+      },
+      {
+        "feature_id": "safe_word_authorization_gate",
+        "name": "Safe-Word Action Authorization Gate",
+        "category": "supervisory_gate",
+        "description": "Blocks any operational action execution until the user selects a safe word and issues an approval input that strictly matches the selected safe word for the displayed plan.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+            "reference_symbol_or_heading": "safe_word_authorization_required_before_every_action",
+            "mechanic_summary": "Evaluates whether safe_word_selected is non-null and whether approval_input matches matches_selected_safe_word; treats ordinary language, consent inferences, or prior approvals as non-authorization."
+          }
+        ]
+      },
+      {
+        "feature_id": "semantic_action_set_classification",
+        "name": "Broad Semantic Action Set Classification",
+        "category": "validation",
+        "description": "Defines 25 explicit operational actions including file mutations, deletions, creation, searches, reads, fetches, code reviews, evaluations, polling, API calls, tool calls, and test executions as requiring prior approval.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+            "reference_symbol_or_heading": "action_set_definition_includes_reads_checks_and_analogous_operations",
+            "mechanic_summary": "Enumerates 25 action types and mandates that read-only, inspection, review, evaluation, query, and tool operations be classified as actions subject to planning and approval rather than free unapproved work."
+          }
+        ]
+      },
+      {
+        "feature_id": "pre_action_planning_isolation",
+        "name": "Pre-Action Planning Boundary Isolation",
+        "category": "orchestration",
+        "description": "Isolates preparatory operations (deciding an action plan, printing plans and definitions to the UI) as pre-actions, prohibiting external reads, tool calls, and inspections while constructing the plan.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+            "reference_symbol_or_heading": "pre_action_set_definition",
+            "mechanic_summary": "Limits pre-actions strictly to UI disclosures and internal reasoning from current conversation without accessing external sources, tools, or mutations prior to safe-word approval."
+          }
+        ]
+      },
+      {
+        "feature_id": "complete_action_plan_schema_validation",
+        "name": "Action Plan Contract Schema Validation",
+        "category": "validation",
+        "description": "Enforces formal JSON Schema validation on the proposed plan structure before asking for permission, requiring plan ID, action arrays, subaction arrays, dependency mappings with reasons, definitions, ambiguous term clarifications, and approval blocks.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+            "reference_symbol_or_heading": "complete_action_plan_must_precede_permission_request",
+            "mechanic_summary": "Validates the plan structure against action_plan_return_schema (Draft 2020-12), requiring explicit dependencies between subactions and actions, operational definitions for ambiguous terms, and full definition disclosure."
+          }
+        ]
+      },
+      {
+        "feature_id": "immutable_approved_plan_scope_reduction",
+        "name": "Approved Plan Scope Immutability and Reduction",
+        "category": "state_transition",
+        "description": "Freezes authorized plan scope post-approval, prohibiting additions of actions or subactions (`additions_allowed: false`) and only allowing state transitions that remove uncompleted actions or subactions.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+            "reference_symbol_or_heading": "approved_plan_scope_is_immutable_except_removing_uncompleted_work",
+            "mechanic_summary": "Restricts post_approval_change_control to 'remove_uncompleted_actions_or_subactions_only' with additions_allowed set to false, requiring an entirely new plan and approval if newly discovered work arises."
+          }
+        ]
+      },
+      {
+        "feature_id": "authoritative_dependency_mapping",
+        "name": "Authoritative Dependency and Context Synchronization Mapping",
+        "category": "configuration",
+        "description": "Provides machine-readable file-to-file dependency links and associated test/evaluation context mappings synchronized against a designated sentinel file.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/dependency-map.json",
+            "reference_symbol_or_heading": "mappings",
+            "mechanic_summary": "Defines version 1 dependency map tracking dependents and context_files for Agents.md and send-to-gemini.js, coordinated via sentinel_file ChatMachines/GeminiSupervisor/dependency-sync-sentinel.json."
+          }
+        ]
+      }
+    ],
+    "feature_count": 12
+  },
+  "responseTokens": 2456,
+  "error": null,
+  "failureMetadata": null,
+  "retries": 0,
+  "provenance": [
+    "predivided:B0-b3"
+  ]
+}
