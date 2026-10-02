@@ -17,104 +17,29 @@
   "artifact_revision_enabled": true,
   "artifact_revision_output_file": "step-3-evaluation.json",
   "artifact_revision_output_path": "revision-deliverables/step-3-evaluation.json",
-  "artifact_revision_preserve_json_pointers": [
-    "/step3_tsr"
-  ],
+  "artifact_revision_preserve_json_pointers": ["/step3_tsr"],
   "default_model": "gemini-3.8-flash",
   "request_timeout_ms": 180000,
   "evaluation_mode": "generic",
   "generic_inputs": [
-    {
-      "key": "git_log",
-      "type": "file",
-      "path": "../GeminiSupervisor/commit history/git-log.txt"
-    },
-    {
-      "key": "commit_history",
-      "type": "file",
-      "path": "../GeminiSupervisor/commit history/commit-history.md"
-    },
-    {
-      "key": "original_user_request",
-      "type": "literal",
-      "value": "In commit history create a file that contains a commit by commit record for every commit on GeminiSupervisor or it's predecessor folder and the contents of that folder...track commits until the contents is no longer stored in the dir or it's sub dir. For every commit include the commit number, its description, all files that were effected, how each file was changed, why each change was made, date time. If the commit was part of a wider movement or pattern or goal note that as well, and an evaluation of the success or failure of the commit wrt the user prompt that initiated it, where success is defined as meeting the goal of the user prompt such that the user was satisfied with the commit, and failure is defined as not meeting the goal and/or necessitates additional work to meet goal."
-    }
+    {"key":"current_agents_md","type":"file","path":"../GeminiSupervisor/Agents.md"},
+    {"key":"current_runtime_source","type":"file","path":"../GeminiSupervisor/send-to-gemini.js"},
+    {"key":"current_step3_evaluation","type":"file","path":"../GeminiSupervisor/tests/step-3-evaluation.json"},
+    {"key":"commit_history","type":"file","path":"../GeminiSupervisor/commit history/commit-history.md"},
+    {"key":"git_log","type":"file","path":"../GeminiSupervisor/commit history/git-log.txt"},
+    {"key":"audit_correction","type":"literal","value":"Use the FINAL CURRENT requirements visible today as the normative baseline for evaluating every persisted nonce run. Do not require reconstruction of the original Agents.md/source/Step-3 revision merely to decide run compliance. Historical information is needed primarily to reconstruct CHANGES IN DESIRED REQUIREMENTS and instruction lineage: what the user wanted at each point, which requirements survived into the final requirements, which were superseded, and which were never implemented. A historical nonce may therefore be re-evaluated against today's final requirements even if those requirements did not exist when the run executed. Keep separate the question 'does this historical run satisfy the final current requirements?' from the instruction-lineage question 'what requirements changed over time, and which unsuperseded requirements were never implemented?'"}
   ],
-  "evaluation_heuristic": "Evaluate the configured commit_history artifact against original_user_request. For commit coverage, treat git_log as the authoritative commit sequence for the lineage and cutoff represented by that log. First determine whether every commit represented by git_log that is in scope under the original request is represented exactly once in commit_history, in correct chronological order; report all missing, extra, duplicate, or misordered commits explicitly. Then evaluate every semantic SUCCESS/FAILURE judgment contained in commit_history. Do not sample. For each recorded commit judgment, determine whether the status and rationale are supported by available evidence and by the original request definition: SUCCESS means the initiating user goal was met such that the user was satisfied with that commit; FAILURE means the goal was not met and/or additional work was necessary to meet it. Do not infer user satisfaction merely from absence of an immediate corrective commit. When the initiating user prompt or subsequent user feedback is not present in the supplied inputs, mark the semantic judgment INDETERMINATE unless the supplied evidence independently establishes the requested success/failure condition. Distinguish a commit that is merely an intermediate implementation step from a commit that itself failed its own initiating user request. Additional later work is evidence of FAILURE only when that later work was necessary to satisfy the same initiating user goal. Also evaluate whether every per-commit field required by original_user_request is present and semantically supported: commit number, description, all affected files, how each file changed, why each change was made, date/time, wider movement/pattern/goal when applicable, and success/failure evaluation relative to the initiating prompt. Return an exhaustive result. Do not truncate, sample, or collapse individual semantic evaluations.",
+  "evaluation_heuristic": "DESIGN-ONLY. Revise the historical audit staging plan using audit_correction as authoritative. Treat current_agents_md, current_runtime_source, and current_step3_evaluation as the FINAL CURRENT requirement/implementation baseline against which every persisted Supervisor nonce run may be evaluated. Do not require historical contract snapshots as a prerequisite for nonce-run compliance. History is instead used to reconstruct the evolution of DESIRED REQUIREMENTS and user instruction lineage. Design two linked analyses: A) FINAL-BASELINE RUN AUDIT: evaluate each nonce run's persisted state/messages/store evidence against today's final requirements and implementation expectations, reporting which current requirements the run satisfies or fails; B) REQUIREMENT-LINEAGE AUDIT: reconstruct atomic user-requested requirements over time and classify each as IMPLEMENTED, SUPERSEDED_BEFORE_IMPLEMENTATION, MISSING_STILL_OUTSTANDING, or INDETERMINATE. A requirement that was later superseded is not a defect. A MISSING_STILL_OUTSTANDING requirement must be both never implemented and not later superseded, and still relevant under the final desired requirement set. Focus historical staging on requirement deltas, not full reconstruction of every historical code/spec snapshot. Recommend the minimum deterministic prerequisite artifacts, exact batching strategy, batch inputs, proof rules, and completeness checks. Explain whether nonce batches can simply share one immutable final-baseline packet plus their own run containers. Also define a requirements-delta artifact that tracks when desired requirements were added, modified, superseded, or retained into the final requirement set. Return design only; do not execute the audit.",
   "evaluation_output_schema": {
-    "response_type": "generic_evaluation",
-    "overall_result": "PASS | FAIL | PARTIAL | INDETERMINATE",
-    "evaluation_heuristic": "verbatim configured heuristic used",
-    "input_inventory": [
-      {
-        "key": "string",
-        "source": "string",
-        "role_in_evaluation": "string"
-      }
-    ],
-    "coverage_evaluation": {
-      "ground_truth_commit_count": "integer | null",
-      "artifact_commit_count": "integer | null",
-      "missing_commits": [
-        {
-          "sha": "string",
-          "explanation": "string"
-        }
-      ],
-      "extra_commits": [
-        {
-          "sha": "string",
-          "explanation": "string"
-        }
-      ],
-      "duplicate_commits": [
-        {
-          "sha": "string",
-          "explanation": "string"
-        }
-      ],
-      "ordering_errors": [
-        {
-          "sha": "string",
-          "explanation": "string"
-        }
-      ],
-      "result": "PASS | FAIL | PARTIAL | INDETERMINATE",
-      "explanation": "string"
-    },
-    "contract_evaluation": [
-      {
-        "requirement": "string",
-        "result": "PASS | FAIL | PARTIAL | INDETERMINATE",
-        "evidence": "string",
-        "required_change": "string | null"
-      }
-    ],
-    "semantic_evaluations": [
-      {
-        "commit_number": "integer | null",
-        "commit_sha": "string",
-        "recorded_status": "SUCCESS | FAILURE | other",
-        "evaluator_result": "AGREE | DISAGREE | INDETERMINATE",
-        "corrected_status": "SUCCESS | FAILURE | INDETERMINATE",
-        "rationale": "string",
-        "evidence": "string"
-      }
-    ],
-    "semantic_summary": {
-      "evaluations_expected": "integer",
-      "evaluations_returned": "integer",
-      "agreements": "integer",
-      "disagreements": "integer",
-      "indeterminate": "integer"
-    },
-    "required_corrections": [
-      {
-        "scope": "string",
-        "correction": "string",
-        "reason": "string"
-      }
-    ]
+    "response_type": "final_baseline_audit_staging_design",
+    "normative_baseline": {"description":"string","files":["string"],"how_used":"string"},
+    "run_audit_model": {"batching_strategy":"string","shared_baseline_inputs":["string"],"per_batch_inputs":["string"],"checks":["string"],"result_classes":["string"]},
+    "requirement_lineage_model": {"purpose":"string","classifications":["IMPLEMENTED","SUPERSEDED_BEFORE_IMPLEMENTATION","MISSING_STILL_OUTSTANDING","INDETERMINATE"],"delta_fields":["string"],"supersession_rules":["string"],"outstanding_defect_rule":"string"},
+    "prerequisite_artifacts":[{"artifact":"string","purpose":"string","required_fields":["string"]}],
+    "proposed_batches":[{"batch_id":"string","runs":["string"],"reason":"string"}],
+    "completeness_checks":["string"],
+    "differences_from_prior_temporal_contract_plan":["string"],
+    "recommended_next_action":"string"
   },
   "generic_messages_file": "generic-evaluator-messages.json",
   "generic_reuse_message_history": false,
@@ -122,5 +47,5 @@
   "run_evaluation_file": "evaluation.json",
   "run_messages_file": "messages.json",
   "run_outputs_directory": "outputs",
-  "write_latest_compatibility_outputs": true
+  "write_latest_compatibility_outputs": false
 }
