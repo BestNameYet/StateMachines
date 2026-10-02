@@ -3,7 +3,7 @@
   "supervisor_root": "../GeminiSupervisor",
   "new_message_folder": "evaluator-nextmessage",
   "new_message_file": "nextmessage.json",
-  "messages_file": "evaluator-messages.json",
+  "messages_file": "live-ground-truth-implementation-messages.json",
   "evaluation_output_file": "program-evaluation.json",
   "revision_deliverables_output_path": "revision-deliverables",
   "revision_agents_output_file": "revised-Agents.md",
@@ -14,88 +14,10 @@
   "agents_file": "Agents.md",
   "program_file": "send-to-gemini.js",
   "artifact_target_file": "tests/step-3-evaluation.json",
-  "artifact_revision_enabled": true,
-  "artifact_revision_output_file": "step-3-evaluation.json",
-  "artifact_revision_output_path": "revision-deliverables/step-3-evaluation.json",
-  "artifact_revision_preserve_json_pointers": ["/step3_tsr"],
+  "artifact_revision_enabled": false,
   "default_model": "gemini-3.8-flash",
   "request_timeout_ms": 180000,
-  "evaluation_mode": "generic",
-  "generic_inputs": [
-    {"key":"stage1_final_inventory","type":"file","path":"evaluations/stage1_current_feature_inventory_20261002_1/execution/final.json"},
-    {"key":"agents_contract","type":"file","path":"../GeminiSupervisor/Agents.md"},
-    {"key":"runtime_source","type":"file","path":"../GeminiSupervisor/send-to-gemini.js"},
-    {"key":"manifest","type":"file","path":"../GeminiSupervisor/MANIFEST.md"},
-    {"key":"readme","type":"file","path":"../GeminiSupervisor/README.md"}
-  ],
-  "evaluation_heuristic": "LIVE GROUND-TRUTH FULL IMPLEMENTATION DESIGN. Analyze exactly the five supplied artifacts: the final Stage-1 current feature inventory, current Agents.md contract, current send-to-gemini.js runtime source, current MANIFEST.md, and current README.md. Treat runtime_source as the actual implementation under test; treat agents_contract as the governing intended contract; use stage1_final_inventory as a consolidated map of currently observed capabilities; use MANIFEST and README as current documentation/operational context. Do not silently import behavior not supported by these inputs. The objective is to determine how Gemini Supervisor can fully and mechanically implement live ground-truth verification so that execution/completion/status claims cannot pass merely because an agent says it read, checked, ran, wrote, committed, pushed, or observed something. Distinguish existing implementation from proposed additions. Evaluate whether all evidence-bearing reads/observations should be forced through a programmatic evidence gateway that logs each read/query/tool observation; whether an append-only per-run observation ledger should record target, operation, timestamp, exact ref/version, content hash, optional bounded excerpt, result status, claim IDs, and provenance; whether the ledger should be hash-chained and/or anchored by Git commits/checkpoints; and compare per-read commits, batched checkpoint commits, hash-chain-only, and hybrid approaches. Design a non-bypassable binding from model claims to runtime-generated observation IDs so model-authored evidence text alone is never authoritative. Address direct fs/git/API reads that might bypass a gateway and propose deterministic enforcement such as source-level wrappers plus AST/static checks or runtime capability boundaries. Also design a randomized adversarial test harness: select hidden questions from live repository/runtime state after the model's prompt is formed, require answers whose truth can be deterministically checked, include stale-memory traps, nonexistent paths, dirty/untracked files, exact-content questions, commit/ref questions, partial-completion modifiers, and intentionally contradictory self-reports. Propose a reproducible random-seed strategy and persist the seed/questions/oracles after the attempt so tests are auditable without exposing them beforehand. Include at least 16 concrete sample randomized test cases/questions with setup, hidden oracle, expected verification behavior, and pass/fail condition. Recommend exact source-level components/functions/data structures, Agents.md contract changes, persistence schema changes, workflow/commit changes if needed, README/MANIFEST changes, migration order, deterministic acceptance tests, and failure modes. Prefer minimal trusted-computing-base mechanisms that are enforceable by code rather than prose. Explicitly identify what current live-ground-truth behavior already exists and what remains incomplete. Return STRICT valid JSON only matching the configured schema.",
-  "evaluation_output_schema": {
-    "response_type": "live_ground_truth_full_implementation_design",
-    "nonce": "live_ground_truth_full_implementation_20261002_1",
-    "executive_summary": "string",
-    "current_state": {
-      "already_implemented": [{"capability":"string","evidence":["string"],"mechanical_or_policy":"mechanical | policy | mixed"}],
-      "incomplete_or_bypassable": [{"gap":"string","evidence":["string"],"consequence":"string"}]
-    },
-    "design_invariants": ["string"],
-    "architecture_options": [{"name":"string","mechanism":"string","advantages":["string"],"disadvantages":["string"],"failure_or_bypass_risks":["string"]}],
-    "recommended_architecture": {
-      "name": "string",
-      "trusted_computing_base": ["string"],
-      "components": [{"component":"string","responsibility":"string","inputs":["string"],"outputs":["string"]}],
-      "execution_flow": ["string"],
-      "non_bypassability_strategy": ["string"]
-    },
-    "observation_ledger": {
-      "storage_path_pattern": "string",
-      "append_only_strategy": "string",
-      "record_schema": {},
-      "hash_chain_strategy": "string",
-      "commit_anchor_strategy": "string",
-      "retention_and_excerpt_policy": "string"
-    },
-    "claim_binding": {
-      "claim_to_observation_mechanism": "string",
-      "required_runtime_fields": ["string"],
-      "supervisory_gate_rules": ["string"],
-      "rejection_conditions": ["string"]
-    },
-    "read_and_tool_interception": {
-      "operations_that_must_be_intercepted": ["string"],
-      "wrapper_or_gateway_functions": [{"name":"string","purpose":"string"}],
-      "direct_access_bypass_controls": ["string"],
-      "static_or_ast_checks": ["string"]
-    },
-    "commit_and_provenance_strategy": {
-      "recommended_model": "string",
-      "why": "string",
-      "per_read_commit_assessment": "string",
-      "batched_commit_assessment": "string",
-      "hash_chain_only_assessment": "string",
-      "hybrid_assessment": "string"
-    },
-    "randomized_adversarial_test_harness": {
-      "generation_strategy": "string",
-      "seed_strategy": "string",
-      "when_questions_are_selected": "string",
-      "oracle_generation": "string",
-      "anti_leakage_strategy": "string",
-      "persistence_strategy": "string",
-      "test_categories": ["string"],
-      "sample_tests": [{"test_id":"string","category":"string","setup":"string","question":"string","hidden_oracle":"string","expected_verification_behavior":"string","pass_condition":"string"}]
-    },
-    "source_change_plan": [{"file":"string","symbol_or_section":"string","change":"string","reason":"string","deterministic_check":"string"}],
-    "agents_contract_changes": [{"section":"string","change":"string","enforced_by":"string"}],
-    "persistence_and_schema_changes": [{"artifact":"string","change":"string","reason":"string"}],
-    "workflow_changes": [{"file":"string","change":"string","reason":"string"}],
-    "documentation_changes": [{"file":"string","change":"string"}],
-    "deterministic_acceptance_tests": [{"test":"string","setup":"string","expected":"string"}],
-    "implementation_order": [{"order":0,"change":"string","dependency":"string","completion_evidence":"string"}],
-    "known_failure_modes": [{"failure_mode":"string","mitigation":"string"}],
-    "unresolved_questions": [{"question":"string","recommended_resolution":"string"}]
-  },
-  "generic_messages_file": "generic-evaluator-messages.json",
-  "generic_reuse_message_history": false,
+  "evaluation_mode": "supervisor",
   "evaluations_root": "evaluations",
   "run_evaluation_file": "evaluation.json",
   "run_messages_file": "messages.json",
