@@ -233,12 +233,14 @@
       "iterator": {
         "divider": {
           "max_tokens": 12000,
-          "boundary_strategy": "shift_divisions_until_all_batches_fit"
+          "boundary_strategy": "shift_divisions_until_all_batches_fit",
+          "base_max_tokens": 12000,
+          "max_tokens_formula": "12000 * (2 ** B)"
         },
         "evaluator": {
           "model": "gemini-3.8-flash",
-          "task": "Deduplicate, normalize, merge, and reconcile the extracted feature inventory records from previous batches. Merge overlapping features under a unified name and comprehensive description while unioning all supporting evidence references and provenance batch IDs. Eliminate exact duplicate entries. Ensure canonical categories are maintained. Return a compact consolidation. The complete serialized response must remain below 6000 estimated tokens under Math.ceil(characters / 3.9). Prefer merging overlapping records over retaining near-duplicates. Keep names concise, descriptions to one or two sentences, mechanic_summary values to one concise sentence, and include only evidence necessary to preserve distinct implementation support.",
-          "criteria": "1. Evidence preservation: Retain all valid source citations and provenance tags from merged entries.\n2. Deduplication: Merge redundant or overlapping feature descriptions into unified records.\n3. Canonical naming: Use clear, descriptive, consistent naming conventions across all consolidated features.\n4. Strict schema compliance: Return valid JSON matching the consolidated feature inventory schema.\n5. Compactness: The complete serialized response must remain below 6000 estimated tokens using Math.ceil(characters / 3.9); remove redundant wording and redundant evidence while preserving distinct source support.",
+          "task": "Deduplicate, normalize, merge, and reconcile the extracted feature inventory records from previous batches. Merge overlapping features under a unified name and comprehensive description while unioning all supporting evidence references and provenance batch IDs. Eliminate exact duplicate entries. Ensure canonical categories are maintained.",
+          "criteria": "1. Evidence preservation: Retain all valid source citations and provenance tags from merged entries.\n2. Deduplication: Merge redundant or overlapping feature descriptions into unified records.\n3. Canonical naming: Use clear, descriptive, consistent naming conventions across all consolidated features.\n4. Strict schema compliance: Return valid JSON matching the consolidated feature inventory schema.",
           "response_contract": {
             "required_fields": [
               "inventory_round",
@@ -358,17 +360,12 @@
               "source": "response",
               "operator": "required_fields_recoverable",
               "value": true
-            },
-            {
-              "id": "response_below_hard_token_limit",
-              "source": "response.tokens",
-              "operator": "lt",
-              "value": {
-                "source": "divider.max_tokens",
-                "divide_by": 2
-              }
             }
-          ]
+          ],
+          "dynamic_response_limit": {
+            "ordinary_round": "floor(round_input_tokens / assigned_b_count)",
+            "terminal_round": null
+          }
         },
         "retry": {
           "conditionals": [
@@ -496,6 +493,23 @@
       "supervisory_summary": {
         "source": "runtime.supervisory"
       }
+    }
+  },
+  "stage1_round_policy": {
+    "b0": {
+      "divider_max_tokens": 12000,
+      "response_limit": "response.tokens < divider.max_tokens / 2",
+      "division_source": "precomputed Gemini countTokens batches"
+    },
+    "consolidation": {
+      "applies_when": "B > 0",
+      "divider_max_tokens_formula": "12000 * (2 ** B)",
+      "response_limit_formula": "floor(round_input_tokens / assigned_b_count)",
+      "purpose": "allow canonical feature lists to grow as batches are recombined while preventing aggregate round expansion"
+    },
+    "terminal_round": {
+      "response_token_limit": null,
+      "note": "terminal round is exempt from the consolidation response ceiling"
     }
   }
 }

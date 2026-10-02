@@ -8,362 +8,251 @@
     "inventory_round": 1,
     "features": [
       {
-        "feature_id": "shared_supervisor_configuration",
-        "name": "Shared Supervisor Configuration Registry",
+        "feature_id": "FEAT-CONFIG-001",
+        "name": "Centralized Shared Configuration Resolution",
         "category": "configuration",
-        "description": "Centralized JSON configuration declaring external file dependencies, triggers, runtime roots, and evaluation artifacts, ensuring runtime scripts and specifications resolve identical paths via shared named keys.",
+        "description": "Defines shared runtime roots, external dependencies, and trigger paths through config.json so specification and runtime reference uniform named keys rather than hardcoded paths.",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/config.json",
             "reference_symbol_or_heading": "whole",
-            "mechanic_summary": "Defines version, agents_file, trigger_file, runs_directory, and external_files.step3_evaluation_artifact keys."
+            "mechanic_summary": "Declares agents_file ('ChatMachines/GeminiSupervisor/Agents.md'), trigger_file ('ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json'), runs_directory ('ChatMachines/GeminiSupervisor/runs'), and external_files.step3_evaluation_artifact ('ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json')."
           },
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Governing Rule Catalog",
-            "mechanic_summary": "Rule shared_configuration_contract_governs_external_references requires specification and runtime to resolve external dependencies via config.json rather than hardcoded paths."
-          },
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Procedure Dependency Chart",
-            "mechanic_summary": "loadSupervisorConfig reads ChatMachines/GeminiSupervisor/config.json to output triggerPath, agentsPath, step3EvaluationPath, and runsRoot."
+            "reference_symbol_or_heading": "Governing Rule Catalog",
+            "mechanic_summary": "shared_configuration_contract_governs_external_references mandates that all external file dependencies, triggers, runtime roots, and evaluation artifacts resolve against config.json keys."
           }
         ]
       },
       {
-        "feature_id": "isolated_run_container_bootstrap",
-        "name": "Isolated Run Container Bootstrapping",
+        "feature_id": "FEAT-PERSIST-001",
+        "name": "Run Container Bootstrap and Isolation",
         "category": "persistence",
-        "description": "Creates and isolates a path-safe run container directory under runs/<run_nonce>/ containing state.json, messages.json, and store/store.json prior to Step 0 execution.",
+        "description": "Creates and isolates a distinct run container for each execution turn identified by a path-safe run_nonce, persisting state.json, messages.json, and store/store.json under runs/<run_nonce>/ before Step 0 execution.",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Governing Rule Catalog",
-            "mechanic_summary": "Rule bootstrap_must_create_and_isolate_a_consistent_run_container_before_step_zero mandates path-safe run_nonce and isolated state.json, messages.json, and store/store.json before Step 0."
+            "reference_symbol_or_heading": "Governing Rule Catalog",
+            "mechanic_summary": "bootstrap_must_create_and_isolate_a_consistent_run_container_before_step_zero mandates creation of runs/<run_nonce>/ containing state.json, messages.json, and store/store.json prior to Step 0."
           },
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Procedure Dependency Chart",
-            "mechanic_summary": "initRun consumes nextmessage.run_nonce to create isolated run container files runs/<run_nonce>/state.json, runs/<run_nonce>/messages.json, and runs/<run_nonce>/store/store.json."
+            "reference_symbol_or_heading": "Procedure Dependency Chart",
+            "mechanic_summary": "nextmessage.run_nonce maps via initRun to outputs 'runs/<run_nonce>/state.json', 'runs/<run_nonce>/messages.json', and 'runs/<run_nonce>/store/store.json'."
           }
         ]
       },
       {
-        "feature_id": "execution_and_supervisory_persistence",
-        "name": "Step Execution and Supervisory Record Persistence",
-        "category": "persistence",
-        "description": "Persists verbatim execution payloads, role verifications, and supervisory gate evaluation outcomes durably across turns and retry attempts within the active run container.",
+        "feature_id": "FEAT-VALID-001",
+        "name": "Strict Per-Step Return Schema Control Surface",
+        "category": "validation",
+        "description": "Enforces that every step adheres to a mandatory JSON execution schema owned by ChatGPT, requiring explicit return_schema_completed flags and validation before advancing.",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Procedure Dependency Chart",
-            "mechanic_summary": "Functions addMessage, addStore, and attemptRecord persist execution and supervisory records into messages.json, store/store.json, and state.json step_records."
+            "reference_symbol_or_heading": "Governing Rule Catalog",
+            "mechanic_summary": "return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface requires each step to persist its exact schema for Gemini evaluation before advancing, with failed gates non-bypassable."
           },
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Step 0",
-            "mechanic_summary": "Evaluation requirement step_0_persistence_and_gate mandates persisting execution and gate records before step advancement."
+            "reference_symbol_or_heading": "Procedure Dependency Chart",
+            "mechanic_summary": "execution.return_schema validates current-step schema and extracts material execution-dependent claims via validateStep, collectGroundTruth, and gateTemplate."
           }
         ]
       },
       {
-        "feature_id": "model_role_separation",
-        "name": "Model Role Separation and Provenance Verification",
+        "feature_id": "FEAT-VALID-002",
+        "name": "Mandatory Role Separation and Execution Identity Verification",
+        "category": "validation",
+        "description": "Enforces model role separation where Steps 0-4 must be executed by ChatGPT and supervisory gates must be executed by Gemini, prohibiting either role from simulating or executing the other's tasks and verifying role via server evidence.",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
+            "reference_symbol_or_heading": "Governing Rule Catalog",
+            "mechanic_summary": "model_role_separation_and_server_verified_execution_identity_are_mandatory dictates role_required and role_forbidden boundaries and requires role_completed to be verified against runtime/server evidence."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
+            "reference_symbol_or_heading": "Supervisory Gate Common Field Glossary",
+            "mechanic_summary": "Specifies role_required as 'Gemini model', role_forbidden as 'ChatGPT model', role_completed as verified Gemini model, and role_verification as {method, evidence}."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-ORCH-001",
+        "name": "Nonterminal Commit-to-Response Turn Spanning Handshake",
         "category": "orchestration",
-        "description": "Enforces strict model execution boundaries where ChatGPT executes Steps 0-4 and Gemini executes supervisory gates, forbidding role laundering, retry of each other's steps, or simulated gates.",
+        "description": "Maintains the execution turn across nextmessage commits until Gemini returns a supervisory evaluation; retries the same step on FAIL and transitions to the next step on nonterminal PASS.",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Governing Rule Catalog",
-            "mechanic_summary": "Rule model_role_separation_and_server_verified_execution_identity_are_mandatory requires role_completed to be verified by runtime/server evidence and forbids role cross-execution."
+            "reference_symbol_or_heading": "Governing Rule Catalog",
+            "mechanic_summary": "chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake requires waiting for Gemini responses, same-step recommit on FAIL, next-step execution on PASS, and turn termination only upon terminal completion."
+          }
+        ]
+      },
+      {
+        "feature_id": "FEAT-GATE-001",
+        "name": "Live Ground Truth Verification Against Deception",
+        "category": "supervisory_gate",
+        "description": "Verifies material execution-dependent claims against fresh, authoritative live artifacts, git objects, or runtime records rather than agent self-reports or memory, assigning deterministic statuses (VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, NOT_EXECUTED).",
+        "evidence": [
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
+            "reference_symbol_or_heading": "Governing Rule Catalog",
+            "mechanic_summary": "live_ground_truth_verification_against_pathological_deception states agent self-report is testimony only, requiring runtime to map claims to live ground truth and prohibiting PASS on unverified or contradictory claims."
           },
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Supervisory Gate Common Field Glossary",
-            "mechanic_summary": "Defines role_required ('Gemini model'), role_forbidden ('ChatGPT model'), and role_verification ({method, evidence}) for supervisory evaluations."
+            "reference_symbol_or_heading": "Canonical Evaluation Definitions",
+            "mechanic_summary": "Defines live_ground_truth criteria and ground_truth_status values: VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, NOT_EXECUTED."
           }
         ]
       },
       {
-        "feature_id": "nextmessage_to_gemini_handshake_loop",
-        "name": "ChatGPT to Gemini Nextmessage Handshake Loop",
-        "category": "orchestration",
-        "description": "Controls the user-facing turn lifecycle across nonterminal nextmessage commits and Gemini responses, requiring active waiting until Gemini evaluates and reaching a terminal state before ending the turn.",
+        "feature_id": "FEAT-GATE-002",
+        "name": "Deterministic Ground Truth Findings Protection",
+        "category": "supervisory_gate",
+        "description": "Requires the supervisor to preserve immutable deterministic findings and aggregate status supplied by runtime in ground_truth_verification_eval, preventing alteration of findings or passing with blocking issues.",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Governing Rule Catalog",
-            "mechanic_summary": "Rule chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake establishes that nextmessage commit requires waiting for Gemini response, retrying on FAIL, continuing on PASS, and terminating only after the latest response."
+            "reference_symbol_or_heading": "Supervisory Gate Common Field Glossary",
+            "mechanic_summary": "ground_truth_verification_eval requires preserving deterministic_findings, claim_evaluations, aggregate_status, supervisor_eval_result, and supervisor_eval_comment, forbidding alteration of deterministic findings."
+          },
+          {
+            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
+            "reference_symbol_or_heading": "Procedure Dependency Chart",
+            "mechanic_summary": "supervisory_gate.ground_truth_verification_eval feeds groundTruthEvalValid and evalValid to reject malformed/altered findings and prevent PASS when blocking findings exist."
           }
         ]
       },
       {
-        "feature_id": "single_step_advancement_and_gate_blocking",
-        "name": "Single Step Advancement and Gate Blocking",
+        "feature_id": "FEAT-TRANS-001",
+        "name": "Supervisory Gate Transition Control",
         "category": "state_transition",
-        "description": "Advances the procedure by exactly one step upon supervisory PASS, and blocks advancement on supervisory FAIL, retaining the state at the failing step.",
+        "description": "Controls procedure state transitions based on supervisory gate results: a PASS advances the current step by one, while a FAIL keeps execution on the same step and records the supervisory failure.",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Procedure Dependency Chart",
-            "mechanic_summary": "Transition logic consumes supervisory_gate.gate_result: PASS advances exactly one step, FAIL remains on same step, updating state.current_step, completed_steps, remaining_steps, and last_supervisory_failure."
+            "reference_symbol_or_heading": "Procedure Dependency Chart",
+            "mechanic_summary": "supervisory_gate.gate_result dictates transitions where PASS advances exactly one step and FAIL remains on same step, updating state.current_step, completed_steps, remaining_steps, and last_supervisory_failure."
           },
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Governing Rule Catalog",
-            "mechanic_summary": "Rule return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface states a failed earlier gate cannot be bypassed and return_schema_completed applies strictly to the current step."
+            "reference_symbol_or_heading": "Procedure Dependency Chart",
+            "mechanic_summary": "execution.step is checked against current_state.procedure.current_step by inspect, generating deterministic_validation_failures on mismatch."
           }
         ]
       },
       {
-        "feature_id": "step_3_tsr_loop_control",
-        "name": "Step 3 Test-Suite Evaluation and Loop Control",
-        "category": "state_transition",
-        "description": "Executes loop control logic in Step 3.G based on test results from Step 3.F; any true (T) result forces Step 3 repetition, while all false (F) permits completion.",
+        "feature_id": "FEAT-VALID-003",
+        "name": "Step 4 Failure-First Reporting Sequence Enforcement",
+        "category": "validation",
+        "description": "Mandates that Step 4 output lists failed actions first, incomplete actions second, and verified completed actions last to prevent masking partial or broken executions behind completion declarations.",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Procedure Dependency Chart",
-            "mechanic_summary": "validateStep evaluates Step 3 test_results: any T repeats Step 3, all F permits Step 3 completion, setting Step_3.G.Loop_Decision and Step_3.G.return_to."
-          },
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Step 3 Field Definition Glossary",
-            "mechanic_summary": "Step_3.G definition specifies 'Any T repeats Step 3; all F completes planning', and Step_3.return_schema_completed is true only when A-G are complete and all tests are F."
+            "reference_symbol_or_heading": "Governing Rule Catalog",
+            "mechanic_summary": "step_four_reporting_must_put_failures_and_incomplete_work_before_verified_completion requires failed_actions first, not_completed_actions second, and completed_actions last with granular live evidence."
           }
         ]
       },
       {
-        "feature_id": "common_supervisory_gate_protocol",
-        "name": "Standardized Supervisory Gate Schema Protocol",
-        "category": "supervisory_gate",
-        "description": "Specifies a canonical schema structure for supervisory gates, including role verification, evaluation-only instructions, granular evaluation trees, ground truth eval structures, failures array, and binary gate results.",
+        "feature_id": "FEAT-VALID-004",
+        "name": "Step 0 Start of Turn Verbatim Request Capture",
+        "category": "validation",
+        "description": "Executes Step 0 start_of_turn to capture and preserve the verbatim user request unpolluted, establishing run identity nonces and execution timestamps.",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Supervisory Gate Common Field Glossary",
-            "mechanic_summary": "Defines role_required, role_forbidden, role_completed, role_verification, instruction, granular_evaluation, ground_truth_verification_eval, step_level_evaluation, failures, and gate_result."
+            "reference_symbol_or_heading": "Step 0 Field Definition Glossary",
+            "mechanic_summary": "Defines start_of_turn fields: role_required, role_forbidden, role_completed, role_verification, run_nonce, user_request, current_timestamp, return_schema_completed, return_schema_completed_timestamp, nonce."
           },
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Step 0",
-            "mechanic_summary": "Shows canonical supervisory_gate_schema matching the common supervisory field definitions."
+            "reference_symbol_or_heading": "Step 0",
+            "mechanic_summary": "Defines Step 0 evaluation requirements including step_0_preserve_verbatim_request, step_0_bootstrap_identity, step_0_live_ground_truth, and step_0_persistence_and_gate."
           }
         ]
       },
       {
-        "feature_id": "deterministic_ground_truth_verification",
-        "name": "Deterministic Ground Truth Verification Enforcement",
-        "category": "supervisory_gate",
-        "description": "Verifies execution-dependent claims against authoritative runtime/git/workspace artifacts and rejects supervisory gate attempts that alter or ignore deterministic runtime findings.",
+        "feature_id": "FEAT-VALID-005",
+        "name": "Step 1 Continuity and Request Propagation Record",
+        "category": "validation",
+        "description": "Records Step 1 execution continuity, verifying verbatim persistence of the Step 0 user request, request nonce, and active run_nonce under ChatGPT role authority before allowing advancement to Step 2.",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Governing Rule Catalog",
-            "mechanic_summary": "Rule live_ground_truth_verification_against_pathological_deception states agent self-report/memory is testimony only; supervisory PASS requires independent correlation with live ground truth."
-          },
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Procedure Dependency Chart",
-            "mechanic_summary": "groundTruthEvalValid and evalValid inspect supervisory_gate.ground_truth_verification_eval to reject malformed or altered findings and block PASS when blocking findings exist."
-          }
-        ]
-      },
-      {
-        "feature_id": "step_0_bootstrap_and_request_gate",
-        "name": "Step 0 Verbatim Request and Bootstrap Gate",
-        "category": "supervisory_gate",
-        "description": "Validates Step 0 execution schema (start_of_turn), confirming verbatim user request preservation, run nonce identity matching, ChatGPT role execution, and live container consistency.",
-        "evidence": [
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Step 0 Field Definition Glossary",
-            "mechanic_summary": "Defines start_of_turn fields: role_required, role_forbidden, role_completed, role_verification, run_nonce, user_request, current_timestamp, return_schema_completed, return_schema_completed_timestamp, and nonce."
-          },
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Step 0",
-            "mechanic_summary": "Lists evaluation requirements: step_0_preserve_verbatim_request, step_0_bootstrap_identity, step_0_live_ground_truth, and step_0_persistence_and_gate."
-          }
-        ]
-      },
-      {
-        "feature_id": "step_1_continuity_gate",
-        "name": "Step 1 Request Continuity Gate",
-        "category": "supervisory_gate",
-        "description": "Evaluates Step 1 continuity return (step_1_record) ensuring verbatim preservation of Step 0 user request, request nonce, active run nonce, and role execution proofs.",
-        "evidence": [
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Step 1 Field Definition Glossary",
+            "reference_symbol_or_heading": "Step 1 Field Definition Glossary",
             "mechanic_summary": "Defines step_1_record fields: role_required, role_forbidden, role_completed, role_verification, run_nonce, user_request, nonce, current_timestamp, return_schema_completed, and return_schema_completed_timestamp."
           },
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Step 1",
-            "mechanic_summary": "Specifies evaluation requirements step_1_preserve_request and step_1_role_completion_persistence."
+            "reference_symbol_or_heading": "Step 1",
+            "mechanic_summary": "Enforces step_1_preserve_request and step_1_role_completion_persistence requirements before transition to Step 2."
           }
         ]
       },
       {
-        "feature_id": "step_2_requirement_extraction_gate",
-        "name": "Step 2 Verbatim Requirement Extraction Gate",
-        "category": "supervisory_gate",
-        "description": "Verifies Step 2 execution return (step_2_record), ensuring stated_requirements array extracts all and only user-stated requirements verbatim without paraphrasing, invention, or omission.",
+        "feature_id": "FEAT-VALID-006",
+        "name": "Step 2 Verbatim User-Stated Requirement Extraction",
+        "category": "validation",
+        "description": "Extracts stated requirements verbatim from user words into step_2_record.stated_requirements, prohibiting omitted, invented, or paraphrased requirements.",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Step 2 Field Definition Glossary",
+            "reference_symbol_or_heading": "Step 2 Field Definition Glossary",
             "mechanic_summary": "Defines step_2_record.stated_requirements as array<string> containing only user-stated requirements preserved verbatim."
           },
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Step 2",
-            "mechanic_summary": "Defines evaluation requirements step_2_only_user_stated_requirements, step_2_live_ground_truth, and step_2_role_completion_persistence."
-          }
-        ]
-      },
-      {
-        "feature_id": "step_level_execution_consistency_validation",
-        "name": "Step Level Execution Consistency Check",
-        "category": "validation",
-        "description": "Validates that incoming execution payloads match the active state procedure step, raising deterministic validation failures if step mismatch occurs.",
-        "evidence": [
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Procedure Dependency Chart",
-            "mechanic_summary": "inspect consumer checks execution.step must equal current_state.procedure.current_step, outputting deterministic_validation_failures."
-          }
-        ]
-      },
-      {
-        "feature_id": "verbatim_user_request_preservation",
-        "name": "Canonical Verbatim User Request Preservation",
-        "category": "validation",
-        "description": "Enforces preservation of the user's current utterance exactly as authored across execution steps, preventing controller/agent pollution, truncation, normalization, or paraphrasing.",
-        "evidence": [
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Canonical Evaluation Definitions",
-            "mechanic_summary": "Defines user_words as primary instruction evidence requiring preservation without controller or agent pollution, failing on truncation, paraphrasing, or non-user text."
-          }
-        ]
-      },
-      {
-        "feature_id": "per_step_return_schema_control_surface",
-        "name": "Per-Step Return Schema Control Surface",
-        "category": "validation",
-        "description": "Requires every step to produce and persist its defined execution return schema; return_schema_completed reflects strictly the current step's completion, not entire procedure completion.",
-        "evidence": [
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Governing Rule Catalog",
-            "mechanic_summary": "Rule return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface mandates schema shape, required fields, and role ownership checks before advancement."
-          }
-        ]
-      },
-      {
-        "feature_id": "live_ground_truth_status_classification",
-        "name": "Live Ground Truth Status Classification",
-        "category": "validation",
-        "description": "Classifies material execution-dependent claims into one of five mutually exclusive states: VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, or NOT_EXECUTED, prohibiting treating UNKNOWN or PARTIAL as success.",
-        "evidence": [
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Canonical Evaluation Definitions",
-            "mechanic_summary": "Defines ground_truth_status values (VERIFIED|CONTRADICTED|PARTIAL|UNKNOWN|NOT_EXECUTED) and evaluation criteria preventing conversion of non-verified status into success."
+            "reference_symbol_or_heading": "Step 2",
+            "mechanic_summary": "Specifies step_2_only_user_stated_requirements, step_2_live_ground_truth, and step_2_role_completion_persistence requirements."
           },
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Procedure Dependency Chart",
-            "mechanic_summary": "collectGroundTruth and groundTruthEvalValid classify claims from live workspace/git/run records into ground_truth_verification findings."
+            "reference_symbol_or_heading": "Procedure Dependency Chart",
+            "mechanic_summary": "Step 2 stated_requirements constrains Step 3 planning and Step 4 final coverage via Gemini supervisory prompt."
           }
         ]
       },
       {
-        "feature_id": "step_3_decomposition_and_plan_validation",
-        "name": "Step 3 Clause, Modifier, and Plan Decomposition",
-        "category": "validation",
-        "description": "Validates Step 3 multi-section structure covering U preservation (A), clause decomposition (B), recursive modifier analysis (C), execution planning (D), and UI output projection (E).",
+        "feature_id": "FEAT-ORCH-002",
+        "name": "Step 3 Structured Planning, Decomposition, and TSR Loop Control",
+        "category": "orchestration",
+        "description": "Decomposes instructions into clauses, modifiers, plan P, conditional UI output, evaluates Step3_TSR question corpus from an external artifact, and uses loop control (Step_3.G) where any T repeats Step 3 and all F permits completion.",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Step 3 Field Definition Glossary",
-            "mechanic_summary": "Defines Step_3 fields: Step_3.A (U preservation), Step_3.B (clause decomposition), Step_3.C (recursive modifier analysis), Step_3.D (P plan mapped to Step 2 requirements), and Step_3.E (UI_output projection)."
-          }
-        ]
-      },
-      {
-        "feature_id": "step_4_failure_first_reporting_rule",
-        "name": "Step 4 Failure-First Reporting Hierarchy",
-        "category": "validation",
-        "description": "Governs final reporting order in Step 4, requiring failed actions to be listed first, incomplete actions second, and verified completed actions last with granular evidence.",
-        "evidence": [
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Governing Rule Catalog",
-            "mechanic_summary": "Rule step_four_reporting_must_put_failures_and_incomplete_work_before_verified_completion prevents hiding partial work behind completion language."
-          }
-        ]
-      },
-      {
-        "feature_id": "same_step_retry_error_handling",
-        "name": "Same-Step Correction and Retry Loop",
-        "category": "error_handling",
-        "description": "Maintains execution on the same step upon receiving a supervisory FAIL, requiring ChatGPT to correct execution errors and recommit nextmessage without skipping steps.",
-        "evidence": [
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Governing Rule Catalog",
-            "mechanic_summary": "Rule chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake requires ChatGPT on FAIL to correct the same step and recommit."
+            "reference_symbol_or_heading": "Step 3 Field Definition Glossary",
+            "mechanic_summary": "Defines Step_3 sub-components Step_3.A (verbatim U), Step_3.B (clauses), Step_3.C (recursive modifier analysis), Step_3.D (P plan), Step_3.E (UI_output), Step_3.F (Step3_TSR evaluations), and Step_3.G (loop control)."
           },
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Procedure Dependency Chart",
-            "mechanic_summary": "On supervisory_gate.gate_result FAIL, main transition logic sets state to remain on same step and records last_supervisory_failure."
+            "reference_symbol_or_heading": "Procedure Dependency Chart",
+            "mechanic_summary": "config.external_files.step3_evaluation_artifact supplies evaluation_heuristic and Step3_TSR tests to Step 3; Step 3 test_results determine Step_3.G.Loop_Decision and return_to."
           }
         ]
       },
       {
-        "feature_id": "blocking_ground_truth_failure_rejection",
-        "name": "Blocking Ground-Truth Finding Enforcement",
-        "category": "error_handling",
-        "description": "Prevents gate advancement when contradictory, unknown, or unverified deterministic ground-truth claims exist, triggering supervisory repair or rejection.",
+        "feature_id": "FEAT-PERSIST-002",
+        "name": "Execution and Supervisory Audit Persistence",
+        "category": "persistence",
+        "description": "Persists verbatim messages, store updates, and step attempt execution and supervisory records into isolated run files (messages.json, store/store.json, state.json step_records).",
         "evidence": [
           {
             "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Procedure Dependency Chart",
-            "mechanic_summary": "groundTruthEvalValid and evalValid reject malformed/altered findings and prevent PASS when blocking findings exist, triggering supervisory repair or gate failure."
-          },
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Governing Rule Catalog",
-            "mechanic_summary": "Rule live_ground_truth_verification_against_pathological_deception states failure occurs when required live evidence is unavailable but success is asserted, or a blocking finding is ignored."
-          }
-        ]
-      },
-      {
-        "feature_id": "step_3_evaluation_artifact_integration",
-        "name": "Step 3 External Evaluation Artifact Integration",
-        "category": "external_integration",
-        "description": "Loads the external Step 3 evaluation artifact specified in config.json to inject evaluation heuristics and the Step3_TSR question corpus into Step 3 validation and supervisor prompts.",
-        "evidence": [
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/config.json",
-            "reference_symbol_or_heading": "whole",
-            "mechanic_summary": "Configures external_files.step3_evaluation_artifact pointing to ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json with keys evaluation_heuristic and step3_tsr."
-          },
-          {
-            "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
-            "reference_symbol_or_heading": "header:Procedure Dependency Chart",
-            "mechanic_summary": "loadStep3Evaluation, validateStep, systemText, and supervise consume config.external_files.step3_evaluation_artifact to supply evaluation heuristics and TSR tests."
+            "reference_symbol_or_heading": "Procedure Dependency Chart",
+            "mechanic_summary": "Consumes execution and supervisory records through addMessage, addStore, and attemptRecord to persist into messages.json, store/store.json, and state.json step_records."
           }
         ]
       }
     ],
-    "feature_count": 21
+    "feature_count": 14
   },
-  "responseTokens": 4745,
+  "responseTokens": 3357,
   "error": null,
   "failureMetadata": null,
   "retries": 0,
