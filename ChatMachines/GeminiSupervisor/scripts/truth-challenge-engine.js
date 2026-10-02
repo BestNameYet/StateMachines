@@ -8,10 +8,10 @@ const { isDeepStrictEqual } = require('util');
 const rootDir = path.resolve(__dirname, '../../..');
 const supervisorDir = path.join(rootDir, 'ChatMachines/GeminiSupervisor');
 const depMapPath = path.join(supervisorDir, 'dependency-map.json');
-const selectorPath = path.join(supervisorDir, 'truth-selector.json');
-const statusPath = path.join(supervisorDir, 'truth-status.json');
-const statePath = path.join(supervisorDir, '.truth-challenge-state.json');
-const snapshotsRoot = path.join(supervisorDir, '.truth-challenges');
+const runsRoot = path.join(supervisorDir, 'runs');
+const PLACEHOLDER_KEY = '^MISSING_KEY^';
+const PLACEHOLDER_VALUE = '^MISSING_VALUE^';
+const DAMAGE_RATE = 0.10;
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -20,6 +20,28 @@ function readJson(filePath) {
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n', 'utf8');
+}
+
+function removeIfExists(filePath) {
+  if (fs.existsSync(filePath)) fs.rmSync(filePath, { force: true });
+}
+
+function removeDirIfExists(dirPath) {
+  if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
+}
+
+function validateNonce(runNonce) {
+  if (typeof runNonce !== 'string' || !/^[A-Za-z0-9_-]+$/.test(runNonce)) {
+    throw new Error(`Invalid run_nonce: ${runNonce}`);
+  }
+  return runNonce;
+}
+
+function validateDocId(docId) {
+  if (typeof docId !== 'string' || !/^[A-Za-z0-9_-]+$/.test(docId)) {
+    throw new Error(`Invalid document id: ${docId}`);
+  }
+  return docId;
 }
 
 function gitBlobShaForBytes(bytes) {
@@ -36,303 +58,356 @@ function getRegistry() {
   return registry;
 }
 
-function getSelectedDocuments(registry) {
-  const selector = readJson(selectorPath);
-  const selected = selector.selected_documents;
-
-  if (!selected || typeof selected !== 'object' || Array.isArray(selected)) {
-    throw new Error('truth-selector.json.selected_documents must be an object');
-  }
-
-  const expectedKeys = Object.keys(registry).sort();
-  const actualKeys = Object.keys(selected).sort();
-
-  if (!isDeepStrictEqual(actualKeys, expectedKeys)) {
-    throw new Error('truth-selector.json keys must exactly match truth_readable_registry keys');
-  }
-
-  for (const [key, value] of Object.entries(selected)) {
-    if (typeof value !== 'boolean') {
-      throw new Error(`truth-selector.json ${key} must be boolean`);
-    }
-  }
-
-  return Object.keys(selected).filter((key) => selected[key] === true);
-}
-
 function verifyStableReader(docId, entry) {
   const readerAbs = path.join(rootDir, entry.stable_reader_path);
   if (!fs.existsSync(readerAbs)) {
     throw new Error(`Stable reader missing for ${docId}: ${entry.stable_reader_path}`);
   }
-
   if (!entry.source_blob_sha || !entry.source_commit_sha || !entry.reader_blob_sha) {
-    throw new Error(`Dependency provenance is incomplete for ${docId}; dependency sync must run first`);
+    throw new Error(`Dependency provenance is incomplete for ${docId}; reader sync must run first`);
   }
 
   const readerBytes = fs.readFileSync(readerAbs);
-  const readerBlobSha = gitBlobShaForBytes(readerBytes);
-
-  if (readerBlobSha !== entry.reader_blob_sha) {
+  const actualReaderBlob = gitBlobShaForBytes(readerBytes);
+  if (actualReaderBlob !== entry.reader_blob_sha) {
     throw new Error(`Stable reader blob provenance mismatch for ${docId}`);
   }
 
   const reader = JSON.parse(readerBytes.toString('utf8'));
-  const prov = reader.source_provenance || {};
-
+  if (!Array.isArray(reader.items)) {
+    throw new Error(`Stable reader ${docId} has no items array`);
+  }
+  const source = reader.source_provenance || {};
   if (
-    prov.source_blob_sha !== entry.source_blob_sha ||
-    prov.source_commit_sha !== entry.source_commit_sha
+    source.source_blob_sha !== entry.source_blob_sha ||
+    source.source_commit_sha !== entry.source_commit_sha
   ) {
     throw new Error(`Stable reader source provenance mismatch for ${docId}`);
   }
-
   return reader;
 }
 
-function makeSeedItem(docId, sequence) {
-  const seedValue = crypto.randomBytes(16).toString('hex');
-  return {
-    type: 'truth_seed',
-    seed_id: `${docId}:seed:${sequence}`,
-    seed_value: seedValue,
-    proof_value: '0'.repeat(seedValue.length)
-  };
+function isSubstantialItem(item) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+  const text = typeof item.text === 'string' ? item.text.trim() : '';
+  if (!text) return false;
+  if (/^[{}\[\],:]+$/.test(text)) return false;
+  return text.length >= 4;
 }
 
-function makeSeededProjection(reader, challengeId) {
-  const sourceItems = reader.items;
-  if (!Array.isArray(sourceItems)) {
-    throw new Error(`Stable reader ${reader.doc_id} has no items array`);
-  }
-
-  const interval = Math.max(1, Math.ceil(Math.max(sourceItems.length, 1) / 12));
-  const seededItems = [];
-  let sequence = 0;
-
-  seededItems.push(makeSeedItem(reader.doc_id, sequence++));
-
-  for (let i = 0; i < sourceItems.length; i++) {
-    seededItems.push(sourceItems[i]);
-
-    if ((i + 1) % interval === 0 && i !== sourceItems.length - 1) {
-      seededItems.push(makeSeedItem(reader.doc_id, sequence++));
+function candidateIndices(items) {
+  const substantial = [];
+  const fallback = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+      fallback.push(i);
+      if (isSubstantialItem(item)) substantial.push(i);
     }
   }
+  return substantial.length ? substantial : fallback;
+}
 
-  seededItems.push(makeSeedItem(reader.doc_id, sequence++));
+function randomChoice(array) {
+  if (!array.length) throw new Error('Cannot choose from an empty array');
+  return array[crypto.randomInt(0, array.length)];
+}
 
+function selectDistributedIndices(items, damageRate = DAMAGE_RATE) {
+  const eligible = candidateIndices(items);
+  if (!eligible.length) return [];
+
+  const target = Math.max(1, Math.min(eligible.length, Math.round(eligible.length * damageRate)));
+  const bandCount = Math.max(1, Math.min(10, target, eligible.length));
+  const selected = new Set();
+
+  for (let band = 0; band < bandCount; band++) {
+    const start = Math.floor((band * eligible.length) / bandCount);
+    const end = Math.floor(((band + 1) * eligible.length) / bandCount);
+    const bandCandidates = eligible.slice(start, Math.max(start + 1, end));
+    selected.add(randomChoice(bandCandidates));
+  }
+
+  const remaining = eligible.filter((index) => !selected.has(index));
+  while (selected.size < target && remaining.length) {
+    const offset = crypto.randomInt(0, remaining.length);
+    selected.add(remaining.splice(offset, 1)[0]);
+  }
+
+  return [...selected].sort((a, b) => a - b);
+}
+
+function placeholderRecord() {
+  return { [PLACEHOLDER_KEY]: PLACEHOLDER_VALUE };
+}
+
+function buildFullProjection(runNonce, docId, entry, reader) {
   return {
-    challenge_id: challengeId,
-    instruction: 'For every truth_seed item, swap seed_value and proof_value. Change nothing else.',
-    doc_id: reader.doc_id,
-    canonical_path: reader.canonical_path,
-    source_provenance: reader.source_provenance,
-    items: seededItems
+    run_nonce: runNonce,
+    doc_id: docId,
+    canonical_path: entry.canonical_path,
+    source_provenance: {
+      source_blob_sha: entry.source_blob_sha,
+      source_commit_sha: entry.source_commit_sha,
+      reader_blob_sha: entry.reader_blob_sha,
+      stable_reader_path: entry.stable_reader_path
+    },
+    items: structuredClone(reader.items)
   };
 }
 
-function generateChallenge() {
-  if (fs.existsSync(statePath)) {
-    throw new Error('An active truth challenge already exists');
+function damageProjection(fullProjection) {
+  const repair = structuredClone(fullProjection);
+  const damagedIndices = selectDistributedIndices(repair.items, DAMAGE_RATE);
+  for (const index of damagedIndices) {
+    repair.items[index] = placeholderRecord();
   }
+  return { repair, damagedIndices };
+}
 
+function containsPlaceholder(value) {
+  if (Array.isArray(value)) return value.some(containsPlaceholder);
+  if (!value || typeof value !== 'object') {
+    return value === PLACEHOLDER_KEY || value === PLACEHOLDER_VALUE;
+  }
+  for (const [key, child] of Object.entries(value)) {
+    if (key === PLACEHOLDER_KEY || child === PLACEHOLDER_VALUE) return true;
+    if (containsPlaceholder(child)) return true;
+  }
+  return false;
+}
+
+function truthDirFor(runNonce) {
+  return path.join(runsRoot, validateNonce(runNonce), 'truth-reader');
+}
+
+function selectedDocsFromForm(runNonce) {
+  const formPath = path.join(runsRoot, validateNonce(runNonce), 'step-0-form.json');
+  if (!fs.existsSync(formPath)) throw new Error(`Step 0 form missing: ${formPath}`);
+  const form = readJson(formPath);
+  const formNonce = form?.start_of_turn?.run_nonce ?? form?.system_locked?.run_nonce;
+  if (formNonce !== runNonce) throw new Error('Step 0 form run_nonce does not match its run directory');
+  const selection = form?.start_of_turn?.document_selection ?? form?.worker_editable?.document_selection;
+  if (!selection || typeof selection !== 'object' || Array.isArray(selection)) {
+    throw new Error('Step 0 form document_selection must be an object');
+  }
   const registry = getRegistry();
-  const selectedDocs = getSelectedDocuments(registry);
+  const expected = Object.keys(registry).sort();
+  const actual = Object.keys(selection).sort();
+  if (!isDeepStrictEqual(actual, expected)) {
+    throw new Error('Step 0 form document_selection keys must exactly match truth_readable_registry keys');
+  }
+  for (const [docId, value] of Object.entries(selection)) {
+    if (typeof value !== 'boolean') throw new Error(`document_selection.${docId} must be boolean`);
+  }
+  return Object.keys(selection).filter((docId) => selection[docId]);
+}
 
-  if (selectedDocs.length === 0) {
-    console.log('[truth-challenge] no documents selected');
-    return { generated: false };
+function initializeRunChallenges(runNonce, selectedDocIds) {
+  validateNonce(runNonce);
+  if (!Array.isArray(selectedDocIds)) throw new Error('selectedDocIds must be an array');
+  const selected = [...new Set(selectedDocIds.map(validateDocId))];
+  const registry = getRegistry();
+  for (const docId of selected) {
+    if (!registry[docId]) throw new Error(`Unknown truth-readable document: ${docId}`);
   }
 
-  const challengeId = `truth_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
-  const snapshotDir = path.join(snapshotsRoot, challengeId);
-  fs.mkdirSync(snapshotDir, { recursive: true });
+  const truthDir = truthDirFor(runNonce);
+  const baselineDir = path.join(truthDir, '.baseline');
+  const manifestPath = path.join(truthDir, 'manifest.json');
+  const passPath = path.join(truthDir, 'PASS.json');
 
-  const challengeDocs = [];
+  if (fs.existsSync(manifestPath)) {
+    throw new Error(`An active repair challenge already exists for ${runNonce}`);
+  }
+  removeIfExists(passPath);
+  removeDirIfExists(baselineDir);
+  fs.mkdirSync(baselineDir, { recursive: true });
 
-  for (const docId of selectedDocs) {
+  const manifest = {
+    run_nonce: runNonce,
+    challenge_type: 'full_projection_repair',
+    instruction: 'Compare each *.repair.json file with its corresponding *.full.json file and completely restore the repair file until it exactly matches the full file. Change nothing else.',
+    placeholder: { [PLACEHOLDER_KEY]: PLACEHOLDER_VALUE },
+    damage_rate: DAMAGE_RATE,
+    issued_at: new Date().toISOString(),
+    selected_documents: selected,
+    documents: {}
+  };
+
+  for (const docId of selected) {
     const entry = registry[docId];
     const reader = verifyStableReader(docId, entry);
-    const projection = makeSeededProjection(reader, challengeId);
-    const serialized = JSON.stringify(projection, null, 2) + '\n';
+    const full = buildFullProjection(runNonce, docId, entry, reader);
+    const { repair, damagedIndices } = damageProjection(full);
 
-    const activeAbs = path.join(rootDir, entry.active_projection_path);
-    const snapshotRel = path
-      .relative(rootDir, path.join(snapshotDir, `${docId}.snapshot.json`))
-      .replace(/\\/g, '/');
-    const snapshotAbs = path.join(rootDir, snapshotRel);
+    const fullPath = path.join(truthDir, `${docId}.full.json`);
+    const repairPath = path.join(truthDir, `${docId}.repair.json`);
+    const baselineFullPath = path.join(baselineDir, `${docId}.full.json`);
+    const baselineRepairPath = path.join(baselineDir, `${docId}.repair.json`);
 
-    fs.mkdirSync(path.dirname(activeAbs), { recursive: true });
-    fs.writeFileSync(activeAbs, serialized, 'utf8');
-    fs.writeFileSync(snapshotAbs, serialized, 'utf8');
+    writeJson(fullPath, full);
+    writeJson(repairPath, repair);
+    writeJson(baselineFullPath, full);
+    writeJson(baselineRepairPath, repair);
 
-    challengeDocs.push({
-      doc_id: docId,
-      active_projection_path: entry.active_projection_path,
-      snapshot_path: snapshotRel
+    manifest.documents[docId] = {
+      full_path: path.relative(rootDir, fullPath).replace(/\\/g, '/'),
+      repair_path: path.relative(rootDir, repairPath).replace(/\\/g, '/'),
+      item_count: full.items.length,
+      damaged_count: damagedIndices.length,
+      source_blob_sha: entry.source_blob_sha,
+      source_commit_sha: entry.source_commit_sha,
+      reader_blob_sha: entry.reader_blob_sha
+    };
+  }
+
+  if (selected.length === 0) {
+    writeJson(passPath, {
+      run_nonce: runNonce,
+      status: 'PASS',
+      verification: 'no_documents_selected',
+      selected_documents: [],
+      verified_at: new Date().toISOString(),
+      verified_commit: process.env.GITHUB_SHA || null
     });
+    removeDirIfExists(baselineDir);
+    return { pass: true, generated: false, selected_documents: [] };
   }
 
-  writeJson(statePath, {
-    challenge_id: challengeId,
-    selected_documents: selectedDocs,
-    documents: challengeDocs,
-    issued_at: new Date().toISOString()
-  });
-
-  writeJson(statusPath, {
-    challenge_id: challengeId,
-    status: 'ACTIVE',
-    timestamp: new Date().toISOString(),
-    selected: selectedDocs,
-    last_verified_commit: null,
-    summary: 'Seed/proof swap puzzle issued.'
-  });
-
-  console.log(`[truth-challenge] issued ${challengeId}`);
-  return { generated: true, challengeId };
+  writeJson(manifestPath, manifest);
+  return { pass: null, generated: true, manifest };
 }
 
-function expectedSolvedProjection(snapshot) {
-  const expected = structuredClone(snapshot);
-
-  for (const item of expected.items) {
-    if (item && item.type === 'truth_seed') {
-      const originalSeed = item.seed_value;
-      const originalProof = item.proof_value;
-
-      if (
-        typeof originalSeed !== 'string' ||
-        typeof originalProof !== 'string' ||
-        originalProof !== '0'.repeat(originalSeed.length)
-      ) {
-        throw new Error(`Invalid trusted seed snapshot at ${item.seed_id || 'unknown seed'}`);
-      }
-
-      item.seed_value = originalProof;
-      item.proof_value = originalSeed;
+function restoreDamagedRepairs(truthDir, manifest) {
+  const baselineDir = path.join(truthDir, '.baseline');
+  for (const docId of Object.keys(manifest.documents)) {
+    const baselineRepairPath = path.join(baselineDir, `${docId}.repair.json`);
+    const repairPath = path.join(truthDir, `${docId}.repair.json`);
+    if (!fs.existsSync(baselineRepairPath)) {
+      throw new Error(`Trusted damaged baseline missing for ${docId}`);
     }
-  }
-
-  return expected;
-}
-
-function restoreOriginalProjections(state) {
-  for (const doc of state.documents) {
-    const snapshotAbs = path.join(rootDir, doc.snapshot_path);
-    const activeAbs = path.join(rootDir, doc.active_projection_path);
-
-    if (!fs.existsSync(snapshotAbs)) {
-      throw new Error(`Trusted snapshot missing: ${doc.snapshot_path}`);
-    }
-
-    fs.mkdirSync(path.dirname(activeAbs), { recursive: true });
-    fs.copyFileSync(snapshotAbs, activeAbs);
+    fs.copyFileSync(baselineRepairPath, repairPath);
   }
 }
 
-function resetSelector(registry) {
-  const selectedDocuments = {};
-  for (const key of Object.keys(registry)) {
-    selectedDocuments[key] = false;
-  }
-  writeJson(selectorPath, { selected_documents: selectedDocuments });
-}
+function verifyRunRepairs(runNonce) {
+  validateNonce(runNonce);
+  const truthDir = truthDirFor(runNonce);
+  const manifestPath = path.join(truthDir, 'manifest.json');
+  const baselineDir = path.join(truthDir, '.baseline');
+  if (!fs.existsSync(manifestPath)) throw new Error(`No active repair challenge for ${runNonce}`);
 
-function removeIfExists(filePath) {
-  if (fs.existsSync(filePath)) {
-    fs.rmSync(filePath, { force: true });
-  }
-}
-
-function removeDirIfExists(dirPath) {
-  if (fs.existsSync(dirPath)) {
-    fs.rmSync(dirPath, { recursive: true, force: true });
-  }
-}
-
-function verifyChallenge() {
-  if (!fs.existsSync(statePath)) {
-    throw new Error('No active truth challenge state exists');
-  }
-
-  const state = readJson(statePath);
-  const registry = getRegistry();
+  const manifest = readJson(manifestPath);
+  if (manifest.run_nonce !== runNonce) throw new Error('Truth-reader manifest nonce mismatch');
   const failures = [];
+  const receiptDocs = [];
 
-  for (const doc of state.documents) {
-    const snapshotAbs = path.join(rootDir, doc.snapshot_path);
-    const activeAbs = path.join(rootDir, doc.active_projection_path);
+  for (const [docId, meta] of Object.entries(manifest.documents || {})) {
+    const fullPath = path.join(truthDir, `${docId}.full.json`);
+    const repairPath = path.join(truthDir, `${docId}.repair.json`);
+    const baselineFullPath = path.join(baselineDir, `${docId}.full.json`);
 
-    if (!fs.existsSync(snapshotAbs)) {
-      failures.push(`${doc.doc_id}: trusted snapshot missing`);
-      continue;
-    }
-
-    if (!fs.existsSync(activeAbs)) {
-      failures.push(`${doc.doc_id}: active projection missing`);
+    if (!fs.existsSync(fullPath) || !fs.existsSync(repairPath) || !fs.existsSync(baselineFullPath)) {
+      failures.push(`${docId}: required challenge file missing`);
       continue;
     }
 
     try {
-      const snapshot = readJson(snapshotAbs);
-      const actual = readJson(activeAbs);
-      const expected = expectedSolvedProjection(snapshot);
+      const full = readJson(fullPath);
+      const trustedFull = readJson(baselineFullPath);
+      const repair = readJson(repairPath);
 
-      if (!isDeepStrictEqual(actual, expected)) {
-        failures.push(`${doc.doc_id}: projection is not the exact seed/proof swap solution`);
+      if (!isDeepStrictEqual(full, trustedFull)) {
+        failures.push(`${docId}: intact full projection was modified`);
+        continue;
       }
+      if (full.run_nonce !== runNonce || full.doc_id !== docId) {
+        failures.push(`${docId}: projection binding mismatch`);
+        continue;
+      }
+      if (containsPlaceholder(repair)) {
+        failures.push(`${docId}: missing placeholders remain`);
+        continue;
+      }
+      if (!isDeepStrictEqual(repair, full)) {
+        failures.push(`${docId}: repair projection is not an exact match for the full projection`);
+        continue;
+      }
+
+      receiptDocs.push({
+        doc_id: docId,
+        source_blob_sha: meta.source_blob_sha,
+        source_commit_sha: meta.source_commit_sha,
+        reader_blob_sha: meta.reader_blob_sha,
+        item_count: meta.item_count,
+        damaged_count: meta.damaged_count
+      });
     } catch (error) {
-      failures.push(`${doc.doc_id}: ${error.message}`);
+      failures.push(`${docId}: ${error.message}`);
     }
   }
 
-  if (failures.length > 0) {
-    restoreOriginalProjections(state);
-    console.error(`[truth-challenge] FAIL: ${failures.join('; ')}`);
+  if (failures.length) {
+    restoreDamagedRepairs(truthDir, manifest);
+    writeJson(path.join(truthDir, 'status.json'), {
+      run_nonce: runNonce,
+      status: 'FAIL',
+      failures,
+      checked_at: new Date().toISOString()
+    });
+    console.error(`[truth-reader] FAIL ${runNonce}: ${failures.join('; ')}`);
     return { pass: false, failures };
   }
 
-  resetSelector(registry);
-
-  for (const doc of state.documents) {
-    removeIfExists(path.join(rootDir, doc.active_projection_path));
-  }
-
-  removeDirIfExists(path.join(snapshotsRoot, state.challenge_id));
-  removeIfExists(statePath);
-
-  writeJson(statusPath, {
-    challenge_id: state.challenge_id,
+  const passReceipt = {
+    run_nonce: runNonce,
     status: 'PASS',
-    timestamp: new Date().toISOString(),
-    selected: state.selected_documents,
-    last_verified_commit: process.env.GITHUB_SHA || null,
-    summary: 'Every truth seed completed the required in-place seed/proof swap.'
-  });
+    challenge_type: 'full_projection_repair',
+    verification: 'exact_deep_equality',
+    selected_documents: manifest.selected_documents,
+    documents: receiptDocs,
+    verified_at: new Date().toISOString(),
+    verified_commit: process.env.GITHUB_SHA || null
+  };
 
-  console.log(`[truth-challenge] PASS: ${state.challenge_id}`);
-  return { pass: true };
+  writeJson(path.join(truthDir, 'PASS.json'), passReceipt);
+  removeIfExists(path.join(truthDir, 'status.json'));
+  for (const docId of Object.keys(manifest.documents || {})) {
+    removeIfExists(path.join(truthDir, `${docId}.full.json`));
+    removeIfExists(path.join(truthDir, `${docId}.repair.json`));
+  }
+  removeDirIfExists(baselineDir);
+  removeIfExists(manifestPath);
+
+  console.log(`[truth-reader] PASS ${runNonce}`);
+  return { pass: true, receipt: passReceipt };
+}
+
+function generateFromStep0Form(runNonce) {
+  const selected = selectedDocsFromForm(runNonce);
+  return initializeRunChallenges(runNonce, selected);
 }
 
 function main() {
   const mode = process.argv[2];
+  const runNonce = process.argv[3];
 
   if (mode === 'generate') {
-    generateChallenge();
+    initializeRunChallenges(runNonce, process.argv.slice(4));
     return;
   }
-
+  if (mode === 'generate-from-form') {
+    generateFromStep0Form(runNonce);
+    return;
+  }
   if (mode === 'verify') {
-    const result = verifyChallenge();
-    if (!result.pass) {
-      process.exitCode = 2;
-    }
+    const result = verifyRunRepairs(runNonce);
+    if (!result.pass) process.exitCode = 2;
     return;
   }
 
-  throw new Error('Usage: node truth-challenge-engine.js [generate|verify]');
+  throw new Error('Usage: node truth-challenge-engine.js [generate <run_nonce> <doc...> | generate-from-form <run_nonce> | verify <run_nonce>]');
 }
 
 if (require.main === module) {
@@ -345,8 +420,10 @@ if (require.main === module) {
 }
 
 module.exports = {
-  generateChallenge,
-  verifyChallenge,
-  makeSeededProjection,
-  expectedSolvedProjection
+  initializeRunChallenges,
+  generateFromStep0Form,
+  verifyRunRepairs,
+  selectDistributedIndices,
+  damageProjection,
+  containsPlaceholder
 };
