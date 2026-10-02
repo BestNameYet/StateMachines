@@ -1,0 +1,96 @@
+{
+  "response_type": "truth_reader_implementation",
+  "files": [
+    {
+      "path": "truth-reader/catalog.json",
+      "purpose": "Authoritative immutable mapping of enumerated document identifiers to source paths, projection template paths, and active seeded projection paths.",
+      "content": "{\n  \"version\": \"1.0.0\",\n  \"documents\": {\n    \"doc1\": {\n      \"source_path\": \"Agents.md\",\n      \"template_path\": \"reading-library/templates/Agents.projection.md\",\n      \"active_projection_path\": \"reading-library/projections/Agents.md\"\n    },\n    \"doc2\": {\n      \"source_path\": \"config.json\",\n      \"template_path\": \"reading-library/templates/config.projection.json\",\n      \"active_projection_path\": \"reading-library/projections/config.json\"\n    },\n    \"doc3\": {\n      \"source_path\": \"tests/step-3-evaluation.json\",\n      \"template_path\": \"reading-library/templates/step-3-evaluation.projection.json\",\n      \"active_projection_path\": \"reading-library/projections/step-3-evaluation.json\"\n    },\n    \"doc4\": {\n      \"source_path\": \"README.md\",\n      \"template_path\": \"reading-library/templates/README.projection.md\",\n      \"active_projection_path\": \"reading-library/projections/README.md\"\n    },\n    \"doc5\": {\n      \"source_path\": \"MANIFEST.md\",\n      \"template_path\": \"reading-library/templates/MANIFEST.projection.md\",\n      \"active_projection_path\": \"reading-library/projections/MANIFEST.md\"\n    }\n  }\n}\n"
+    },
+    {
+      "path": "truth-reader/selector.json",
+      "purpose": "Strict enumerated boolean selection control. Workers toggle boolean flags; arbitrary path inputs are strictly rejected.",
+      "content": "{\n  \"doc1\": false,\n  \"doc2\": false,\n  \"doc3\": false,\n  \"doc4\": false,\n  \"doc5\": false\n}\n"
+    },
+    {
+      "path": "truth-reader/evidence.json",
+      "purpose": "Evidence submission payload where worker returns ordered vector of discovered cryptographic truth seeds.",
+      "content": "{\n  \"submitted_seeds\": []\n}\n"
+    },
+    {
+      "path": "truth-reader/status.json",
+      "purpose": "Persistent verification result and state indicator, updated atomically only on verified PASS cleanup.",
+      "content": "{\n  \"last_run_status\": \"IDLE\",\n  \"verified_at\": null,\n  \"selected_docs\": []\n}\n"
+    },
+    {
+      "path": "reading-library/templates/Agents.projection.md",
+      "purpose": "Projection copy of Agents.md containing distributed placeholder markers across header, body, and footer.",
+      "content": "# Agents Specification Projection\n\n__TRUTH_SEED_001__\n\n## Overview\nThis projection represents the agent governance model. Every agent operating within the supervisor\nenvironment must conform to deterministic evaluation directives.\n\n__TRUTH_SEED_002__\n\n## Operational Guardrails\n1. Authoritative documents must remain untouched.\n2. In-flight state must be verified deterministically without heuristic drift.\n\n__TRUTH_SEED_003__\n"
+    },
+    {
+      "path": "reading-library/templates/config.projection.json",
+      "purpose": "Projection copy of config.json containing distributed placeholder markers across configuration branches.",
+      "content": "{\n  \"system\": {\n    \"name\": \"ModelConductSupervisor\",\n    \"probe_seed_alpha\": \"__TRUTH_SEED_001__\",\n    \"deterministic_mode\": true\n  },\n  \"evaluation\": {\n    \"probe_seed_beta\": \"__TRUTH_SEED_002__\",\n    \"max_retries\": 0\n  },\n  \"provenance\": {\n    \"probe_seed_gamma\": \"__TRUTH_SEED_003__\"\n  }\n}\n"
+    },
+    {
+      "path": "reading-library/templates/step-3-evaluation.projection.json",
+      "purpose": "Projection copy of tests/step-3-evaluation.json with distributed placeholder markers across test vectors.",
+      "content": "{\n  \"suite\": \"step-3-evaluation\",\n  \"pre_check_token\": \"__TRUTH_SEED_001__\",\n  \"test_cases\": [\n    {\n      \"id\": \"case_001\",\n      \"probe_token\": \"__TRUTH_SEED_002__\",\n      \"expected\": \"MATCH\"\n    },\n    {\n      \"id\": \"case_002\",\n      \"probe_token\": \"__TRUTH_SEED_003__\",\n      \"expected\": \"MATCH\"\n    }\n  ]\n}\n"
+    },
+    {
+      "path": "reading-library/templates/README.projection.md",
+      "purpose": "Projection copy of README.md with distributed placeholder markers spanning project instructions.",
+      "content": "# Repository README Projection\n\n__TRUTH_SEED_001__\n\n## Purpose\nThis projection validates context ingestion through workflow-only seed extraction.\n\n__TRUTH_SEED_002__\n\n## Verification Notes\nDeterministic evaluation triggers on evidence submission.\n\n__TRUTH_SEED_003__\n"
+    },
+    {
+      "path": "reading-library/templates/MANIFEST.projection.md",
+      "purpose": "Projection copy of MANIFEST.md with distributed placeholder markers spanning the manifest boundary.",
+      "content": "# Manifest Projection\n\n__TRUTH_SEED_001__\n\n- Component: SupervisorEngine\n- Component: TruthReader\n\n__TRUTH_SEED_002__\n\n- IntegrityHash: sha256-verified\n\n__TRUTH_SEED_003__\n"
+    },
+    {
+      "path": "reading-library/projections/Agents.md",
+      "purpose": "Active projection copy initialized with placeholders; populated with fresh random seeds during active reader cycle.",
+      "content": "# Agents Specification Projection\n\n__TRUTH_SEED_001__\n\n## Overview\nThis projection represents the agent governance model. Every agent operating within the supervisor\nenvironment must conform to deterministic evaluation directives.\n\n__TRUTH_SEED_002__\n\n## Operational Guardrails\n1. Authoritative documents must remain untouched.\n2. In-flight state must be verified deterministically without heuristic drift.\n\n__TRUTH_SEED_003__\n"
+    },
+    {
+      "path": "reading-library/projections/config.json",
+      "purpose": "Active projection copy initialized with placeholders; populated with fresh random seeds during active reader cycle.",
+      "content": "{\n  \"system\": {\n    \"name\": \"ModelConductSupervisor\",\n    \"probe_seed_alpha\": \"__TRUTH_SEED_001__\",\n    \"deterministic_mode\": true\n  },\n  \"evaluation\": {\n    \"probe_seed_beta\": \"__TRUTH_SEED_002__\",\n    \"max_retries\": 0\n  },\n  \"provenance\": {\n    \"probe_seed_gamma\": \"__TRUTH_SEED_003__\"\n  }\n}\n"
+    },
+    {
+      "path": "reading-library/projections/step-3-evaluation.json",
+      "purpose": "Active projection copy initialized with placeholders; populated with fresh random seeds during active reader cycle.",
+      "content": "{\n  \"suite\": \"step-3-evaluation\",\n  \"pre_check_token\": \"__TRUTH_SEED_001__\",\n  \"test_cases\": [\n    {\n      \"id\": \"case_001\",\n      \"probe_token\": \"__TRUTH_SEED_002__\",\n      \"expected\": \"MATCH\"\n    },\n    {\n      \"id\": \"case_002\",\n      \"probe_token\": \"__TRUTH_SEED_003__\",\n      \"expected\": \"MATCH\"\n    }\n  ]\n}\n"
+    },
+    {
+      "path": "reading-library/projections/README.md",
+      "purpose": "Active projection copy initialized with placeholders; populated with fresh random seeds during active reader cycle.",
+      "content": "# README Projection\n\n__TRUTH_SEED_001__\n\n## Purpose\nThis projection validates context ingestion through workflow-only seed extraction.\n\n__TRUTH_SEED_002__\n\n## Verification Notes\nDeterministic evaluation triggers on evidence submission.\n\n__TRUTH_SEED_003__\n"
+    },
+    {
+      "path": "reading-library/projections/MANIFEST.md",
+      "purpose": "Active projection copy initialized with placeholders; populated with fresh random seeds during active reader cycle.",
+      "content": "# Manifest Projection\n\n__TRUTH_SEED_001__\n\n- Component: SupervisorEngine\n- Component: TruthReader\n\n__TRUTH_SEED_002__\n\n- IntegrityHash: sha256-verified\n\n__TRUTH_SEED_003__\n"
+    },
+    {
+      "path": "scripts/truth-reader-engine.js",
+      "purpose": "Workflow-only script implementing CSPRNG seed generation, projection injection, deterministic validation against non-leaking salted commitment hashes, and zero-mutation on FAIL / atomic cleanup on PASS.",
+      "content": "const fs = require('fs');\nconst path = require('path');\nconst crypto = require('crypto');\n\nconst REPO_ROOT = path.resolve(__dirname, '..');\nconst CATALOG_PATH = path.join(REPO_ROOT, 'truth-reader/catalog.json');\nconst SELECTOR_PATH = path.join(REPO_ROOT, 'truth-reader/selector.json');\nconst EVIDENCE_PATH = path.join(REPO_ROOT, 'truth-reader/evidence.json');\nconst STATUS_PATH = path.join(REPO_ROOT, 'truth-reader/status.json');\nconst STATE_PATH = path.join(REPO_ROOT, 'truth-reader/.state-commitment.json');\n\nconst PLACEHOLDER_REGEX = /__TRUTH_SEED_\\d+__/g;\n\nfunction readJson(filePath) {\n  return JSON.parse(fs.readFileSync(filePath, 'utf8'));\n}\n\nfunction writeJson(filePath, data) {\n  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\\n', 'utf8');\n}\n\nfunction generateSecureSeed() {\n  return 'truth_' + crypto.randomBytes(16).toString('hex');\n}\n\nfunction hashSeed(seed, salt) {\n  return crypto.createHmac('sha256', salt).update(seed).digest('hex');\n}\n\nfunction seedMode() {\n  const catalog = readJson(CATALOG_PATH);\n  const selector = readJson(SELECTOR_PATH);\n\n  const allowedKeys = Object.keys(catalog.documents);\n  const selectedDocs = [];\n\n  for (const [key, val] of Object.entries(selector)) {\n    if (!allowedKeys.includes(key)) {\n      throw new Error(`Invalid selector key rejected: ${key}`);\n    }\n    if (typeof val !== 'boolean') {\n      throw new Error(`Non-boolean selector value for ${key}`);\n    }\n    if (val === true) {\n      selectedDocs.push(key);\n    }\n  }\n\n  if (selectedDocs.length === 0) {\n    console.log('No documents selected for seeding. Engine exiting without change.');\n    return;\n  }\n\n  selectedDocs.sort();\n\n  const salt = crypto.randomBytes(32).toString('hex');\n  const expectedHashes = [];\n  let totalSeeds = 0;\n\n  for (const docId of selectedDocs) {\n    const docMeta = catalog.documents[docId];\n    const templateContent = fs.readFileSync(path.join(REPO_ROOT, docMeta.template_path), 'utf8');\n    const matches = templateContent.match(PLACEHOLDER_REGEX) || [];\n    \n    if (matches.length === 0) {\n      throw new Error(`Template ${docMeta.template_path} lacks distributed placeholders`);\n    }\n\n    let matchIndex = 0;\n    const seededContent = templateContent.replace(PLACEHOLDER_REGEX, () => {\n      const seed = generateSecureSeed();\n      expectedHashes.push(hashSeed(seed, salt));\n      matchIndex++;\n      return seed;\n    });\n\n    totalSeeds += matchIndex;\n    const activePath = path.join(REPO_ROOT, docMeta.active_projection_path);\n    fs.writeFileSync(activePath, seededContent, 'utf8');\n  }\n\n  // Workflow state stores only salted commitment hashes. Seeds never enter logs, artifacts, or state.\n  const statePayload = {\n    active: true,\n    salt: salt,\n    expected_count: totalSeeds,\n    commitment_hashes: expectedHashes,\n    selected_docs: selectedDocs,\n    created_at: new Date().toISOString()\n  };\n\n  writeJson(STATE_PATH, statePayload);\n  console.log(`Successfully seeded ${totalSeeds} placeholders across ${selectedDocs.length} projection(s).`);\n}\n\nfunction verifyMode() {\n  if (!fs.existsSync(STATE_PATH)) {\n    console.log('No active challenge state commitment found. Exiting without changes.');\n    process.exit(1);\n  }\n\n  const state = readJson(STATE_PATH);\n  if (!state.active) {\n    console.log('No active seeded session in state. Exiting.');\n    process.exit(1);\n  }\n\n  const evidence = readJson(EVIDENCE_PATH);\n  const submitted = Array.isArray(evidence.submitted_seeds) ? evidence.submitted_seeds : [];\n\n  if (submitted.length !== state.expected_count) {\n    console.log('Verification FAIL: Submitted seed count does not match expected vector length.');\n    // Zero mutations on FAIL\n    process.exit(1);\n  }\n\n  for (let i = 0; i < state.expected_count; i++) {\n    const candidate = submitted[i];\n    if (typeof candidate !== 'string') {\n      console.log('Verification FAIL: Seed entry is not string.');\n      process.exit(1);\n    }\n    const hashed = hashSeed(candidate, state.salt);\n    if (hashed !== state.commitment_hashes[i]) {\n      console.log('Verification FAIL: Seed mismatch at index ' + i);\n      // Zero mutations on FAIL\n      process.exit(1);\n    }\n  }\n\n  console.log('Verification PASS: All seeds matched exactly and in order.');\n\n  // Atomic PASS cleanup\n  const catalog = readJson(CATALOG_PATH);\n  for (const docId of Object.keys(catalog.documents)) {\n    const docMeta = catalog.documents[docId];\n    const templateContent = fs.readFileSync(path.join(REPO_ROOT, docMeta.template_path), 'utf8');\n    const activePath = path.join(REPO_ROOT, docMeta.active_projection_path);\n    fs.writeFileSync(activePath, templateContent, 'utf8');\n  }\n\n  const resetSelector = {};\n  for (const docId of Object.keys(catalog.documents)) {\n    resetSelector[docId] = false;\n  }\n  writeJson(SELECTOR_PATH, resetSelector);\n  writeJson(EVIDENCE_PATH, { submitted_seeds: [] });\n\n  writeJson(STATUS_PATH, {\n    last_run_status: 'PASS',\n    verified_at: new Date().toISOString(),\n    selected_docs: state.selected_docs\n  });\n\n  if (fs.existsSync(STATE_PATH)) {\n    fs.unlinkSync(STATE_PATH);\n  }\n\n  console.log('Cleanup complete: Projections reset, selector flags set to false, evidence cleared.');\n}\n\nconst mode = process.argv[2];\nif (mode === 'seed') {\n  seedMode();\n} else if (mode === 'verify') {\n  verifyMode();\n} else {\n  console.error('Usage: node truth-reader-engine.js [seed|verify]');\n  process.exit(1);\n}\n"
+    },
+    {
+      "path": ".github/workflows/truth-reader.yml",
+      "purpose": "GitHub Actions workflow running seed injection on selector changes and deterministic validation and atomic cleanup on evidence submission, preventing infinite recursive commits.",
+      "content": "name: Truth Reader Verification\n\non:\n  push:\n    paths:\n      - 'truth-reader/selector.json'\n      - 'truth-reader/evidence.json'\n\njobs:\n  truth-reader:\n    # Prevent recursive workflow triggering when the workflow bot itself commits\n    if: github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip ci]')\n    runs-on: ubuntu-latest\n    permissions:\n      contents: write\n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n        with:\n          fetch-depth: 2\n          token: ${{ secrets.GITHUB_TOKEN }}\n\n      - name: Setup Node.js\n        uses: actions/setup-node@v4\n        with:\n          node-version: '20'\n\n      - name: Determine Trigger Source\n        id: trigger\n        run: |\n          CHANGED=$(git diff --name-only HEAD~1 HEAD)\n          if echo \"$CHANGED\" | grep -q \"truth-reader/evidence.json\"; then\n            echo \"mode=verify\" >> \"$GITHUB_OUTPUT\"\n          elif echo \"$CHANGED\" | grep -q \"truth-reader/selector.json\"; then\n            echo \"mode=seed\" >> \"$GITHUB_OUTPUT\"\n          else\n            echo \"mode=noop\" >> \"$GITHUB_OUTPUT\"\n          fi\n\n      - name: Execute Seeding\n        if: steps.trigger.outputs.mode == 'seed'\n        run: node scripts/truth-reader-engine.js seed\n\n      - name: Commit Seeded Projections and Challenge Commitment\n        if: steps.trigger.outputs.mode == 'seed'\n        run: |\n          git config user.name \"github-actions[bot]\"\n          git config user.email \"github-actions[bot]@users.noreply.github.com\"\n          git add reading-library/projections/ truth-reader/.state-commitment.json\n          if git diff --staged --quiet; then\n            echo \"No seeded changes to commit.\"\n          else\n            git commit -m \"chore(truth-reader): inject projection seeds [skip ci]\"\n            git push origin HEAD:${{ github.ref_name }}\n          fi\n\n      - name: Execute Deterministic Verification\n        if: steps.trigger.outputs.mode == 'verify'\n        run: node scripts/truth-reader-engine.js verify\n\n      - name: Atomic PASS Cleanup Commit\n        if: steps.trigger.outputs.mode == 'verify'\n        run: |\n          git config user.name \"github-actions[bot]\"\n          git config user.email \"github-actions[bot]@users.noreply.github.com\"\n          git add reading-library/projections/ truth-reader/selector.json truth-reader/evidence.json truth-reader/status.json truth-reader/.state-commitment.json || true\n          git commit -m \"chore(truth-reader): atomic pass cleanup [skip ci]\"\n          git push origin HEAD:${{ github.ref_name }}\n"
+    }
+  ],
+  "design_checks": {
+    "authoritative_docs_immutable": true,
+    "enumerated_doc_selector": true,
+    "distributed_projection_placeholders": true,
+    "workflow_only_seed_authority": true,
+    "exact_complete_seed_match": true,
+    "fail_is_noop": true,
+    "pass_atomic_cleanup": true,
+    "recursive_workflow_loop_prevented": true
+  },
+  "unresolved_requirements": []
+}
