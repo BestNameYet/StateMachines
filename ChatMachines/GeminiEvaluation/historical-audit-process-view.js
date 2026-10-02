@@ -21,18 +21,35 @@ function readJson(filePath) {
   }
 }
 
-function writeJsonAtomic(filePath, value) {
+function writeTextAtomicIfChanged(filePath, text) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  let previous = null;
+  try { previous = fs.readFileSync(filePath, 'utf8'); } catch (_) {}
+  if (previous === text) return false;
   const temp = `${filePath}.tmp`;
-  fs.writeFileSync(temp, JSON.stringify(value, null, 2) + '\n');
+  fs.writeFileSync(temp, text);
   fs.renameSync(temp, filePath);
+  return true;
+}
+
+function writeJsonAtomicIfChanged(filePath, value, ignoreUpdatedAt = false) {
+  if (ignoreUpdatedAt) {
+    const prior = readJson(filePath);
+    if (prior) {
+      const a = { ...prior };
+      const b = { ...value };
+      delete a.updated_at;
+      delete b.updated_at;
+      if (JSON.stringify(a) === JSON.stringify(b)) return false;
+    }
+  }
+  return writeTextAtomicIfChanged(filePath, JSON.stringify(value, null, 2) + '\n');
 }
 
 function copyJsonSnapshot(source, destination) {
   const parsed = readJson(source);
   if (!parsed) return false;
-  writeJsonAtomic(destination, parsed);
-  return true;
+  return writeJsonAtomicIfChanged(destination, parsed);
 }
 
 function listJsonFiles(dirPath) {
@@ -72,8 +89,10 @@ for (const name of computationFiles) {
 
 const finalPath = path.join(runRoot, 'evaluation.json');
 const metadataPath = path.join(runRoot, 'run-metadata.json');
-const finalAvailable = copyJsonSnapshot(finalPath, path.join(liveRoot, 'evaluation.json'));
-const metadataAvailable = copyJsonSnapshot(metadataPath, path.join(liveRoot, 'run-metadata.json'));
+const finalAvailable = Boolean(readJson(finalPath));
+const metadataAvailable = Boolean(readJson(metadataPath));
+if (finalAvailable) copyJsonSnapshot(finalPath, path.join(liveRoot, 'evaluation.json'));
+if (metadataAvailable) copyJsonSnapshot(metadataPath, path.join(liveRoot, 'run-metadata.json'));
 
 const planned = Array.isArray(planner?.subquestions) ? planner.subquestions : [];
 const completedIds = new Set(subFiles.map(name => name.replace(/\.json$/, '')));
@@ -119,6 +138,6 @@ const view = {
   updated_at: new Date().toISOString()
 };
 
-writeJsonAtomic(path.join(liveRoot, 'process-view.json'), view);
-fs.writeFileSync(path.join(liveRoot, 'process-tail.txt'), tailLines(processLogPath, 250) + '\n');
+writeJsonAtomicIfChanged(path.join(liveRoot, 'process-view.json'), view, true);
+writeTextAtomicIfChanged(path.join(liveRoot, 'process-tail.txt'), tailLines(processLogPath, 250) + '\n');
 console.log(JSON.stringify(view, null, 2));
