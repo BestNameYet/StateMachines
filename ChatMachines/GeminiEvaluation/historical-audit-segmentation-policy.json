@@ -1,9 +1,9 @@
 {
-  "version": 1,
+  "version": 2,
   "name": "semantic-preserving bounded segmentation with capped crosscheck redundancy",
-  "purpose": "Predefine how the historical evidence corpus is divided before any evaluator chooses batches, while allowing the evaluator to decide how those fixed segments should be grouped and selectively crosschecked.",
+  "purpose": "Predefine how the historical evidence corpus is segmented and how large evaluator batches may be before any evaluator sees raw evidence. The lead evaluator may choose semantic grouping and crosscheck selection only within these fixed bounds.",
   "heuristic": {
-    "principle": "Create the smallest stable evidence units that preserve local meaning without allowing file boundaries to force oversized model contexts.",
+    "principle": "Create small stable evidence units that preserve local meaning, then group them into bounded batches sized to keep a single evaluator request far below the model's input-token-per-minute ceiling.",
     "preferred_boundary_order": [
       "git commit boundary",
       "JSON array/object member boundary when recoverable without changing source text",
@@ -15,11 +15,18 @@
     "target_segment_bytes": 120000,
     "hard_max_segment_bytes": 160000,
     "base_overlap_bytes": 0,
+    "target_primary_batch_bytes": 240000,
+    "hard_max_primary_batch_bytes": 320000,
+    "target_crosscheck_batch_bytes": 180000,
+    "hard_max_crosscheck_batch_bytes": 240000,
+    "primary_batch_count_formula": "ceil(corpus_bytes / target_primary_batch_bytes)",
     "justification": [
-      "Historical files vary greatly in size, so file-level assignment creates pathological context amplification.",
-      "Stable semantic boundaries reduce the chance that a requirement, commit, or persisted record is split mid-unit.",
-      "A hard byte ceiling bounds the largest indivisible model input even when a source has no useful structural delimiters.",
-      "Base segmentation contains no overlap; redundancy is introduced only by explicit crosscheck assignments so it can be measured and audited."
+      "File-level assignment previously allowed individual evaluator contexts to become pathologically large.",
+      "Approximately 120 KB segments are small enough to redistribute semantically while usually preserving multi-record local context.",
+      "A 240 KB primary-batch target keeps a fresh evaluator request materially below the earlier megabyte-scale requests that exhausted the 2,000,000 input-token/minute quota.",
+      "A 320 KB hard primary ceiling allows limited bin-packing slack without permitting a batch to grow back toward megabyte scale.",
+      "Crosscheck batches are smaller because they are redundant evidence passes rather than primary coverage.",
+      "Base segmentation contains no overlap; every repeated raw byte is explicit crosscheck cost and is counted against the global redundancy budget."
     ]
   },
   "batch_constraints": {
@@ -27,24 +34,39 @@
     "primary_segment_assignment_count": 1,
     "maximum_total_raw_assignment_multiplier": 1.5,
     "maximum_crosscheck_raw_fraction": 0.5,
-    "per_primary_batch_rule": "For P primary batches and raw corpus size D, each primary batch must contain no more than D/P raw segment bytes. The planner may increase P when this bound cannot be met.",
-    "crosscheck_rule": "Crosscheck batches may intentionally overlap or redistribute segments, including deterministic or seeded stochastic selection, but all repeated raw bytes count against the extra 0.5D redundancy budget.",
+    "primary_batch_count_rule": "The planner must produce at least ceil(D / target_primary_batch_bytes) primary batches and may produce more when semantic grouping or hard batch limits require it.",
+    "primary_batch_size_rule": "No primary batch may exceed hard_max_primary_batch_bytes.",
+    "crosscheck_batch_size_rule": "No crosscheck batch may exceed hard_max_crosscheck_batch_bytes.",
+    "crosscheck_rule": "Crosscheck batches may intentionally overlap or redistribute already-primary-assigned segments, including deterministic or seeded stochastic selection, but all repeated raw bytes count against the extra 0.5D redundancy budget.",
     "crosscheck_justification_required": true,
-    "stochastic_crosscheck_seed_required": true
+    "stochastic_crosscheck_seed_required": true,
+    "at_least_one_crosscheck_batch": true
+  },
+  "fresh_evaluator_isolation": {
+    "required": true,
+    "process_boundary": true,
+    "rule": "Every planner, primary batch, crosscheck batch, and final synthesis evaluation is executed in a newly instantiated Node process and a new Gemini request.",
+    "batch_input_rule": "A batch evaluator receives only the common audit instruction plus the materialized raw segments assigned to that one batch. It receives no other batch raw context, no previous model conversation, and no previous batch result.",
+    "synthesis_input_rule": "The synthesis evaluator receives compact batch results and the validated plan, but no raw historical corpus."
   },
   "evaluation_pipeline": [
     "segment raw evidence deterministically",
-    "lead evaluator groups fixed segments into primary batches and crosscheck batches",
-    "validate coverage and byte-budget invariants before any batch evaluation",
-    "evaluate each primary batch exactly once",
-    "evaluate each crosscheck batch exactly once",
-    "synthesize only compact batch outputs; do not resend raw corpus"
+    "fresh lead planner groups fixed segment IDs into primary batches and crosscheck batches using metadata only",
+    "validate complete primary coverage, batch size ceilings, and the global <=1.5D raw-assignment invariant before exposing raw evidence to any evaluator",
+    "materialize exactly one batch context packet",
+    "instantiate a fresh evaluator process and evaluate that primary batch exactly once",
+    "destroy that process and repeat with a fresh process for the next primary batch",
+    "repeat the same fresh-process isolation for every crosscheck batch",
+    "instantiate a fresh synthesis evaluator using only compact batch outputs",
+    "persist final result"
   ],
   "prohibited": [
     "recursive Gemini calls from within a batch evaluation",
     "model-directed compute request loops that resend the same raw context",
+    "conversation reuse between batches",
+    "passing prior batch results into a later raw-evidence batch evaluator",
     "whole-audit restart after a later batch failure",
     "unbounded raw-evidence duplication",
-    "implicit overlap not represented in the batch plan"
+    "implicit overlap not represented in the validated batch plan"
   ]
 }
