@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const vm = require('node:vm');
 
 const evaluationRoot = path.resolve(__dirname);
 const triggerPath = path.join(evaluationRoot, 'historical-audit-nextmessage', 'nextmessage.json');
@@ -9,6 +10,10 @@ const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const requestTimeoutMs = Number(process.env.GEMINI_REQUEST_TIMEOUT_MS || 180000);
 const packetRoot = path.resolve(process.env.HISTORICAL_AUDIT_PACKET_ROOT || path.join(evaluationRoot, '.historical-audit-packet'));
 const manifestPath = path.resolve(process.env.HISTORICAL_AUDIT_MANIFEST || path.join(packetRoot, 'archive-manifest.json'));
+const computeTimeoutMs = Number(process.env.HISTORICAL_AUDIT_COMPUTE_TIMEOUT_MS || 2000);
+const maxComputeRounds = Number(process.env.HISTORICAL_AUDIT_MAX_COMPUTE_ROUNDS || 8);
+const maxComputeCodeBytes = Number(process.env.HISTORICAL_AUDIT_MAX_COMPUTE_CODE_BYTES || 200000);
+const maxComputeResultBytes = Number(process.env.HISTORICAL_AUDIT_MAX_COMPUTE_RESULT_BYTES || 1000000);
 
 function readText(p) {
   return fs.readFileSync(p, 'utf8');
@@ -38,7 +43,7 @@ function extractJson(text) {
   }
 }
 
-async function callGemini({ system, user, responseType }) {
+async function callGeminiRaw({ system, contents }) {
   if (!apiKey) throw new Error('GEMINI_API_KEY is missing.');
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -50,7 +55,7 @@ async function callGemini({ system, user, responseType }) {
       },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: system }] },
-        contents: [{ role: 'user', parts: [{ text: user }] }]
+        contents
       }),
       signal: AbortSignal.timeout(requestTimeoutMs)
     }
@@ -69,11 +74,126 @@ async function callGemini({ system, user, responseType }) {
     throw new Error(`Gemini returned no evaluator content: ${JSON.stringify(body)}`);
   }
   const text = reply.parts.map(part => part.text || '').join('\n').trim();
-  const payload = extractJson(text);
-  if (responseType && payload.response_type !== responseType) {
-    throw new Error(`Expected response_type ${responseType}; received ${payload.response_type ?? 'missing'}.`);
+  return { reply, text, payload: extractJson(text) };
+}
+
+function jsonSafe(value) {
+  const serialized = JSON.stringify(value);
+  if (serialized === undefined) return null;
+  return JSON.parse(serialized);
+}
+
+function executeModelComputation({ code, context }) {
+  if (typeof code !== 'string' || !code.trim()) throw new Error('Computation request requires non-empty JavaScript code.');
+  if (Buffer.byteLength(code, 'utf8') > maxComputeCodeBytes) {
+    throw new Error(`Computation code exceeds ${maxComputeCodeBytes} bytes.`);
   }
-  return { payload, raw_text: text };
+
+  // Only a serialized copy of the evaluator's already-assigned context crosses into
+  // the VM. process, require, fetch, filesystem objects, credentials, repository
+  // handles, timers, and host functions are not exposed. String/wasm code generation
+  // is disabled inside the context to block constructor/eval-style escapes.
+  const sandbox = Object.create(null);
+  sandbox.__context_json = JSON.stringify(jsonSafe(context));
+  const contextified = vm.createContext(sandbox, {
+    name: 'historical-audit-model-compute',
+    codeGeneration: { strings: false, wasm: false }
+  });
+
+  const source = [
+    "'use strict';",
+    '(function () {',
+    '  const context = JSON.parse(__context_json);',
+    code,
+    '})()'
+  ].join('\n');
+
+  const script = new vm.Script(source, {
+    filename: 'model-computation.js',
+    displayErrors: true
+  });
+  const value = script.runInContext(contextified, { timeout: computeTimeoutMs, displayErrors: true });
+  const safeValue = jsonSafe(value);
+  const resultText = JSON.stringify(safeValue);
+  if (Buffer.byteLength(resultText, 'utf8') > maxComputeResultBytes) {
+    throw new Error(`Computation result exceeds ${maxComputeResultBytes} bytes.`);
+  }
+  return safeValue;
+}
+
+async function callGeminiWithCompute({ system, user, responseType, computationContext, computationLog }) {
+  const computeProtocol = [
+    'MODEL-DIRECTED COMPUTATION IS AVAILABLE.',
+    'At any point before your final answer, you may request arbitrary synchronous JavaScript computation over exactly the context assigned to this evaluator call.',
+    'To compute, return ONLY JSON in this form:',
+    JSON.stringify({
+      response_type: 'historical_audit_compute_request',
+      computation_id: 'string',
+      purpose: 'string',
+      code: 'JavaScript function body. Read the assigned data from variable context and RETURN a JSON-serializable value.'
+    }, null, 2),
+    'The runtime will execute your JavaScript and return the JSON result to you, after which you may request another computation or return the required final response_type.',
+    'You choose the algorithm, data transformations, searches, grouping, joins, reductions, graph operations, comparisons, parsing, scoring, or other computation. There is no predefined helper-function menu.',
+    'The computation receives no information beyond the context already assigned to this evaluator call.',
+    'Computation is synchronous. Use return to return the result. Do not rely on process, require, fetch, filesystem, network, environment variables, timers, or dynamic code generation; they are intentionally unavailable.',
+    `You may request at most ${maxComputeRounds} computation rounds in this evaluator call.`
+  ].join('\n\n');
+
+  const contents = [{ role: 'user', parts: [{ text: user }] }];
+  const fullSystem = `${system}\n\n${computeProtocol}`;
+  let rounds = 0;
+
+  while (true) {
+    const response = await callGeminiRaw({ system: fullSystem, contents });
+    const payload = response.payload;
+
+    if (payload.response_type !== 'historical_audit_compute_request') {
+      if (responseType && payload.response_type !== responseType) {
+        throw new Error(`Expected response_type ${responseType}; received ${payload.response_type ?? 'missing'}.`);
+      }
+      return { payload, raw_text: response.text, computation_rounds: rounds };
+    }
+
+    rounds += 1;
+    if (rounds > maxComputeRounds) {
+      throw new Error(`Evaluator exceeded maximum computation rounds (${maxComputeRounds}).`);
+    }
+
+    const computationId = typeof payload.computation_id === 'string' && payload.computation_id.trim()
+      ? payload.computation_id.trim()
+      : `compute_${rounds}`;
+    const purpose = typeof payload.purpose === 'string' ? payload.purpose : '';
+    let computationResponse;
+    try {
+      computationResponse = {
+        response_type: 'historical_audit_compute_result',
+        computation_id: computationId,
+        ok: true,
+        result: executeModelComputation({ code: payload.code, context: computationContext })
+      };
+    } catch (error) {
+      computationResponse = {
+        response_type: 'historical_audit_compute_result',
+        computation_id: computationId,
+        ok: false,
+        error: error.message
+      };
+    }
+
+    if (Array.isArray(computationLog)) {
+      computationLog.push({
+        round: rounds,
+        computation_id: computationId,
+        purpose,
+        code: payload.code,
+        result: computationResponse,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    contents.push(response.reply);
+    contents.push({ role: 'user', parts: [{ text: JSON.stringify(computationResponse, null, 2) }] });
+  }
 }
 
 function safeArchivePath(archivePath) {
@@ -132,27 +252,33 @@ function validatePlan(plan, manifest, maxContextBytes) {
   }
 }
 
-function renderAssignedContext(subquestion, manifest) {
+function assignedContextObject(subquestion, manifest) {
   const index = new Map(manifest.files.map(file => [file.archive_path, file]));
-  const sections = [];
-  for (const archivePath of subquestion.context_files) {
-    const file = index.get(archivePath);
-    const absolute = safeArchivePath(archivePath);
-    const text = readText(absolute);
-    sections.push([
-      `===== ASSIGNED CONTEXT: ${archivePath} =====`,
-      `source_path: ${file.source_path}`,
-      `entry_id: ${file.entry_id}`,
-      `category: ${file.category}`,
-      `authority: ${file.authority}`,
-      `description: ${file.description}`,
-      `sha256: ${file.sha256}`,
-      '----- CONTENT -----',
-      text,
-      `===== END ASSIGNED CONTEXT: ${archivePath} =====`
-    ].join('\n'));
-  }
-  return sections.join('\n\n');
+  return {
+    subquestion: jsonSafe(subquestion),
+    files: subquestion.context_files.map(archivePath => {
+      const file = index.get(archivePath);
+      return {
+        metadata: jsonSafe(file),
+        content: readText(safeArchivePath(archivePath))
+      };
+    })
+  };
+}
+
+function renderAssignedContext(contextObject) {
+  return contextObject.files.map(file => [
+    `===== ASSIGNED CONTEXT: ${file.metadata.archive_path} =====`,
+    `source_path: ${file.metadata.source_path}`,
+    `entry_id: ${file.metadata.entry_id}`,
+    `category: ${file.metadata.category}`,
+    `authority: ${file.metadata.authority}`,
+    `description: ${file.metadata.description}`,
+    `sha256: ${file.metadata.sha256}`,
+    '----- CONTENT -----',
+    file.content,
+    `===== END ASSIGNED CONTEXT: ${file.metadata.archive_path} =====`
+  ].join('\n')).join('\n\n');
 }
 
 async function main() {
@@ -160,9 +286,11 @@ async function main() {
   const runNonce = String(trigger.run_nonce || '').trim();
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(runNonce)) throw new Error(`Invalid run_nonce: ${runNonce}`);
   const manifest = readJson(manifestPath);
+  const manifestView = manifestSummary(manifest);
   const outputRoot = path.join(evaluationRoot, 'evaluations', runNonce);
   const plannerOut = path.join(outputRoot, 'planner.json');
   const subRoot = path.join(outputRoot, 'subevaluations');
+  const computeRoot = path.join(outputRoot, 'computations');
   const finalOut = path.join(outputRoot, 'evaluation.json');
   const maxContextBytes = Number(trigger.archive_selection?.max_subquestion_context_bytes || 1400000);
   const taskText = trigger.nextmessage?.parts?.map(part => part.text || '').join('\n').trim();
@@ -200,20 +328,26 @@ async function main() {
     'Audit-design/task request:',
     taskText,
     'Archive manifest/descriptions:',
-    JSON.stringify(manifestSummary(manifest), null, 2)
+    JSON.stringify(manifestView, null, 2)
   ].join('\n\n');
 
-  const planner = await callGemini({
+  const plannerCompute = [];
+  const planner = await callGeminiWithCompute({
     system: plannerSystem,
     user: plannerUser,
-    responseType: 'historical_audit_subquestion_plan'
+    responseType: 'historical_audit_subquestion_plan',
+    computationContext: { task: taskText, archive_manifest: manifestView },
+    computationLog: plannerCompute
   });
   validatePlan(planner.payload, manifest, maxContextBytes);
   writeJson(plannerOut, planner.payload);
+  if (plannerCompute.length) writeJson(path.join(computeRoot, 'planner.json'), plannerCompute);
 
   const subResults = [];
+  let totalComputeRounds = planner.computation_rounds;
   for (const sub of planner.payload.subquestions) {
-    const assignedContext = renderAssignedContext(sub, manifest);
+    const contextObject = assignedContextObject(sub, manifest);
+    const assignedContext = renderAssignedContext(contextObject);
     const subSystem = [
       'You are an independent historical-audit sub-evaluator.',
       'Answer only the assigned subquestion using only the assigned context files and instructions supplied by the lead evaluator.',
@@ -242,12 +376,22 @@ async function main() {
       'Assigned context follows:',
       assignedContext
     ].join('\n\n');
-    const result = await callGemini({ system: subSystem, user: subUser, responseType: 'historical_audit_subresult' });
+
+    const subCompute = [];
+    const result = await callGeminiWithCompute({
+      system: subSystem,
+      user: subUser,
+      responseType: 'historical_audit_subresult',
+      computationContext: contextObject,
+      computationLog: subCompute
+    });
     if (result.payload.subquestion_id !== sub.subquestion_id) {
       throw new Error(`Sub-evaluator returned mismatched subquestion_id ${result.payload.subquestion_id}; expected ${sub.subquestion_id}.`);
     }
     const fileName = `${sub.subquestion_id.replace(/[^A-Za-z0-9._-]+/g, '_')}.json`;
     writeJson(path.join(subRoot, fileName), result.payload);
+    if (subCompute.length) writeJson(path.join(computeRoot, fileName), subCompute);
+    totalComputeRounds += result.computation_rounds;
     subResults.push(result.payload);
   }
 
@@ -261,6 +405,12 @@ async function main() {
     'Return only JSON with response_type historical_audit_result.'
   ].join('\n\n');
 
+  const synthesisContext = {
+    original_task: taskText,
+    lead_plan: planner.payload,
+    subresults: subResults,
+    archive_manifest_summary: manifestView
+  };
   const synthesisUser = [
     'Original audit task:',
     taskText,
@@ -269,7 +419,7 @@ async function main() {
     'Sub-evaluator results:',
     JSON.stringify(subResults, null, 2),
     'Archive manifest summary:',
-    JSON.stringify(manifestSummary(manifest), null, 2),
+    JSON.stringify(manifestView, null, 2),
     'Required final shape:',
     JSON.stringify({
       response_type: 'historical_audit_result',
@@ -287,7 +437,17 @@ async function main() {
     }, null, 2)
   ].join('\n\n');
 
-  const synthesis = await callGemini({ system: synthesisSystem, user: synthesisUser, responseType: 'historical_audit_result' });
+  const synthesisCompute = [];
+  const synthesis = await callGeminiWithCompute({
+    system: synthesisSystem,
+    user: synthesisUser,
+    responseType: 'historical_audit_result',
+    computationContext: synthesisContext,
+    computationLog: synthesisCompute
+  });
+  if (synthesisCompute.length) writeJson(path.join(computeRoot, 'synthesis.json'), synthesisCompute);
+  totalComputeRounds += synthesis.computation_rounds;
+
   writeJson(finalOut, synthesis.payload);
   writeJson(path.join(outputRoot, 'run-metadata.json'), {
     run_nonce: runNonce,
@@ -296,6 +456,10 @@ async function main() {
     archive_manifest: path.relative(process.cwd(), manifestPath).replace(/\\/g, '/'),
     planner_sha256: sha256(JSON.stringify(planner.payload)),
     subquestion_count: subResults.length,
+    model_directed_computation_enabled: true,
+    total_computation_rounds: totalComputeRounds,
+    computation_timeout_ms: computeTimeoutMs,
+    computation_isolation: 'node:vm context; assigned context only; no process/require/fetch/fs/network/env/timers; dynamic code generation disabled',
     completed_at: new Date().toISOString()
   });
 
@@ -304,6 +468,8 @@ async function main() {
     model,
     planner_output: plannerOut,
     subevaluations: subResults.length,
+    model_directed_computation_enabled: true,
+    total_computation_rounds: totalComputeRounds,
     final_output: finalOut
   }, null, 2));
 }
