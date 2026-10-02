@@ -134,6 +134,21 @@ function iteratorForAssignedRound({state, baseIterator, roundInputTokens, assign
   return iterator;
 }
 
+function loadSuccessfulB0Checkpoints(expectedB0) {
+  const checkpoints = new Map();
+  for (const entry of expectedB0) {
+    const file = path.join(outputRoot, 'B0', `b${entry.b}.json`);
+    if (!fs.existsSync(file)) continue;
+    try {
+      const result = readJson(file);
+      if (result?.B === 0 && result?.b === entry.b && result?.status === 'success' && result?.response !== null && result?.response !== undefined) {
+        checkpoints.set(entry.b, result);
+      }
+    } catch {}
+  }
+  return checkpoints;
+}
+
 function persistBatchResult(B, b, result) {
   const dir = path.join(outputRoot, `B${B}`);
   fs.mkdirSync(dir, { recursive: true });
@@ -162,7 +177,7 @@ function persistState(state, finalReturn = null) {
   if (finalReturn !== null) writeJson(path.join(outputRoot, 'final.json'), finalReturn);
 }
 
-async function processRound({state, config, dependencies, batches, iterator, roundInputTokens}) {
+async function processRound({state, config, dependencies, batches, iterator, roundInputTokens, checkpointResults = null}) {
   const round = runtime.createRoundState({ B: state.B, batches, iterator });
   const metadata = {
     roundInputTokens,
@@ -174,15 +189,28 @@ async function processRound({state, config, dependencies, batches, iterator, rou
 
   while (state.b < batches.length) {
     const batch = batches[state.b];
-    const result = await runtime.processBatch({
-      B: state.B,
-      b: state.b,
-      batch,
-      iterator,
-      config,
-      gemini: null,
-      dependencies
-    });
+    let result = checkpointResults?.get(state.b) || null;
+
+    if (result) {
+      result = clone(result);
+      result.id = `B${state.B}-b${state.b}`;
+      result.B = state.B;
+      result.b = state.b;
+      result.assignedContextTokens = batch.assignedContextTokens;
+      result.provenance = batch.provenance || [];
+      result.checkpointReused = true;
+    } else {
+      result = await runtime.processBatch({
+        B: state.B,
+        b: state.b,
+        batch,
+        iterator,
+        config,
+        gemini: null,
+        dependencies
+      });
+    }
+
     runtime.commitBatchResult({ round, batchResult: result });
     runtime.updateSupervisoryState({ runtimeState: state, batchResult: result });
     persistBatchResult(state.B, state.b, result);
@@ -241,15 +269,16 @@ async function processRound({state, config, dependencies, batches, iterator, rou
 async function main() {
   if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is missing.');
 
-  fs.rmSync(outputRoot, { recursive: true, force: true });
-  fs.mkdirSync(outputRoot, { recursive: true });
-
   const config = updateConfig(readJson(configPath));
-  writeJson(configPath, config);
-
   const analysis = readJson(analysisPath);
   const expectedB0 = analysis?.B0?.batches || [];
   if (!expectedB0.length) throw new Error('No pre-divided B0 batches were found in stage1-corpus-analysis.json.');
+
+  const b0Checkpoints = loadSuccessfulB0Checkpoints(expectedB0);
+
+  fs.rmSync(outputRoot, { recursive: true, force: true });
+  fs.mkdirSync(outputRoot, { recursive: true });
+  writeJson(configPath, config);
 
   const dependencies = {
     countTokens: value => approximateTokens(value)
@@ -277,7 +306,8 @@ async function main() {
     dependencies,
     batches: b0Batches,
     iterator: b0Iterator,
-    roundInputTokens: b0RoundInputTokens
+    roundInputTokens: b0RoundInputTokens,
+    checkpointResults: b0Checkpoints
   });
   if (result.terminal) {
     console.log(JSON.stringify(result.finalReturn, null, 2));
