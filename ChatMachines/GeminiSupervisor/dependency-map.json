@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "description": "Authoritative file-to-file dependency map used by the GeminiSupervisor dependency synchronization workflow.",
+  "sentinel_file": "ChatMachines/GeminiSupervisor/dependency-sync-sentinel.json",
+  "mappings": {
+    "ChatMachines/GeminiSupervisor/Agents.md": {
+      "dependents": [
+        "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+        "ChatMachines/GeminiSupervisor/config.json"
+      ],
+      "context_files": [
+        "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json"
+      ]
+    },
+    "ChatMachines/GeminiSupervisor/send-to-gemini.js": {
+      "dependents": [
+        "ChatMachines/GeminiSupervisor/Agents.md",
+        "ChatMachines/GeminiSupervisor/config.json"
+      ],
+      "context_files": [
+        "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json"
+      ]
+    }
+  }
+}
