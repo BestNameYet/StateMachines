@@ -1,0 +1,131 @@
+name: Live Ground Truth Reading Room
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiSupervisor/live-ground-truth/read-request.json
+      - ChatMachines/GeminiSupervisor/live-ground-truth/reading-room/Agents.reader.json-*
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-ground-truth-reading-room
+  cancel-in-progress: false
+
+jobs:
+  reading-room:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Determine operation
+        id: operation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BEFORE='${{ github.event.before }}'
+          SHA='${{ github.sha }}'
+
+          if [ "$BEFORE" = '0000000000000000000000000000000000000000' ]; then
+            CHANGED=$(git diff-tree --no-commit-id --name-only -r "$SHA")
+          else
+            CHANGED=$(git diff --name-only "$BEFORE" "$SHA")
+          fi
+
+          REQUEST='ChatMachines/GeminiSupervisor/live-ground-truth/read-request.json'
+          ROOM='ChatMachines/GeminiSupervisor/live-ground-truth/reading-room'
+
+          REQUEST_CHANGED=false
+          if printf '%s\n' "$CHANGED" | grep -qx "$REQUEST"; then
+            REQUEST_CHANGED=true
+          fi
+
+          if printf '%s\n' "$CHANGED" | grep -qx "$ROOM/Agents.reader.json"; then
+            echo 'Agents.reader.json is system-owned and may not be modified by a reader commit.' >&2
+            exit 1
+          fi
+
+          if printf '%s\n' "$CHANGED" | grep -Eq "^${ROOM}/Agents\.reader\.json-[0-9a-fA-F]{40}-(PASS|FAILED)$"; then
+            echo 'PASS and FAILED result files are system-owned and may not be modified by a reader commit.' >&2
+            exit 1
+          fi
+
+          mapfile -t CHALLENGES < <(printf '%s\n' "$CHANGED" | grep -E "^${ROOM}/Agents\.reader\.json-[0-9a-fA-F]{40}$" || true)
+
+          if [ "$REQUEST_CHANGED" = true ] && [ "${#CHALLENGES[@]}" -gt 0 ]; then
+            echo 'A commit may submit a read request or a repaired challenge, not both.' >&2
+            exit 1
+          fi
+
+          if [ "$REQUEST_CHANGED" = true ]; then
+            echo 'mode=issue' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "${#CHALLENGES[@]}" -eq 1 ]; then
+            echo 'mode=verify' >> "$GITHUB_OUTPUT"
+            echo "challenge=${CHALLENGES[0]}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Expected exactly one repaired challenge; found ${#CHALLENGES[@]}." >&2
+          exit 1
+
+      - name: Issue fresh reading challenge
+        if: steps.operation.outputs.mode == 'issue'
+        run: node ChatMachines/GeminiSupervisor/scripts/live-ground-truth-reading-room.js issue '${{ github.sha }}'
+
+      - name: Evaluate committed reading challenge
+        if: steps.operation.outputs.mode == 'verify'
+        id: evaluate
+        shell: bash
+        run: |
+          set +e
+          node ChatMachines/GeminiSupervisor/scripts/live-ground-truth-reading-room.js verify '${{ steps.operation.outputs.challenge }}' '${{ github.sha }}'
+          CODE=$?
+          set -e
+
+          if [ "$CODE" -eq 0 ]; then
+            echo 'result=PASS' >> "$GITHUB_OUTPUT"
+          elif [ "$CODE" -eq 2 ]; then
+            echo 'result=FAILED' >> "$GITHUB_OUTPUT"
+          else
+            exit "$CODE"
+          fi
+
+      - name: Commit reading-room result
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='ChatMachines/GeminiSupervisor/live-ground-truth/reading-room'
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A "$ROOT"
+
+          if git diff --cached --quiet; then
+            echo 'No reading-room changes to commit.'
+            exit 0
+          fi
+
+          if [ '${{ steps.operation.outputs.mode }}' = 'issue' ]; then
+            git commit -m 'Issue live ground truth reading challenge for ${{ github.sha }}'
+          elif [ '${{ steps.evaluate.outputs.result }}' = 'PASS' ]; then
+            git commit -m 'PASS live ground truth reading challenge ${{ github.sha }}'
+          else
+            git commit -m 'FAILED live ground truth reading challenge ${{ github.sha }} and issue fresh damage'
+          fi
+
+          git push origin HEAD:main
