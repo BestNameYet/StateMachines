@@ -22,8 +22,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .migration
-          tar -C ChatMachines/GeminiSupervisor -czf /tmp/gemini-supervisor.tar.gz .
-          base64 -w 0 /tmp/gemini-supervisor.tar.gz > .migration/gemini-supervisor.tar.gz.b64
+          XZ_OPT=-9e tar -C ChatMachines/GeminiSupervisor -cJf /tmp/gemini-supervisor.tar.xz .
+          base64 -w 0 /tmp/gemini-supervisor.tar.xz > .migration/gemini-supervisor.tar.xz.b64
+          rm -f .migration/gemini-supervisor.tar.gz.b64
 
       - name: Commit export
         shell: bash
@@ -31,6 +32,6 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .migration/gemini-supervisor.tar.gz.b64
-          git commit -m "Temporary GeminiSupervisor migration export"
+          git add -A .migration
+          git commit -m "Replace temporary GeminiSupervisor migration export with xz"
           git push
