@@ -22,24 +22,41 @@
   "request_timeout_ms": 180000,
   "evaluation_mode": "generic",
   "generic_inputs": [
-    {"key":"current_agents_md","type":"file","path":"../GeminiSupervisor/Agents.md"},
-    {"key":"current_runtime_source","type":"file","path":"../GeminiSupervisor/send-to-gemini.js"},
-    {"key":"current_step3_evaluation","type":"file","path":"../GeminiSupervisor/tests/step-3-evaluation.json"},
-    {"key":"commit_history","type":"file","path":"../GeminiSupervisor/commit history/commit-history.md"},
-    {"key":"git_log","type":"file","path":"../GeminiSupervisor/commit history/git-log.txt"},
-    {"key":"audit_correction","type":"literal","value":"Use the FINAL CURRENT requirements visible today as the normative baseline for evaluating every persisted nonce run. Do not require reconstruction of the original Agents.md/source/Step-3 revision merely to decide run compliance. Historical information is needed primarily to reconstruct CHANGES IN DESIRED REQUIREMENTS and instruction lineage: what the user wanted at each point, which requirements survived into the final requirements, which were superseded, and which were never implemented. A historical nonce may therefore be re-evaluated against today's final requirements even if those requirements did not exist when the run executed. Keep separate the question 'does this historical run satisfy the final current requirements?' from the instruction-lineage question 'what requirements changed over time, and which unsuperseded requirements were never implemented?'"}
+    {"key":"current_flat_audit_runtime","type":"file","path":"historical-audit-flat-evaluator.js"},
+    {"key":"current_fresh_worker","type":"file","path":"historical-audit-fresh-worker.js"},
+    {"key":"current_segmentation_policy","type":"file","path":"historical-audit-segmentation-policy.json"},
+    {"key":"current_historical_workflow","type":"file","path":"../../.github/workflows/gemini-supervisor-historical-audit.yml"}
   ],
-  "evaluation_heuristic": "DESIGN-ONLY. Revise the historical audit staging plan using audit_correction as authoritative. Treat current_agents_md, current_runtime_source, and current_step3_evaluation as the FINAL CURRENT requirement/implementation baseline against which every persisted Supervisor nonce run may be evaluated. Do not require historical contract snapshots as a prerequisite for nonce-run compliance. History is instead used to reconstruct the evolution of DESIRED REQUIREMENTS and user instruction lineage. Design two linked analyses: A) FINAL-BASELINE RUN AUDIT: evaluate each nonce run's persisted state/messages/store evidence against today's final requirements and implementation expectations, reporting which current requirements the run satisfies or fails; B) REQUIREMENT-LINEAGE AUDIT: reconstruct atomic user-requested requirements over time and classify each as IMPLEMENTED, SUPERSEDED_BEFORE_IMPLEMENTATION, MISSING_STILL_OUTSTANDING, or INDETERMINATE. A requirement that was later superseded is not a defect. A MISSING_STILL_OUTSTANDING requirement must be both never implemented and not later superseded, and still relevant under the final desired requirement set. Focus historical staging on requirement deltas, not full reconstruction of every historical code/spec snapshot. Recommend the minimum deterministic prerequisite artifacts, exact batching strategy, batch inputs, proof rules, and completeness checks. Explain whether nonce batches can simply share one immutable final-baseline packet plus their own run containers. Also define a requirements-delta artifact that tracks when desired requirements were added, modified, superseded, or retained into the final requirement set. Return design only; do not execute the audit.",
+  "evaluation_heuristic": "IMPLEMENTATION GENERATION. Produce a new generic hierarchical bounded-reduction evaluator runtime as two complete artifacts at the exact target paths specified by evaluation_output_schema. Do not modify the existing historical-audit runtime files in the returned implementation; use them only as context for compatibility and lessons learned. The new runtime must mechanically divide arbitrary context into batches bounded by configurable divider.max_kb. max_kb belongs only to the mechanical divider layer, not to evaluator semantics. Evaluator behavior must be config-driven: evaluator classes, task, criteria, response format/schema, preferred response size, hard response-size rule, iterator tests, retry counts, phase behavior, and termination behavior must all be configurable. Every chatbot invocation must be fresh and isolated to one batch; no prior model conversation, other batch raw context, or accumulated model history may leak into that invocation. The single new JS file may spawn itself in a worker mode so each evaluator invocation occurs in a fresh Node process. Processing is strictly sequential. Define outer reduction iteration integer B. The current required control rule must be represented in config and interpreted generically by JS: when B == 0 use the base evaluator class for raw evidence; when B > 0 use the decision evaluator class for proof-carrying prior responses. Do not hard-code base-versus-decision selection in JS. Each evaluator receives context + configured task + configured criteria + configured response contract and returns a proof-carrying decision containing summarized_context/summary, proof with minimal facts and provenance needed for the evaluation, and decision. Base evaluation criteria operate on raw evidence. Decision evaluation criteria operate on prior proof-carrying decisions. The controller must not attempt semantic correctness validation. It may only perform mechanically knowable checks such as system/transport success, whether required keys can be recovered, and response byte size. Malformed JSON is not itself a retry reason when required configured keys can be deterministically recovered and normalized. A system/transport error gets one configurable fresh retry; if that also fails, persist a system-failure record and advance. A corrective attempt is allowed only when configured mechanical iterator tests require it, currently when required keys cannot be recovered or the response violates the hard size rule. The corrective fresh evaluator receives the same original batch context + previous bad response + exact mechanical error + same task/criteria/response contract. There is exactly one configurable corrective attempt; after it, persist the latest result/failure metadata and advance, never recurse. Response preferred max size is a soft target. Hard response size must be expressed as a configurable size rule, currently ratio_of_batch_max with value 0.5; exceeding only the soft preferred size does not trigger correction. After all batches in one B iteration complete, serialize/tally all responses. The termination test is configurable and currently aggregate_response_kb / divider.max_kb <= 1. If false, mechanically repartition the aggregate responses into <= max_kb batches, increment B, and execute another sequential decision-reduction iteration. If true, do not divide: run exactly one more fresh evaluator on all remaining responses using the configured final evaluator class (currently decision), persist that response as final, and end. This convergence process depends on the configured hard < 1/2 reduction rule. Preserve provenance through all reductions. The config should also leave room for optional crosscheck allocation/policy, including a bounded raw-overlap budget, but crosschecks must not create recursive model context. The JavaScript must be generic infrastructure driven by config rather than a historical-audit-specific decision tree. Return complete, runnable, non-truncated config and JS contents, not patches or pseudocode.",
   "evaluation_output_schema": {
-    "response_type": "final_baseline_audit_staging_design",
-    "normative_baseline": {"description":"string","files":["string"],"how_used":"string"},
-    "run_audit_model": {"batching_strategy":"string","shared_baseline_inputs":["string"],"per_batch_inputs":["string"],"checks":["string"],"result_classes":["string"]},
-    "requirement_lineage_model": {"purpose":"string","classifications":["IMPLEMENTED","SUPERSEDED_BEFORE_IMPLEMENTATION","MISSING_STILL_OUTSTANDING","INDETERMINATE"],"delta_fields":["string"],"supersession_rules":["string"],"outstanding_defect_rule":"string"},
-    "prerequisite_artifacts":[{"artifact":"string","purpose":"string","required_fields":["string"]}],
-    "proposed_batches":[{"batch_id":"string","runs":["string"],"reason":"string"}],
-    "completeness_checks":["string"],
-    "differences_from_prior_temporal_contract_plan":["string"],
-    "recommended_next_action":"string"
+    "response_type": "hierarchical_reduction_runtime_implementation",
+    "architecture_summary": "string",
+    "iterator_control": {
+      "B_definition": "string",
+      "when_B_equals_0": "string",
+      "when_B_greater_than_0": "string",
+      "round_completion_rule": "string",
+      "termination_rule": "string",
+      "final_invocation_rule": "string"
+    },
+    "mechanical_validation": {
+      "allowed_tests": ["string"],
+      "semantic_validation_prohibited": true,
+      "system_error_behavior": "string",
+      "malformed_json_behavior": "string",
+      "hard_size_behavior": "string",
+      "corrective_attempt_behavior": "string"
+    },
+    "implementation_config": {
+      "target_path": "ChatMachines/GeminiEvaluation/hierarchical-reduction/config.json",
+      "content": "<complete JSON object for the new runtime configuration; must include divider, evaluator_classes, response_contracts, iterator_rules including B == 0 and B > 0, iterator_tests, retry/correction policy, termination test, final evaluator selection, and optional crosscheck policy>"
+    },
+    "special_js": {
+      "target_path": "ChatMachines/GeminiEvaluation/hierarchical-reduction/hierarchical-reduction-evaluator.js",
+      "content": "<complete runnable non-truncated JavaScript source; no Markdown fence>"
+    },
+    "invariants_implemented": ["string"],
+    "integration_notes": ["string"]
   },
   "generic_messages_file": "generic-evaluator-messages.json",
   "generic_reuse_message_history": false,
