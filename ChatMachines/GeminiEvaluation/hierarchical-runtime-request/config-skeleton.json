@@ -1,0 +1,178 @@
+{
+  "version": "1.0",
+  "token_counter": {
+    "implementation": null
+  },
+  "B_rules": [
+    {
+      "when": {"B": {"eq": 0}},
+      "iterator": {
+        "divider": {
+          "max_tokens": null,
+          "boundary_strategy": "shift_divisions_until_all_batches_fit"
+        },
+        "evaluator": {
+          "model": null,
+          "task": null,
+          "criteria": null,
+          "response_contract": {
+            "required_fields": [],
+            "schema": {}
+          }
+        },
+        "normalization": {
+          "enabled": true,
+          "strategies": ["recover_required_fields_from_malformed_serialization"]
+        },
+        "acceptance": {
+          "conditions": [
+            {
+              "id": "invocation_succeeded",
+              "source": "invocation.status",
+              "operator": "eq",
+              "value": "success"
+            },
+            {
+              "id": "required_fields_recoverable",
+              "source": "response",
+              "operator": "required_fields_recoverable",
+              "value": true
+            },
+            {
+              "id": "response_below_hard_token_limit",
+              "source": "response.tokens",
+              "operator": "lt",
+              "value": {"source": "divider.max_tokens", "divide_by": 2}
+            }
+          ]
+        },
+        "retry": {
+          "conditionals": [
+            {
+              "id": "system_error_retry",
+              "when": {"condition": "system_error", "retry_number": {"eq": 0}},
+              "invoke": {"fresh": true, "inputs": ["original_invocation"]},
+              "on_success": {"retain": "retry_response", "stop_retry_sequence": true},
+              "on_failure": {"status": "failed", "retain": null, "stop_retry_sequence": true}
+            },
+            {
+              "id": "mechanical_response_retry",
+              "when": {"condition": "mechanical_response_failure", "retry_number": {"eq": 0}},
+              "invoke": {
+                "fresh": true,
+                "inputs": ["context", "previous_response", "mechanical_error", "task", "criteria", "response_contract"]
+              },
+              "on_success": {"retain": "retry_response", "stop_retry_sequence": true},
+              "on_failure": {"retain": "latest_response", "include_failure_metadata": true, "stop_retry_sequence": true}
+            }
+          ]
+        },
+        "termination": {
+          "condition": {
+            "left": {"source": "round.aggregate_response_tokens"},
+            "operator": "lte",
+            "right": {"source": "divider.max_tokens"}
+          },
+          "on_true": {"set": {"terminal_round": true}},
+          "on_false": {"set": {"terminal_round": false}}
+        },
+        "failed_b_stop": {
+          "condition": {
+            "source": "supervisory.failed_b_count",
+            "operator": "gte",
+            "value": null
+          },
+          "on_true": "program_failure_return",
+          "on_false": "continue"
+        }
+      }
+    },
+    {
+      "when": {"B": {"gt": 0}},
+      "iterator": {
+        "divider": {
+          "max_tokens": null,
+          "boundary_strategy": "shift_divisions_until_all_batches_fit"
+        },
+        "evaluator": {
+          "model": null,
+          "task": null,
+          "criteria": null,
+          "response_contract": {
+            "required_fields": [],
+            "schema": {}
+          }
+        },
+        "normalization": {
+          "enabled": true,
+          "strategies": ["recover_required_fields_from_malformed_serialization"]
+        },
+        "acceptance": {
+          "conditions": [
+            {"id": "invocation_succeeded", "source": "invocation.status", "operator": "eq", "value": "success"},
+            {"id": "required_fields_recoverable", "source": "response", "operator": "required_fields_recoverable", "value": true},
+            {"id": "response_below_hard_token_limit", "source": "response.tokens", "operator": "lt", "value": {"source": "divider.max_tokens", "divide_by": 2}}
+          ]
+        },
+        "retry": {
+          "conditionals": [
+            {
+              "id": "system_error_retry",
+              "when": {"condition": "system_error", "retry_number": {"eq": 0}},
+              "invoke": {"fresh": true, "inputs": ["original_invocation"]},
+              "on_success": {"retain": "retry_response", "stop_retry_sequence": true},
+              "on_failure": {"status": "failed", "retain": null, "stop_retry_sequence": true}
+            },
+            {
+              "id": "mechanical_response_retry",
+              "when": {"condition": "mechanical_response_failure", "retry_number": {"eq": 0}},
+              "invoke": {
+                "fresh": true,
+                "inputs": ["context", "previous_response", "mechanical_error", "task", "criteria", "response_contract"]
+              },
+              "on_success": {"retain": "retry_response", "stop_retry_sequence": true},
+              "on_failure": {"retain": "latest_response", "include_failure_metadata": true, "stop_retry_sequence": true}
+            }
+          ]
+        },
+        "termination": {
+          "condition": {
+            "left": {"source": "round.aggregate_response_tokens"},
+            "operator": "lte",
+            "right": {"source": "divider.max_tokens"}
+          },
+          "on_true": {"set": {"terminal_round": true}},
+          "on_false": {"set": {"terminal_round": false}}
+        },
+        "failed_b_stop": {
+          "condition": {
+            "source": "supervisory.failed_b_count",
+            "operator": "gte",
+            "value": null
+          },
+          "on_true": "program_failure_return",
+          "on_false": "continue"
+        }
+      }
+    }
+  ],
+  "supervisory_state": {
+    "track": {
+      "B": true,
+      "b": true,
+      "b_terminal_status": true,
+      "failed_b_count": true,
+      "retries": true,
+      "response_tokens": true,
+      "provenance": true
+    }
+  },
+  "provenance": {
+    "enabled": true,
+    "retain_batch_identity": true,
+    "retain_ancestry": true
+  },
+  "program_return": {
+    "envelope": null
+  }
+}
