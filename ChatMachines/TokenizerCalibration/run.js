@@ -4,11 +4,46 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
-const samples = [
-  'ChatMachines/GeminiSupervisor/Agents.md',
-  'ChatMachines/GeminiSupervisor/send-to-gemini.js',
-  'ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json'
-];
+const agentsPath = 'ChatMachines/GeminiSupervisor/Agents.md';
+const agentsHeaderJsonPath = 'ChatMachines/TokenizerCalibration/agents-by-header.json';
+const resultsPath = 'ChatMachines/TokenizerCalibration/tokenizer-results.json';
+
+function agentsJsonByHeader(markdown) {
+  const lines = markdown.split(/\r?\n/);
+  const sections = [];
+  let currentHeader = 'Agents.md';
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const header = lines[i].match(/^#{1,6}\s+(.+?)\s*$/);
+    if (header) {
+      currentHeader = header[1];
+      continue;
+    }
+
+    if (lines[i].trim() !== '```json') continue;
+
+    const jsonLines = [];
+    i += 1;
+    while (i < lines.length && lines[i].trim() !== '```') {
+      jsonLines.push(lines[i]);
+      i += 1;
+    }
+
+    const jsonText = jsonLines.join('\n').trim();
+    if (!jsonText) continue;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch (error) {
+      throw new Error(`Invalid JSON under header "${currentHeader}": ${error.message}`);
+    }
+
+    sections.push({ [currentHeader]: parsed });
+  }
+
+  return sections;
+}
 
 async function exactCount(text) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:countTokens`;
@@ -31,55 +66,61 @@ async function exactCount(text) {
   return result.totalTokens;
 }
 
+async function measure(file) {
+  const text = fs.readFileSync(file, 'utf8');
+  const characters = text.length;
+  const exactTokens = await exactCount(text);
+  const div3 = Math.ceil(characters / 3);
+  const div4 = Math.ceil(characters / 4);
+
+  return {
+    file,
+    characters,
+    exact_tokens: exactTokens,
+    characters_per_token: Number((characters / exactTokens).toFixed(4)),
+    ceil_chars_div_3: div3,
+    div_3_error_tokens: div3 - exactTokens,
+    div_3_error_percent: Number((((div3 - exactTokens) / exactTokens) * 100).toFixed(2)),
+    ceil_chars_div_4: div4,
+    div_4_error_tokens: div4 - exactTokens,
+    div_4_error_percent: Number((((div4 - exactTokens) / exactTokens) * 100).toFixed(2))
+  };
+}
+
 async function main() {
+  const rawAgents = fs.readFileSync(agentsPath, 'utf8');
+  const headerJson = agentsJsonByHeader(rawAgents);
+
+  fs.mkdirSync(path.dirname(agentsHeaderJsonPath), { recursive: true });
+  fs.writeFileSync(agentsHeaderJsonPath, JSON.stringify(headerJson) + '\n');
+
+  const samples = [
+    agentsPath,
+    agentsHeaderJsonPath,
+    'ChatMachines/GeminiSupervisor/send-to-gemini.js',
+    'ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json'
+  ];
+
   const results = [];
+  for (const file of samples) results.push(await measure(file));
 
-  for (const file of samples) {
-    const text = fs.readFileSync(file, 'utf8');
-    const characters = text.length;
-    const exactTokens = await exactCount(text);
-    const div3 = Math.ceil(characters / 3);
-    const div4 = Math.ceil(characters / 4);
-
-    results.push({
-      file,
-      characters,
-      exact_tokens: exactTokens,
-      characters_per_token: Number((characters / exactTokens).toFixed(4)),
-      ceil_chars_div_3: div3,
-      div_3_error_tokens: div3 - exactTokens,
-      div_3_error_percent: Number((((div3 - exactTokens) / exactTokens) * 100).toFixed(2)),
-      ceil_chars_div_4: div4,
-      div_4_error_tokens: div4 - exactTokens,
-      div_4_error_percent: Number((((div4 - exactTokens) / exactTokens) * 100).toFixed(2))
-    });
-  }
-
-  const totalCharacters = results.reduce((sum, item) => sum + item.characters, 0);
-  const totalExactTokens = results.reduce((sum, item) => sum + item.exact_tokens, 0);
-  const totalDiv3 = Math.ceil(totalCharacters / 3);
-  const totalDiv4 = Math.ceil(totalCharacters / 4);
+  const raw = results.find(item => item.file === agentsPath);
+  const structured = results.find(item => item.file === agentsHeaderJsonPath);
 
   const output = {
     generated_at: new Date().toISOString(),
     model,
-    samples: results,
-    combined: {
-      characters: totalCharacters,
-      exact_tokens: totalExactTokens,
-      characters_per_token: Number((totalCharacters / totalExactTokens).toFixed(4)),
-      ceil_chars_div_3: totalDiv3,
-      div_3_error_tokens: totalDiv3 - totalExactTokens,
-      div_3_error_percent: Number((((totalDiv3 - totalExactTokens) / totalExactTokens) * 100).toFixed(2)),
-      ceil_chars_div_4: totalDiv4,
-      div_4_error_tokens: totalDiv4 - totalExactTokens,
-      div_4_error_percent: Number((((totalDiv4 - totalExactTokens) / totalExactTokens) * 100).toFixed(2))
-    }
+    agents_header_json: {
+      sections: headerJson.length,
+      raw_tokens: raw.exact_tokens,
+      structured_tokens: structured.exact_tokens,
+      token_change: structured.exact_tokens - raw.exact_tokens,
+      token_change_percent: Number((((structured.exact_tokens - raw.exact_tokens) / raw.exact_tokens) * 100).toFixed(2))
+    },
+    samples: results
   };
 
-  const outputPath = 'ChatMachines/TokenizerCalibration/tokenizer-results.json';
-  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  fs.writeFileSync(outputPath, JSON.stringify(output, null, 2) + '\n');
+  fs.writeFileSync(resultsPath, JSON.stringify(output, null, 2) + '\n');
   console.log(JSON.stringify(output, null, 2));
 }
 
