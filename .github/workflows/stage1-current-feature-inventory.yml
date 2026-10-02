@@ -1,0 +1,50 @@
+name: Stage-1 current feature inventory
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1/run-trigger.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stage1-current-feature-inventory
+  cancel-in-progress: false
+
+jobs:
+  run-stage1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run Stage-1 hierarchical evaluation
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.8-flash
+        run: node ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1/run-stage1.js
+
+      - name: Commit Stage-1 results
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          ROOT="ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1"
+          git add "$ROOT/config.json"
+          if [ -d "$ROOT/execution" ]; then
+            git add "$ROOT/execution"
+          fi
+          if git diff --cached --quiet; then
+            echo "No Stage-1 output change."
+            exit 0
+          fi
+          git commit -m "Run Stage-1 current feature inventory"
+          git push origin HEAD:main
