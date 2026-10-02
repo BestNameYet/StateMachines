@@ -1,0 +1,165 @@
+{
+  "response_type": "historical_audit_subresult",
+  "subquestion_id": "sq03_canonical_specification_and_controls",
+  "answer_summary": "The canonical specification files articulate an explicit multi-tiered control architecture across three core documents: (1) Agents.md mandates strict role separation between ChatGPT (steps 0-4 execution) and Gemini (supervisory gating), per-step return schemas and gate schemas for Steps 0-4, a deterministic live ground-truth verification protocol preceding semantic PASS decisions, a 31-test evaluation loop in Step 3, and failure-first reporting in Step 4; (2) work-action-approval-rulebook.json defines five normative rules requiring user safe-word authorization before any action, expands the definition of 'action' to encompass all mutations, reads, checks, inspections, searches, and tool executions, defines plan-construction pre-actions, mandates an explicit ActionPlanReturn JSON schema prior to permission requests, and locks approved plan scope to strictly decrease only by removing uncompleted work; and (3) SKILL.md specifies a live ground-truth verification skill triggered by any execution-dependent claim, prescribing a mandatory 10-step verification sequence, a 10-category taxonomy of execution-proximate sources, strict evaluation of authority, freshness, proximity, specificity, and integrity, five discrete status classifications (VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, NOT_EXECUTED), and prohibition of memory or self-report as ground truth.",
+  "historical_facts": [
+    {
+      "fact_id": "fact_agents_eval_definitions",
+      "statement": "Agents.md defines six canonical evaluation terms: user_words, effective_instruction_U, agent_response_P, live_ground_truth, ground_truth_status (VERIFIED|CONTRADICTED|PARTIAL|UNKNOWN|NOT_EXECUTED), and exact_satisfaction.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/Agents.md",
+      "evidence_locator": "Agents.md: Canonical Evaluation Definitions block"
+    },
+    {
+      "fact_id": "fact_agents_governing_rules",
+      "statement": "Agents.md lists seven governing rules: shared_configuration_contract_governs_external_references, return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface, model_role_separation_and_server_verified_execution_identity_are_mandatory, chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake, bootstrap_must_create_and_isolate_a_consistent_run_container_before_step_zero, live_ground_truth_verification_against_pathological_deception, and step_four_reporting_must_put_failures_and_incomplete_work_before_verified_completion.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/Agents.md",
+      "evidence_locator": "Agents.md: Governing Rule Catalog"
+    },
+    {
+      "fact_id": "fact_agents_step_roles_and_schemas",
+      "statement": "Agents.md mandates that Steps 0 through 4 require ChatGPT as execution role and forbid Gemini, while supervisory gates require Gemini and forbid ChatGPT. Each step defines explicit return schemas (start_of_turn for Step 0, step_1_record for Step 1, step_2_record for Step 2, Step_3 for Step 3, and Step_4 for Step 4) and matching supervisory gate schemas.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/Agents.md",
+      "evidence_locator": "Agents.md: Step 0 through Step 4 sections"
+    },
+    {
+      "fact_id": "fact_agents_step3_requirements",
+      "statement": "Step 3 in Agents.md requires preserving U (section A), decomposing clauses (section B), performing recursive modifier analysis (section C), formulating execution plan P (section D), proposing UI_output (section E), evaluating 31 Step3_TSR tests against external_files.step3_evaluation_artifact (section F), and loop control where any 'T' repeats Step 3 from A while all 'F' permits completion (section G).",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/Agents.md",
+      "evidence_locator": "Agents.md: Step 3 and Step 3 Field Definition Glossary"
+    },
+    {
+      "fact_id": "fact_agents_step4_requirements",
+      "statement": "Step 4 in Agents.md mandates reporting failed_actions first, not_completed_actions second, and completed_actions last with granular live-ground-truth verified completion_evidence.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/Agents.md",
+      "evidence_locator": "Agents.md: Step 4 and Step 4 Field Definition Glossary"
+    },
+    {
+      "fact_id": "fact_agents_runtime_integration",
+      "statement": "Agents.md specifies six runtime integration requirements: shared configuration contract via config.json, Agents.md as canonical evaluation source, deterministic live ground truth preceding semantic PASS, ground truth findings persistence in step_records and store, unchanged gate_result transition semantics, and step_3_evaluation_artifact as canonical without document read tracking.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/Agents.md",
+      "evidence_locator": "Agents.md: Runtime Integration Requirements"
+    },
+    {
+      "fact_id": "fact_rulebook_five_rules",
+      "statement": "work-action-approval-rulebook.json articulates five rules: safe_word_authorization_required_before_every_action, action_set_definition_includes_reads_checks_and_analogous_operations, pre_action_set_definition, complete_action_plan_must_precede_permission_request, and approved_plan_scope_is_immutable_except_removing_uncompleted_work.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+      "evidence_locator": "work-action-approval-rulebook.json: root array"
+    },
+    {
+      "fact_id": "fact_rulebook_action_taxonomy",
+      "statement": "work-action-approval-rulebook.json classifies 25 distinct operational examples as actions, explicitly including read-only searches, data retrieval, inspections, reviews, evaluations, status polling, and API/tool calls alongside data mutations and deletions.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+      "evidence_locator": "work-action-approval-rulebook.json: rule action_set_definition_includes_reads_checks_and_analogous_operations.action_examples"
+    },
+    {
+      "fact_id": "fact_rulebook_action_plan_schema",
+      "statement": "work-action-approval-rulebook.json specifies an ActionPlanReturn JSON Schema (Draft 2020-12) with required keys: plan_id, status, safe_word_required (const true), safe_word_selected, permission_request_scope, actions, subactions, definitions, ambiguous_terms, dependencies, approval, and post_approval_change_control (forbidding additions and restricting changes to removing uncompleted work).",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+      "evidence_locator": "work-action-approval-rulebook.json: rule complete_action_plan_must_precede_permission_request.action_plan_return_schema"
+    },
+    {
+      "fact_id": "fact_skill_purpose_and_invariant",
+      "statement": "SKILL.md defines the live-ground-truth-verification skill with the core invariant: 'No materially execution-dependent assertion may outrun its evidence.' It designates model memory, conversation memory, prior assistant statements, self-reports, summaries, and plans as testimony rather than ground truth.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+      "evidence_locator": "SKILL.md: Purpose, Sources That Are Never Ground Truth, and Core Invariant"
+    },
+    {
+      "fact_id": "fact_skill_ten_step_procedure",
+      "statement": "SKILL.md defines a mandatory 10-step verification procedure: (1) Extract claims, (2) Map sources, (3) Retrieve now, (4) Read exact evidence verbatim, (5) Check scope, (6) Check freshness, (7) Resolve conflicts, (8) Classify status into VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, or NOT EXECUTED, (9) Answer from evidence, and (10) Provide locators.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+      "evidence_locator": "SKILL.md: Mandatory Verification Procedure"
+    },
+    {
+      "fact_id": "fact_skill_source_taxonomy",
+      "statement": "SKILL.md articulates a 10-category taxonomy of execution ground-truth sources: canonical artifacts, source-control, execution-runtime, procedure/state-machine, messaging/collaboration, cloud applications, database/transactions, external evaluator/multi-agent returns, source-code/configuration, and user-provided evidence.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+      "evidence_locator": "SKILL.md: Ground-Truth Source Taxonomy"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "interp_specification_intent_vs_enforcement",
+      "statement": "The requirements, schemas, and control protocols in Agents.md, work-action-approval-rulebook.json, and SKILL.md constitute formal expressions of system intent and normative contracts, but their written existence within specification documents does not by itself establish whether the live runtime executable code actually implements or enforces them.",
+      "depends_on_fact_ids": [
+        "fact_agents_governing_rules",
+        "fact_agents_step_roles_and_schemas",
+        "fact_rulebook_five_rules",
+        "fact_skill_purpose_and_invariant"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_normative_mandate_separation",
+      "statement": "Normative mandates ('MUST', 'SHALL', strict gate invariants) in the specifications focus on role isolation, execution-before-gating order, safe-word gating before actions, schema conformity, and empirical ground-truth verification, whereas explanatory prose provides semantic criteria, illustrative scenarios, and field definitions.",
+      "depends_on_fact_ids": [
+        "fact_agents_eval_definitions",
+        "fact_agents_governing_rules",
+        "fact_agents_step_roles_and_schemas",
+        "fact_rulebook_five_rules",
+        "fact_skill_ten_step_procedure"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_control_layer_coherence",
+      "statement": "The three documents share a coherent anti-deception doctrine: SKILL.md defines the generalized epistemological rules and taxonomy for ground-truth verification; Agents.md operationalizes these rules into deterministic runtime gate fields and step lifecycle transitions; and work-action-approval-rulebook.json establishes a pre-execution authorization layer restricting agent action execution to safe-word-approved scopes.",
+      "depends_on_fact_ids": [
+        "fact_agents_eval_definitions",
+        "fact_agents_runtime_integration",
+        "fact_rulebook_action_taxonomy",
+        "fact_rulebook_action_plan_schema",
+        "fact_skill_purpose_and_invariant",
+        "fact_skill_source_taxonomy"
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "decision_canonical_specification_requirements_documented",
+      "statement": "Agents.md, work-action-approval-rulebook.json, and SKILL.md articulate a comprehensive set of normative requirements, explicit JSON schemas, role boundaries, verification procedures, and action approval protocols.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_specification_intent_vs_enforcement",
+        "interp_normative_mandate_separation",
+        "interp_control_layer_coherence"
+      ],
+      "current_fact_evidence": [
+        "fact_agents_eval_definitions",
+        "fact_agents_governing_rules",
+        "fact_agents_step_roles_and_schemas",
+        "fact_agents_step3_requirements",
+        "fact_agents_step4_requirements",
+        "fact_agents_runtime_integration",
+        "fact_rulebook_five_rules",
+        "fact_rulebook_action_taxonomy",
+        "fact_rulebook_action_plan_schema",
+        "fact_skill_purpose_and_invariant",
+        "fact_skill_ten_step_procedure",
+        "fact_skill_source_taxonomy"
+      ]
+    },
+    {
+      "decision_id": "decision_specification_prose_proves_runtime_enforcement",
+      "statement": "The documented specifications and rulebooks in the repository prove that the runtime environment actively enforces safe words and ground-truth verification at execution time.",
+      "truth_value": "FALSE",
+      "depends_on_interpretation_ids": [
+        "interp_specification_intent_vs_enforcement"
+      ],
+      "current_fact_evidence": [
+        "fact_agents_governing_rules",
+        "fact_rulebook_five_rules",
+        "fact_skill_purpose_and_invariant"
+      ]
+    }
+  ],
+  "unresolved_questions": [
+    "Whether the safe-word authorization protocol defined in work-action-approval-rulebook.json is invoked or enforced by send-to-gemini.js or any other runtime execution driver in the repository.",
+    "Whether the live ground-truth verification skill (SKILL.md) is registered or called as an executable skill by an agent framework or functions purely as instructional reference material."
+  ],
+  "context_files_used": [
+    "ChatMachines/GeminiSupervisor/Agents.md",
+    "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+    "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md"
+  ]
+}
