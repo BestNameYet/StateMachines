@@ -9,8 +9,13 @@ function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
+function isInputTokenQuota(text) {
+  return /input_token_count|GenerateContentPaidTierInputTokensPerModelPerMinute|paid_tier_input_token_count/i.test(text);
+}
+
 function isRetryable(text) {
-  return /Gemini HTTP (429|500|502|503|504)|UNAVAILABLE|RESOURCE_EXHAUSTED|high demand|temporarily unavailable|Unexpected end of JSON input|unterminated|malformed\/truncated/i.test(text);
+  if (isInputTokenQuota(text)) return false;
+  return /Gemini HTTP (500|502|503|504)|UNAVAILABLE|high demand|temporarily unavailable|Unexpected end of JSON input|unterminated|malformed\/truncated/i.test(text);
 }
 
 function retryDelayMs(text, attempt) {
@@ -41,6 +46,12 @@ for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
   if (child.status === 0) process.exit(0);
 
   const diagnostic = `${child.stdout || ''}\n${child.stderr || ''}`;
+
+  if (isInputTokenQuota(diagnostic)) {
+    console.error('Historical audit decomposition failure: Gemini input-token quota was reached. Do not retry the same subtask; reduce assigned context and split the work further.');
+    process.exit(child.status || 1);
+  }
+
   if (!isRetryable(diagnostic) || attempt === maxAttempts) {
     process.exit(child.status || 1);
   }
