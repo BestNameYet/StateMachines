@@ -23,39 +23,56 @@
   "evaluation_mode": "generic",
   "generic_inputs": [
     {"key":"runtime_spec","type":"file","path":"hierarchical-runtime-request/spec.json"},
-    {"key":"config_skeleton","type":"file","path":"hierarchical-runtime-request/config-skeleton.json"},
-    {"key":"audit_js_skeleton","type":"file","path":"hierarchical-runtime-request/audit-skeleton.js"}
+    {"key":"hierarchical_runtime_config","type":"file","path":"hierarchical-runtime/config.json"},
+    {"key":"hierarchical_runtime_js","type":"file","path":"hierarchical-runtime/audit.js"},
+    {"key":"gemini_supervisor_manifest","type":"file","path":"../GeminiSupervisor/MANIFEST.md"},
+    {"key":"gemini_supervisor_dependency_map","type":"file","path":"../GeminiSupervisor/dependency-map.json"},
+    {"key":"gemini_supervisor_shared_config","type":"file","path":"../GeminiSupervisor/config.json"},
+    {"key":"gemini_supervisor_workflow","type":"file","path":"../../.github/workflows/gemini-chat.yml"}
   ],
-  "evaluation_heuristic": "IMPLEMENTATION TASK. Implement the generic hierarchical evaluation runtime defined by runtime_spec. Treat runtime_spec as authoritative. Use config_skeleton and audit_js_skeleton as prescribed structural starting points: preserve the known algorithm and configurable surfaces, fill implementation mechanics, repair skeleton defects needed to satisfy the spec, and do not redesign the algorithm. Produce exactly two complete artifacts: ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json and ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js. The runtime is generic; do not add GeminiSupervisor-audit-specific task semantics, requirement-evaluation semantics, or semantic context segmentation. Keep downstream task, criteria, response contracts, program return envelope, max_tokens value, and failed-b stopping threshold configurable where the supplied skeleton intentionally leaves them unset. B is controller state and its configured rule resolves every configurable iterator setting for that round. All evaluator calls occur after division and assignment to b. divider.max_tokens applies only to context assigned to a newly created b and is checked once at assignment; do not add request-size or retry context-size checks. Use tokens, never bytes/KB, for all sizing. All token counts must route through one runtime token-count function. Response size conditions are configured as divisors/ratios of max_tokens; intended initial hard threshold is max_tokens/2. Retries are finite ordered configured conditionals. Preserve the agreed defaults: system failure gets one fresh repeat of the original invocation, then failed b if the repeat fails; mechanically unacceptable response gets one fresh corrective invocation receiving assigned context + previous response + exact mechanical error + task + criteria + response contract, then retains the latest result/failure metadata if still unacceptable. Retries are sequential; the first successful attempt is retained and later attempts do not occur. A failed b stays visible in supervisory state but contributes no output to later context. The configured failed-b supervisory condition may stop the program after multiple failures. After each completed nonterminal round, aggregate only successful responses and sum their response token counts. The configured initial termination condition is aggregate_response_tokens <= divider.max_tokens. When it is satisfied, set terminal_round before advancing normally: increment B, resolve B config, divide, assign b, and evaluate normally. The resulting terminal round is expected to contain one b. After that terminal round completes, return immediately without another termination check, division, or evaluator call. There is no separate final evaluator branch. Preserve provenance through reductions. Configuration and evaluator outputs are declarative data interpreted only by predefined runtime operations. Use the supplied Gemini API interface/environment conventions appropriate to Node.js/GitHub Actions; do not embed secrets. Return complete, runnable, non-truncated file contents, not patches, pseudocode, Markdown fences, or ellipses. Account for every requirement ID from runtime_spec in implementation_mapping. Any requirement not fully implemented must also appear in requirements_not_implemented with an exact reason; silently omitted requirements are invalid. Before returning, verify that every spec requirement ID appears exactly once in implementation_mapping and that artifact contents are complete.",
+  "evaluation_heuristic": "STAGE-1 CONFIGURATION PLANNING TASK. Prepare the first use of the generic hierarchical evaluation runtime against the CURRENT GeminiSupervisor implementation. The later Stage-1 run must produce a canonical inventory of features and behaviors actually implemented now. This planning run must NOT perform that inventory. Use runtime_spec plus hierarchical_runtime_config and hierarchical_runtime_js as the authoritative runtime/configurable surface. Use the GeminiSupervisor manifest, dependency map, shared config, and workflow to determine the exact repository corpus the Stage-1 runtime should consume. Decide which current files are authoritative implementation evidence, which supporting files should be included, and which historical, generated, persisted-run, or obsolete files should be excluded or optionally sampled. Include external workflow files when they materially implement current behavior. Propose a COMPLETE Stage-1 config.json compatible with audit.js. The proposed config must set concrete values where supportable, including B rules, divider.max_tokens, evaluator model/task/criteria, evaluator response contracts, normalization, mechanical acceptance, retry behavior, termination, failed-b stopping policy, provenance, and program_return envelope. The Stage-1 evaluator response contracts and final feature-inventory return schema belong INSIDE proposed_config.content. Configure B=0 to extract implementation-backed feature records from current source evidence. Configure B>0 to merge, deduplicate, normalize, and consolidate those feature records while preserving proof/provenance. Stage-1 must identify distinct implemented features, behaviors, control mechanisms, state transitions, integrations, persistence mechanisms, evaluation mechanisms, and other current capabilities. Every retained feature must be supported by current-repository evidence. Stage-1 must not search for historical missing requirements, infer historical intent, decide whether a feature should exist, or classify absent behavior as a defect. The terminal round uses the ordinary B>0 reduction path; do not create a separate final evaluator. Recommend exact corpus construction/order and serialization into runtime context. Planning nonce: stage1_current_feature_inventory_20261002_1. Proposed config target: ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1/config.json. Return only the planning object required by evaluation_output_schema.",
   "evaluation_output_schema": {
-    "response_type": "hierarchical_runtime_implementation",
-    "artifacts": [
+    "response_type": "stage1_feature_inventory_configuration_plan",
+    "nonce": "stage1_current_feature_inventory_20261002_1",
+    "objective": "string",
+    "input_plan": [
       {
-        "path": "ChatMachines/GeminiEvaluation/hierarchical-runtime/config.json",
-        "action": "create",
-        "content_type": "application/json",
-        "content": "<complete valid JSON text for config.json; no Markdown fence, diff, ellipsis, or omitted sections>"
-      },
-      {
-        "path": "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
-        "action": "create",
-        "content_type": "text/javascript",
-        "content": "<complete runnable JavaScript source for audit.js; no Markdown fence, diff, ellipsis, or omitted sections>"
-      }
-    ],
-    "implementation_mapping": [
-      {
-        "requirement_id": "ALG-001 | ALG-002 | ... | CFG-012",
-        "status": "implemented | not_implemented",
-        "artifact_paths": ["string"],
-        "implementation": "string"
-      }
-    ],
-    "requirements_not_implemented": [
-      {
-        "requirement_id": "string",
+        "path": "repository-relative path",
+        "classification": "required | supporting | exclude | optional_sample",
+        "purpose": "string",
         "reason": "string",
-        "affected_artifact": "string"
+        "serialization_order": "integer or null"
+      }
+    ],
+    "corpus_construction": {
+      "root_scope": "string",
+      "ordering_rule": "string",
+      "serialization_format": "string",
+      "boundary_guidance": "string",
+      "excluded_classes": ["string"]
+    },
+    "proposed_config": {
+      "target_path": "ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1/config.json",
+      "content": "<complete valid JSON object for the Stage-1 hierarchical runtime configuration; this object must itself contain the Stage-1 evaluator response contracts and program_return envelope>"
+    },
+    "runtime_invocation": {
+      "runtime_file": "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
+      "input_construction": "string",
+      "config_loading": "string",
+      "expected_terminal_behavior": "string"
+    },
+    "configuration_rationale": [
+      {
+        "setting": "string",
+        "value": "any JSON value",
+        "reason": "string"
+      }
+    ],
+    "unresolved_decisions": [
+      {
+        "setting": "string",
+        "reason": "string",
+        "recommended_resolution": "string"
       }
     ]
   },
