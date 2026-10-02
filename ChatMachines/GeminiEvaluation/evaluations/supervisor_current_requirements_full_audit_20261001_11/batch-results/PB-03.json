@@ -1,0 +1,136 @@
+{
+  "response_type": "historical_audit_batch_result",
+  "batch_id": "PB-03",
+  "batch_type": "primary",
+  "summary": "Commit 88241bc880a4c8177de30a6cf48b6dc516ba8cbb migrates Agents.md from narrative multi-section procedural rules into structured canonical JSON definitions: Canonical Evaluation Definitions, a formal Governing Rule Catalog with executable pass/fail criteria and scenario examples, condensed Failure Examples (1-14), a Procedure Dependency Chart linking schema properties to send-to-gemini.js and GitHub workflows, and per-step field definition glossaries for Steps 0-2 (with Steps 3-4 truncated at segment boundary).",
+  "facts": [
+    {
+      "fact_id": "F-PB03-01",
+      "statement": "Commit 88241bc880a4c8177de30a6cf48b6dc516ba8cbb committed on 2026-09-30T16:46:02-07:00 by BestNameYet with message 'Migrate Agents evaluation contract and deterministic validation' modified ChatMachines/GeminiSupervisor/Agents.md (+565, -946 lines).",
+      "source_locator": "SEG-00004:lines 1-13"
+    },
+    {
+      "fact_id": "F-PB03-02",
+      "statement": "The patch deleted the narrative sections: Core Principles, Model Role Separation and Server-Verified Identity Protocol, ChatGPT Turn Continuation and Gemini Handshake Protocol, full narrative Failure Examples, Bootstrap, Git Commit Checkpoint Protocol, Supervisory Gate Protocol, and long-form Step 0-4 definitions and mechanical gate examples.",
+      "source_locator": "SEG-00004:lines 14-415"
+    },
+    {
+      "fact_id": "F-PB03-03",
+      "statement": "The patch introduced JSON-structured sections under 'Agents.md --- Canonical Rules and Evaluation Contract': Canonical Evaluation Definitions (defining user_words, applicable_rules, effective_instruction_U, agent_response_P, requirement_decomposition, modifier_analysis, exact_satisfaction, failure_description, failure_pattern_and_analogy, promise_instead_of_execution, complete_agreed_work).",
+      "source_locator": "SEG-00004:lines 115-207"
+    },
+    {
+      "fact_id": "F-PB03-04",
+      "statement": "The Governing Rule Catalog codifies 8 canonical rules with key, value, definition, definition_of_evaluation, pass_criteria, fail_criteria, and scenario_examples (both rule_following and rule_breaking).",
+      "source_locator": "SEG-00004:lines 212-386"
+    },
+    {
+      "fact_id": "F-PB03-05",
+      "statement": "Failure Examples 1-14 were retained but condensed into a compact JSON array format preserving U, A, and E summaries.",
+      "source_locator": "SEG-00004:lines 388-410"
+    },
+    {
+      "fact_id": "F-PB03-06",
+      "statement": "The patch added a Procedure Dependency Chart mapping 16 specific source values (e.g. nextmessage.json.run_nonce, execution.step, role fields, stated_requirements, Step 3 P and UI_output, Step 3 F.test_results, Loop_Decision, supervisory_gate.granular_evaluation, supervisory_gate.gate_result, Git commit PASS transition) to evaluation decisions, outputs, and source code consumers in send-to-gemini.js and .github/workflows/gemini-chat.yml.",
+      "source_locator": "SEG-00004:lines 412-436"
+    },
+    {
+      "fact_id": "F-PB03-07",
+      "statement": "The patch introduced Step Field Definition Glossaries and step objects for Step 0, Step 1, and Step 2 with explicit keys, types, definitions, pass/fail evaluation criteria, execution_return_schema, and supervisory_gate_schema.",
+      "source_locator": "SEG-00004:lines 438-548"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "I-PB03-01",
+      "statement": "The migration in commit 88241bc was not a retraction or supersession of the core rules (role separation, turn continuation, step-by-step gate evaluation, git checkpointing, 32-test Step 3 loop), but a formal refactoring into machine-evaluable canonical JSON contracts and dependency mappings designed for deterministic validation in send-to-gemini.js.",
+      "rationale": "Every core requirement deleted from narrative text was mapped into the Governing Rule Catalog, the Procedure Dependency Chart, and the Step Glossaries."
+    },
+    {
+      "interpretation_id": "I-PB03-02",
+      "statement": "The Procedure Dependency Chart establishes that send-to-gemini.js and gemini-chat.yml are the intended runtime enforcement mechanisms for schema validation, nonce/run initialization, step advancement, and durable Git checkpoints.",
+      "rationale": "The chart explicitly names send-to-gemini.js methods (nonce/initRun, inspect/validateStep, controlFailures, evalShape, step3Loop, process transition) and .github/workflows/gemini-chat.yml as the consumers."
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "TD-PB03-01",
+      "statement": "The substantive requirements for model role separation, turn continuation, gate evaluation of terminal keys, Git checkpointing per passed step, and verbatim user request extraction survived commit 88241bc and were formalized as the canonical evaluation contract.",
+      "status": "surviving",
+      "based_on_interpretations": [
+        "I-PB03-01",
+        "I-PB03-02"
+      ]
+    }
+  ],
+  "requirement_candidates": [
+    {
+      "candidate_id": "RC-PB03-01",
+      "description": "Per-step return schema is the exclusive execution and completion control surface; return_schema_completed applies strictly to the current step schema.",
+      "source_locator": "SEG-00004:lines 214-237",
+      "status": "active"
+    },
+    {
+      "candidate_id": "RC-PB03-02",
+      "description": "Model role separation is mandatory: Steps 0-4 owned by ChatGPT model, supervisory gates owned by Gemini model; identity must be verified by server/runtime inspection.",
+      "source_locator": "SEG-00004:lines 238-261",
+      "status": "active"
+    },
+    {
+      "candidate_id": "RC-PB03-03",
+      "description": "ChatGPT user turn must span every non-terminal nextmessage-to-Gemini response handshake, waiting on commit and retrying same-step on FAIL or executing next step on PASS.",
+      "source_locator": "SEG-00004:lines 262-285",
+      "status": "active"
+    },
+    {
+      "candidate_id": "RC-PB03-04",
+      "description": "Bootstrap must create and isolate an run container under runs/<run_nonce>/ with state.json, messages.json, and store/store.json having matching run_nonce before Step 0.",
+      "source_locator": "SEG-00004:lines 286-309",
+      "status": "active"
+    },
+    {
+      "candidate_id": "RC-PB03-05",
+      "description": "Every passed step must have a durable Git commit checkpoint before the next execution step can execute; completed N-step run requires >= N durable PASS commits.",
+      "source_locator": "SEG-00004:lines 310-333",
+      "status": "active"
+    },
+    {
+      "candidate_id": "RC-PB03-06",
+      "description": "Gemini supervisory gate must evaluate every terminal execution value using K_eval preserving original key/value exactly, returning PASS or FAIL with substantive comments.",
+      "source_locator": "SEG-00004:lines 334-357",
+      "status": "active"
+    },
+    {
+      "candidate_id": "RC-PB03-07",
+      "description": "Step 2 stated_requirements must extract only requirements stated by the user and preserve them verbatim.",
+      "source_locator": "SEG-00004:lines 504-508",
+      "status": "active"
+    }
+  ],
+  "implementation_findings": [
+    {
+      "finding_id": "IF-PB03-01",
+      "component": "Agents.md specification",
+      "enforcement_mechanism": "specification-only claims",
+      "description": "Commit 88241bc converted procedural requirements into structured JSON specifications with exact validation criteria, but within this file alone they constitute specification text.",
+      "source_locator": "SEG-00004:lines 115-548"
+    },
+    {
+      "finding_id": "IF-PB03-02",
+      "component": "send-to-gemini.js & gemini-chat.yml integration contract",
+      "enforcement_mechanism": "deterministic enforcement",
+      "description": "The Procedure Dependency Chart establishes expected deterministic validation functions in send-to-gemini.js (initRun, validateStep, controlFailures, evalShape, step3Loop) and Git commit actions in gemini-chat.yml.",
+      "source_locator": "SEG-00004:lines 414-436"
+    }
+  ],
+  "contradictions": [],
+  "unresolved": [
+    {
+      "issue": "Step 3 and Step 4 glossaries and step definitions in the refactored Agents.md are truncated at the boundary of segment SEG-00004 (line 5933 / diff line ends at Step 2 gate verification).",
+      "impact": "The rest of the commit diff containing refactored Step 3 and Step 4 definitions must be verified in the subsequent segment."
+    }
+  ],
+  "segment_ids_used": [
+    "SEG-00004"
+  ]
+}

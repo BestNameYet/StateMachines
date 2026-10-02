@@ -1,0 +1,166 @@
+{
+  "response_type": "historical_audit_batch_result",
+  "batch_id": "PB-02",
+  "batch_type": "primary",
+  "summary": "Evaluation of PB-02 (SEG-00002 and SEG-00003), spanning commits cc905ef to 1639d4d (2026-09-30) in Agents.md. The commits document major architectural shifts: addition of Step 3 document reading requirements, explicit bootstrap run container setup, paired supervisory gating with unevaluated templates and same-step restarts, removal of the in-line Test_Schema table in favor of external files, introduction of strict dual-model role separation (ChatGPT executing non-supervisory steps vs. Gemini supervising gates) with server-verified evidence, migration of granular evaluation to the K_eval schema structure, and introduction of the ChatGPT turn continuation and handshake protocol.",
+  "facts": [
+    {
+      "fact_id": "FACT-PB02-001",
+      "text": "Commit cc905efbc0f506fb5fa96c5ea105c8d67cbad5a5 inserted evaluation_documents_read instructions into Step 3 execution and Step 3 Supervisory Gate, requiring full reading of evaluation-tests.md and evaluator-definitions.md before execution/supervision.",
+      "segment_id": "SEG-00002"
+    },
+    {
+      "fact_id": "FACT-PB02-002",
+      "text": "Commit 1f773f109426ff37391b2ec23b01df74511f6c75 added a Bootstrap section requiring unique path-safe run_nonce, run container at ChatMachines/GeminiSupervisor/runs/<run_nonce>/ containing state.json, messages.json, and store/store.json with matching run_nonce before Step 0 begins.",
+      "segment_id": "SEG-00002"
+    },
+    {
+      "fact_id": "FACT-PB02-003",
+      "text": "Commit 5f7124e89c998c4f1c3a06d0ca3c186d2bc40e7f established Core Principles, Git Commit Checkpoint Protocol (durable commit at step boundary upon PASS), unevaluated supervisory gate templates with null fields, same-step restart on FAIL, and deleted the embedded 32-test Test_Schema block from Step 3.",
+      "segment_id": "SEG-00002"
+    },
+    {
+      "fact_id": "FACT-PB02-004",
+      "text": "Commit ae8b49d4cfb44d03f4aa539c31246cc1e3a7ebd4 added the Model Role Separation and Server-Verified Identity Protocol: ChatGPT model is required for non-supervisory execution steps (Steps 0-4) and forbidden for supervisory gates; Gemini model is required for supervisory gates and forbidden for execution; requires keys role_required, role_forbidden, role_completed, and role_verification object (method, evidence) checked via server/container inspection.",
+      "segment_id": "SEG-00003"
+    },
+    {
+      "fact_id": "FACT-PB02-005",
+      "text": "Commit 0c5120635e6ccb8b9ea7d98d6e37bb278acf5a4f restructured granular_evaluation to mandate K_eval objects preserving the exact original key K and value V alongside supervisor_eval_result and supervisor_eval_comment; added requirement for Step 0 supervisory gate to read evaluator-definitions.md.",
+      "segment_id": "SEG-00003"
+    },
+    {
+      "fact_id": "FACT-PB02-006",
+      "text": "Commit 1639d4d092b4a33fbaabac5f6c6160b3fa1a7f78 introduced the ChatGPT Turn Continuation and Gemini Handshake Protocol across Steps 0-4, specifying that committing nextmessage is not a turn-ending boundary and requiring continuous execution across FAIL corrections and PASS progressions until procedure termination.",
+      "segment_id": "SEG-00003"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "INTERP-PB02-001",
+      "text": "The removal of the inline Test_Schema from Agents.md in commit 5f7124e was not an abandonment of Step 3 TSR evaluation, but an externalization to evaluation-tests.md and evaluator-definitions.md as mandated by commit cc905ef."
+    },
+    {
+      "interpretation_id": "INTERP-PB02-002",
+      "text": "Commit 0c512063 superseded the earlier generic granular evaluation template (which replaced execution values directly) with the K_eval structure preserving verbatim execution pairs for tamper-evident auditing."
+    },
+    {
+      "interpretation_id": "INTERP-PB02-003",
+      "text": "The Model Role Separation and Server-Verified Identity Protocol (commit ae8b49d) establishes that self-reported role strings are invalid; role identity must be deterministically verifiable by runtime/container boundary inspection (e.g. execution inside send-to-gemini.js vs ChatGPT GitHub tooling boundary)."
+    },
+    {
+      "interpretation_id": "INTERP-PB02-004",
+      "text": "Commit 1639d4d defines ChatGPT client-side multi-turn session persistence, imposing a workflow constraint that the client runner loop must poll or wait for Gemini responses without prematurely relinquishing turn control."
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "DEC-PB02-001",
+      "statement": "The earlier mirror structure where terminal returned values were replaced in-place by supervisor evaluation comments is superseded by the K_eval structure.",
+      "status": "superseded",
+      "depends_on": [
+        "INTERP-PB02-002"
+      ]
+    },
+    {
+      "decision_id": "DEC-PB02-002",
+      "statement": "In-line Test_Schema in Agents.md is superseded by mandatory external reading of evaluation-tests.md and evaluator-definitions.md.",
+      "status": "superseded",
+      "depends_on": [
+        "INTERP-PB02-001"
+      ]
+    },
+    {
+      "decision_id": "DEC-PB02-003",
+      "statement": "Strict role separation between ChatGPT (execution) and Gemini (supervision) with server-side container verification is an active surviving specification requirement.",
+      "status": "active_surviving",
+      "depends_on": [
+        "INTERP-PB02-003"
+      ]
+    },
+    {
+      "decision_id": "DEC-PB02-004",
+      "statement": "Turn continuation protocol forbidding turn termination upon nextmessage commit until terminal procedure completion is an active surviving specification requirement.",
+      "status": "active_surviving",
+      "depends_on": [
+        "INTERP-PB02-004"
+      ]
+    }
+  ],
+  "requirement_candidates": [
+    {
+      "candidate_id": "REQ-PB02-BOOTSTRAP",
+      "description": "Every user utterance starts an isolated run container at ChatMachines/GeminiSupervisor/runs/<run_nonce>/ containing state.json, messages.json, and store/store.json, matching run_nonce across all three before Step 0.",
+      "source_segment": "SEG-00002",
+      "lifecycle_status": "active"
+    },
+    {
+      "candidate_id": "REQ-PB02-GIT-CHECKPOINT",
+      "description": "At each step boundary after supervisory PASS and record persistence, runtime must commit run container changes to Git referencing run_nonce, step number, and PASS; N steps require >= N durable commits.",
+      "source_segment": "SEG-00002",
+      "lifecycle_status": "active"
+    },
+    {
+      "candidate_id": "REQ-PB02-ROLE-SEPARATION",
+      "description": "Execution steps 0-4 must be completed by ChatGPT model and forbid Gemini; supervisory gates must be completed by Gemini model and forbid ChatGPT; role identity must be verified via server/container inspection and recorded in return schemas.",
+      "source_segment": "SEG-00003",
+      "lifecycle_status": "active"
+    },
+    {
+      "candidate_id": "REQ-PB02-K-EVAL-SCHEMA",
+      "description": "Supervisory gate granular_evaluation must instantiate K_eval objects preserving exact original execution key/value pairs alongside supervisor_eval_result and supervisor_eval_comment without mutation.",
+      "source_segment": "SEG-00003",
+      "lifecycle_status": "active"
+    },
+    {
+      "candidate_id": "REQ-PB02-DOC-READS",
+      "description": "Step 0 Supervisory Gate must read evaluator-definitions.md; Step 3 executor and supervisor must read evaluation-tests.md and evaluator-definitions.md prior to execution/supervision.",
+      "source_segment": "SEG-00002",
+      "lifecycle_status": "active"
+    },
+    {
+      "candidate_id": "REQ-PB02-TURN-CONTINUATION",
+      "description": "ChatGPT must not end user-facing turn after committing nextmessage; it must remain in-turn, wait for Gemini response, retry same step on FAIL, advance on PASS, and end only at complete procedure termination.",
+      "source_segment": "SEG-00003",
+      "lifecycle_status": "active"
+    }
+  ],
+  "implementation_findings": [
+    {
+      "finding_id": "FIND-PB02-001",
+      "requirement_id": "REQ-PB02-BOOTSTRAP",
+      "claim_type": "specification-only",
+      "enforcement_level": "indeterminate",
+      "notes": "Agents.md defines bootstrap requirements for isolated file paths; implementation in executable runtime code cannot be verified from Agents.md patch history alone."
+    },
+    {
+      "finding_id": "FIND-PB02-002",
+      "requirement_id": "REQ-PB02-ROLE-SEPARATION",
+      "claim_type": "specification-only",
+      "enforcement_level": "indeterminate",
+      "notes": "Specification details that send-to-gemini.js constitutes Gemini locus and GitHub boundary constitutes ChatGPT locus, but deterministic code enforcement in the runner is not evaluated in this specification segment."
+    },
+    {
+      "finding_id": "FIND-PB02-003",
+      "requirement_id": "REQ-PB02-K-EVAL-SCHEMA",
+      "claim_type": "specification-only",
+      "enforcement_level": "indeterminate",
+      "notes": "Agents.md specifies canonical unevaluated gate templates with K_eval fields; runtime template generator behavior is not present in this batch."
+    }
+  ],
+  "contradictions": [],
+  "unresolved": [
+    {
+      "issue_id": "UNRES-PB02-001",
+      "description": "Whether server/container inspection method in role_verification is deterministically verified by runtime code or relies on model self-report in actual execution artifacts."
+    },
+    {
+      "issue_id": "UNRES-PB02-002",
+      "description": "Whether git checkpointing is executed automatically by an orchestration script or manually committed by an agent."
+    }
+  ],
+  "segment_ids_used": [
+    "SEG-00002",
+    "SEG-00003"
+  ]
+}

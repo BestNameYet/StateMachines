@@ -1,0 +1,175 @@
+{
+  "response_type": "historical_audit_batch_result",
+  "batch_id": "PB-07",
+  "batch_type": "primary",
+  "summary": "Analysis of runtime source evolution in send-to-gemini.js across commits 003f26a, a4eb366, 6744183, 19b7be7, and 88241bc. The runtime evolved from an internal autonomous loop into an event-driven controller where ChatGPT owns execution steps and Gemini strictly performs supervisory gating. Deterministic controller validation was initially capable of blocking execution, then shifted to routing validation failures into the supervisory prompt as system messages without short-circuiting. The evaluation schema migrated from empty {evaluation, comment} leaves to explicit execution-key *_eval objects ({[key]: val, supervisor_eval_result, supervisor_eval_comment}). Furthermore, evaluator-definitions.md was removed from runtime file context and evaluation_documents_read was dropped in favor of Agents.md canonical definitions.",
+  "facts": [
+    {
+      "fact_id": "F-PB07-001",
+      "source_segment": "SEG-00012",
+      "commit": "003f26acea1c00244832dcdb2cde087b0e1f828e",
+      "observable_text": "Architectural contract: ChatGPT owns every non-supervisory execution step; Node.js deterministically validates and transitions state; Gemini owns only Supervisory Gate; Supervisory FAIL leaves step active and waits for new ChatGPT execution event. Trigger shape expects execution object with source_role, step, return_schema."
+    },
+    {
+      "fact_id": "F-PB07-002",
+      "source_segment": "SEG-00012",
+      "commit": "003f26acea1c00244832dcdb2cde087b0e1f828e",
+      "observable_text": "Autonomous execution loop requestExecutionSchema and execFileSync git commit checkpoints were deleted; run status transitioned to awaiting_chatgpt_execution and supervising."
+    },
+    {
+      "fact_id": "F-PB07-003",
+      "source_segment": "SEG-00012",
+      "commit": "a4eb36683168120981a50034c935237501da0a19",
+      "observable_text": "Commit message: 'Route deterministic validation failures through supervisor'. Controller validation no longer rejects the trigger immediately or forces gate_result FAIL directly; instead, inspectIncomingEvent builds validationSystemMessage inserted as system role before Gemini call."
+    },
+    {
+      "fact_id": "F-PB07-004",
+      "source_segment": "SEG-00013",
+      "commit": "6744183e6c0d68fce6d32c2482b739e690cc7c45",
+      "observable_text": "Granular evaluation schema template migrated from buildUnevaluatedGranularMirror (null evaluation/comment) to terminalEval with `${k}_eval`: { [k]: v, supervisor_eval_result: null, supervisor_eval_comment: null }. evalShape verifies that execution values are preserved exactly in *_eval records."
+    },
+    {
+      "fact_id": "F-PB07-005",
+      "source_segment": "SEG-00013",
+      "commit": "19b7be73a6b0e717759f839064d837005bb54cdf",
+      "observable_text": "System prompt text updated: 'SUPERVISORY EVALUATION FORMAT: Agents.md is authoritative. The runtime-generated template instantiates the Agents.md *_eval contract.'"
+    },
+    {
+      "fact_id": "F-PB07-006",
+      "source_segment": "SEG-00013",
+      "commit": "88241bc880a4c8177de30a6cf48b6dc516ba8cbb",
+      "observable_text": "Code unminified/expanded to 860 lines. validateStep added extensive deterministic checks for Step 0, Step 1, Step 2, Step 3 (clauses, modifier_analysis, test_results, Loop_Decision, return_to), and Step 4 (failed_actions, not_completed_actions, completed_actions). evalValid verifies evalShape. contextFiles(step) returns ['Agents.md', 'evaluation-tests.md'] for step 3 and ['Agents.md'] otherwise; defsPath (evaluator-definitions.md) reference removed."
+    },
+    {
+      "fact_id": "F-PB07-007",
+      "source_segment": "SEG-00013",
+      "commit": "88241bc880a4c8177de30a6cf48b6dc516ba8cbb",
+      "observable_text": "Prompt instruction explicitly states: 'Agents.md is the canonical source for evaluation definitions... Do not require evaluator-definitions.md or any external evaluation-definition read tracker' and 'Do not require or emit evaluation_documents_read.'"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "INT-PB07-001",
+      "topic": "Architecture Shift to Event-Driven ChatGPT Execution",
+      "claim": "Autonomous multi-step execution by Gemini inside send-to-gemini.js was superseded by an event-driven model where ChatGPT produces execution returns and Gemini acts strictly as a supervisory gatekeeper evaluating ChatGPT's outputs.",
+      "supporting_facts": [
+        "F-PB07-001",
+        "F-PB07-002"
+      ]
+    },
+    {
+      "interpretation_id": "INT-PB07-002",
+      "topic": "Supervisory Role of Deterministic Pre-Validation",
+      "claim": "Deterministic inspection of schemas does not bypass semantic supervision. Instead of acting as an autonomous rejection barrier that skips Gemini, validation failures are passed to Gemini as prompt context to guide its evaluation.",
+      "supporting_facts": [
+        "F-PB07-003",
+        "F-PB07-006"
+      ]
+    },
+    {
+      "interpretation_id": "INT-PB07-003",
+      "topic": "Granular Evaluation Schema Structure",
+      "claim": "The requirement for granular mirror leaves evolved from a generic `{evaluation: PASS|FAIL, comment: '...'}` into a strict key-preserving format `{ [k]: v, supervisor_eval_result: PASS|FAIL, supervisor_eval_comment: '...' }` nested under `${k}_eval`.",
+      "supporting_facts": [
+        "F-PB07-004",
+        "F-PB07-005",
+        "F-PB07-006"
+      ]
+    },
+    {
+      "interpretation_id": "INT-PB07-004",
+      "topic": "Supersession of evaluator-definitions.md and evaluation_documents_read",
+      "claim": "The dependency on external evaluator-definitions.md and the supervisory field evaluation_documents_read was superseded; Agents.md became self-contained for definitions, and evaluation_documents_read was intentionally eliminated from supervisory gates.",
+      "supporting_facts": [
+        "F-PB07-006",
+        "F-PB07-007"
+      ]
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "TD-PB07-001",
+      "interpretation_id": "INT-PB07-001",
+      "status": "confirmed",
+      "rationale": "Git commit 003f26a and subsequent revisions consistently enforce separation between execution (ChatGPT model) and supervision (Gemini model), with git commit checkpoints and internal execution calls removed."
+    },
+    {
+      "decision_id": "TD-PB07-002",
+      "interpretation_id": "INT-PB07-002",
+      "status": "confirmed",
+      "rationale": "Commit a4eb366 explicitly inverted the behavior of deterministic validation: deterministic check failures are injected into user/system prompt messages rather than triggering an early return, ensuring Gemini performs the gate evaluation."
+    },
+    {
+      "decision_id": "TD-PB07-003",
+      "interpretation_id": "INT-PB07-003",
+      "status": "confirmed",
+      "rationale": "Commit 6744183 and 88241bc implement deterministic schema checking (`evalShape`) requiring each terminal execution key K to appear inside K_eval preserving the exact execution value."
+    },
+    {
+      "decision_id": "TD-PB07-004",
+      "interpretation_id": "INT-PB07-004",
+      "status": "confirmed",
+      "rationale": "In commit 88241bc, contextFiles drops evaluator-definitions.md, gateTemplate drops evaluation_documents_read, and prompt text instructs the model not to emit evaluation_documents_read."
+    }
+  ],
+  "requirement_candidates": [
+    {
+      "candidate_id": "REQ-PB07-001",
+      "description": "send-to-gemini.js must operate as an event-driven controller where ChatGPT generates step execution returns and Gemini only populates the Supervisory Gate.",
+      "status": "surviving",
+      "enforcement_level": "deterministic_enforcement"
+    },
+    {
+      "candidate_id": "REQ-PB07-002",
+      "description": "Deterministic validation failures on incoming execution candidates must be passed to Gemini in system messages rather than halting execution prior to Gemini supervision.",
+      "status": "surviving",
+      "enforcement_level": "deterministic_enforcement"
+    },
+    {
+      "candidate_id": "REQ-PB07-003",
+      "description": "Supervisory granular evaluation must preserve terminal execution keys and values under `${key}_eval` objects containing `supervisor_eval_result` ('PASS' | 'FAIL') and `supervisor_eval_comment`.",
+      "status": "surviving",
+      "enforcement_level": "deterministic_enforcement"
+    },
+    {
+      "candidate_id": "REQ-PB07-004",
+      "description": "Supervisory gate must include `evaluation_documents_read` tracking read of `evaluator-definitions.md`.",
+      "status": "superseded",
+      "superseded_by": "88241bc880a4c8177de30a6cf48b6dc516ba8cbb",
+      "enforcement_level": "specification_only"
+    }
+  ],
+  "implementation_findings": [
+    {
+      "finding_id": "IF-PB07-001",
+      "component": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "state_as_of_commit": "88241bc880a4c8177de30a6cf48b6dc516ba8cbb",
+      "behavior_type": "executable_behavior",
+      "description": "Validates incoming triggers for execution structure, executes step-specific structural tests (validateStep), injects findings into Gemini's prompt via validationMessage, calls Gemini for supervisory evaluation, validates the supervisory schema via evalShape, and advances or halts procedure state depending on supervisory_gate.gate_result ('PASS' vs 'FAIL')."
+    },
+    {
+      "finding_id": "IF-PB07-002",
+      "component": "ChatMachines/GeminiSupervisor/send-to-gemini.js:evalShape",
+      "state_as_of_commit": "88241bc880a4c8177de30a6cf48b6dc516ba8cbb",
+      "behavior_type": "deterministic_enforcement",
+      "description": "Recursively verifies that every leaf node in the execution schema has a corresponding `${key}_eval` object in granular_evaluation with unchanged value, valid supervisor_eval_result (PASS/FAIL), and non-empty comment."
+    }
+  ],
+  "contradictions": [
+    {
+      "contradiction_id": "C-PB07-001",
+      "description": "In commit 003f26a, controller validation failure forced gate_result to FAIL or rejected execution directly. In commit a4eb366 and 88241bc, controller validation failure does not reject early but is passed as system prompt context to Gemini.",
+      "resolution": "Commit a4eb366 intentionally superseded early rejection so that Gemini remains the sole Supervisory Gate evaluator."
+    },
+    {
+      "contradiction_id": "C-PB07-002",
+      "description": "Commit 6744183 included evaluation_documents_read in gateTemplate for Step 0 and Step 3, whereas commit 88241bc explicitly removed evaluation_documents_read and instructed Gemini not to produce it.",
+      "resolution": "Commit 88241bc superseded evaluation_documents_read, establishing Agents.md as the canonical definitions source."
+    }
+  ],
+  "unresolved": [],
+  "segment_ids_used": [
+    "SEG-00012",
+    "SEG-00013"
+  ]
+}

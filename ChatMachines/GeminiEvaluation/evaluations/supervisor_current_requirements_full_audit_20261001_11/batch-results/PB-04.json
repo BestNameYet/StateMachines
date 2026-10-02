@@ -1,0 +1,99 @@
+{
+  "response_type": "historical_audit_batch_result",
+  "batch_id": "PB-04",
+  "batch_type": "primary",
+  "summary": "SEG-00005 documents the late-stage evolution of Agents.md, showing the consolidation of evaluation definitions directly into Agents.md (eliminating evaluator-definitions.md tracking) and the introduction of commit edda2f29a23c391b584f383e442c764b95064ac2, which formalized live ground-truth verification against deception, added ground_truth_verification_eval, and restructured gate field glossaries.",
+  "facts": [
+    {
+      "fact_id": "FACT-PB04-001",
+      "statement": "The specification patch removes external dependency tracking for evaluator-definitions.md (evaluation_documents_read) and designates Agents.md as the canonical evaluation source.",
+      "source_locator": "SEG-00005:lines 1-72"
+    },
+    {
+      "fact_id": "FACT-PB04-002",
+      "statement": "Commit edda2f29a23c391b584f383e442c764b95064ac2 replaces failure examples in Agents.md with a formalized procedure dependency chart and adds live_ground_truth, ground_truth_status (VERIFIED|CONTRADICTED|PARTIAL|UNKNOWN|NOT_EXECUTED), and ground_truth_verification_eval to the contract.",
+      "source_locator": "SEG-00005:lines 73-228"
+    },
+    {
+      "fact_id": "FACT-PB04-003",
+      "statement": "The patch defines explicit execution schemas and supervisory gate schemas for Step 2, Step 3, and Step 4, requiring role verification, granular terminal field evaluation (*_eval), and failures-first reporting order in Step 4.",
+      "source_locator": "SEG-00005:lines 1-72, 73-150"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "INTERP-PB04-001",
+      "statement": "The removal of evaluation_documents_read indicates an intentional architectural supersession: external evaluator definitions are obsolete and merged into the canonical Agents.md.",
+      "fact_dependencies": [
+        "FACT-PB04-001"
+      ]
+    },
+    {
+      "interpretation_id": "INTERP-PB04-002",
+      "statement": "The live ground-truth verification rule establishes that LLM self-report and ungrounded claims are treated as testimony only, requiring runtime-inspected live evidence before Gemini can issue a PASS gate.",
+      "fact_dependencies": [
+        "FACT-PB04-002"
+      ]
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "DECISION-PB04-001",
+      "claim": "Requirement for runtime tracking of reading evaluator-definitions.md is superseded.",
+      "status": "SUPERSEDED",
+      "rationale": "Explicitly eliminated in runtime_integration_requirements within the specification diff.",
+      "interpretation_dependencies": [
+        "INTERP-PB04-001"
+      ]
+    },
+    {
+      "decision_id": "DECISION-PB04-002",
+      "claim": "Live ground-truth verification and ground_truth_verification_eval are surviving mandatory requirements for the supervisor machine.",
+      "status": "SURVIVING_REQUIREMENT",
+      "rationale": "Introduced in commit edda2f29a23c391b584f383e442c764b95064ac2 to harden gating against fabricated completion and unverified assertions.",
+      "interpretation_dependencies": [
+        "INTERP-PB04-002"
+      ]
+    }
+  ],
+  "requirement_candidates": [
+    {
+      "candidate_id": "REQ-CAND-PB04-01",
+      "description": "Agents.md must be the canonical evaluation source; no runtime dependency or read-tracking on evaluator-definitions.md may remain.",
+      "status": "ACTIVE",
+      "source_locator": "SEG-00005:lines 65-72"
+    },
+    {
+      "candidate_id": "REQ-CAND-PB04-02",
+      "description": "All materially execution-dependent claims must be independently verified against live ground truth (VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, NOT_EXECUTED) before a PASS gate can be issued.",
+      "status": "ACTIVE",
+      "source_locator": "SEG-00005:lines 110-145"
+    },
+    {
+      "candidate_id": "REQ-CAND-PB04-03",
+      "description": "Step 4 execution returns must report failed actions first, incomplete actions second, and verified completed actions last.",
+      "status": "ACTIVE",
+      "source_locator": "SEG-00005:lines 50-65, 146-155"
+    }
+  ],
+  "implementation_findings": [
+    {
+      "finding_id": "FINDING-PB04-01",
+      "target": "Agents.md contract specification",
+      "behavior_type": "specification-only claims",
+      "description": "SEG-00005 provides git patch evidence of specification definitions; runtime executable enforcement in send-to-gemini.js or workflow files is referenced in dependency descriptions but not verified in this batch segment alone.",
+      "source_locator": "SEG-00005:lines 156-200"
+    }
+  ],
+  "contradictions": [],
+  "unresolved": [
+    {
+      "unresolved_id": "UNRESOLVED-PB04-01",
+      "description": "Executable behavior of collectGroundTruth and groundTruthEvalValid in send-to-gemini.js must be confirmed in code batches to verify whether runtime enforcement matches this late Agents.md specification patch.",
+      "source_locator": "SEG-00005:lines 156-180"
+    }
+  ],
+  "segment_ids_used": [
+    "SEG-00005"
+  ]
+}

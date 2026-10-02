@@ -1,0 +1,129 @@
+{
+  "response_type": "historical_audit_batch_result",
+  "batch_id": "PB-01",
+  "batch_type": "primary",
+  "summary": "Evaluation of SEG-00001 reveals the progressive evolution of the canonical Agents.md specification across three commits. The specification evolved from a placeholder to an initial 8-step pipeline (Steps 0-7 with a 31-test schema), and subsequently into a supervisory-gated architecture featuring 14 documented Failure Examples, recursive supervisory gates, structured Step 3 semantic decomposition with TSR testing loops, and a consolidated Step 4 failure-first reporting model.",
+  "facts": [
+    {
+      "fact_id": "F-001",
+      "locator": "SEG-00001:commit-20e1fc8",
+      "statement": "Commit 20e1fc8 initialized ChatMachines/GeminiSupervisor/Agents.md with a placeholder string."
+    },
+    {
+      "fact_id": "F-002",
+      "locator": "SEG-00001:commit-ef665db",
+      "statement": "Commit ef665db introduced an 8-step procedure (Steps 0 through 7) including return schema persistence, verbatim requirement extraction, a 31-test schema (tests 2-32), Step 3 clause/modifier decomposition with Step3_TSR evaluation loop, completion evidence rules, and a 31-category unrequested action inventory."
+    },
+    {
+      "fact_id": "F-003",
+      "locator": "SEG-00001:commit-58b6756",
+      "statement": "Commit 58b6756 added 14 Failure Examples with U/A/E fields, added uniform supervisory_gate schemas requiring key-for-key evaluative mirrors and PASS/FAIL gates to Steps 0-4, restructured Step 3 and Test_Schema into JSON-native format, consolidated failure-first and incomplete reporting into Step 4, and removed the standalone Steps 5, 6, and 7 sections from the file."
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "INT-001",
+      "statement": "Commit 58b6756 supersedes the linear step definitions of Steps 4-7 from commit ef665db by integrating failure-first reporting and partial-action verification into Step 4, governed by per-step supervisory gates.",
+      "rationale": "The diff explicitly deleted the standalone text for Steps 5-7 while adding corresponding structured reporting requirements (such as 'Report failure first' and evidence capture) directly into Step 4."
+    },
+    {
+      "interpretation_id": "INT-002",
+      "statement": "The supervisory gate specification creates a strict precondition requiring every returned execution schema to be mirrored and evaluated before proceeding to any subsequent execution step.",
+      "rationale": "All supervisory gate definitions stipulate that gate_result must be PASS before the next execution step may begin, supported by granular key-by-key mirrors and explicit failure tracking linked to Failure Examples."
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "TD-001",
+      "interpretation_ids": [
+        "INT-001"
+      ],
+      "decision": "Steps 5 through 7 as independent top-level procedure blocks are superseded, with their core reporting and verification constraints partially subsumed into Step 4.",
+      "applies_to": "ChatMachines/GeminiSupervisor/Agents.md"
+    },
+    {
+      "decision_id": "TD-002",
+      "interpretation_ids": [
+        "INT-002"
+      ],
+      "decision": "The supervisory gate mechanism and Failure Example taxonomy represent active surviving requirements for agent supervision as of commit 58b6756.",
+      "applies_to": "ChatMachines/GeminiSupervisor/Agents.md"
+    }
+  ],
+  "requirement_candidates": [
+    {
+      "candidate_id": "REQ-001",
+      "name": "Start-of-Turn Record and Return Schema",
+      "description": "Initialize a start-of-turn record with verbatim user request, ISO 8601 timestamp, completion booleans, and a unique nonce, persisted to storage and UI.",
+      "status": "active",
+      "source_locator": "SEG-00001:commit-58b6756:Step 0"
+    },
+    {
+      "candidate_id": "REQ-002",
+      "name": "Request Preservation and Nonce Matching",
+      "description": "Preserve request exactly as received; UI and persistent records must share the identical request and nonce.",
+      "status": "active",
+      "source_locator": "SEG-00001:commit-58b6756:Step 1"
+    },
+    {
+      "candidate_id": "REQ-003",
+      "name": "Verbatim Requirement Extraction",
+      "description": "Extract exclusively user-stated requirements preserved verbatim to ensure full traceability.",
+      "status": "active",
+      "source_locator": "SEG-00001:commit-58b6756:Step 2"
+    },
+    {
+      "candidate_id": "REQ-004",
+      "name": "Supervisory Gate Evaluation",
+      "description": "Execute a recursive key-for-key evaluative mirror and step-level evaluation with PASS/FAIL gate blocking subsequent step execution on FAIL.",
+      "status": "active",
+      "source_locator": "SEG-00001:commit-58b6756:Supervisory Gate"
+    },
+    {
+      "candidate_id": "REQ-005",
+      "name": "Semantic Decomposition and TSR Testing Loop",
+      "description": "Decompose user instruction U into clauses, perform recursive modifier analysis, synthesize plan P and UI output, test against Step3_TSR test suite, and loop back to substep A upon any test match.",
+      "status": "active",
+      "source_locator": "SEG-00001:commit-58b6756:Step 3"
+    },
+    {
+      "candidate_id": "REQ-006",
+      "name": "Failure-First Ordered Reporting",
+      "description": "Report all failed actions first with granular evidence, followed by partial/incomplete actions with remaining work, before reporting completed actions.",
+      "status": "active",
+      "source_locator": "SEG-00001:commit-58b6756:Step 4"
+    },
+    {
+      "candidate_id": "REQ-007",
+      "name": "Standalone 31-Category Action Inventory",
+      "description": "Maintain standalone Step 7 schema covering 31 explicit categories of agent action authorization checks.",
+      "status": "superseded",
+      "source_locator": "SEG-00001:commit-ef665db:Step 7"
+    }
+  ],
+  "implementation_findings": [
+    {
+      "finding_id": "IMP-001",
+      "requirement_id": "REQ-004",
+      "enforcement_type": "specification-only claims",
+      "statement": "The supervisory gate structure is fully documented in Agents.md markdown patches, but this segment provides no executable code or deterministic runtime harness to confirm active enforcement.",
+      "locator": "SEG-00001:commit-58b6756"
+    }
+  ],
+  "contradictions": [
+    {
+      "contradiction_id": "C-001",
+      "description": "Failure Example 14 highlights an inherent status contradiction ('didReadback = true, but didReadback = false') where an agent asserted operation completion while acknowledging that verification comparison had been skipped.",
+      "locator": "SEG-00001:commit-58b6756:Failure Examples:example 14"
+    }
+  ],
+  "unresolved": [
+    {
+      "issue_id": "UNRES-001",
+      "description": "Whether the supervisory gate evaluation and Step3_TSR evaluation loop are executed via an external orchestrator, LLM prompt chaining, or custom application logic cannot be determined from the Agents.md patch log alone."
+    }
+  ],
+  "segment_ids_used": [
+    "SEG-00001"
+  ]
+}

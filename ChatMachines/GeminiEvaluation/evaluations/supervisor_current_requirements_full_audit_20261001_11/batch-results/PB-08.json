@@ -1,0 +1,203 @@
+{
+  "response_type": "historical_audit_batch_result",
+  "batch_id": "PB-08",
+  "batch_type": "primary",
+  "summary": "Analyzed final runtime source modifications (send-to-gemini.js), state machine workflow evolution (.github/workflows/gemini-chat.yml), supervisor configuration (config.json), work-action approval rulebook (work-action-approval-rulebook.json), and the complete live supervisor lineage log. The runtime shifted from external Google Apps Script forwarding to direct GitHub Actions execution on Node 22, introduced automated deterministic live ground-truth verification (validating filesystem, git objects, and run nonces before supervisory gating), externalized configuration to config.json, and adopted tests/step-3-evaluation.json as the canonical Step 3 artifact. However, the standalone work-action approval rulebook (with safe-word enforcement) remains unreferenced and unenforced in executable runtime code.",
+  "facts": [
+    {
+      "fact_id": "FACT-08-01",
+      "text": "Commit 9298b84c82cad5ca06a75c182705fd972a4158eb implemented deterministic live ground-truth verification in ChatMachines/GeminiSupervisor/send-to-gemini.js, inspecting workspace files, git commit/blob objects via child_process.execFileSync, and active run-container nonces.",
+      "source_segment": "SEG-00014"
+    },
+    {
+      "fact_id": "FACT-08-02",
+      "text": "In send-to-gemini.js (commits 9298b84 and 7cf2f4c), gate_result cannot be PASS if groundTruth.aggregate_status is not PASS, or if ground_truth_verification_eval.supervisor_eval_result is not PASS. Blocking GT statuses are CONTRADICTED, PARTIAL, UNKNOWN, NOT_EXECUTED.",
+      "source_segment": "SEG-00014"
+    },
+    {
+      "fact_id": "FACT-08-03",
+      "text": "Commit 7cf2f4cb977e5e2c3f9ca09fffbf58448a8a34ac introduced loadSupervisorConfig() reading ChatMachines/GeminiSupervisor/config.json, dynamically resolving triggerPath, agentsPath, runsRoot, and step3EvalPath, replacing evaluation-tests.md with tests/step-3-evaluation.json for Step 3 prompt context.",
+      "source_segment": "SEG-00014"
+    },
+    {
+      "fact_id": "FACT-08-04",
+      "text": "The GitHub Actions workflow (.github/workflows/gemini-chat.yml) triggers on push to main affecting ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json, runs on ubuntu-latest with Node 22, executes send-to-gemini.js directly with secrets/vars, and commits ChatMachines/GeminiSupervisor/runs.",
+      "source_segment": "SEG-00015"
+    },
+    {
+      "fact_id": "FACT-08-05",
+      "text": "Workflow history shows Apps Script forwarding via APPS_SCRIPT_WEB_APP_URL was introduced in commits 22e4a7c/67367e5/240247f but was completely superseded in commit d8a231b (running directly on GitHub Node).",
+      "source_segment": "SEG-00015"
+    },
+    {
+      "fact_id": "FACT-08-06",
+      "text": "ChatMachines/GeminiSupervisor/config.json declares external_files.step3_evaluation_artifact pointing to ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json requiring keys ['evaluation_heuristic', 'step3_tsr'].",
+      "source_segment": "SEG-00018"
+    },
+    {
+      "fact_id": "FACT-08-07",
+      "text": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json defines safe-word authorization requirements, action/pre-action classifications, and ActionPlanReturn JSON schema.",
+      "source_segment": "SEG-00019"
+    },
+    {
+      "fact_id": "FACT-08-08",
+      "text": "Neither send-to-gemini.js nor config.json nor gemini-chat.yml contains any import, read, reference, or deterministic enforcement logic for work-action-approval-rulebook.json or safe-word validation.",
+      "source_segment": "SEG-00014"
+    },
+    {
+      "fact_id": "FACT-08-09",
+      "text": "Git lineage in SEG-00020 records run checkpoints committing state, messages, and store files for runs including demo_*, skill_*, agents_schema_migration_*, ground_truth_verification_skill_*, work_action_approval_rulebook_*, and merge_step3_tsr_evaluation_heuristic_*.",
+      "source_segment": "SEG-00020"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "INT-08-01",
+      "statement": "The Apps Script web app was a temporary transport architecture that has been fully superseded by direct Node.js execution in GitHub Actions.",
+      "factual_basis": "FACT-08-04, FACT-08-05",
+      "heuristic": "Superseded execution paths replaced by direct Node execution in Git history represent retired architectural experiments."
+    },
+    {
+      "interpretation_id": "INT-08-02",
+      "statement": "Step 3 evaluation method and test corpus were consolidated into tests/step-3-evaluation.json and wired via config.json, superseding evaluation-tests.md and evaluator-definitions.md in current runtime execution.",
+      "factual_basis": "FACT-08-03, FACT-08-06",
+      "heuristic": "Direct runtime config references establish active canonical artifacts over legacy markdown test files."
+    },
+    {
+      "interpretation_id": "INT-08-03",
+      "statement": "The Work Action Approval Rulebook was authored and verified as a procedural artifact/run, but was never wired into runtime validation or supervisory prompt logic.",
+      "factual_basis": "FACT-08-07, FACT-08-08",
+      "heuristic": "Presence of a specification or rulebook JSON in the repo without executable wiring or config registration constitutes specification-only status."
+    },
+    {
+      "interpretation_id": "INT-08-04",
+      "statement": "Live ground-truth verification is deterministically enforced prior to Gemini supervisory evaluation; Gemini cannot pass a candidate if deterministic findings block it.",
+      "factual_basis": "FACT-08-01, FACT-08-02",
+      "heuristic": "Pre-call deterministic checks with gating fail-closed conditions represent deterministic enforcement."
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "TD-08-01",
+      "verdict": "SUPERSEDED",
+      "claim": "Gemini Supervisor executes via Google Apps Script web app endpoint.",
+      "depends_on_interpretations": [
+        "INT-08-01"
+      ],
+      "explanation": "Commit d8a231b and current gemini-chat.yml execute send-to-gemini.js directly on GitHub Node, eliminating APPS_SCRIPT_WEB_APP_URL."
+    },
+    {
+      "decision_id": "TD-08-02",
+      "verdict": "SUPERSEDED",
+      "claim": "Evaluation tests are loaded directly from evaluation-tests.md in Step 3 prompt context.",
+      "depends_on_interpretations": [
+        "INT-08-02"
+      ],
+      "explanation": "Commit 7cf2f4c rewired Step 3 prompt construction to load tests/step-3-evaluation.json via config.json."
+    },
+    {
+      "decision_id": "TD-08-03",
+      "verdict": "PARTIALLY_IMPLEMENTED_AND_UNENFORCED",
+      "claim": "Work-action safe-word approval rulebook is enforced across Gemini Supervisor actions.",
+      "depends_on_interpretations": [
+        "INT-08-03"
+      ],
+      "explanation": "The rulebook exists as a file (work-action-approval-rulebook.json) and underwent a supervisor run checkpoint, but send-to-gemini.js never loads or validates safe words."
+    },
+    {
+      "decision_id": "TD-08-04",
+      "verdict": "ACTIVE_AND_ENFORCED",
+      "claim": "Deterministic ground-truth verification validates workspace paths, git blobs/commits, and run nonces, blocking PASS transitions on contradiction or non-execution.",
+      "depends_on_interpretations": [
+        "INT-08-04"
+      ],
+      "explanation": "send-to-gemini.js contains complete git and filesystem inspection functions and fails evalValid() if blocking findings exist or aggregate_status != PASS."
+    }
+  ],
+  "requirement_candidates": [
+    {
+      "candidate_id": "REQ-CAND-08-01",
+      "name": "Live Ground Truth Verification",
+      "description": "Deterministic empirical verification of locators, git shas, and run state nonces before LLM supervisory gating, blocking PASS on unverified claims.",
+      "status": "SURVIVING_AND_ENFORCED",
+      "authority": "runtime_source"
+    },
+    {
+      "candidate_id": "REQ-CAND-08-02",
+      "name": "Configuration Externalization via config.json",
+      "description": "Supervisor runtime must resolve trigger paths, agents documentation, run directory, and step 3 evaluation artifacts through ChatMachines/GeminiSupervisor/config.json.",
+      "status": "SURVIVING_AND_ENFORCED",
+      "authority": "supervisor_config"
+    },
+    {
+      "candidate_id": "REQ-CAND-08-03",
+      "name": "Consolidated Step 3 Evaluation Artifact",
+      "description": "Use tests/step-3-evaluation.json containing evaluation_heuristic and step3_tsr as the canonical Step 3 context.",
+      "status": "SURVIVING_AND_ENFORCED",
+      "authority": "supervisor_config"
+    },
+    {
+      "candidate_id": "REQ-CAND-08-04",
+      "name": "Work Action Approval and Safe-Word Authorization",
+      "description": "Require user safe-word selection and matching approval before executing actions, with strict action classification and frozen plan scope.",
+      "status": "UNENFORCED_SPECIFICATION_GAP",
+      "authority": "work_action_approval_rulebook"
+    }
+  ],
+  "implementation_findings": [
+    {
+      "component": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "nature": "executable_behavior",
+      "enforcement_level": "deterministic_enforcement",
+      "description": "collectGroundTruth() parses returnSchema for evidence records, tests file paths with fs.statSync/fs.readFileSync and git status/ls-files, tests shas via git cat-file, checks run nonces against run container json files, and blocks supervisory pass if aggregate_status !== 'PASS'."
+    },
+    {
+      "component": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "nature": "executable_behavior",
+      "enforcement_level": "deterministic_enforcement",
+      "description": "evalValid() enforces supervisory gate response schema, exact reflection of deterministic ground truth findings, and strict PASS/FAIL matching."
+    },
+    {
+      "component": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "nature": "executable_behavior",
+      "enforcement_level": "deterministic_enforcement",
+      "description": "loadSupervisorConfig() dynamically configures paths from config.json, throwing runtime errors if missing."
+    },
+    {
+      "component": ".github/workflows/gemini-chat.yml",
+      "nature": "executable_behavior",
+      "enforcement_level": "deterministic_enforcement",
+      "description": "Executes on nextmessage push, runs send-to-gemini.js via Node 22, extracts checkpoint summary from state.json, and commits runs directory."
+    },
+    {
+      "component": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+      "nature": "specification_only_claims",
+      "enforcement_level": "specification_only_claims",
+      "description": "Contains definitions, JSON schema, and evaluation rules for safe-word authorization, but has zero integration with send-to-gemini.js."
+    }
+  ],
+  "contradictions": [
+    {
+      "contradiction_id": "CONTRA-08-01",
+      "description": "work-action-approval-rulebook.json asserts that no action is authorized without safe-word approval, but the executable supervisor workflow (gemini-chat.yml and send-to-gemini.js) processes nextmessage.json and executes without checking safe words.",
+      "sources": [
+        "SEG-00014",
+        "SEG-00015",
+        "SEG-00019"
+      ]
+    }
+  ],
+  "unresolved": [
+    {
+      "issue_id": "UNRES-08-01",
+      "description": "Whether work-action-approval-rulebook.json was intended to govern future client-side execution planning or if its exclusion from send-to-gemini.js is an incomplete implementation gap."
+    }
+  ],
+  "segment_ids_used": [
+    "SEG-00014",
+    "SEG-00015",
+    "SEG-00018",
+    "SEG-00019",
+    "SEG-00020"
+  ]
+}

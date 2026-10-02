@@ -1,0 +1,91 @@
+{
+  "response_type": "historical_audit_batch_result",
+  "batch_id": "PB-09",
+  "batch_type": "primary",
+  "summary": "Analysis of SEG-00016 containing the Git patch log for step3_evaluation.json across two commits (fd56cef and f0425b0). The batch establishes the initial consolidated Step 3 evaluation heuristic (69 source statements) and the Step3 TSR test corpus covering tests 2 through 32 with representative U/P evaluation pairs. Commit f0425b0 corrected a JSON closure syntax issue at the end of the file.",
+  "facts": [
+    {
+      "fact_id": "FACT-PB09-001",
+      "statement": "Commit fd56cef added ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json containing document_type 'step3_evaluation_heuristic_and_question_list', format_version 1, referencing evaluation_method_heuristic at ChatMachines/GeminiSupervisor/historical/evaluation-tests.md and step3_tsr_question_list at ChatMachines/GeminiSupervisor/tests/step-3-test-return-schema.md.",
+      "source_locator": "SEG-00016:commit fd56cefbf20add524bf53b5e88463f5c9893ea17"
+    },
+    {
+      "fact_id": "FACT-PB09-002",
+      "statement": "step-3-evaluation.json defines an evaluation_heuristic consisting of 69 key-value records (evaluation_tests_source_statement_001 through 069) detailing test formats, 16 numbered worked examples, set-theoretic definitions (D, R, C), 6 matching examples (M1-M6), 8 nonmatching boundary examples (N1-N8), instructions for unfamiliar cases, and rules of engagement.",
+      "source_locator": "SEG-00016:lines 17-70 (commit fd56cef)"
+    },
+    {
+      "fact_id": "FACT-PB09-003",
+      "statement": "step-3-evaluation.json defines a step3_tsr suite containing test cases numbered 2 through 32, each containing U (user instruction), P (illustrative or candidate response), and a result field 'SELECT(T|F)'.",
+      "source_locator": "SEG-00016:lines 71-102 (commit fd56cef)"
+    },
+    {
+      "fact_id": "FACT-PB09-004",
+      "statement": "Commit f0425b0 fixed the JSON closure of ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json from an invalid termination (missing closing brace) to a valid termination '}}]}}'.",
+      "source_locator": "SEG-00016:commit f0425b0d40c5c3bb082feea78616d13546c992a5"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "INTERP-PB09-001",
+      "statement": "Step 3 evaluation heuristic operates on a contract-failure paradigm where returning 'true' signifies a contract violation or failure to satisfy U, rather than successful compliance.",
+      "supporting_facts": [
+        "FACT-PB09-002"
+      ]
+    },
+    {
+      "interpretation_id": "INTERP-PB09-002",
+      "statement": "The step-3-evaluation.json artifact serves as a canonical reference corpus merging both the textual evaluation heuristic rules and the TSR questionnaire test cases into a machine-readable JSON structure for runtime injection.",
+      "supporting_facts": [
+        "FACT-PB09-001",
+        "FACT-PB09-002",
+        "FACT-PB09-003"
+      ]
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "DEC-PB09-001",
+      "statement": "The Step 3 evaluation methodology requires evaluating agent performance strictly against effective instruction U and context rules, enforcing set-theoretic coverage (R = D implies C = R) and failure classification across tests 2-32.",
+      "depends_on": [
+        "INTERP-PB09-001",
+        "INTERP-PB09-002"
+      ],
+      "historical_status": "active"
+    }
+  ],
+  "requirement_candidates": [
+    {
+      "candidate_id": "REQ-PB09-001",
+      "description": "Step 3 evaluation must interpret 'true' as contract failure (a detected violation) and 'false' as non-detection of that specific failure pattern.",
+      "source_locator": "SEG-00016:evaluation_tests_source_statement_003",
+      "status": "surviving"
+    },
+    {
+      "candidate_id": "REQ-PB09-002",
+      "description": "Step 3 evaluation must verify complete-coverage requirements using set relation C subset of R (where R=D), flagging omissions when U mandates complete coverage across a defined domain D.",
+      "source_locator": "SEG-00016:evaluation_tests_source_statement_024-031",
+      "status": "surviving"
+    },
+    {
+      "candidate_id": "REQ-PB09-003",
+      "description": "Step 3 TSR test harness must support test categories 2 through 32 representing diverse operational failure modes including scope reduction, unauthorized edits, ordering reversals, unexecuted promises, lack of verification, and tool assertion errors.",
+      "source_locator": "SEG-00016:step3_tsr",
+      "status": "surviving"
+    }
+  ],
+  "implementation_findings": [
+    {
+      "finding_id": "FIND-PB09-001",
+      "description": "step-3-evaluation.json is a persisted static JSON artifact storing the evaluation heuristic and TSR test suite definitions.",
+      "nature": "persisted_structure",
+      "source_locator": "SEG-00016",
+      "matches_specification": true
+    }
+  ],
+  "contradictions": [],
+  "unresolved": [],
+  "segment_ids_used": [
+    "SEG-00016"
+  ]
+}

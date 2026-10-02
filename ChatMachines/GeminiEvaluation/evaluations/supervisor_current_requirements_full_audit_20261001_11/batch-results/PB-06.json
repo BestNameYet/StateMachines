@@ -1,0 +1,197 @@
+{
+  "response_type": "historical_audit_batch_result",
+  "batch_id": "PB-06",
+  "batch_type": "primary",
+  "summary": "PB-06 analyzes the evolution of the runtime runner `send-to-gemini.js` across commits from 2026-09-29 through 2026-09-30. It reveals a major architectural transition: beginning as a simple Node script appending turns and calling Gemini, it evolved into an Apps Script remote execution bridge, was briefly hijacked for Drive file retrieval and transfer tests, and was subsequently restored and migrated to a pure GitHub Actions Node runtime. In later commits, it evolved from single-step manual invocation into an automated runner loop parsing `Agents.md` procedure steps, enforcing strict supervisory gating (`supervisory_gate.gate_result = PASS | FAIL`), supporting iterative semantic repair, persisting every semop exchange into `store/store.json` and `messages.json`, isolating execution into run-scoped directories `ChatMachines/GeminiSupervisor/runs/<run_nonce>/`, building unevaluated supervisory gate schema mirrors, and checkpointing step completions via Git commits.",
+  "facts": [
+    {
+      "fact_id": "F-PB06-001",
+      "locator": "SEG-00010:commit 5b7c2b70",
+      "statement": "Initial `send-to-gemini.js` read `messages.json` and `nextmessage.json`, appended user turn, called `gemini-2.5-flash` directly via fetch, and wrote reply back to `messages.json`."
+    },
+    {
+      "fact_id": "F-PB06-002",
+      "locator": "SEG-00010:commit baa51460",
+      "statement": "Runtime introduced state machine phases (EXECUTION, SUPERVISION, TRANSITION) persisted in `current_state.json`, performing one substep per invocation with prompt injection from `evaluation-tests.md`, `evaluator-definitions.md`, and `Agents.md`."
+    },
+    {
+      "fact_id": "F-PB06-003",
+      "locator": "SEG-00010:commit ed388990 and d628a2c1",
+      "statement": "Runtime changed architecture to serialize `supervisorMachine` and POST `{ sourcecode, arguments }` to `APPS_SCRIPT_WEB_APP_URL` (`Code.gs`), delegating execution and Gemini API calls to Apps Script."
+    },
+    {
+      "fact_id": "F-PB06-004",
+      "locator": "SEG-00010:commit f96e046a, 3d941bcf, b2975630, 5ce3d0aa",
+      "statement": "`send-to-gemini.js` temporarily functioned as a utility to fetch `Agents.md` from Google Drive via Apps Script and test Drive JSON transfers and git commits."
+    },
+    {
+      "fact_id": "F-PB06-005",
+      "locator": "SEG-00010:commit b3191d0c",
+      "statement": "Apps Script remote execution was abandoned; `send-to-gemini.js` was restored to run directly on GitHub Actions Node.js 22 using model `gemini-3.8-flash`."
+    },
+    {
+      "fact_id": "F-PB06-006",
+      "locator": "SEG-00011:commit 643c4818",
+      "statement": "Runner was refactored to parse `Agents.md` for `## Step N` headers and run an autonomous execution loop advancing through steps based on exact supervisory gate transition: `supervisory_gate.gate_result = 'PASS' | 'FAIL'`. A missing or invalid gate triggered semantic-operator repair loops."
+    },
+    {
+      "fact_id": "F-PB06-007",
+      "locator": "SEG-00011:commit 3129142a",
+      "statement": "Semantic exchanges were persisted to `store/store.json` alongside `messages.json`, step 3 was injected with `evaluation-tests.md` and `evaluator-definitions.md`, and a Step 3 loop evaluator (`step3RequiresLoop`) checking `G.Loop_Decision`, `return_to`, and `step_3_completed` was introduced."
+    },
+    {
+      "fact_id": "F-PB06-008",
+      "locator": "SEG-00011:commit b97a6033",
+      "statement": "Run isolation was added: input trigger `nextmessage/nextmessage.json` provides `run_nonce`, isolating runtime artifacts under `ChatMachines/GeminiSupervisor/runs/<run_nonce>/` containing `state.json`, `messages.json`, and `store/store.json`."
+    },
+    {
+      "fact_id": "F-PB06-009",
+      "locator": "SEG-00011:commit de707117",
+      "statement": "`buildUnevaluatedSupervisoryGate` was introduced to dynamically mirror the execution return schema into an unevaluated granular mirror with null placeholders, forcing the supervisory LLM to evaluate every terminal path."
+    },
+    {
+      "fact_id": "F-PB06-0010",
+      "locator": "SEG-00011:commit 5f7124e8",
+      "statement": "Commit checkpoints were added via `commitStepCheckpoint` on gate `PASS`, committing run files to git, populating `state.git_commits`, and verifying `state.git_commits.length >= steps.length` (failing with `failed_checkpoint_verification` otherwise). Also propagated `statedRequirements` from Step 2 into Steps 3 and 4 prompts."
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "INT-PB06-001",
+      "statement": "Apps Script remote execution of the supervisor machine was an experimental architectural phase that was superseded by direct Node runtime execution in GitHub Actions.",
+      "rationale": "Commit ed388990/d628a2c1 shifted logic to Apps Script, but commit b3191d0c explicitly replaced it with direct GitHub Node execution ('Apps Script is not part of this execution path')."
+    },
+    {
+      "interpretation_id": "INT-PB06-002",
+      "statement": "The machine evolved from an incremental step-by-step external orchestrator (one substep per run invocation) into an autonomous multi-step procedure loop that runs all `Agents.md` steps to completion in a single execution run.",
+      "rationale": "Commit b3191d0c ran a single phase per run invocation, whereas commit 643c4818 introduced `while (state.procedure.current_step !== null)` executing all steps in one execution."
+    },
+    {
+      "interpretation_id": "INT-PB06-003",
+      "statement": "The canonical contract for procedure gates requires exact JSON path `supervisory_gate.gate_result` with values 'PASS' or 'FAIL', with strict enforcement rejecting alternative object wrapper forms (`select` or `value`).",
+      "rationale": "Commit de707117 allowed fallbacks like `gate_result.select`, but commit 5f7124e8 stripped those fallbacks, restoring strict evaluation of `supervisory_gate.gate_result`."
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "TD-PB06-001",
+      "interpretation_id": "INT-PB06-001",
+      "decision": "SUPERSEDED",
+      "target": "Apps Script web app remote execution of supervisor machine",
+      "details": "Executing `supervisorMachine` inside Apps Script via POST payload is superseded. Node.js on GitHub Actions is the active runtime."
+    },
+    {
+      "decision_id": "TD-PB06-002",
+      "interpretation_id": "INT-PB06-002",
+      "decision": "ACTIVE_REQUIREMENT",
+      "target": "Procedure-level autonomous execution loop across all Agents.md steps",
+      "details": "The runtime must extract steps from `Agents.md`, execute each step, perform supervisory gate evaluation, retry on FAIL, and advance upon PASS until all steps are complete."
+    },
+    {
+      "decision_id": "TD-PB06-003",
+      "interpretation_id": "INT-PB06-003",
+      "decision": "ACTIVE_REQUIREMENT",
+      "target": "Strict gate result extraction at supervisory_gate.gate_result",
+      "details": "Gate values must be strictly located at `supervisory_gate.gate_result` and equal PASS or FAIL."
+    }
+  ],
+  "requirement_candidates": [
+    {
+      "candidate_id": "REQ-PB06-001",
+      "text": "The supervisor runner must execute directly in GitHub Actions Node.js runtime and use model gemini-3.8-flash (or GEMINI_MODEL env var).",
+      "status": "active",
+      "source_locator": "SEG-00010:commit b3191d0c, SEG-00011:commit 5f7124e8"
+    },
+    {
+      "candidate_id": "REQ-PB06-002",
+      "text": "The runtime must isolate each execution in `ChatMachines/GeminiSupervisor/runs/<run_nonce>/` containing `state.json`, `messages.json`, and `store/store.json`, triggered by `nextmessage/nextmessage.json` specifying `run_nonce`.",
+      "status": "active",
+      "source_locator": "SEG-00011:commit b97a6033, 5f7124e8"
+    },
+    {
+      "candidate_id": "REQ-PB06-003",
+      "text": "The runner must parse `Agents.md` for steps (`## Step N`) and maintain procedural state (`completed_steps`, `current_step`, `remaining_steps`, `step_records`).",
+      "status": "active",
+      "source_locator": "SEG-00011:commit 643c4818, 5f7124e8"
+    },
+    {
+      "candidate_id": "REQ-PB06-004",
+      "text": "Each execution step return must be passed to a Supervisory Gate prompt that includes a dynamically built unevaluated mirror template (`buildUnevaluatedSupervisoryGate`).",
+      "status": "active",
+      "source_locator": "SEG-00011:commit de707117, 5f7124e8"
+    },
+    {
+      "candidate_id": "REQ-PB06-005",
+      "text": "Supervisory gating must enforce `supervisory_gate.gate_result` equals PASS or FAIL; invalid responses must trigger iterative semantic correction loops echo-feeding prior responses.",
+      "status": "active",
+      "source_locator": "SEG-00011:commit 643c4818, de707117, 5f7124e8"
+    },
+    {
+      "candidate_id": "REQ-PB06-006",
+      "text": "Step 3 must inject `evaluation-tests.md` and `evaluator-definitions.md` into the system instruction and enforce Step 3.G loop logic (`step3RequiresLoop`).",
+      "status": "active",
+      "source_locator": "SEG-00011:commit 3129142a, 5f7124e8"
+    },
+    {
+      "candidate_id": "REQ-PB06-007",
+      "text": "Every semantic-operator call (execution, gate, repairs) must be recorded and persisted to `store/store.json` and `messages.json`.",
+      "status": "active",
+      "source_locator": "SEG-00011:commit 3129142a, b97a6033, 5f7124e8"
+    },
+    {
+      "candidate_id": "REQ-PB06-008",
+      "text": "Upon a gate result of PASS, the runner must create a git checkpoint commit for the run directory, record the commit hash in `state.git_commits`, and verify total commits match or exceed procedure step count.",
+      "status": "active",
+      "source_locator": "SEG-00011:commit 5f7124e8"
+    },
+    {
+      "candidate_id": "REQ-PB06-009",
+      "text": "Requirements extracted in Step 2 (`stated_requirements`) must be fed as context into Step 3 and Step 4 execution and supervisory prompts.",
+      "status": "active",
+      "source_locator": "SEG-00011:commit 5f7124e8"
+    }
+  ],
+  "implementation_findings": [
+    {
+      "finding_id": "IMP-PB06-001",
+      "category": "deterministic_enforcement",
+      "description": "Deterministic procedure parsing (`extractProcedureSteps`), state progression (`advanceProcedure`), schema parsing with JSON fences, gate value normalization (`normalizedGateValue`), and Git checkpoint verification.",
+      "locator": "SEG-00011:commit 5f7124e8"
+    },
+    {
+      "finding_id": "IMP-PB06-002",
+      "category": "executable_behavior",
+      "description": "Semantic repair loops in `requestExecutionSchema` and `requestSupervisorySchema` iteratively resubmit context with appended system correction until valid JSON and valid gate results are produced.",
+      "locator": "SEG-00011:commit 5f7124e8"
+    },
+    {
+      "finding_id": "IMP-PB06-003",
+      "category": "persisted_structures",
+      "description": "All state, messages, and semantic-operator records are written to disk under `runs/<run_nonce>/` with timestamped records in `store.json`.",
+      "locator": "SEG-00011:commit b97a6033, 5f7124e8"
+    }
+  ],
+  "contradictions": [
+    {
+      "contradiction_id": "C-PB06-001",
+      "description": "Earlier commits (ed388990, d628a2c1) required execution via Google Apps Script web app endpoint, but later commits (b3191d0c onward) explicitly removed Apps Script and executed entirely within Node.js on GitHub Actions.",
+      "locator": "SEG-00010:commit d628a2c1 vs SEG-00010:commit b3191d0c"
+    },
+    {
+      "contradiction_id": "C-PB06-002",
+      "description": "Commit de707117 allowed flexible supervisory gate paths (`supervisory_gate.gate_result.select` / `value`), whereas commit 5f7124e8 reverted to strict direct path `supervisory_gate.gate_result` string.",
+      "locator": "SEG-00011:commit de707117 vs SEG-00011:commit 5f7124e8"
+    }
+  ],
+  "unresolved": [
+    {
+      "unresolved_id": "UNRES-PB06-001",
+      "question": "Does subsequent runtime development beyond commit 5f7124e8 alter the checkpoint verification logic (`failed_checkpoint_verification`) or modify the schema requirements for `stated_requirements`?",
+      "reason": "PB-06 context terminates at commit 5f7124e8."
+    }
+  ],
+  "segment_ids_used": [
+    "SEG-00010",
+    "SEG-00011"
+  ]
+}

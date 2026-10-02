@@ -1,0 +1,182 @@
+{
+  "response_type": "historical_audit_batch_result",
+  "batch_id": "PB-05",
+  "batch_type": "primary",
+  "summary": "PB-05 analyzes the final updates to Agents.md (commit 7cf2f4c), the introduction of dependency-map.json (commit b899191), the GitHub Actions dependency-sync workflow (commit 7839cfd), and the live-ground-truth-verification skill documentation (commit 12f457d). Key evolutions include formalizing the shared_configuration_contract (config.json), integrating step-3-evaluation.json via external_files.step3_evaluation_artifact (updating test count to 31), embedding live ground truth checks across all steps, establishing a maintenance workflow for file synchronization using GeminiEvaluation, and documenting the live-ground-truth-verification protocol.",
+  "facts": [
+    {
+      "fact_id": "F-001",
+      "statement": "In commit 7cf2f4c (2026-10-01T14:05:38-07:00), Agents.md added rule 'shared_configuration_contract_governs_external_references', specifying that all external file dependencies, triggers, runtime roots, and evaluation artifacts must be declared in ChatMachines/GeminiSupervisor/config.json.",
+      "source_segment_id": "SEG-00006",
+      "line_numbers": "201-236"
+    },
+    {
+      "fact_id": "F-002",
+      "statement": "In commit 7cf2f4c, the Step 3 execution_return_schema in Agents.md updated Test_Count from 1 to 31, and Step 3 supervisory gate instructions updated references to resolve the canonical evaluation artifact from config.json (external_files.step3_evaluation_artifact).",
+      "source_segment_id": "SEG-00006",
+      "line_numbers": "258-290"
+    },
+    {
+      "fact_id": "F-003",
+      "statement": "Commit 7cf2f4c replaced runtime requirement 'step_3_test_source_remains_available' with 'step_3_evaluation_artifact_is_canonical', requiring that step3_evaluation_artifact provide both evaluation_heuristic and complete Step3_TSR question corpus as one parsed JSON object without read-tracking fields.",
+      "source_segment_id": "SEG-00006",
+      "line_numbers": "298-310"
+    },
+    {
+      "fact_id": "F-004",
+      "statement": "Commit b899191 (2026-10-01T17:09:24-07:00) added ChatMachines/GeminiSupervisor/dependency-map.json, defining mappings between Agents.md and send-to-gemini.js with mutual dependents and shared context ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json, guarded by sentinel ChatMachines/GeminiSupervisor/dependency-sync-sentinel.json.",
+      "source_segment_id": "SEG-00007",
+      "line_numbers": "1-43"
+    },
+    {
+      "fact_id": "F-005",
+      "statement": "Commit 7839cfd (2026-10-01T17:11:49-07:00) added .github/workflows/gemini-supervisor-dependency-sync.yml, triggered on push to main modifying Agents.md or send-to-gemini.js, which runs GeminiEvaluation with generic evaluation mode to replace mapped dependent files when the sentinel enabled flag is true.",
+      "source_segment_id": "SEG-00008",
+      "line_numbers": "1-279"
+    },
+    {
+      "fact_id": "F-006",
+      "statement": "Commit 12f457d (2026-09-30T19:07:24-07:00) added ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md, defining the live-ground-truth-verification procedure, semantic triggers, ground-truth taxonomy, and classification statuses (VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, NOT EXECUTED).",
+      "source_segment_id": "SEG-00009",
+      "line_numbers": "1-383"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "INT-001",
+      "description": "Agents.md transitioned from referencing an external markdown test file (evaluation-tests.md) with an earlier count of 32 down to a single test placeholder (1) in intermediary drafts, and finally settling on 31 tests defined inside a unified JSON evaluation artifact (step-3-evaluation.json) referenced via config.json.",
+      "supported_by_facts": [
+        "F-002",
+        "F-003"
+      ],
+      "authority": "derived_git_evolution"
+    },
+    {
+      "interpretation_id": "INT-002",
+      "description": "The dependency sync workflow (.github/workflows/gemini-supervisor-dependency-sync.yml) is a CI maintenance automation mechanism that invokes GeminiEvaluation to enforce bidirectional alignment between Agents.md and send-to-gemini.js, rather than part of the user-facing Step 0-4 execution flow.",
+      "supported_by_facts": [
+        "F-004",
+        "F-005"
+      ],
+      "authority": "workflow_structural_analysis"
+    },
+    {
+      "interpretation_id": "INT-003",
+      "description": "The skill file SKILL.md represents guideline/specification documentation for ground-truth verification behavior; runtime enforcement in send-to-gemini.js is deterministic via collectGroundTruth, validateStep, and gate evaluation structures rather than relying on LLM skill obedience alone.",
+      "supported_by_facts": [
+        "F-001",
+        "F-006"
+      ],
+      "authority": "architectural_policy"
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "TD-001",
+      "claim": "Agents.md external dependency references must strictly use config.json keys and not hardcode external paths.",
+      "is_valid": true,
+      "depends_on_interpretation": "INT-001",
+      "rationale": "Explicitly added as rule 'shared_configuration_contract_governs_external_references' and runtime integration requirement 'shared_configuration_contract' in commit 7cf2f4c."
+    },
+    {
+      "decision_id": "TD-002",
+      "claim": "Evaluation definitions must be maintained in external evaluator-definitions.md.",
+      "is_valid": false,
+      "depends_on_interpretation": "INT-001",
+      "rationale": "Explicitly superseded and forbidden by Agents.md rule 'agents_md_is_canonical_evaluation_source', which mandates that all evaluation definitions and criteria reside in Agents.md."
+    },
+    {
+      "decision_id": "TD-003",
+      "claim": "The dependency sync workflow runs unconditionally on every push modifying Agents.md or send-to-gemini.js.",
+      "is_valid": false,
+      "depends_on_interpretation": "INT-002",
+      "rationale": "Workflow execution requires sentinel enabled === true in dependency-sync-sentinel.json and exactly one mapped base file modified."
+    }
+  ],
+  "requirement_candidates": [
+    {
+      "candidate_id": "REQ-CAND-001",
+      "name": "Shared Configuration Contract",
+      "statement": "All external file dependencies, triggers, runtime roots, and evaluation artifacts must be resolved via keys in ChatMachines/GeminiSupervisor/config.json rather than hardcoded in Agents.md or runtime code.",
+      "status": "surviving",
+      "source_segment_id": "SEG-00006",
+      "superseded_by": null
+    },
+    {
+      "candidate_id": "REQ-CAND-002",
+      "name": "Step 3 Test Count and Canonical JSON Artifact",
+      "statement": "Step 3 evaluation must evaluate exactly 31 tests provided by the unified JSON artifact step-3-evaluation.json (referenced via config.json key external_files.step3_evaluation_artifact) containing both evaluation_heuristic and step3_tsr.",
+      "status": "surviving",
+      "source_segment_id": "SEG-00006",
+      "superseded_by": null
+    },
+    {
+      "candidate_id": "REQ-CAND-003",
+      "name": "Live Ground Truth Verification Schema & Determinism",
+      "statement": "Deterministic live ground truth findings must be collected prior to Gemini supervisory evaluation and embedded in ground_truth_verification_eval, classifying execution claims as VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, or NOT_EXECUTED, blocking PASS if material claims fail.",
+      "status": "surviving",
+      "source_segment_id": "SEG-00006",
+      "superseded_by": null
+    },
+    {
+      "candidate_id": "REQ-CAND-004",
+      "name": "Evaluator Definition File Read-Tracking",
+      "statement": "Procedure returns must track reading evaluator-definitions.md via evaluation_documents_read.",
+      "status": "superseded",
+      "source_segment_id": "SEG-00006",
+      "superseded_by": "F-003"
+    },
+    {
+      "candidate_id": "REQ-CAND-005",
+      "name": "Dependency Map Maintenance Synchronization",
+      "statement": "Automated synchronization via gemini-supervisor-dependency-sync.yml must maintain mutual alignment between Agents.md and send-to-gemini.js according to dependency-map.json when triggered and enabled by sentinel.",
+      "status": "surviving",
+      "source_segment_id": "SEG-00008",
+      "superseded_by": null
+    }
+  ],
+  "implementation_findings": [
+    {
+      "finding_id": "IMP-001",
+      "component": "Agents.md specification",
+      "enforcement_type": "specification-only claims",
+      "description": "Agents.md fully specifies rules, schemas, dependency charts, and runtime integration requirements for shared configuration, 31-count Step 3 tests, and live ground truth verification.",
+      "source_segment_id": "SEG-00006"
+    },
+    {
+      "finding_id": "IMP-002",
+      "component": "dependency-map.json",
+      "enforcement_type": "executable behavior",
+      "description": "Maps ChatMachines/GeminiSupervisor/Agents.md and send-to-gemini.js as mutual dependents with step-3-evaluation.json as read-only context, designating dependency-sync-sentinel.json as control sentinel.",
+      "source_segment_id": "SEG-00007"
+    },
+    {
+      "finding_id": "IMP-003",
+      "component": ".github/workflows/gemini-supervisor-dependency-sync.yml",
+      "enforcement_type": "deterministic enforcement",
+      "description": "Deterministic bash and Node.js steps inspect git diff, verify single-file trigger constraint, check sentinel status, invoke evaluate-supervisor.js, and strictly validate the returned dependency_alignment JSON before committing file updates.",
+      "source_segment_id": "SEG-00008"
+    },
+    {
+      "finding_id": "IMP-004",
+      "component": "SKILL.md",
+      "enforcement_type": "specification-only claims",
+      "description": "SKILL.md defines behavioral guidelines and semantic trigger conditions for models but lacks executable enforcement mechanisms in this file itself.",
+      "source_segment_id": "SEG-00009"
+    }
+  ],
+  "contradictions": [],
+  "unresolved": [
+    {
+      "unresolved_id": "UNRES-001",
+      "question": "Is dependency-sync-sentinel.json enabled in the working tree, and are Agents.md and send-to-gemini.js currently in full alignment regarding the shared configuration contract and 31 test count?",
+      "reason": "PB-05 contains the patch logs for Agents.md, dependency-map.json, dependency sync workflow, and SKILL.md, but does not include the raw current content of send-to-gemini.js, config.json, or dependency-sync-sentinel.json."
+    }
+  ],
+  "segment_ids_used": [
+    "SEG-00006",
+    "SEG-00007",
+    "SEG-00008",
+    "SEG-00009"
+  ]
+}
