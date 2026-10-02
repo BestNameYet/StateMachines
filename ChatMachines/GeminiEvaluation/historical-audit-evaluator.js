@@ -2,7 +2,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const corePath = path.join(__dirname, 'historical-audit-evaluator-core.js');
-const maxAttempts = Number(process.env.HISTORICAL_AUDIT_API_ATTEMPTS || 6);
+const maxAttempts = Number(process.env.HISTORICAL_AUDIT_API_ATTEMPTS || 8);
 const baseBackoffMs = Number(process.env.HISTORICAL_AUDIT_API_BACKOFF_MS || 5000);
 
 function sleepSync(ms) {
@@ -11,6 +11,16 @@ function sleepSync(ms) {
 
 function isRetryable(text) {
   return /Gemini HTTP (429|500|502|503|504)|UNAVAILABLE|RESOURCE_EXHAUSTED|high demand|temporarily unavailable|Unexpected end of JSON input|unterminated|malformed\/truncated/i.test(text);
+}
+
+function retryDelayMs(text, attempt) {
+  const candidates = [];
+  for (const match of text.matchAll(/retry(?:Delay| in)?[^0-9]{0,20}(\d+(?:\.\d+)?)s/gi)) {
+    candidates.push(Number(match[1]));
+  }
+  const seconds = candidates.length ? Math.max(...candidates) : null;
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.ceil(seconds * 1000) + 2000;
+  return baseBackoffMs * attempt;
 }
 
 for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -35,8 +45,9 @@ for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     process.exit(child.status || 1);
   }
 
-  console.error(`Historical audit evaluator attempt ${attempt} failed with a retryable transport/JSON error; retrying sequentially.`);
-  sleepSync(baseBackoffMs * attempt);
+  const delayMs = retryDelayMs(diagnostic, attempt);
+  console.error(`Historical audit evaluator attempt ${attempt} failed with a retryable transport/JSON error; retrying sequentially after ${delayMs} ms.`);
+  sleepSync(delayMs);
 }
 
 process.exit(1);
