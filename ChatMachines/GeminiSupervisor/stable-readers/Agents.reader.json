@@ -1,0 +1,2717 @@
+{
+  "doc_id": "agents",
+  "canonical_path": "ChatMachines/GeminiSupervisor/Agents.md",
+  "format": "text",
+  "source_provenance": {
+    "source_blob_sha": "67ff3ad1e2a28b15e13e39e9e38b8524451e503b",
+    "source_commit_sha": "7cf2f4cb977e5e2c3f9ca09fffbf58448a8a34ac"
+  },
+  "items": [
+    {
+      "type": "content",
+      "line_number": 1,
+      "text": "# Agents.md --- Canonical Rules and Evaluation Contract",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 2,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 3,
+      "text": "## Canonical Evaluation Definitions",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 4,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 5,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 6,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 7,
+      "text": "  \"evaluation_definitions\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 8,
+      "text": "    \"user_words\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 9,
+      "text": "      \"key\": \"user_words\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 10,
+      "text": "      \"value\": \"The user's current utterance exactly as written, with references resolved only from relevant prior context.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 11,
+      "text": "      \"definition\": \"User-authored language is primary instruction evidence; agent summaries never replace it.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 12,
+      "text": "      \"definition_of_evaluation\": \"Compare preserved request text to the actual user utterance and only the context needed to resolve references.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 13,
+      "text": "      \"pass_criteria\": \"The complete user-authored instruction is preserved without controller or agent pollution.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 14,
+      "text": "      \"fail_criteria\": \"The request is truncated, meaningfully normalized, paraphrased as source text, or polluted by non-user text.\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 15,
+      "text": "    },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 16,
+      "text": "    \"effective_instruction_U\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 17,
+      "text": "      \"key\": \"effective_instruction_U\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 18,
+      "text": "      \"value\": \"Resolved user request plus every applicable governing rule.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 19,
+      "text": "      \"definition\": \"U is the complete set of requirements, prohibitions, permissions, questions, corrections, limits, and procedural constraints for the turn.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 20,
+      "text": "      \"definition_of_evaluation\": \"Construct U from user_words and applicable rules while retaining source traceability.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 21,
+      "text": "      \"pass_criteria\": \"Every applicable requirement is represented exactly once at the semantic level and retains its source.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 22,
+      "text": "      \"fail_criteria\": \"A requirement is omitted, invented, scope-changed, or replaced by agent interpretation.\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 23,
+      "text": "    },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 24,
+      "text": "    \"agent_response_P\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 25,
+      "text": "      \"key\": \"agent_response_P\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 26,
+      "text": "      \"value\": \"The agent's proposed words plus actions and results actually observed.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 27,
+      "text": "      \"definition\": \"P distinguishes intention, attempt, execution, and verified completion.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 28,
+      "text": "      \"definition_of_evaluation\": \"Compare execution-dependent claims to independent live evidence; keep 'will do', 'tried', and 'did' distinct.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 29,
+      "text": "      \"pass_criteria\": \"P states only what live evidence supports and accurately identifies incomplete or failed work.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 30,
+      "text": "      \"fail_criteria\": \"P reports intention/attempt as completion, asserts unobserved state, masks remaining work, or relies on self-report as evidence.\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 31,
+      "text": "    },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 32,
+      "text": "    \"live_ground_truth\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 33,
+      "text": "      \"key\": \"live_ground_truth\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 34,
+      "text": "      \"value\": \"The freshest authoritative source that directly owns the fact being asserted.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 35,
+      "text": "      \"definition\": \"Ground truth is obtained from live artifacts, git objects/refs, runtime records, state/message/store records, exact evaluator returns, authoritative application records, or other execution-proximate sources. Memory, prior assistant self-report, generated summaries, plans, and self-asserted evidence are testimony only.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 36,
+      "text": "      \"definition_of_evaluation\": \"For each material execution-dependent claim identify authority, freshness, execution proximity, specificity, integrity, locator, and exact observed content; compare the claim against that source.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 37,
+      "text": "      \"pass_criteria\": \"Every material claim is supported by live authoritative evidence or is explicitly classified as UNKNOWN/PARTIAL/NOT_EXECUTED without being represented as success.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 38,
+      "text": "      \"fail_criteria\": \"A claim outruns its evidence, a contradicted/unknown claim is presented as complete, memory/self-report substitutes for a live source, or a live source is available but not checked.\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 39,
+      "text": "    },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 40,
+      "text": "    \"ground_truth_status\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 41,
+      "text": "      \"key\": \"ground_truth_status\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 42,
+      "text": "      \"value\": \"VERIFIED|CONTRADICTED|PARTIAL|UNKNOWN|NOT_EXECUTED\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 43,
+      "text": "      \"definition\": \"VERIFIED means direct authoritative support; CONTRADICTED means direct conflict; PARTIAL means only part of the claim is supported; UNKNOWN means the authoritative source is unavailable/ambiguous/unresolved; NOT_EXECUTED means live evidence establishes the claimed action did not occur.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 44,
+      "text": "      \"definition_of_evaluation\": \"Assign exactly one status from live evidence and preserve modifiers/exceptions rather than collapsing qualified claims.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 45,
+      "text": "      \"pass_criteria\": \"Status matches the evidence and scope of the complete claim.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 46,
+      "text": "      \"fail_criteria\": \"UNKNOWN/PARTIAL/NOT_EXECUTED is converted into success or a contradiction is ignored.\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 47,
+      "text": "    },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 48,
+      "text": "    \"exact_satisfaction\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 49,
+      "text": "      \"key\": \"exact_satisfaction\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 50,
+      "text": "      \"value\": \"P satisfies U only when every requirement and modifier is met without unauthorized extra work.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 51,
+      "text": "      \"definition\": \"Semantic equivalence is allowed only when scope, quantity, method, sequence, target, and prohibitions remain intact.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 52,
+      "text": "      \"definition_of_evaluation\": \"Compare P independently against each decomposed requirement and modifier.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 53,
+      "text": "      \"pass_criteria\": \"Every requirement passes and no unauthorized action is introduced.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 54,
+      "text": "      \"fail_criteria\": \"Any required result is missing, prohibition violated, modifier changed, target changed, or extra work introduced.\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 55,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 56,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 57,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 58,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 59,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 60,
+      "text": "## Governing Rule Catalog",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 61,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 62,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 63,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 64,
+      "text": "  \"rules\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 65,
+      "text": "    \"shared_configuration_contract_governs_external_references\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 66,
+      "text": "      \"key\": \"shared_configuration_contract_governs_external_references\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 67,
+      "text": "      \"value\": \"All external file dependencies, triggers, runtime roots, and evaluation artifacts are declared in ChatMachines/GeminiSupervisor/config.json. Specification and runtime refer to named keys in that shared config rather than independently hardcoding external paths.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 68,
+      "text": "      \"definition\": \"External file locations must remain identical between specification and runtime via one shared supervisor configuration.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 69,
+      "text": "      \"definition_of_evaluation\": \"Compare external path references in Agents.md and send-to-gemini.js against the entries in ChatMachines/GeminiSupervisor/config.json.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 70,
+      "text": "      \"pass_criteria\": \"Both specification and runtime resolve external dependencies from config.json using matching keys.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 71,
+      "text": "      \"fail_criteria\": \"An external file path is hardcoded divergently or bypasses the shared configuration keys.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 72,
+      "text": "      \"scenario_examples\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 73,
+      "text": "        \"rule_following\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 74,
+      "text": "          {\"scenario\":\"Step 3 test source is resolved via config.json key external_files.step3_evaluation_artifact.path.\",\"criterion_used\":\"shared config key alignment\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 75,
+      "text": "          {\"scenario\":\"Runtime reads triggerPath from config.json key trigger_file.\",\"criterion_used\":\"config resolution\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 76,
+      "text": "          {\"scenario\":\"Agents.md instructs supervisor to consult the artifact defined under step3_evaluation_artifact in config.json.\",\"criterion_used\":\"named key reference\",\"status\":\"PASS\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 77,
+      "text": "        ],",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 78,
+      "text": "        \"rule_breaking\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 79,
+      "text": "          {\"scenario\":\"Runtime hardcodes an external test file path that differs from the path in config.json.\",\"criterion_used\":\"divergent path\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 80,
+      "text": "          {\"scenario\":\"Agents.md specifies a hardcoded path not present in config.json.\",\"criterion_used\":\"unconfigured dependency\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 81,
+      "text": "          {\"scenario\":\"Specification and runtime invent different keys for the same file artifact.\",\"criterion_used\":\"key mismatch\",\"status\":\"FAIL\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 82,
+      "text": "        ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 83,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 84,
+      "text": "    },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 85,
+      "text": "    \"return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 86,
+      "text": "      \"key\": \"return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 87,
+      "text": "      \"value\": \"Every step has a required return schema; the ChatGPT-owned execution result is persisted and Gemini evaluates that exact schema before advancement. A failed earlier gate cannot be bypassed. return_schema_completed refers only to the current step.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 88,
+      "text": "      \"definition\": \"Per-step return schemas are the canonical execution and gating interface.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 89,
+      "text": "      \"definition_of_evaluation\": \"Check schema shape, required fields, truthfulness, persistence, role ownership, completion semantics, and current-step gate state.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 90,
+      "text": "      \"pass_criteria\": \"The current-step schema is complete, truthful, persisted, produced by the required role, and advances only after PASS.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 91,
+      "text": "      \"fail_criteria\": \"A schema/control requirement is absent/false, a failed step is bypassed, or step completion is misrepresented as whole-procedure completion.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 92,
+      "text": "      \"scenario_examples\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 93,
+      "text": "        \"rule_following\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 94,
+      "text": "          {\"scenario\":\"Step 2 is persisted and receives Gemini PASS before Step 3.\",\"criterion_used\":\"gate order\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 95,
+      "text": "          {\"scenario\":\"Step 3 marks return_schema_completed only after A-G and tests are complete.\",\"criterion_used\":\"per-step completion\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 96,
+      "text": "          {\"scenario\":\"A Step 2 FAIL remains at Step 2 for correction.\",\"criterion_used\":\"failed gate cannot be bypassed\",\"status\":\"PASS\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 97,
+      "text": "        ],",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 98,
+      "text": "        \"rule_breaking\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 99,
+      "text": "          {\"scenario\":\"Step 1 omits a required field but the controller advances.\",\"criterion_used\":\"schema completeness\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 100,
+      "text": "          {\"scenario\":\"A Step 3 FAIL is followed by Step 4 execution.\",\"criterion_used\":\"failed gate cannot be bypassed\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 101,
+      "text": "          {\"scenario\":\"return_schema_completed=true is reported as proof that all steps are done.\",\"criterion_used\":\"per-step completion\",\"status\":\"FAIL\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 102,
+      "text": "        ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 103,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 104,
+      "text": "    },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 105,
+      "text": "    \"model_role_separation_and_server_verified_execution_identity_are_mandatory\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 106,
+      "text": "      \"key\": \"model_role_separation_and_server_verified_execution_identity_are_mandatory\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 107,
+      "text": "      \"value\": \"Steps 0-4 are ChatGPT-owned. Supervisory gates are Gemini-owned. Neither role may execute, repair, retry, or simulate the other role's work. role_completed must be supported by runtime/server evidence.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 108,
+      "text": "      \"definition\": \"Role ownership is a runtime boundary, not a textual label.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 109,
+      "text": "      \"definition_of_evaluation\": \"Compare role_required, role_forbidden, role_completed, and role_verification to observed execution locus.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 110,
+      "text": "      \"pass_criteria\": \"Runtime evidence establishes role_completed equals role_required and not role_forbidden.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 111,
+      "text": "      \"fail_criteria\": \"Wrong role executed, evidence is missing/conflicting, or output is relabeled to hide origin.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 112,
+      "text": "      \"scenario_examples\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 113,
+      "text": "        \"rule_following\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 114,
+      "text": "          {\"scenario\":\"ChatGPT authors the execution return through the connected GitHub tool.\",\"criterion_used\":\"ChatGPT-owned execution\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 115,
+      "text": "          {\"scenario\":\"Gemini API produces the supervisory gate inside send-to-gemini.js.\",\"criterion_used\":\"Gemini-owned gate\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 116,
+      "text": "          {\"scenario\":\"A Gemini-authored Step 2 payload is rejected despite valid JSON.\",\"criterion_used\":\"no role laundering\",\"status\":\"PASS\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 117,
+      "text": "        ],",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 118,
+      "text": "        \"rule_breaking\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 119,
+      "text": "          {\"scenario\":\"Gemini is asked to generate Step 3 execution content.\",\"criterion_used\":\"forbidden execution role\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 120,
+      "text": "          {\"scenario\":\"ChatGPT fabricates a Gemini PASS.\",\"criterion_used\":\"no simulation\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 121,
+      "text": "          {\"scenario\":\"A payload self-labels as ChatGPT while runtime provenance shows Gemini.\",\"criterion_used\":\"runtime evidence controls\",\"status\":\"FAIL\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 122,
+      "text": "        ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 123,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 124,
+      "text": "    },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 125,
+      "text": "    \"chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 126,
+      "text": "      \"key\": \"chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 127,
+      "text": "      \"value\": \"A nextmessage commit creates a mandatory wait for the corresponding Gemini response. On FAIL ChatGPT corrects the same step and recommits. On PASS with remaining work ChatGPT executes the next step. The turn ends only after the latest response and terminal state.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 128,
+      "text": "      \"definition\": \"The user-facing turn spans the complete commit-response-control loop.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 129,
+      "text": "      \"definition_of_evaluation\": \"Inspect outstanding response state, latest gate, current_step, remaining_steps, and required retry/continuation.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 130,
+      "text": "      \"pass_criteria\": \"No outstanding response exists and either continuation occurs or the procedure is terminal.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 131,
+      "text": "      \"fail_criteria\": \"The turn ends after a commit, nonterminal PASS, or FAIL without same-step correction.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 132,
+      "text": "      \"scenario_examples\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 133,
+      "text": "        \"rule_following\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 134,
+      "text": "          {\"scenario\":\"Step 1 PASS immediately continues to Step 2.\",\"criterion_used\":\"nonterminal continuation\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 135,
+      "text": "          {\"scenario\":\"Step 3 FAIL is corrected in the same run.\",\"criterion_used\":\"same-step retry\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 136,
+      "text": "          {\"scenario\":\"Step 4 PASS with no remaining steps ends the turn.\",\"criterion_used\":\"terminal condition\",\"status\":\"PASS\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 137,
+      "text": "        ],",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 138,
+      "text": "        \"rule_breaking\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 139,
+      "text": "          {\"scenario\":\"ChatGPT says committed and ends before Gemini responds.\",\"criterion_used\":\"outstanding response\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 140,
+      "text": "          {\"scenario\":\"Step 0 passes but Step 1 is not submitted.\",\"criterion_used\":\"nonterminal continuation\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 141,
+      "text": "          {\"scenario\":\"A FAIL is merely reported to the user.\",\"criterion_used\":\"same-step retry\",\"status\":\"FAIL\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 142,
+      "text": "        ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 143,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 144,
+      "text": "    },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 145,
+      "text": "    \"bootstrap_must_create_and_isolate_a_consistent_run_container_before_step_zero\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 146,
+      "text": "      \"key\": \"bootstrap_must_create_and_isolate_a_consistent_run_container_before_step_zero\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 147,
+      "text": "      \"value\": \"Each run has path-safe run_nonce and isolated state.json, messages.json, and store/store.json under runs/<run_nonce>/. Execution and gate records remain in that run.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 148,
+      "text": "      \"definition\": \"Bootstrap establishes run identity, persistence, and isolation.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 149,
+      "text": "      \"definition_of_evaluation\": \"Verify the three live files, matching nonce values, isolation, initial request persistence, and bootstrap-before-Step-0 order.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 150,
+      "text": "      \"pass_criteria\": \"All run-container invariants hold and only the active run is mutated.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 151,
+      "text": "      \"fail_criteria\": \"Files are absent, nonce mismatches, another run is mutated, or Step 0 occurs before bootstrap.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 152,
+      "text": "      \"scenario_examples\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 153,
+      "text": "        \"rule_following\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 154,
+      "text": "          {\"scenario\":\"All three run files exist with the same nonce.\",\"criterion_used\":\"container consistency\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 155,
+      "text": "          {\"scenario\":\"Retry records remain under the same nonce.\",\"criterion_used\":\"run isolation\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 156,
+      "text": "          {\"scenario\":\"Initial user text is persisted before Step 0 completes.\",\"criterion_used\":\"initial persistence\",\"status\":\"PASS\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 157,
+      "text": "        ],",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 158,
+      "text": "        \"rule_breaking\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 159,
+      "text": "          {\"scenario\":\"messages.json has another nonce.\",\"criterion_used\":\"nonce consistency\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 160,
+      "text": "          {\"scenario\":\"Step 0 writes into another run directory.\",\"criterion_used\":\"isolation\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 161,
+      "text": "          {\"scenario\":\"A required run file is missing.\",\"criterion_used\":\"container completeness\",\"status\":\"FAIL\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 162,
+      "text": "        ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 163,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 164,
+      "text": "    },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 165,
+      "text": "    \"live_ground_truth_verification_against_pathological_deception\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 166,
+      "text": "      \"key\": \"live_ground_truth_verification_against_pathological_deception\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 167,
+      "text": "      \"value\": \"Before a supervisory PASS on any materially execution-dependent claim, the runtime and supervisor must independently correlate the claim with exact live ground truth. Agent self-report, prior assistant statements, plans, generated summaries, memory, and self-asserted evidence are testimony only and never sufficient ground truth.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 168,
+      "text": "      \"definition\": \"Live ground-truth verification prevents fabricated paths, commits, artifacts, evaluator results, execution status, and completion claims from passing because their JSON is syntactically plausible. Ground truth includes current artifact bytes/text, git blobs/commits/refs, runtime/tool records, state/messages/store records, exact evaluator returns, and other authoritative execution-proximate sources.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 169,
+      "text": "      \"definition_of_evaluation\": \"Extract material execution-dependent claims; map each to an authoritative live source; retrieve/inspect that source; preserve source and locator plus exact observed content; evaluate authority, freshness, execution proximity, specificity, and integrity; assign VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, or NOT_EXECUTED; resolve conflicts by authority/freshness; never convert UNKNOWN/PARTIAL/NOT_EXECUTED into success.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 170,
+      "text": "      \"pass_criteria\": \"Every material completion/execution/artifact claim either has VERIFIED live evidence or is accurately reported as non-verified without implying success. No blocking live-ground-truth finding is ignored by a PASS gate.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 171,
+      "text": "      \"fail_criteria\": \"A material claim is accepted from self-report, memory, stale summary, or unverified locator; a live source contradicts the claim; required live evidence is unavailable but success is asserted; a blocking finding is omitted or ignored; or Gemini alters deterministic findings supplied by the runtime.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 172,
+      "text": "      \"scenario_examples\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 173,
+      "text": "        \"rule_following\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 174,
+      "text": "          {\"scenario\":\"A claimed commit SHA is checked in the live git object database and exists before the completion claim passes.\",\"criterion_used\":\"authoritative source-control verification\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 175,
+      "text": "          {\"scenario\":\"Step 4 names a file and content; the runtime reads the live workspace file and confirms the claimed text before Gemini passes it.\",\"criterion_used\":\"artifact existence/content verification\",\"status\":\"PASS\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 176,
+      "text": "          {\"scenario\":\"The runtime cannot verify a claimed external send, marks it UNKNOWN, and the gate refuses to treat it as completed.\",\"criterion_used\":\"UNKNOWN is not success\",\"status\":\"PASS\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 177,
+      "text": "        ],",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 178,
+      "text": "        \"rule_breaking\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 179,
+      "text": "          {\"scenario\":\"The agent says 'I committed it' and Gemini passes solely because completion_evidence contains that sentence.\",\"criterion_used\":\"self-report is testimony\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 180,
+      "text": "          {\"scenario\":\"A file locator does not exist in the live workspace but the gate returns PASS.\",\"criterion_used\":\"contradicted artifact claim\",\"status\":\"FAIL\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 181,
+      "text": "          {\"scenario\":\"Gemini rewrites a deterministic finding from CONTRADICTED to VERIFIED.\",\"criterion_used\":\"deterministic findings are immutable evidence\",\"status\":\"FAIL\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 182,
+      "text": "        ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 183,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 184,
+      "text": "    },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 185,
+      "text": "    \"step_four_reporting_must_put_failures_and_incomplete_work_before_verified_completion\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 186,
+      "text": "      \"key\": \"step_four_reporting_must_put_failures_and_incomplete_work_before_verified_completion\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 187,
+      "text": "      \"value\": \"Step 4 reports failed actions first, incomplete actions second, and only verified completed actions last; every completion requires granular evidence.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 188,
+      "text": "      \"definition\": \"Final reporting order prevents partial work from being hidden behind completion language.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 189,
+      "text": "      \"definition_of_evaluation\": \"Compare actual plan/requirements and live evidence to failed_actions, not_completed_actions, and completed_actions.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 190,
+      "text": "      \"pass_criteria\": \"Every failure/incomplete item is represented first and every completion is live-ground-truth VERIFIED.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 191,
+      "text": "      \"fail_criteria\": \"A failure/incomplete item is omitted or a completion lacks verified evidence.\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 192,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 193,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 194,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 195,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 196,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 197,
+      "text": "## Procedure Dependency Chart",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 198,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 199,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 200,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 201,
+      "text": "  \"dependency_chart\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 202,
+      "text": "    {\"source_value\":\"ChatMachines/GeminiSupervisor/config.json\",\"decision\":\"load external file references and runtime path configuration\",\"outputs\":[\"triggerPath\",\"agentsPath\",\"step3EvaluationPath\",\"runsRoot\"],\"source_code_consumer\":\"loadSupervisorConfig\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 203,
+      "text": "    {\"source_value\":\"nextmessage.run_nonce\",\"decision\":\"select or create isolated run container\",\"outputs\":[\"runs/<run_nonce>/state.json\",\"runs/<run_nonce>/messages.json\",\"runs/<run_nonce>/store/store.json\"],\"source_code_consumer\":\"initRun\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 204,
+      "text": "    {\"source_value\":\"execution.step\",\"decision\":\"must equal current_state.procedure.current_step\",\"outputs\":[\"deterministic_validation_failures\"],\"source_code_consumer\":\"inspect\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 205,
+      "text": "    {\"source_value\":\"execution.return_schema\",\"decision\":\"validate current-step schema and extract material execution-dependent claims\",\"outputs\":[\"granular_evaluation template\",\"ground_truth_verification findings\"],\"source_code_consumer\":\"validateStep, collectGroundTruth, gateTemplate\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 206,
+      "text": "    {\"source_value\":\"live workspace/git/run records\",\"decision\":\"classify each material claim VERIFIED|CONTRADICTED|PARTIAL|UNKNOWN|NOT_EXECUTED\",\"outputs\":[\"ground_truth_verification\",\"ground_truth_verification_eval\"],\"source_code_consumer\":\"collectGroundTruth, groundTruthEvalValid\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 207,
+      "text": "    {\"source_value\":\"Step 2 stated_requirements\",\"decision\":\"constrain Step 3 planning and Step 4 final coverage\",\"outputs\":[\"Gemini supervisory prompt\"],\"source_code_consumer\":\"statedRequirements, supervise\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 208,
+      "text": "    {\"source_value\":\"config.external_files.step3_evaluation_artifact\",\"decision\":\"supply evaluation_heuristic and complete Step3_TSR tests to Step 3\",\"outputs\":[\"Step_3.F.test_results\",\"supervisory evaluation context\"],\"source_code_consumer\":\"loadStep3Evaluation, validateStep, systemText, supervise\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 209,
+      "text": "    {\"source_value\":\"Step 3 test_results\",\"decision\":\"any T repeats Step 3; all F permits Step 3 completion\",\"outputs\":[\"Step_3.G.Loop_Decision\",\"Step_3.G.return_to\"],\"source_code_consumer\":\"validateStep\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 210,
+      "text": "    {\"source_value\":\"supervisory_gate.ground_truth_verification_eval\",\"decision\":\"reject malformed/altered findings and prevent PASS when blocking findings exist\",\"outputs\":[\"supervisory repair or accepted gate\"],\"source_code_consumer\":\"groundTruthEvalValid, evalValid\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 211,
+      "text": "    {\"source_value\":\"supervisory_gate.gate_result\",\"decision\":\"PASS advances exactly one step; FAIL remains on same step\",\"outputs\":[\"state.current_step\",\"completed_steps\",\"remaining_steps\",\"last_supervisory_failure\"],\"source_code_consumer\":\"main transition logic\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 212,
+      "text": "    {\"source_value\":\"execution and supervisory records\",\"decision\":\"persist exact evidence and outcomes\",\"outputs\":[\"messages.json\",\"store/store.json\",\"state.json step_records\"],\"source_code_consumer\":\"addMessage, addStore, attemptRecord\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 213,
+      "text": "  ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 214,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 215,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 216,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 217,
+      "text": "## Supervisory Gate Common Field Glossary",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 218,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 219,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 220,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 221,
+      "text": "  \"supervisory_gate_common_field_glossary\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 222,
+      "text": "    \"role_required\":{\"key\":\"role_required\",\"value\":\"Gemini model\",\"definition\":\"Required gate executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"Gemini model.\",\"fail_criteria\":\"Other/missing.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 223,
+      "text": "    \"role_forbidden\":{\"key\":\"role_forbidden\",\"value\":\"ChatGPT model\",\"definition\":\"Forbidden gate executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"ChatGPT model.\",\"fail_criteria\":\"Other/missing.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 224,
+      "text": "    \"role_completed\":{\"key\":\"role_completed\",\"value\":\"Gemini model\",\"definition\":\"Actual gate executor.\",\"definition_of_evaluation\":\"Verify runtime provenance.\",\"pass_criteria\":\"Verified Gemini.\",\"fail_criteria\":\"Wrong/unverified.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 225,
+      "text": "    \"role_verification\":{\"key\":\"role_verification\",\"value\":\"{method,evidence}\",\"definition\":\"Runtime role proof.\",\"definition_of_evaluation\":\"Require non-empty direct provenance.\",\"pass_criteria\":\"Supports Gemini.\",\"fail_criteria\":\"Missing/conflicting.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 226,
+      "text": "    \"instruction\":{\"key\":\"instruction\",\"value\":\"evaluation-only instruction\",\"definition\":\"Gate scope and role boundary.\",\"definition_of_evaluation\":\"Must require semantic and live-ground-truth evaluation and forbid ChatGPT-step execution/repair.\",\"pass_criteria\":\"Complete evaluation-only instruction.\",\"fail_criteria\":\"Wrong-role execution permitted or required checks omitted.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 227,
+      "text": "    \"granular_evaluation\":{\"key\":\"granular_evaluation\",\"value\":\"*_eval tree\",\"definition\":\"Per-terminal execution-value evaluations.\",\"definition_of_evaluation\":\"Every terminal execution key/value must be preserved exactly and evaluated.\",\"pass_criteria\":\"Complete valid tree.\",\"fail_criteria\":\"Missing/changed/unevaluated value.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 228,
+      "text": "    \"ground_truth_verification_eval\":{\"key\":\"ground_truth_verification_eval\",\"value\":\"{deterministic_findings,claim_evaluations,aggregate_status,supervisor_eval_result,supervisor_eval_comment}\",\"definition\":\"Supervisor evaluation of immutable deterministic live-ground-truth findings.\",\"definition_of_evaluation\":\"Preserve runtime findings and aggregate status exactly; independently evaluate every finding; blocking findings prohibit PASS.\",\"pass_criteria\":\"Exact preservation, complete evaluations, and no blocking finding ignored.\",\"fail_criteria\":\"Findings altered/omitted, evaluation incomplete, or PASS despite blocking evidence.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 229,
+      "text": "    \"step_level_evaluation\":{\"key\":\"step_level_evaluation\",\"value\":\"{supervisor_eval_result,supervisor_eval_comment}\",\"definition\":\"Whole-step semantic result.\",\"definition_of_evaluation\":\"Aggregate all schema, requirement, role, and ground-truth checks.\",\"pass_criteria\":\"Complete/consistent.\",\"fail_criteria\":\"Missing/invalid/inconsistent.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 230,
+      "text": "    \"failures\":{\"key\":\"failures\",\"value\":\"array\",\"definition\":\"Independent failure records.\",\"definition_of_evaluation\":\"Every detected independent failure must be represented separately.\",\"pass_criteria\":\"Complete/separate.\",\"fail_criteria\":\"Missing/collapsed/invented.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 231,
+      "text": "    \"gate_result\":{\"key\":\"gate_result\",\"value\":\"PASS|FAIL\",\"definition\":\"Transition decision.\",\"definition_of_evaluation\":\"PASS only when every required component passes and no blocking live-ground-truth finding exists.\",\"pass_criteria\":\"Correct aggregate.\",\"fail_criteria\":\"Invalid or inconsistent.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 232,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 233,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 234,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 235,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 236,
+      "text": "## Step 0 Field Definition Glossary",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 237,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 238,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 239,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 240,
+      "text": "  \"step_0_field_glossary\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 241,
+      "text": "    \"start_of_turn\":{\"key\":\"start_of_turn\",\"value\":\"object\",\"definition\":\"Step 0 execution return.\",\"definition_of_evaluation\":\"Require all child fields.\",\"pass_criteria\":\"Complete.\",\"fail_criteria\":\"Missing/incomplete.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 242,
+      "text": "    \"start_of_turn.role_required\":{\"key\":\"start_of_turn.role_required\",\"value\":\"ChatGPT model\",\"definition\":\"Required executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"ChatGPT model.\",\"fail_criteria\":\"Other/missing.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 243,
+      "text": "    \"start_of_turn.role_forbidden\":{\"key\":\"start_of_turn.role_forbidden\",\"value\":\"Gemini model\",\"definition\":\"Forbidden executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"Gemini model.\",\"fail_criteria\":\"Other/missing.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 244,
+      "text": "    \"start_of_turn.role_completed\":{\"key\":\"start_of_turn.role_completed\",\"value\":\"ChatGPT model\",\"definition\":\"Actual executor.\",\"definition_of_evaluation\":\"Verify runtime evidence.\",\"pass_criteria\":\"Verified ChatGPT.\",\"fail_criteria\":\"Wrong/unverified.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 245,
+      "text": "    \"start_of_turn.role_verification\":{\"key\":\"start_of_turn.role_verification\",\"value\":\"{method,evidence}\",\"definition\":\"Execution-role proof.\",\"definition_of_evaluation\":\"Require direct non-empty evidence.\",\"pass_criteria\":\"Supports ChatGPT.\",\"fail_criteria\":\"Missing/conflicting.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 246,
+      "text": "    \"start_of_turn.run_nonce\":{\"key\":\"start_of_turn.run_nonce\",\"value\":\"path-safe string\",\"definition\":\"Run identity.\",\"definition_of_evaluation\":\"Compare active run.\",\"pass_criteria\":\"Exact match.\",\"fail_criteria\":\"Mismatch/missing.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 247,
+      "text": "    \"start_of_turn.user_request\":{\"key\":\"start_of_turn.user_request\",\"value\":\"verbatim user request\",\"definition\":\"Initial request.\",\"definition_of_evaluation\":\"Compare user words.\",\"pass_criteria\":\"Complete/unpolluted.\",\"fail_criteria\":\"Changed/truncated.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 248,
+      "text": "    \"start_of_turn.current_timestamp\":{\"key\":\"start_of_turn.current_timestamp\",\"value\":\"ISO 8601\",\"definition\":\"Execution time.\",\"definition_of_evaluation\":\"Validate format/presence.\",\"pass_criteria\":\"Valid.\",\"fail_criteria\":\"Missing/invalid.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 249,
+      "text": "    \"start_of_turn.return_schema_completed\":{\"key\":\"start_of_turn.return_schema_completed\",\"value\":true,\"definition\":\"Step completion flag.\",\"definition_of_evaluation\":\"True only with complete Step 0 return.\",\"pass_criteria\":\"True and complete.\",\"fail_criteria\":\"False/missing/premature.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 250,
+      "text": "    \"start_of_turn.return_schema_completed_timestamp\":{\"key\":\"start_of_turn.return_schema_completed_timestamp\",\"value\":\"ISO 8601\",\"definition\":\"Completion time.\",\"definition_of_evaluation\":\"Require valid timestamp.\",\"pass_criteria\":\"Valid.\",\"fail_criteria\":\"Missing/invalid.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 251,
+      "text": "    \"start_of_turn.nonce\":{\"key\":\"start_of_turn.nonce\",\"value\":\"non-empty string\",\"definition\":\"Request identifier.\",\"definition_of_evaluation\":\"Require stable traceable value.\",\"pass_criteria\":\"Present.\",\"fail_criteria\":\"Missing/empty.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 252,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 253,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 254,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 255,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 256,
+      "text": "## Step 0",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 257,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 258,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 259,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 260,
+      "text": "  \"step_0\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 261,
+      "text": "    \"required_execution_role\":\"ChatGPT model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 262,
+      "text": "    \"forbidden_execution_role\":\"Gemini model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 263,
+      "text": "    \"evaluation_requirements\":[",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 264,
+      "text": "      {\"key\":\"step_0_preserve_verbatim_request\",\"value\":\"Preserve complete user utterance.\",\"definition\":\"Request fidelity.\",\"definition_of_evaluation\":\"Compare verbatim.\",\"pass_criteria\":\"Exact user text.\",\"fail_criteria\":\"Changed/truncated/polluted.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 265,
+      "text": "      {\"key\":\"step_0_bootstrap_identity\",\"value\":\"Use active run/request identifiers.\",\"definition\":\"Traceability.\",\"definition_of_evaluation\":\"Compare live run container.\",\"pass_criteria\":\"Identifiers match.\",\"fail_criteria\":\"Missing/mismatch.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 266,
+      "text": "      {\"key\":\"step_0_live_ground_truth\",\"value\":\"Verify bootstrap/run identity claims from the live run-container files; self-asserted role/run evidence is testimony until correlated with runtime findings.\",\"definition\":\"Step 0 empirical verification.\",\"definition_of_evaluation\":\"Use deterministic live ground-truth findings plus role provenance.\",\"pass_criteria\":\"Required live files and identity claims are VERIFIED and no blocking finding exists.\",\"fail_criteria\":\"Run/role claim contradicted, unknown but asserted successful, or deterministic finding ignored.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 267,
+      "text": "      {\"key\":\"step_0_persistence_and_gate\",\"value\":\"Persist execution/gate records and receive PASS before Step 1.\",\"definition\":\"Durability/order.\",\"definition_of_evaluation\":\"Inspect live run records and gate.\",\"pass_criteria\":\"Persisted and passed.\",\"fail_criteria\":\"Missing/premature advancement.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 268,
+      "text": "    ],",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 269,
+      "text": "    \"execution_return_schema\":{\"start_of_turn\":{\"role_required\":\"ChatGPT model\",\"role_forbidden\":\"Gemini model\",\"role_completed\":\"<verified role>\",\"role_verification\":{\"method\":\"<method>\",\"evidence\":\"<evidence>\"},\"run_nonce\":\"<run nonce>\",\"user_request\":\"<verbatim user request>\",\"current_timestamp\":\"<ISO 8601>\",\"return_schema_completed\":true,\"return_schema_completed_timestamp\":\"<ISO 8601>\",\"nonce\":\"<request nonce>\"}},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 270,
+      "text": "    \"supervisory_gate_schema\":{\"supervisory_gate\":{\"role_required\":\"Gemini model\",\"role_forbidden\":\"ChatGPT model\",\"role_completed\":\"<verified role>\",\"role_verification\":{\"method\":\"<method>\",\"evidence\":\"<evidence>\"},\"instruction\":\"Evaluate Step 0 only; correlate execution-dependent claims with immutable runtime ground-truth findings; preserve all *_eval values; do not execute/repair the ChatGPT step.\",\"granular_evaluation\":\"<*_eval tree>\",\"ground_truth_verification_eval\":{\"deterministic_findings\":\"<exact runtime findings>\",\"claim_evaluations\":\"<one per finding>\",\"aggregate_status\":\"PASS|FAIL\",\"supervisor_eval_result\":\"PASS|FAIL\",\"supervisor_eval_comment\":\"<comment>\"},\"step_level_evaluation\":{\"supervisor_eval_result\":\"PASS|FAIL\",\"supervisor_eval_comment\":\"<comment>\"},\"failures\":[],\"gate_result\":\"PASS|FAIL\"}}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 271,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 272,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 273,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 274,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 275,
+      "text": "## Step 1 Field Definition Glossary",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 276,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 277,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 278,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 279,
+      "text": "  \"step_1_field_glossary\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 280,
+      "text": "    \"step_1_record\":{\"key\":\"step_1_record\",\"value\":\"object\",\"definition\":\"Step 1 continuity return.\",\"definition_of_evaluation\":\"Require all child fields.\",\"pass_criteria\":\"Complete.\",\"fail_criteria\":\"Missing/incomplete.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 281,
+      "text": "    \"step_1_record.role_required\":{\"key\":\"step_1_record.role_required\",\"value\":\"ChatGPT model\",\"definition\":\"Required executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"ChatGPT model.\",\"fail_criteria\":\"Other.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 282,
+      "text": "    \"step_1_record.role_forbidden\":{\"key\":\"step_1_record.role_forbidden\",\"value\":\"Gemini model\",\"definition\":\"Forbidden executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"Gemini model.\",\"fail_criteria\":\"Other.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 283,
+      "text": "    \"step_1_record.role_completed\":{\"key\":\"step_1_record.role_completed\",\"value\":\"ChatGPT model\",\"definition\":\"Actual executor.\",\"definition_of_evaluation\":\"Verify provenance.\",\"pass_criteria\":\"Verified ChatGPT.\",\"fail_criteria\":\"Wrong/unverified.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 284,
+      "text": "    \"step_1_record.role_verification\":{\"key\":\"step_1_record.role_verification\",\"value\":\"{method,evidence}\",\"definition\":\"Execution role evidence.\",\"definition_of_evaluation\":\"Require direct evidence.\",\"pass_criteria\":\"Supports ChatGPT.\",\"fail_criteria\":\"Missing/conflicting.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 285,
+      "text": "    \"step_1_record.run_nonce\":{\"key\":\"step_1_record.run_nonce\",\"value\":\"string\",\"definition\":\"Run identity.\",\"definition_of_evaluation\":\"Compare active run.\",\"pass_criteria\":\"Exact match.\",\"fail_criteria\":\"Mismatch.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 286,
+      "text": "    \"step_1_record.user_request\":{\"key\":\"step_1_record.user_request\",\"value\":\"verbatim request\",\"definition\":\"Preserved request.\",\"definition_of_evaluation\":\"Compare Step 0.\",\"pass_criteria\":\"Exact.\",\"fail_criteria\":\"Changed.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 287,
+      "text": "    \"step_1_record.nonce\":{\"key\":\"step_1_record.nonce\",\"value\":\"string\",\"definition\":\"Request identity.\",\"definition_of_evaluation\":\"Compare Step 0.\",\"pass_criteria\":\"Exact/traceable.\",\"fail_criteria\":\"Missing/mismatch.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 288,
+      "text": "    \"step_1_record.current_timestamp\":{\"key\":\"step_1_record.current_timestamp\",\"value\":\"ISO 8601\",\"definition\":\"Execution time.\",\"definition_of_evaluation\":\"Validate.\",\"pass_criteria\":\"Valid.\",\"fail_criteria\":\"Invalid.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 289,
+      "text": "    \"step_1_record.return_schema_completed\":{\"key\":\"step_1_record.return_schema_completed\",\"value\":true,\"definition\":\"Step completion.\",\"definition_of_evaluation\":\"True only when complete.\",\"pass_criteria\":\"True/complete.\",\"fail_criteria\":\"Premature/missing.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 290,
+      "text": "    \"step_1_record.return_schema_completed_timestamp\":{\"key\":\"step_1_record.return_schema_completed_timestamp\",\"value\":\"ISO 8601\",\"definition\":\"Completion time.\",\"definition_of_evaluation\":\"Validate.\",\"pass_criteria\":\"Valid.\",\"fail_criteria\":\"Invalid.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 291,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 292,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 293,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 294,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 295,
+      "text": "## Step 1",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 296,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 297,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 298,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 299,
+      "text": "  \"step_1\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 300,
+      "text": "    \"required_execution_role\":\"ChatGPT model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 301,
+      "text": "    \"forbidden_execution_role\":\"Gemini model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 302,
+      "text": "    \"evaluation_requirements\":[",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 303,
+      "text": "      {\"key\":\"step_1_preserve_request\",\"value\":\"Preserve complete Step 0 request and identifiers.\",\"definition\":\"Continuity.\",\"definition_of_evaluation\":\"Compare Step 0/active run.\",\"pass_criteria\":\"Exact/consistent.\",\"fail_criteria\":\"Changed/mismatch.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 304,
+      "text": "      {\"key\":\"step_1_role_completion_persistence\",\"value\":\"Use verified ChatGPT role, complete/persist Step 1, and receive PASS before Step 2.\",\"definition\":\"Step integrity.\",\"definition_of_evaluation\":\"Inspect role/schema/persistence/gate.\",\"pass_criteria\":\"All pass.\",\"fail_criteria\":\"Any fail.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 305,
+      "text": "    ],",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 306,
+      "text": "    \"execution_return_schema\":{\"step_1_record\":{\"role_required\":\"ChatGPT model\",\"role_forbidden\":\"Gemini model\",\"role_completed\":\"<verified role>\",\"role_verification\":{\"method\":\"<method>\",\"evidence\":\"<evidence>\"},\"run_nonce\":\"<run nonce>\",\"user_request\":\"<verbatim user request>\",\"nonce\":\"<request nonce>\",\"current_timestamp\":\"<ISO 8601>\",\"return_schema_completed\":true,\"return_schema_completed_timestamp\":\"<ISO 8601>\"}},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 307,
+      "text": "    \"supervisory_gate_schema\":{\"supervisory_gate\":{\"role_required\":\"Gemini model\",\"role_forbidden\":\"ChatGPT model\",\"role_completed\":\"<verified role>\",\"role_verification\":{\"method\":\"<method>\",\"evidence\":\"<evidence>\"},\"instruction\":\"Evaluate Step 1 only and preserve every terminal execution key/value; do not execute/repair the ChatGPT step.\",\"granular_evaluation\":\"<*_eval tree>\",\"ground_truth_verification_eval\":{\"deterministic_findings\":\"<exact runtime findings>\",\"claim_evaluations\":\"<one per finding>\",\"aggregate_status\":\"PASS|FAIL\",\"supervisor_eval_result\":\"PASS|FAIL\",\"supervisor_eval_comment\":\"<comment>\"},\"step_level_evaluation\":{\"supervisor_eval_result\":\"PASS|FAIL\",\"supervisor_eval_comment\":\"<comment>\"},\"failures\":[],\"gate_result\":\"PASS|FAIL\"}}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 308,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 309,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 310,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 311,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 312,
+      "text": "## Step 2 Field Definition Glossary",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 313,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 314,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 315,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 316,
+      "text": "  \"step_2_field_glossary\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 317,
+      "text": "    \"step_2_record\":{\"key\":\"step_2_record\",\"value\":\"object\",\"definition\":\"Requirement extraction return.\",\"definition_of_evaluation\":\"Require all child fields.\",\"pass_criteria\":\"Complete.\",\"fail_criteria\":\"Missing/incomplete.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 318,
+      "text": "    \"step_2_record.role_required\":{\"key\":\"step_2_record.role_required\",\"value\":\"ChatGPT model\",\"definition\":\"Required executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"ChatGPT model.\",\"fail_criteria\":\"Other.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 319,
+      "text": "    \"step_2_record.role_forbidden\":{\"key\":\"step_2_record.role_forbidden\",\"value\":\"Gemini model\",\"definition\":\"Forbidden executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"Gemini model.\",\"fail_criteria\":\"Other.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 320,
+      "text": "    \"step_2_record.role_completed\":{\"key\":\"step_2_record.role_completed\",\"value\":\"ChatGPT model\",\"definition\":\"Actual executor.\",\"definition_of_evaluation\":\"Verify provenance.\",\"pass_criteria\":\"Verified ChatGPT.\",\"fail_criteria\":\"Wrong/unverified.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 321,
+      "text": "    \"step_2_record.role_verification\":{\"key\":\"step_2_record.role_verification\",\"value\":\"{method,evidence}\",\"definition\":\"Role evidence.\",\"definition_of_evaluation\":\"Require direct evidence.\",\"pass_criteria\":\"Supports ChatGPT.\",\"fail_criteria\":\"Missing/conflicting.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 322,
+      "text": "    \"step_2_record.run_nonce\":{\"key\":\"step_2_record.run_nonce\",\"value\":\"string\",\"definition\":\"Run identity.\",\"definition_of_evaluation\":\"Compare active run.\",\"pass_criteria\":\"Exact.\",\"fail_criteria\":\"Mismatch.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 323,
+      "text": "    \"step_2_record.user_request_nonce\":{\"key\":\"step_2_record.user_request_nonce\",\"value\":\"string\",\"definition\":\"Request identity.\",\"definition_of_evaluation\":\"Compare prior steps.\",\"pass_criteria\":\"Exact.\",\"fail_criteria\":\"Mismatch.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 324,
+      "text": "    \"step_2_record.stated_requirements\":{\"key\":\"step_2_record.stated_requirements\",\"value\":\"array<string>\",\"definition\":\"Only user-stated requirements, preserved verbatim.\",\"definition_of_evaluation\":\"Compare against user words.\",\"pass_criteria\":\"All and only user-stated requirements.\",\"fail_criteria\":\"Omission/invention/paraphrase.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 325,
+      "text": "    \"step_2_record.current_timestamp\":{\"key\":\"step_2_record.current_timestamp\",\"value\":\"ISO 8601\",\"definition\":\"Execution time.\",\"definition_of_evaluation\":\"Validate.\",\"pass_criteria\":\"Valid.\",\"fail_criteria\":\"Invalid.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 326,
+      "text": "    \"step_2_record.return_schema_completed\":{\"key\":\"step_2_record.return_schema_completed\",\"value\":true,\"definition\":\"Step completion.\",\"definition_of_evaluation\":\"True only after complete extraction.\",\"pass_criteria\":\"True/complete.\",\"fail_criteria\":\"Premature/missing.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 327,
+      "text": "    \"step_2_record.return_schema_completed_timestamp\":{\"key\":\"step_2_record.return_schema_completed_timestamp\",\"value\":\"ISO 8601\",\"definition\":\"Completion time.\",\"definition_of_evaluation\":\"Validate.\",\"pass_criteria\":\"Valid.\",\"fail_criteria\":\"Invalid.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 328,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 329,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 330,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 331,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 332,
+      "text": "## Step 2",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 333,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 334,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 335,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 336,
+      "text": "  \"step_2\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 337,
+      "text": "    \"required_execution_role\":\"ChatGPT model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 338,
+      "text": "    \"forbidden_execution_role\":\"Gemini model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 339,
+      "text": "    \"evaluation_requirements\":[",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 340,
+      "text": "      {\"key\":\"step_2_only_user_stated_requirements\",\"value\":\"Extract all and only user-stated requirements verbatim.\",\"definition\":\"No invented requirements.\",\"definition_of_evaluation\":\"Compare each entry to user words and full coverage.\",\"pass_criteria\":\"Complete/source-exact.\",\"fail_criteria\":\"Omitted/invented/paraphrased.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 341,
+      "text": "      {\"key\":\"step_2_live_ground_truth\",\"value\":\"Any claim that a prior requirement, artifact, evaluator result, or execution state exists must be correlated with live run/artifact sources rather than memory/self-report.\",\"definition\":\"Requirement-extraction provenance.\",\"definition_of_evaluation\":\"Use deterministic runtime findings for execution-dependent source claims.\",\"pass_criteria\":\"Material source-state claims VERIFIED or accurately non-verified.\",\"fail_criteria\":\"Unverified source-state assertion is accepted as fact.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 342,
+      "text": "      {\"key\":\"step_2_role_completion_persistence\",\"value\":\"Use verified ChatGPT role, complete/persist Step 2, and receive PASS before Step 3.\",\"definition\":\"Step integrity.\",\"definition_of_evaluation\":\"Inspect role/schema/persistence/gate.\",\"pass_criteria\":\"All pass.\",\"fail_criteria\":\"Any fail.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 343,
+      "text": "    ],",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 344,
+      "text": "    \"execution_return_schema\":{\"step_2_record\":{\"role_required\":\"ChatGPT model\",\"role_forbidden\":\"Gemini model\",\"role_completed\":\"<verified role>\",\"role_verification\":{\"method\":\"<method>\",\"evidence\":\"<evidence>\"},\"run_nonce\":\"<run nonce>\",\"user_request_nonce\":\"<request nonce>\",\"stated_requirements\":[\"<verbatim requirement>\"],\"current_timestamp\":\"<ISO 8601>\",\"return_schema_completed\":true,\"return_schema_completed_timestamp\":\"<ISO 8601>\"}},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 345,
+      "text": "    \"supervisory_gate_schema\":{\"supervisory_gate\":{\"role_required\":\"Gemini model\",\"role_forbidden\":\"ChatGPT model\",\"role_completed\":\"<verified role>\",\"role_verification\":{\"method\":\"<method>\",\"evidence\":\"<evidence>\"},\"instruction\":\"Evaluate Step 2 only; verify verbatim requirement coverage and correlate any execution-dependent source claims with immutable runtime ground truth; preserve all *_eval values; do not execute/repair the ChatGPT step.\",\"granular_evaluation\":\"<*_eval tree>\",\"ground_truth_verification_eval\":{\"deterministic_findings\":\"<exact runtime findings>\",\"claim_evaluations\":\"<one per finding>\",\"aggregate_status\":\"PASS|FAIL\",\"supervisor_eval_result\":\"PASS|FAIL\",\"supervisor_eval_comment\":\"<comment>\"},\"step_level_evaluation\":{\"supervisor_eval_result\":\"PASS|FAIL\",\"supervisor_eval_comment\":\"<comment>\"},\"failures\":[],\"gate_result\":\"PASS|FAIL\"}}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 346,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 347,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 348,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 349,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 350,
+      "text": "## Step 3 Field Definition Glossary",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 351,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 352,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 353,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 354,
+      "text": "  \"step_3_field_glossary\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 355,
+      "text": "    \"Step_3\":{\"key\":\"Step_3\",\"value\":\"object\",\"definition\":\"Planning/test return.\",\"definition_of_evaluation\":\"Require complete A-G plus control fields.\",\"pass_criteria\":\"Complete.\",\"fail_criteria\":\"Missing/incomplete.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 356,
+      "text": "    \"Step_3.role_required\":{\"key\":\"Step_3.role_required\",\"value\":\"ChatGPT model\",\"definition\":\"Required executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"ChatGPT model.\",\"fail_criteria\":\"Other.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 357,
+      "text": "    \"Step_3.role_forbidden\":{\"key\":\"Step_3.role_forbidden\",\"value\":\"Gemini model\",\"definition\":\"Forbidden executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"Gemini model.\",\"fail_criteria\":\"Other.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 358,
+      "text": "    \"Step_3.role_completed\":{\"key\":\"Step_3.role_completed\",\"value\":\"ChatGPT model\",\"definition\":\"Actual executor.\",\"definition_of_evaluation\":\"Verify provenance.\",\"pass_criteria\":\"Verified ChatGPT.\",\"fail_criteria\":\"Wrong/unverified.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 359,
+      "text": "    \"Step_3.role_verification\":{\"key\":\"Step_3.role_verification\",\"value\":\"{method,evidence}\",\"definition\":\"Role evidence.\",\"definition_of_evaluation\":\"Require direct evidence.\",\"pass_criteria\":\"Supports ChatGPT.\",\"fail_criteria\":\"Missing/conflicting.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 360,
+      "text": "    \"Step_3.descriptor\":{\"key\":\"Step_3.descriptor\",\"value\":\"string\",\"definition\":\"Step purpose.\",\"definition_of_evaluation\":\"Must describe decomposition/plan/test/loop.\",\"pass_criteria\":\"Correct.\",\"fail_criteria\":\"Missing/wrong.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 361,
+      "text": "    \"Step_3.user_request_nonce\":{\"key\":\"Step_3.user_request_nonce\",\"value\":\"string\",\"definition\":\"Request traceability.\",\"definition_of_evaluation\":\"Compare prior steps.\",\"pass_criteria\":\"Exact.\",\"fail_criteria\":\"Mismatch.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 362,
+      "text": "    \"Step_3.A\":{\"key\":\"Step_3.A\",\"value\":\"{descriptor,U:{instruction,value}}\",\"definition\":\"Verbatim U preservation.\",\"definition_of_evaluation\":\"Compare U value to Step 0 user request.\",\"pass_criteria\":\"Complete/unpolluted.\",\"fail_criteria\":\"Changed/truncated.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 363,
+      "text": "    \"Step_3.B\":{\"key\":\"Step_3.B\",\"value\":\"clause decomposition\",\"definition\":\"Clauses with actions/persons/objects.\",\"definition_of_evaluation\":\"Compare to U and Step 2 requirements.\",\"pass_criteria\":\"Complete/source-supported.\",\"fail_criteria\":\"Omission/invention.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 364,
+      "text": "    \"Step_3.C\":{\"key\":\"Step_3.C\",\"value\":\"modifier analysis\",\"definition\":\"Recursive material-modifier analysis.\",\"definition_of_evaluation\":\"Each modifier includes meaning_without_modifier, difference, recursive_level.\",\"pass_criteria\":\"Complete/accurate.\",\"fail_criteria\":\"Missing/wrong.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 365,
+      "text": "    \"Step_3.D\":{\"key\":\"Step_3.D\",\"value\":\"P plan\",\"definition\":\"Complete execution plan.\",\"definition_of_evaluation\":\"Map every Step 2 requirement without unauthorized work.\",\"pass_criteria\":\"Complete/authorized/ordered.\",\"fail_criteria\":\"Omission/invention/scope change.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 366,
+      "text": "    \"Step_3.E\":{\"key\":\"Step_3.E\",\"value\":\"UI_output\",\"definition\":\"Proposed final report if plan is executed and verified.\",\"definition_of_evaluation\":\"Must not overclaim future/unverified results.\",\"pass_criteria\":\"Accurate conditional completion report.\",\"fail_criteria\":\"Promise/unsupported completion.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 367,
+      "text": "    \"Step_3.F\":{\"key\":\"Step_3.F\",\"value\":\"Step3_TSR evaluations\",\"definition\":\"Every active test is independently evaluated.\",\"definition_of_evaluation\":\"Compare Test_Count and test results against the canonical evaluation artifact defined in config.json under external_files.step3_evaluation_artifact.\",\"pass_criteria\":\"Complete/correct.\",\"fail_criteria\":\"Missing/duplicate/incorrect.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 368,
+      "text": "    \"Step_3.G\":{\"key\":\"Step_3.G\",\"value\":\"loop control\",\"definition\":\"Any T repeats Step 3; all F completes planning.\",\"definition_of_evaluation\":\"Compare all test results.\",\"pass_criteria\":\"Exact control result.\",\"fail_criteria\":\"Contradiction/premature completion.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 369,
+      "text": "    \"Step_3.current_timestamp\":{\"key\":\"Step_3.current_timestamp\",\"value\":\"ISO 8601\",\"definition\":\"Execution time.\",\"definition_of_evaluation\":\"Validate.\",\"pass_criteria\":\"Valid.\",\"fail_criteria\":\"Invalid.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 370,
+      "text": "    \"Step_3.return_schema_completed\":{\"key\":\"Step_3.return_schema_completed\",\"value\":true,\"definition\":\"Step completion.\",\"definition_of_evaluation\":\"True only when A-G complete and all tests F.\",\"pass_criteria\":\"True under completion conditions.\",\"fail_criteria\":\"Premature/missing.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 371,
+      "text": "    \"Step_3.return_schema_completed_timestamp\":{\"key\":\"Step_3.return_schema_completed_timestamp\",\"value\":\"ISO 8601\",\"definition\":\"Completion time.\",\"definition_of_evaluation\":\"Validate.\",\"pass_criteria\":\"Valid.\",\"fail_criteria\":\"Invalid.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 372,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 373,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 374,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 375,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 376,
+      "text": "## Step 3",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 377,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 378,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 379,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 380,
+      "text": "  \"step_3\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 381,
+      "text": "    \"required_execution_role\":\"ChatGPT model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 382,
+      "text": "    \"forbidden_execution_role\":\"Gemini model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 383,
+      "text": "    \"evaluation_requirements\":[",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 384,
+      "text": "      {\"key\":\"step_3_complete_U_decomposition\",\"value\":\"Preserve U and fully decompose clauses/actions/persons/objects/modifiers.\",\"definition\":\"Planning ground truth.\",\"definition_of_evaluation\":\"Compare A-C to U/Step 2.\",\"pass_criteria\":\"Complete/source-supported.\",\"fail_criteria\":\"Truncation/invention/omission.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 385,
+      "text": "      {\"key\":\"step_3_plan_satisfies_all_step_2_requirements\",\"value\":\"P satisfies every Step 2 requirement without unauthorized additions or changed modifiers.\",\"definition\":\"Plan coverage.\",\"definition_of_evaluation\":\"Map every requirement to P.\",\"pass_criteria\":\"Complete faithful mapping.\",\"fail_criteria\":\"Omission/invention/scope/method/order change.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 386,
+      "text": "      {\"key\":\"step_3_all_tests_are_evaluated\",\"value\":\"Evaluate every active Step3_TSR test independently.\",\"definition\":\"Failure-pattern coverage.\",\"definition_of_evaluation\":\"Compare test count and results to the canonical Step 3 evaluation artifact resolved via config.json key external_files.step3_evaluation_artifact.path.\",\"pass_criteria\":\"Complete/correct.\",\"fail_criteria\":\"Missing/duplicate/incorrect.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 387,
+      "text": "      {\"key\":\"step_3_live_ground_truth\",\"value\":\"Any assertion that a referenced file, test source, repository state, evaluator result, or prior execution record exists or has stated content must be correlated with deterministic live ground truth before PASS.\",\"definition\":\"Plan-source empirical integrity.\",\"definition_of_evaluation\":\"Compare Step 3 source/evidence claims with runtime findings.\",\"pass_criteria\":\"Material claims VERIFIED or accurately non-verified and not used as successful premises.\",\"fail_criteria\":\"Fabricated/stale/unknown source claim supports the plan or blocking finding is ignored.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 388,
+      "text": "      {\"key\":\"step_3_loop_control\",\"value\":\"Any T repeats Step 3 from A; all F permits completion.\",\"definition\":\"Internal validation loop.\",\"definition_of_evaluation\":\"Compare G to F.\",\"pass_criteria\":\"Exact.\",\"fail_criteria\":\"Contradiction.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 389,
+      "text": "      {\"key\":\"step_3_role_completion_persistence\",\"value\":\"Use verified ChatGPT role, complete/persist Step 3, receive Gemini PASS, then proceed to implementation/Step 4.\",\"definition\":\"Step integrity.\",\"definition_of_evaluation\":\"Inspect role/schema/persistence/gate.\",\"pass_criteria\":\"All pass.\",\"fail_criteria\":\"Any fail.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 390,
+      "text": "    ],",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 391,
+      "text": "    \"execution_return_schema\":{\"Step_3\":{\"role_required\":\"ChatGPT model\",\"role_forbidden\":\"Gemini model\",\"role_completed\":\"<verified role>\",\"role_verification\":{\"method\":\"<method>\",\"evidence\":\"<evidence>\"},\"descriptor\":\"<purpose>\",\"user_request_nonce\":\"<request nonce>\",\"A\":{\"descriptor\":\"<purpose>\",\"U\":{\"instruction\":\"<instruction>\",\"value\":\"<verbatim U>\"}},\"B\":{\"descriptor\":\"<purpose>\",\"clauses\":{\"instruction\":\"<instruction>\",\"value\":[{\"clause\":\"<clause>\",\"actions\":[\"<action>\"],\"persons\":[\"<person>\"],\"objects\":[\"<object>\"]}]}},\"C\":{\"descriptor\":\"<purpose>\",\"modifier_analysis\":{\"instruction\":\"<instruction>\",\"value\":[{\"modifier\":\"<modifier>\",\"meaning_without_modifier\":\"<meaning>\",\"difference\":\"<difference>\",\"recursive_level\":1}]}},\"D\":{\"descriptor\":\"<purpose>\",\"P\":{\"instruction\":\"<instruction>\",\"value\":\"<complete plan>\"}},\"E\":{\"descriptor\":\"<purpose>\",\"UI_output\":{\"instruction\":\"<instruction>\",\"value\":\"<proposed final report>\"}},\"F\":{\"descriptor\":\"<purpose>\",\"Step3_TSR_status\":{\"instruction\":\"<instruction>\",\"value\":\"Found\"},\"Step3_TSR_verbatim_result\":{\"instruction\":\"<instruction>\",\"value\":\"<traceable source evidence>\"},\"Test_Count\":{\"instruction\":\"<instruction>\",\"value\":31},\"test_results\":{\"instruction\":\"<instruction>\",\"value\":[{\"question_number\":\"<id>\",\"question\":\"<question>\",\"result\":\"F\"}]}},\"G\":{\"descriptor\":\"<purpose>\",\"Loop_Decision\":{\"instruction\":\"<instruction>\",\"value\":\"False\"},\"return_to\":{\"instruction\":\"<instruction>\",\"value\":null}},\"current_timestamp\":\"<ISO 8601>\",\"return_schema_completed\":true,\"return_schema_completed_timestamp\":\"<ISO 8601>\"}},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 392,
+      "text": "    \"supervisory_gate_schema\":{\"supervisory_gate\":{\"role_required\":\"Gemini model\",\"role_forbidden\":\"ChatGPT model\",\"role_completed\":\"<verified role>\",\"role_verification\":{\"method\":\"<method>\",\"evidence\":\"<evidence>\"},\"instruction\":\"Evaluate Step 3 only using Agents.md, Step 2 requirements, the canonical evaluation artifact resolved from config.json (external_files.step3_evaluation_artifact), and immutable runtime ground truth; preserve all *_eval values/findings; do not execute/repair the ChatGPT step.\",\"granular_evaluation\":\"<*_eval tree>\",\"ground_truth_verification_eval\":{\"deterministic_findings\":\"<exact runtime findings>\",\"claim_evaluations\":\"<one per finding>\",\"aggregate_status\":\"PASS|FAIL\",\"supervisor_eval_result\":\"PASS|FAIL\",\"supervisor_eval_comment\":\"<comment>\"},\"step_level_evaluation\":{\"supervisor_eval_result\":\"PASS|FAIL\",\"supervisor_eval_comment\":\"<comment>\"},\"failures\":[],\"gate_result\":\"PASS|FAIL\"}}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 393,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 394,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 395,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 396,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 397,
+      "text": "## Step 4 Field Definition Glossary",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 398,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 399,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 400,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 401,
+      "text": "  \"step_4_field_glossary\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 402,
+      "text": "    \"Step_4\":{\"key\":\"Step_4\",\"value\":\"object\",\"definition\":\"Final execution/report return.\",\"definition_of_evaluation\":\"Require all report/control fields.\",\"pass_criteria\":\"Complete.\",\"fail_criteria\":\"Missing/incomplete.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 403,
+      "text": "    \"Step_4.role_required\":{\"key\":\"Step_4.role_required\",\"value\":\"ChatGPT model\",\"definition\":\"Required executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"ChatGPT model.\",\"fail_criteria\":\"Other.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 404,
+      "text": "    \"Step_4.role_forbidden\":{\"key\":\"Step_4.role_forbidden\",\"value\":\"Gemini model\",\"definition\":\"Forbidden executor.\",\"definition_of_evaluation\":\"Exact comparison.\",\"pass_criteria\":\"Gemini model.\",\"fail_criteria\":\"Other.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 405,
+      "text": "    \"Step_4.role_completed\":{\"key\":\"Step_4.role_completed\",\"value\":\"ChatGPT model\",\"definition\":\"Actual executor.\",\"definition_of_evaluation\":\"Verify provenance.\",\"pass_criteria\":\"Verified ChatGPT.\",\"fail_criteria\":\"Wrong/unverified.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 406,
+      "text": "    \"Step_4.role_verification\":{\"key\":\"Step_4.role_verification\",\"value\":\"{method,evidence}\",\"definition\":\"Role proof.\",\"definition_of_evaluation\":\"Require direct evidence.\",\"pass_criteria\":\"Supports ChatGPT.\",\"fail_criteria\":\"Missing/conflicting.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 407,
+      "text": "    \"Step_4.failed_actions\":{\"key\":\"Step_4.failed_actions\",\"value\":\"array\",\"definition\":\"Failed actions with failure, remaining work, evidence.\",\"definition_of_evaluation\":\"Compare actual execution and live evidence.\",\"pass_criteria\":\"Every failure represented first.\",\"fail_criteria\":\"Omitted/invented/delayed failure.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 408,
+      "text": "    \"Step_4.not_completed_actions\":{\"key\":\"Step_4.not_completed_actions\",\"value\":\"array\",\"definition\":\"Partial/incomplete actions with remaining work/evidence.\",\"definition_of_evaluation\":\"Compare plan/requirements and live evidence.\",\"pass_criteria\":\"Every incomplete action represented before completion.\",\"fail_criteria\":\"Incomplete work omitted/implied complete.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 409,
+      "text": "    \"Step_4.completed_actions\":{\"key\":\"Step_4.completed_actions\",\"value\":\"array\",\"definition\":\"Only fully completed actions with granular completion_evidence.\",\"definition_of_evaluation\":\"Every claim must be independently live-ground-truth verified.\",\"pass_criteria\":\"Every completion VERIFIED and correctly ordered.\",\"fail_criteria\":\"Unsupported/partial/contradicted completion.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 410,
+      "text": "    \"Step_4.user_request\":{\"key\":\"Step_4.user_request\",\"value\":\"verbatim request\",\"definition\":\"Request being reported against.\",\"definition_of_evaluation\":\"Compare Step 0.\",\"pass_criteria\":\"Exact/complete.\",\"fail_criteria\":\"Changed/truncated.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 411,
+      "text": "    \"Step_4.current_timestamp\":{\"key\":\"Step_4.current_timestamp\",\"value\":\"ISO 8601\",\"definition\":\"Execution time.\",\"definition_of_evaluation\":\"Validate.\",\"pass_criteria\":\"Valid.\",\"fail_criteria\":\"Invalid.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 412,
+      "text": "    \"Step_4.return_schema_completed\":{\"key\":\"Step_4.return_schema_completed\",\"value\":true,\"definition\":\"Step completion.\",\"definition_of_evaluation\":\"True only when report is complete and truthful.\",\"pass_criteria\":\"True/complete.\",\"fail_criteria\":\"Premature/missing.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 413,
+      "text": "    \"Step_4.return_schema_completed_timestamp\":{\"key\":\"Step_4.return_schema_completed_timestamp\",\"value\":\"ISO 8601\",\"definition\":\"Completion time.\",\"definition_of_evaluation\":\"Validate.\",\"pass_criteria\":\"Valid.\",\"fail_criteria\":\"Invalid.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 414,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 415,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 416,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 417,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 418,
+      "text": "## Step 4",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 419,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 420,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 421,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 422,
+      "text": "  \"step_4\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 423,
+      "text": "    \"required_execution_role\":\"ChatGPT model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 424,
+      "text": "    \"forbidden_execution_role\":\"Gemini model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 425,
+      "text": "    \"evaluation_requirements\":[",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 426,
+      "text": "      {\"key\":\"step_4_failures_first\",\"value\":\"Report every failed action first with remaining work and evidence.\",\"definition\":\"Failure priority.\",\"definition_of_evaluation\":\"Compare execution/live evidence to failed_actions/order.\",\"pass_criteria\":\"All failures first and accurate.\",\"fail_criteria\":\"Failure omitted/delayed/unsupported.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 427,
+      "text": "      {\"key\":\"step_4_incomplete_second\",\"value\":\"Report every partial/incomplete action after failures and before completions.\",\"definition\":\"Incomplete-work priority.\",\"definition_of_evaluation\":\"Compare execution/live evidence to not_completed_actions/order.\",\"pass_criteria\":\"All incomplete work accurately represented.\",\"fail_criteria\":\"Omitted/implied complete.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 428,
+      "text": "      {\"key\":\"step_4_live_ground_truth_completion\",\"value\":\"Every completed action and every material execution/artifact claim must be independently VERIFIED against live authoritative sources before it can appear as completed.\",\"definition\":\"Final anti-deception requirement.\",\"definition_of_evaluation\":\"Correlate completion_evidence source/locator/observed_content with immutable deterministic findings; self-reported evidence alone is insufficient.\",\"pass_criteria\":\"All material completion claims are VERIFIED and deterministic findings are preserved/evaluated; no blocking finding exists.\",\"fail_criteria\":\"Any completed claim is CONTRADICTED/PARTIAL/UNKNOWN/NOT_EXECUTED, any locator is fabricated/unverified, or blocking evidence is ignored.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 429,
+      "text": "      {\"key\":\"step_4_all_requirements_accounted_for\",\"value\":\"Account for every Step 2 requirement and the executed Step 3 plan.\",\"definition\":\"Final coverage.\",\"definition_of_evaluation\":\"Map each requirement to failed/incomplete/completed evidence.\",\"pass_criteria\":\"Every requirement accounted for.\",\"fail_criteria\":\"Any omitted/misclassified.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 430,
+      "text": "      {\"key\":\"step_4_terminal_integrity\",\"value\":\"Use verified role, complete/persist Step 4, and end only after Gemini PASS with no remaining steps.\",\"definition\":\"Terminal integrity.\",\"definition_of_evaluation\":\"Inspect role/schema/persistence/latest gate/state.\",\"pass_criteria\":\"All terminal conditions pass.\",\"fail_criteria\":\"Any fail or turn ends with outstanding work/response.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 431,
+      "text": "    ],",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 432,
+      "text": "    \"execution_return_schema\":{\"Step_4\":{\"role_required\":\"ChatGPT model\",\"role_forbidden\":\"Gemini model\",\"role_completed\":\"<verified role>\",\"role_verification\":{\"method\":\"<method>\",\"evidence\":\"<evidence>\"},\"failed_actions\":[{\"action\":\"<action>\",\"failure\":\"<failure>\",\"remaining_work\":\"<remaining>\",\"evidence\":[{\"source\":\"<source>\",\"locator\":\"<locator>\",\"observed_content\":\"<exact observation>\"}]}],\"not_completed_actions\":[{\"action\":\"<action>\",\"remaining_work\":\"<remaining>\",\"evidence\":[{\"source\":\"<source>\",\"locator\":\"<locator>\",\"observed_content\":\"<exact observation>\"}]}],\"completed_actions\":[{\"action\":\"<action>\",\"completion\":\"complete\",\"completion_evidence\":[{\"source\":\"<authoritative source>\",\"locator\":\"<re-findable locator>\",\"observed_content\":\"<exact observation>\"}]}],\"user_request\":\"<verbatim user request>\",\"current_timestamp\":\"<ISO 8601>\",\"return_schema_completed\":true,\"return_schema_completed_timestamp\":\"<ISO 8601>\"}},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 433,
+      "text": "    \"supervisory_gate_schema\":{\"supervisory_gate\":{\"role_required\":\"Gemini model\",\"role_forbidden\":\"ChatGPT model\",\"role_completed\":\"<verified role>\",\"role_verification\":{\"method\":\"<method>\",\"evidence\":\"<evidence>\"},\"instruction\":\"Evaluate Step 4 only; independently verify all material execution/completion/artifact claims from immutable deterministic ground truth; preserve all *_eval values/findings; failures first, incomplete second, verified completion last; do not execute/repair the ChatGPT step.\",\"granular_evaluation\":\"<*_eval tree>\",\"ground_truth_verification_eval\":{\"deterministic_findings\":\"<exact runtime findings>\",\"claim_evaluations\":\"<one per finding>\",\"aggregate_status\":\"PASS|FAIL\",\"supervisor_eval_result\":\"PASS|FAIL\",\"supervisor_eval_comment\":\"<comment>\"},\"step_level_evaluation\":{\"supervisor_eval_result\":\"PASS|FAIL\",\"supervisor_eval_comment\":\"<comment>\"},\"failures\":[],\"gate_result\":\"PASS|FAIL\"}}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 434,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 435,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 436,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 437,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 438,
+      "text": "## Runtime Integration Requirements",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 439,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 440,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 441,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 442,
+      "text": "  \"runtime_integration_requirements\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 443,
+      "text": "    \"shared_configuration_contract\":{\"key\":\"shared_configuration_contract\",\"value\":\"All external references are resolved via ChatMachines/GeminiSupervisor/config.json.\",\"definition\":\"Neither Agents.md nor send-to-gemini.js independently hardcodes divergent external file paths.\",\"definition_of_evaluation\":\"Inspect active configuration references against config.json keys.\",\"pass_criteria\":\"Both files use the matching config keys.\",\"fail_criteria\":\"Independent divergent path hardcoded.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 444,
+      "text": "    \"agents_md_is_canonical_evaluation_source\":{\"key\":\"agents_md_is_canonical_evaluation_source\",\"value\":\"Agents.md contains all active evaluation definitions and pass/fail criteria.\",\"definition\":\"No external evaluation-definition file is required.\",\"definition_of_evaluation\":\"Inspect active prompts/source for external definition dependencies.\",\"pass_criteria\":\"Agents.md alone defines the contract.\",\"fail_criteria\":\"Runtime requires evaluator-definitions.md or equivalent.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 445,
+      "text": "    \"deterministic_live_ground_truth_precedes_semantic_pass\":{\"key\":\"deterministic_live_ground_truth_precedes_semantic_pass\",\"value\":\"send-to-gemini.js independently inspects live workspace/git/run records before Gemini evaluates execution-dependent claims.\",\"definition\":\"Empirical evidence is supplied by the runtime, not invented by the model.\",\"definition_of_evaluation\":\"Inspect collectGroundTruth output, system prompt injection, gate template, validator, and persisted records.\",\"pass_criteria\":\"Findings are generated before supervision, immutable in the gate, structurally required, persisted, and blocking when material.\",\"fail_criteria\":\"Supervisor sees only self-claims, findings are mutable/optional, or PASS can ignore blocking evidence.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 446,
+      "text": "    \"ground_truth_findings_are_persisted\":{\"key\":\"ground_truth_findings_are_persisted\",\"value\":\"Every attempt persists deterministic findings in state step_records and store records.\",\"definition\":\"Historical execution claims remain auditable from verbatim evidence.\",\"definition_of_evaluation\":\"Inspect attempt/store records.\",\"pass_criteria\":\"Exact findings persisted with the evaluated execution.\",\"fail_criteria\":\"Findings omitted/reconstructed later.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 447,
+      "text": "    \"transition_semantics_are_unchanged\":{\"key\":\"transition_semantics_are_unchanged\",\"value\":\"supervisory_gate.gate_result remains the exact transition key; PASS advances one step and FAIL retries the same step.\",\"definition\":\"Ground-truth enforcement strengthens gates without changing procedure control semantics.\",\"definition_of_evaluation\":\"Inspect main transition logic.\",\"pass_criteria\":\"Exact existing transition behavior retained.\",\"fail_criteria\":\"New bypass/transition invented.\"},",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 448,
+      "text": "    \"step_3_evaluation_artifact_is_canonical\":{\"key\":\"step_3_evaluation_artifact_is_canonical\",\"value\":\"The artifact referenced in config.json as step3_evaluation_artifact provides the active evaluation heuristic and complete Step3_TSR question corpus as one parsed JSON object.\",\"definition\":\"Step 3 uses the combined JSON evaluation artifact without duplicating it into Agents.md and without tracking document reads.\",\"definition_of_evaluation\":\"Inspect config key external_files.step3_evaluation_artifact, runtime loading, and Step 3 context files.\",\"pass_criteria\":\"Artifact loaded via shared config; evaluation_heuristic and step3_tsr used together; no evaluation_documents_read tracking field.\",\"fail_criteria\":\"Artifact unavailable, split divergently, or read tracking reintroduced.\"}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 449,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 450,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 451,
+      "text": "```",
+      "eol": "\n"
+    }
+  ]
+}

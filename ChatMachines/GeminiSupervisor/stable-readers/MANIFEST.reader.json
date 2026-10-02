@@ -1,0 +1,647 @@
+{
+  "doc_id": "manifest",
+  "canonical_path": "ChatMachines/GeminiSupervisor/MANIFEST.md",
+  "format": "text",
+  "source_provenance": {
+    "source_blob_sha": "c2c83820556fce10daa78c0d0e3eb09600070460",
+    "source_commit_sha": "b21ce75d46b6b02f9bc253415cde5b8c3c09c07b"
+  },
+  "items": [
+    {
+      "type": "content",
+      "line_number": 1,
+      "text": "# GeminiSupervisor Manifest",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 2,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 3,
+      "text": "Recursive inventory for `ChatMachines/GeminiSupervisor/`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 4,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 5,
+      "text": "- **Inventory basis:** live `main` tree immediately before this manifest was added.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 6,
+      "text": "- **Inventory count:** 71 files including this `MANIFEST.md`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 7,
+      "text": "- **Scope:** every tracked file at the GeminiSupervisor root and in every tracked subdirectory, including historical artifacts and persisted run containers.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 8,
+      "text": "- **Runtime note:** the current Node runtime is `send-to-gemini.js`; shared external-path settings are centralized in `config.json`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 9,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 10,
+      "text": "## Root files",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 11,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 12,
+      "text": "| Path | Classification | Description |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 13,
+      "text": "|---|---|---|",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 14,
+      "text": "| `.gitkeep` | placeholder | Empty tracked placeholder retained from when the directory needed an anchor in Git. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 15,
+      "text": "| `Agents.md` | canonical contract | Canonical Gemini Supervisor rules, evaluation definitions, step schemas, supervisory-gate contract, shared-config contract, and runtime integration requirements. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 16,
+      "text": "| `Code.gs` | Apps Script bridge | Standalone Google Apps Script `doPost` endpoint that accepts JavaScript `sourcecode` plus `arguments`, evaluates the function, and returns its JSON-serialized result. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 17,
+      "text": "| `config.json` | shared configuration | Shared Supervisor configuration used by both the specification and Node runtime; declares the Agents file, trigger file, runs directory, and canonical Step 3 evaluation artifact. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 18,
+      "text": "| `current_state.json` | legacy/root state artifact | Root-level idle state/schema snapshot from the earlier architecture. The current Node runtime persists active execution state under `runs/<run_nonce>/state.json`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 19,
+      "text": "| `endpoint.json` | endpoint placeholder | Two-field endpoint configuration placeholder containing `sheetId` and `entry_point`, currently empty. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 20,
+      "text": "| `evaluation-tests.md` | symlink | Compatibility symbolic link to `historical/evaluation-tests.md`; the active Step 3 runtime now uses `tests/step-3-evaluation.json`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 21,
+      "text": "| `MANIFEST.md` | manifest | This recursive file inventory and description document for the GeminiSupervisor directory. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 22,
+      "text": "| `messages.json` | legacy/root message artifact | Root-level two-message conversation skeleton. The current Node runtime persists live run conversation records under `runs/<run_nonce>/messages.json`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 23,
+      "text": "| `send-to-gemini.js` | active Node runtime | Primary Gemini Supervisor Node.js runtime: loads shared config/Agents, validates step returns, performs live-ground-truth checks, invokes Gemini supervisory gates, persists run records, and advances/retries the state machine. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 24,
+      "text": "| `work-action-approval-rulebook.json` | separate rulebook artifact | Standalone JSON rulebook defining safe-word authorization, action classification, and related work-action approval semantics. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 25,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 26,
+      "text": "## Historical",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 27,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 28,
+      "text": "| Path | Classification | Description |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 29,
+      "text": "|---|---|---|",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 30,
+      "text": "| `historical/evaluation-tests.md` | historical heuristic source | Historical worked-example U/P comparator heuristic. Its evaluation method was merged into `tests/step-3-evaluation.json`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 31,
+      "text": "| `historical/evaluator-definitions.md` | historical evaluator guide | Historical semantic-operator guide for constructing U, characterizing P, decomposing requirements, and evaluating exact satisfaction; retained for provenance after active definitions moved into Agents.md. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 32,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 33,
+      "text": "## Runtime input / skills / stores",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 34,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 35,
+      "text": "| Path | Classification | Description |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 36,
+      "text": "|---|---|---|",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 37,
+      "text": "| `nextmessage/nextmessage.json` | workflow trigger/input | Current Supervisor trigger payload carrying `run_nonce`, execution role/step, and the ChatGPT-owned return schema consumed by the Node runtime. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 38,
+      "text": "| `skills/live-ground-truth-verification/SKILL.md` | skill specification | Skill specification requiring execution/completion/status claims to be verified against exact live authoritative sources rather than memory or agent self-report. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 39,
+      "text": "| `store/store.json` | legacy/root store artifact | Root-level empty record store retained from the earlier architecture. Current runtime audit records are persisted under each run's `store/store.json`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 40,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 41,
+      "text": "## Tests and evaluation artifacts",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 42,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 43,
+      "text": "| Path | Classification | Description |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 44,
+      "text": "|---|---|---|",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 45,
+      "text": "| `tests/plan-action-evaluation.json` | test/evaluation dataset | Plan-to-action evaluation dataset linking plans to contextual locations, originating user statements, resulting actions, user feedback, and met/unmet determinations. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 46,
+      "text": "| `tests/plan-contextual-map.json` | test mapping dataset | Contextual mapping dataset connecting plan fragments to user-statement fragments and recording how each plan component expands or answers the user's instruction. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 47,
+      "text": "| `tests/plan-examples.json` | plan corpus | Machine-readable flat list of plan-bearing model statements collected from persistent records. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 48,
+      "text": "| `tests/plan-examples.md` | plan corpus documentation | Human-readable documentation of the plan corpus, its classification rule, verified plans, and additional plan-bearing statements with lifecycle/location metadata. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 49,
+      "text": "| `tests/plan-user-statements.json` | plan provenance dataset | Maps each collected plan to its originating user statement(s), persistent-storage locations, match type, and retrieval status. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 50,
+      "text": "| `tests/step-3-evaluation.json` | canonical Step 3 evaluation artifact | Active combined JSON artifact containing the Step 3 evaluation heuristic plus the complete `step3_tsr` question corpus; referenced through `config.json`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 51,
+      "text": "| `tests/step-3-test-return-schema.md` | source test corpus | Original fenced-JSON Step 3 TSR question/case list used as a source when building `step-3-evaluation.json`; retained as a source/development artifact rather than the active runtime source. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 52,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 53,
+      "text": "## Persisted run containers",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 54,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 55,
+      "text": "Each run directory is an isolated persisted execution container. Every listed run contains exactly three tracked files: `messages.json`, `state.json`, and `store/store.json`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 56,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 57,
+      "text": "| Path | Classification | Description |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 58,
+      "text": "|---|---|---|",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 59,
+      "text": "| `runs/agents_schema_migration_20260930_1/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the Agents.md schema-migration run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 60,
+      "text": "| `runs/agents_schema_migration_20260930_1/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the Agents.md schema-migration run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 61,
+      "text": "| `runs/agents_schema_migration_20260930_1/store/store.json` | run audit store | Persisted audit/evidence/event records for the Agents.md schema-migration run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 62,
+      "text": "| `runs/demo_20260930T155153_eadd5e5248/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the Supervisor demonstration run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 63,
+      "text": "| `runs/demo_20260930T155153_eadd5e5248/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the Supervisor demonstration run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 64,
+      "text": "| `runs/demo_20260930T155153_eadd5e5248/store/store.json` | run audit store | Persisted audit/evidence/event records for the Supervisor demonstration run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 65,
+      "text": "| `runs/ground_truth_verification_skill_20260930_1/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the ground-truth verification skill run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 66,
+      "text": "| `runs/ground_truth_verification_skill_20260930_1/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the ground-truth verification skill run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 67,
+      "text": "| `runs/ground_truth_verification_skill_20260930_1/store/store.json` | run audit store | Persisted audit/evidence/event records for the ground-truth verification skill run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 68,
+      "text": "| `runs/live_ground_truth_integration_20261001_1/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the live ground-truth integration run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 69,
+      "text": "| `runs/live_ground_truth_integration_20261001_1/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the live ground-truth integration run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 70,
+      "text": "| `runs/live_ground_truth_integration_20261001_1/store/store.json` | run audit store | Persisted audit/evidence/event records for the live ground-truth integration run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 71,
+      "text": "| `runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the Step 3 TSR/evaluation-heuristic merge run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 72,
+      "text": "| `runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the Step 3 TSR/evaluation-heuristic merge run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 73,
+      "text": "| `runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json` | run audit store | Persisted audit/evidence/event records for the Step 3 TSR/evaluation-heuristic merge run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 74,
+      "text": "| `runs/role_separation_20260930T181400/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the model role-separation run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 75,
+      "text": "| `runs/role_separation_20260930T181400/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the model role-separation run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 76,
+      "text": "| `runs/role_separation_20260930T181400/store/store.json` | run audit store | Persisted audit/evidence/event records for the model role-separation run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 77,
+      "text": "| `runs/skill_bootstrap_update_20260930T170700/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the skill bootstrap-update run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 78,
+      "text": "| `runs/skill_bootstrap_update_20260930T170700/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the skill bootstrap-update run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 79,
+      "text": "| `runs/skill_bootstrap_update_20260930T170700/store/store.json` | run audit store | Persisted audit/evidence/event records for the skill bootstrap-update run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 80,
+      "text": "| `runs/skill_interface_20260930T155700/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the skill-interface run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 81,
+      "text": "| `runs/skill_interface_20260930T155700/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the skill-interface run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 82,
+      "text": "| `runs/skill_interface_20260930T155700/store/store.json` | run audit store | Persisted audit/evidence/event records for the skill-interface run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 83,
+      "text": "| `runs/skill_reeval_20260930T170100/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the skill re-evaluation run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 84,
+      "text": "| `runs/skill_reeval_20260930T170100/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the skill re-evaluation run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 85,
+      "text": "| `runs/skill_reeval_20260930T170100/store/store.json` | run audit store | Persisted audit/evidence/event records for the skill re-evaluation run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 86,
+      "text": "| `runs/skill_revision_20260930T180700/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the skill-revision run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 87,
+      "text": "| `runs/skill_revision_20260930T180700/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the skill-revision run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 88,
+      "text": "| `runs/skill_revision_20260930T180700/store/store.json` | run audit store | Persisted audit/evidence/event records for the skill-revision run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 89,
+      "text": "| `runs/skill_revision_schema_reject_20260930T181100/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the skill-revision schema-rejection run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 90,
+      "text": "| `runs/skill_revision_schema_reject_20260930T181100/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the skill-revision schema-rejection run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 91,
+      "text": "| `runs/skill_revision_schema_reject_20260930T181100/store/store.json` | run audit store | Persisted audit/evidence/event records for the skill-revision schema-rejection run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 92,
+      "text": "| `runs/step0_raw_fail_20260930T132500/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the Step 0 raw-input failure run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 93,
+      "text": "| `runs/step0_raw_fail_20260930T132500/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the Step 0 raw-input failure run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 94,
+      "text": "| `runs/step0_raw_fail_20260930T132500/store/store.json` | run audit store | Persisted audit/evidence/event records for the Step 0 raw-input failure run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 95,
+      "text": "| `runs/step0_raw_fail_20260930T1325_2/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the Step 0 raw-input failure follow-up run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 96,
+      "text": "| `runs/step0_raw_fail_20260930T1325_2/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the Step 0 raw-input failure follow-up run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 97,
+      "text": "| `runs/step0_raw_fail_20260930T1325_2/store/store.json` | run audit store | Persisted audit/evidence/event records for the Step 0 raw-input failure follow-up run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 98,
+      "text": "| `runs/step0_raw_fail_20260930_3/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the Step 0 raw-input failure follow-up run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 99,
+      "text": "| `runs/step0_raw_fail_20260930_3/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the Step 0 raw-input failure follow-up run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 100,
+      "text": "| `runs/step0_raw_fail_20260930_3/store/store.json` | run audit store | Persisted audit/evidence/event records for the Step 0 raw-input failure follow-up run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 101,
+      "text": "| `runs/step0_raw_fail_20260930_4/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the Step 0 raw-input failure follow-up run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 102,
+      "text": "| `runs/step0_raw_fail_20260930_4/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the Step 0 raw-input failure follow-up run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 103,
+      "text": "| `runs/step0_raw_fail_20260930_4/store/store.json` | run audit store | Persisted audit/evidence/event records for the Step 0 raw-input failure follow-up run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 104,
+      "text": "| `runs/work_action_approval_rulebook_20260930_1/messages.json` | run message log | Persisted ChatGPT/Gemini message and gate history for the work-action approval-rulebook run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 105,
+      "text": "| `runs/work_action_approval_rulebook_20260930_1/state.json` | run state | Persisted state-machine/procedure state, attempts, execution returns, supervisory returns, and transition status for the work-action approval-rulebook run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 106,
+      "text": "| `runs/work_action_approval_rulebook_20260930_1/store/store.json` | run audit store | Persisted audit/evidence/event records for the work-action approval-rulebook run. |",
+      "eol": "\n"
+    }
+  ]
+}

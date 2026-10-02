@@ -1,0 +1,6077 @@
+{
+  "doc_id": "readme",
+  "canonical_path": "ChatMachines/GeminiSupervisor/README.md",
+  "format": "text",
+  "source_provenance": {
+    "source_blob_sha": "9113ee7d56157543a6dc245846557093564127f3",
+    "source_commit_sha": "03f755ee37f7ecb02d22125ef989721915276b55"
+  },
+  "items": [
+    {
+      "type": "content",
+      "line_number": 1,
+      "text": "# Gemini Supervisor Bootstrap and Operations Guide",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 2,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 3,
+      "text": "This document is the operator/bootstrap guide for the current Gemini Supervisor implementation in `BestNameYet/StateMachines`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 4,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 5,
+      "text": "The active Supervisor lives at:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 6,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 7,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 8,
+      "text": "ChatMachines/GeminiSupervisor/",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 9,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 10,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 11,
+      "text": "The active execution engine is **Node.js**, not Apps Script. The runtime entry point is:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 12,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 13,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 14,
+      "text": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 15,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 16,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 17,
+      "text": "The normal Supervisor workflow runs on GitHub Actions with Node 22 and is triggered by a commit to the configured `nextmessage` trigger file on `main`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 18,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 19,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 20,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 21,
+      "text": "## 1. Mental model",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 22,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 23,
+      "text": "A Supervisor session is a persisted state-machine run identified by a unique `run_nonce`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 24,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 25,
+      "text": "The controller side is ChatGPT. ChatGPT executes the current step and writes that step's required return schema into:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 26,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 27,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 28,
+      "text": "ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 29,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 30,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 31,
+      "text": "A commit of that file to `main` starts the GitHub Actions workflow. The workflow runs `send-to-gemini.js`, which:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 32,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 33,
+      "text": "1. Loads `config.json`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 34,
+      "text": "2. Loads the configured `Agents.md` contract.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 35,
+      "text": "3. Reads `nextmessage/nextmessage.json`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 36,
+      "text": "4. Creates or resumes `runs/<run_nonce>/`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 37,
+      "text": "5. Determines the current required step.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 38,
+      "text": "6. Validates the ChatGPT execution payload deterministically.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 39,
+      "text": "7. Performs live-ground-truth checks for execution/completion claims.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 40,
+      "text": "8. Sends the current step, execution result, validation findings, and relevant context to Gemini for the supervisory gate.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 41,
+      "text": "9. Persists the execution, validation, Gemini response, and transition state.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 42,
+      "text": "10. Returns either `PASS` or `FAIL` for the current step.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 43,
+      "text": "11. On `PASS`, advances to the next step.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 44,
+      "text": "12. On `FAIL`, remains on the same step for correction.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 45,
+      "text": "13. Commits the updated run container back to `main`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 46,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 47,
+      "text": "The current contract defines ChatGPT-owned procedure Steps **0 through 4** and Gemini-owned supervisory gates between them.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 48,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 49,
+      "text": "A commit is therefore not the end of the controller turn. The operational loop is:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 50,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 51,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 52,
+      "text": "ChatGPT executes current step",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 53,
+      "text": "        |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 54,
+      "text": "        v",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 55,
+      "text": "commit nextmessage.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 56,
+      "text": "        |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 57,
+      "text": "        v",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 58,
+      "text": "GitHub Actions runs send-to-gemini.js",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 59,
+      "text": "        |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 60,
+      "text": "        v",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 61,
+      "text": "Gemini supervisory gate",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 62,
+      "text": "        |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 63,
+      "text": "        +---- FAIL ----> correct SAME step and recommit",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 64,
+      "text": "        |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 65,
+      "text": "        +---- PASS ----> execute NEXT step and recommit",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 66,
+      "text": "                              |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 67,
+      "text": "                              v",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 68,
+      "text": "                    repeat until terminal",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 69,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 70,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 71,
+      "text": "The session is terminal when the last required step passes and the run state reports:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 72,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 73,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 74,
+      "text": "status = \"complete\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 75,
+      "text": "procedure.current_step = null",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 76,
+      "text": "procedure.awaiting = null",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 77,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 78,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 79,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 80,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 81,
+      "text": "## 2. Important files",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 82,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 83,
+      "text": "| File | Purpose |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 84,
+      "text": "|---|---|",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 85,
+      "text": "| `Agents.md` | Canonical Supervisor contract: rules, step definitions, return schemas, and Gemini supervisory-gate requirements. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 86,
+      "text": "| `send-to-gemini.js` | Active Node runtime. Loads the contract/config, validates execution returns, performs live-ground-truth checks, invokes Gemini, persists state, and transitions the machine. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 87,
+      "text": "| `config.json` | Shared runtime/specification path configuration. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 88,
+      "text": "| `nextmessage/nextmessage.json` | Normal Supervisor input/trigger file. A push changing this file on `main` starts the Supervisor workflow. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 89,
+      "text": "| `runs/<run_nonce>/state.json` | State-machine state for one session. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 90,
+      "text": "| `runs/<run_nonce>/messages.json` | Persisted ChatGPT execution/Gemini supervision history for one session. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 91,
+      "text": "| `runs/<run_nonce>/store/store.json` | Persisted audit/evidence/event records for one session. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 92,
+      "text": "| `tests/step-3-evaluation.json` | Active Step 3 evaluation artifact containing both the evaluation heuristic and Step3 TSR question corpus. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 93,
+      "text": "| `dependency-map.json` | Defines dependency-sync relationships for `Agents.md` and `send-to-gemini.js`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 94,
+      "text": "| `dependency-sync-sentinel.json` | Prevents recursive dependency-sync loops. Normally `enabled: true`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 95,
+      "text": "| `MANIFEST.md` | Inventory and classification of Supervisor files. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 96,
+      "text": "| `current_state.json` | Legacy root-level state artifact. Do not use this as the live state of a current run. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 97,
+      "text": "| `messages.json` | Legacy root-level message artifact. Current sessions use `runs/<run_nonce>/messages.json`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 98,
+      "text": "| `store/store.json` | Legacy root-level store artifact. Current sessions use `runs/<run_nonce>/store/store.json`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 99,
+      "text": "| `Code.gs` | Apps Script bridge retained in the folder; it is not the normal current Supervisor execution engine. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 100,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 101,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 102,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 103,
+      "text": "## 3. GitHub repository variables",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 104,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 105,
+      "text": "The normal Supervisor workflow injects these GitHub Actions repository variables:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 106,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 107,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 108,
+      "text": "GEMINI_API_KEY",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 109,
+      "text": "GEMINI_MODEL",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 110,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 111,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 112,
+      "text": "### `GEMINI_API_KEY`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 113,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 114,
+      "text": "Required by `send-to-gemini.js`. If it is absent, the runtime stops with:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 115,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 116,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 117,
+      "text": "GEMINI_API_KEY is missing from the GitHub Actions environment.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 118,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 119,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 120,
+      "text": "The current workflow reads it from:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 121,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 122,
+      "text": "```yaml",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 123,
+      "text": "${{ vars.GEMINI_API_KEY }}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 124,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 125,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 126,
+      "text": "### `GEMINI_MODEL`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 127,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 128,
+      "text": "Optional for the normal Supervisor runtime. `send-to-gemini.js` currently falls back to:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 129,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 130,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 131,
+      "text": "gemini-3.8-flash",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 132,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 133,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 134,
+      "text": "when `GEMINI_MODEL` is missing or empty.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 135,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 136,
+      "text": "### How to change repository variables",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 137,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 138,
+      "text": "In GitHub:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 139,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 140,
+      "text": "1. Open the `BestNameYet/StateMachines` repository.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 141,
+      "text": "2. Open **Settings**.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 142,
+      "text": "3. Open **Secrets and variables**.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 143,
+      "text": "4. Open **Actions**.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 144,
+      "text": "5. Select the **Variables** tab.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 145,
+      "text": "6. Add or update `GEMINI_API_KEY`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 146,
+      "text": "7. Add or update `GEMINI_MODEL` if a non-default model is desired.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 147,
+      "text": "8. Save the variable.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 148,
+      "text": "9. No code commit is required merely to change a repository variable.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 149,
+      "text": "10. The new value is used by the next workflow run.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 150,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 151,
+      "text": "### Credential note",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 152,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 153,
+      "text": "The current workflows intentionally reference GitHub Actions **Variables**, not **Secrets**. If `GEMINI_API_KEY` is migrated to GitHub Secrets, the workflow expressions must also be changed from:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 154,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 155,
+      "text": "```yaml",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 156,
+      "text": "${{ vars.GEMINI_API_KEY }}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 157,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 158,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 159,
+      "text": "to:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 160,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 161,
+      "text": "```yaml",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 162,
+      "text": "${{ secrets.GEMINI_API_KEY }}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 163,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 164,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 165,
+      "text": "in every workflow that invokes Gemini.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 166,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 167,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 168,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 169,
+      "text": "## 4. `config.json`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 170,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 171,
+      "text": "Current configuration:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 172,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 173,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 174,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 175,
+      "text": "  \"version\": 1,",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 176,
+      "text": "  \"description\": \"Shared configuration for Gemini Supervisor runtime and specification dependencies.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 177,
+      "text": "  \"agents_file\": \"ChatMachines/GeminiSupervisor/Agents.md\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 178,
+      "text": "  \"trigger_file\": \"ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 179,
+      "text": "  \"runs_directory\": \"ChatMachines/GeminiSupervisor/runs\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 180,
+      "text": "  \"external_files\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 181,
+      "text": "    \"step3_evaluation_artifact\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 182,
+      "text": "      \"path\": \"ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 183,
+      "text": "      \"description\": \"Consolidated single source of truth for Step 3 evaluation method heuristic and Step3_TSR question corpus.\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 184,
+      "text": "      \"keys\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 185,
+      "text": "        \"evaluation_heuristic\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 186,
+      "text": "        \"step3_tsr\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 187,
+      "text": "      ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 188,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 189,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 190,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 191,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 192,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 193,
+      "text": "### `agents_file`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 194,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 195,
+      "text": "Controls which rules/specification file the Node runtime loads.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 196,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 197,
+      "text": "Default:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 198,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 199,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 200,
+      "text": "ChatMachines/GeminiSupervisor/Agents.md",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 201,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 202,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 203,
+      "text": "If this path is changed, the target file must exist and must contain parseable headings in this form:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 204,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 205,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 206,
+      "text": "## Step N",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 207,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 208,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 209,
+      "text": "The runtime discovers procedure steps from those headings.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 210,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 211,
+      "text": "### `trigger_file`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 212,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 213,
+      "text": "Controls which JSON file `send-to-gemini.js` reads as the current execution submission.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 214,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 215,
+      "text": "Default:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 216,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 217,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 218,
+      "text": "ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 219,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 220,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 221,
+      "text": "**Important:** changing this config value alone is not sufficient. The GitHub Actions workflow currently has this trigger path hardcoded in `.github/workflows/gemini-chat.yml`. If `trigger_file` moves, update the workflow `on.push.paths` entry at the same time or commits to the new trigger file will not start the workflow.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 222,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 223,
+      "text": "### `runs_directory`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 224,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 225,
+      "text": "Controls where the Node runtime creates per-session run containers.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 226,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 227,
+      "text": "Default:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 228,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 229,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 230,
+      "text": "ChatMachines/GeminiSupervisor/runs",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 231,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 232,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 233,
+      "text": "**Important:** the workflow currently stages and reads `ChatMachines/GeminiSupervisor/runs` directly when it creates the checkpoint commit. If `runs_directory` changes, update `.github/workflows/gemini-chat.yml` as well or the runtime may write state that the workflow does not commit correctly.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 234,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 235,
+      "text": "### `external_files.step3_evaluation_artifact.path`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 236,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 237,
+      "text": "Controls the active JSON artifact used for Step 3 evaluation.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 238,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 239,
+      "text": "Default:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 240,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 241,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 242,
+      "text": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 243,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 244,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 245,
+      "text": "The runtime requires this JSON file to contain both:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 246,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 247,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 248,
+      "text": "evaluation_heuristic",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 249,
+      "text": "step3_tsr",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 250,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 251,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 252,
+      "text": "A Step 3 run fails if the configured file is missing or either key is missing.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 253,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 254,
+      "text": "### `description`, `version`, and `keys`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 255,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 256,
+      "text": "These provide configuration metadata/documentation. The operational runtime path resolution is driven by the path fields above. The runtime itself directly verifies that the Step 3 artifact contains `evaluation_heuristic` and `step3_tsr`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 257,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 258,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 259,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 260,
+      "text": "## 5. How to change Supervisor configuration safely",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 261,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 262,
+      "text": "### Changing only `config.json`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 263,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 264,
+      "text": "1. Edit `ChatMachines/GeminiSupervisor/config.json`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 265,
+      "text": "2. Ensure every new path points to an existing file/directory contract.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 266,
+      "text": "3. If changing `trigger_file`, also update `.github/workflows/gemini-chat.yml`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 267,
+      "text": "4. If changing `runs_directory`, also update `.github/workflows/gemini-chat.yml` checkpoint/staging logic.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 268,
+      "text": "5. If changing the Step 3 artifact path, also inspect `dependency-map.json` because it currently names the Step 3 artifact as dependency-sync context.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 269,
+      "text": "6. Commit the change to `main`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 270,
+      "text": "7. A `config.json` commit **does not by itself trigger the normal Supervisor workflow**.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 271,
+      "text": "8. The new config is consumed the next time `nextmessage.json` triggers the state machine.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 272,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 273,
+      "text": "### Changing `Agents.md`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 274,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 275,
+      "text": "`Agents.md` is a dependency-sync trigger.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 276,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 277,
+      "text": "1. Change `ChatMachines/GeminiSupervisor/Agents.md`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 278,
+      "text": "2. Do **not** include a simultaneous manual change to `send-to-gemini.js` in the same dependency-sync push.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 279,
+      "text": "3. Commit to `main`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 280,
+      "text": "4. `gemini-supervisor-dependency-sync.yml` starts automatically.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 281,
+      "text": "5. The workflow treats `Agents.md` as the authoritative base for that run.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 282,
+      "text": "6. The dependency evaluator compares the mapped dependents against the changed base.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 283,
+      "text": "7. Mapped dependents currently include:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 284,
+      "text": "   - `ChatMachines/GeminiSupervisor/send-to-gemini.js`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 285,
+      "text": "   - `ChatMachines/GeminiSupervisor/config.json`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 286,
+      "text": "8. If changes are required, the workflow writes complete replacement dependent files.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 287,
+      "text": "9. It commits those changes with the dependency-sync sentinel set to `false`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 288,
+      "text": "10. Any recursive sync run caused by the dependent rewrite sees the false sentinel and suppresses itself.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 289,
+      "text": "11. The workflow then restores the sentinel to `true` in a sentinel-only commit.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 290,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 291,
+      "text": "### Changing `send-to-gemini.js`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 292,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 293,
+      "text": "The same process applies in the opposite direction.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 294,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 295,
+      "text": "1. Change `ChatMachines/GeminiSupervisor/send-to-gemini.js`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 296,
+      "text": "2. Do **not** also manually change `Agents.md` in that same dependency-sync push.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 297,
+      "text": "3. Commit to `main`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 298,
+      "text": "4. Dependency sync treats `send-to-gemini.js` as the authoritative base.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 299,
+      "text": "5. Mapped dependents currently include:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 300,
+      "text": "   - `ChatMachines/GeminiSupervisor/Agents.md`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 301,
+      "text": "   - `ChatMachines/GeminiSupervisor/config.json`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 302,
+      "text": "6. The evaluator may return `NO_CHANGE` or a complete `REPLACE` for each dependent.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 303,
+      "text": "7. The sentinel sequence suppresses recursion as described above.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 304,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 305,
+      "text": "### Why only one of the two base files should change",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 306,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 307,
+      "text": "The dependency-sync workflow explicitly counts changed mapped base files and requires **exactly one** of:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 308,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 309,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 310,
+      "text": "ChatMachines/GeminiSupervisor/Agents.md",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 311,
+      "text": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 312,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 313,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 314,
+      "text": "in a dependency-sync push.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 315,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 316,
+      "text": "If both are changed in the same push, the workflow intentionally fails because it cannot determine which one is authoritative.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 317,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 318,
+      "text": "### Changing `tests/step-3-evaluation.json`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 319,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 320,
+      "text": "A commit to the Step 3 evaluation artifact does not currently trigger the normal Supervisor workflow or dependency sync by itself.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 321,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 322,
+      "text": "The updated artifact is consumed when a future session reaches Step 3.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 323,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 324,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 325,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 326,
+      "text": "## 6. Workflow trigger map",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 327,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 328,
+      "text": "All Supervisor operational workflows below run from GitHub Actions. The normal Supervisor/evaluator workflows are restricted to `main` unless otherwise noted.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 329,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 330,
+      "text": "| Workflow | Triggering commit path | What it does |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 331,
+      "text": "|---|---|---|",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 332,
+      "text": "| `.github/workflows/gemini-chat.yml` | `ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json` | Runs the normal Gemini Supervisor state machine using Node 22, then commits changes under `ChatMachines/GeminiSupervisor/runs`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 333,
+      "text": "| `.github/workflows/gemini-supervisor-dependency-sync.yml` | `ChatMachines/GeminiSupervisor/Agents.md` **or** `ChatMachines/GeminiSupervisor/send-to-gemini.js` | Aligns mapped dependent Supervisor files using the Gemini evaluator. Requires exactly one mapped base file to have changed while sentinel is enabled. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 334,
+      "text": "| `.github/workflows/gemini-supervisor-evaluator.yml` | Anything under `ChatMachines/GeminiEvaluation/evaluator-nextmessage/**` | Runs the standalone Supervisor evaluator/revision system in `ChatMachines/GeminiEvaluation`. This is not the ordinary user-request session workflow. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 335,
+      "text": "| `.github/workflows/gemini-supervisor-historical-audit.yml` | `ChatMachines/GeminiEvaluation/historical-audit-nextmessage/nextmessage.json` | Builds and evaluates historical audit evidence. This is not the ordinary user-request session workflow. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 336,
+      "text": "| `.github/workflows/github-node-test.yml` | `ChatMachines/GitHubNodeTest/run.js` | Runs the independent GitHub Node demonstration/test. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 337,
+      "text": "| `.github/workflows/test-appscript-endpoint.yml` | `.github/workflows/test-appscript-endpoint.yml` itself | Tests the Apps Script endpoint by POSTing a JavaScript function and arguments. Unlike the other workflows above, its trigger does not specify `branches: [main]`. |",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 338,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 339,
+      "text": "### Commits that do not currently trigger the normal Supervisor workflow by themselves",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 340,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 341,
+      "text": "Examples include:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 342,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 343,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 344,
+      "text": "ChatMachines/GeminiSupervisor/README.md",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 345,
+      "text": "ChatMachines/GeminiSupervisor/config.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 346,
+      "text": "ChatMachines/GeminiSupervisor/dependency-map.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 347,
+      "text": "ChatMachines/GeminiSupervisor/dependency-sync-sentinel.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 348,
+      "text": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 349,
+      "text": "ChatMachines/GeminiSupervisor/runs/**",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 350,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 351,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 352,
+      "text": "The GitHub Actions bot's checkpoint commits change only `runs/**`, so those checkpoint commits do not recursively trigger another normal Supervisor run.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 353,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 354,
+      "text": "Editing `.github/workflows/gemini-chat.yml` alone also does not trigger `gemini-chat.yml`, because its `paths:` filter is the Supervisor `nextmessage.json` file rather than the workflow file itself.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 355,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 356,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 357,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 358,
+      "text": "## 7. Starting a new Supervisor session",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 359,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 360,
+      "text": "A new session is started by submitting a valid **Step 0 ChatGPT execution return** under a new `run_nonce` and committing the trigger file to `main`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 361,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 362,
+      "text": "### Step 1 — choose a `run_nonce`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 363,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 364,
+      "text": "The Node runtime accepts only path-safe values matching:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 365,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 366,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 367,
+      "text": "[A-Za-z0-9_-]+",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 368,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 369,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 370,
+      "text": "Use letters, digits, `_`, and `-` only.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 371,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 372,
+      "text": "Good examples:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 373,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 374,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 375,
+      "text": "readme_bootstrap_20261001_1",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 376,
+      "text": "fix_supervisor_config_20261001_1",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 377,
+      "text": "user_request_0042",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 378,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 379,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 380,
+      "text": "Do not use spaces, slashes, or periods.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 381,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 382,
+      "text": "The `run_nonce` becomes the directory name:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 383,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 384,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 385,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 386,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 387,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 388,
+      "text": "Use a new nonce for a new user request/session. Reusing an existing nonce resumes that existing run rather than creating a new isolated run.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 389,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 390,
+      "text": "### Step 2 — preserve the user request verbatim",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 391,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 392,
+      "text": "Step 0 requires the actual user request text in:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 393,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 394,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 395,
+      "text": "start_of_turn.user_request",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 396,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 397,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 398,
+      "text": "Do not replace the user's words with an assistant summary.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 399,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 400,
+      "text": "### Step 3 — create the Step 0 trigger payload",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 401,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 402,
+      "text": "The top-level trigger format is:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 403,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 404,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 405,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 406,
+      "text": "  \"run_nonce\": \"readme_bootstrap_20261001_1\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 407,
+      "text": "  \"execution\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 408,
+      "text": "    \"source_role\": \"ChatGPT model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 409,
+      "text": "    \"step\": 0,",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 410,
+      "text": "    \"return_schema\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 411,
+      "text": "      \"start_of_turn\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 412,
+      "text": "        \"role_required\": \"ChatGPT model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 413,
+      "text": "        \"role_forbidden\": \"Gemini model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 414,
+      "text": "        \"role_completed\": \"ChatGPT model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 415,
+      "text": "        \"role_verification\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 416,
+      "text": "          \"method\": \"ChatGPT execution locus via connected GitHub tool\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 417,
+      "text": "          \"evidence\": \"ChatGPT authored and submitted this Step 0 execution return through the connected repository tool; runtime ground-truth checks independently verify execution-dependent claims.\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 418,
+      "text": "        },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 419,
+      "text": "        \"run_nonce\": \"readme_bootstrap_20261001_1\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 420,
+      "text": "        \"user_request\": \"<VERBATIM USER REQUEST>\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 421,
+      "text": "        \"current_timestamp\": \"<ISO 8601 timestamp>\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 422,
+      "text": "        \"return_schema_completed\": true,",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 423,
+      "text": "        \"return_schema_completed_timestamp\": \"<ISO 8601 timestamp>\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 424,
+      "text": "        \"nonce\": \"<non-empty request identifier>\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 425,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 426,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 427,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 428,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 429,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 430,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 431,
+      "text": "Write it to:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 432,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 433,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 434,
+      "text": "ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 435,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 436,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 437,
+      "text": "The exact Step 0 return schema is governed by `Agents.md`. If `Agents.md` changes, follow the current live schema there rather than copying an old run.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 438,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 439,
+      "text": "### Step 4 — commit the trigger to `main`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 440,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 441,
+      "text": "Commit the changed trigger file.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 442,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 443,
+      "text": "Example conceptual commit:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 444,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 445,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 446,
+      "text": "Start Gemini Supervisor run readme_bootstrap_20261001_1",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 447,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 448,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 449,
+      "text": "A push changing the trigger on `main` starts:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 450,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 451,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 452,
+      "text": "Gemini Supervisor state machine",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 453,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 454,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 455,
+      "text": "from `.github/workflows/gemini-chat.yml`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 456,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 457,
+      "text": "### Step 5 — what the first workflow does",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 458,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 459,
+      "text": "For a previously unseen `run_nonce`, the runtime creates:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 460,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 461,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 462,
+      "text": "runs/<run_nonce>/state.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 463,
+      "text": "runs/<run_nonce>/messages.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 464,
+      "text": "runs/<run_nonce>/store/store.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 465,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 466,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 467,
+      "text": "The initial state is created before Step 0 is evaluated.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 468,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 469,
+      "text": "The initial machine state is conceptually:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 470,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 471,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 472,
+      "text": "status: awaiting_chatgpt_execution",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 473,
+      "text": "current_step: first step defined in Agents.md",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 474,
+      "text": "completed_steps: []",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 475,
+      "text": "remaining_steps: all discovered steps",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 476,
+      "text": "awaiting: chatgpt_execution for current step",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 477,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 478,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 479,
+      "text": "The runtime then validates the submitted Step 0 result, runs live-ground-truth verification, and asks Gemini to supervise Step 0.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 480,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 481,
+      "text": "### Step 6 — inspect the result",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 482,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 483,
+      "text": "The workflow writes the result into the run container and commits it to `main`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 484,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 485,
+      "text": "Inspect:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 486,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 487,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 488,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/state.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 489,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 490,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 491,
+      "text": "The most important fields are:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 492,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 493,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 494,
+      "text": "current_state.status",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 495,
+      "text": "current_state.procedure.current_step",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 496,
+      "text": "current_state.procedure.completed_steps",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 497,
+      "text": "current_state.procedure.remaining_steps",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 498,
+      "text": "current_state.procedure.awaiting",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 499,
+      "text": "current_state.procedure.step_records",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 500,
+      "text": "current_state.last_supervisory_failure",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 501,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 502,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 503,
+      "text": "The GitHub Actions runtime also prints a JSON summary containing values including:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 504,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 505,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 506,
+      "text": "runtime",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 507,
+      "text": "node_version",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 508,
+      "text": "model",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 509,
+      "text": "run_nonce",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 510,
+      "text": "evaluated_step",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 511,
+      "text": "deterministic_validation_failures",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 512,
+      "text": "ground_truth_aggregate_status",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 513,
+      "text": "ground_truth_blocking_findings",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 514,
+      "text": "gate_result",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 515,
+      "text": "next_step",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 516,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 517,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 518,
+      "text": "The workflow checkpoint commit message is built in this form:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 519,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 520,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 521,
+      "text": "Gemini Supervisor checkpoint: <run_nonce> Step <step> <gate>",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 522,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 523,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 524,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 525,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 526,
+      "text": "## 8. Continuing a session after `PASS`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 527,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 528,
+      "text": "If Step 0 passes, the state machine advances to Step 1.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 529,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 530,
+      "text": "The workflow does **not** itself author the next ChatGPT execution return. The controller must submit the next required step.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 531,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 532,
+      "text": "1. Read `runs/<run_nonce>/state.json`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 533,
+      "text": "2. Confirm the previous step has `PASS`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 534,
+      "text": "3. Read `procedure.current_step`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 535,
+      "text": "4. Read the matching current step section in `Agents.md`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 536,
+      "text": "5. Execute that step as ChatGPT.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 537,
+      "text": "6. Construct that step's exact required return schema.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 538,
+      "text": "7. Keep the same `run_nonce`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 539,
+      "text": "8. Replace `nextmessage/nextmessage.json` with the next execution submission.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 540,
+      "text": "9. Set `execution.source_role` to `ChatGPT model`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 541,
+      "text": "10. Set `execution.step` to the current step number.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 542,
+      "text": "11. Put the exact required step return object in `execution.return_schema`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 543,
+      "text": "12. Commit `nextmessage/nextmessage.json` to `main`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 544,
+      "text": "13. Wait for the new checkpoint state.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 545,
+      "text": "14. Repeat until terminal.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 546,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 547,
+      "text": "Generic continuation envelope:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 548,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 549,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 550,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 551,
+      "text": "  \"run_nonce\": \"same_run_nonce\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 552,
+      "text": "  \"execution\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 553,
+      "text": "    \"source_role\": \"ChatGPT model\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 554,
+      "text": "    \"step\": 1,",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 555,
+      "text": "    \"return_schema\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 556,
+      "text": "      \"<exact schema required by current Agents.md Step 1>\": \"...\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 557,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 558,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 559,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 560,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 561,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 562,
+      "text": "Do not advance by guessing the next step. `runs/<run_nonce>/state.json` is the live machine authority for the current step.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 563,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 564,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 565,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 566,
+      "text": "## 9. What happens on `FAIL`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 567,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 568,
+      "text": "A failed supervisory gate does not advance the procedure.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 569,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 570,
+      "text": "The runtime keeps:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 571,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 572,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 573,
+      "text": "procedure.current_step = failed step",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 574,
+      "text": "procedure.awaiting.type = \"chatgpt_execution\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 575,
+      "text": "procedure.awaiting.reason = \"supervisory_gate_fail\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 576,
+      "text": "status = \"awaiting_chatgpt_execution\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 577,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 578,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 579,
+      "text": "and records `last_supervisory_failure`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 580,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 581,
+      "text": "Correction procedure:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 582,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 583,
+      "text": "1. Keep the **same `run_nonce`**.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 584,
+      "text": "2. Keep `execution.step` set to the failed step.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 585,
+      "text": "3. Inspect `state.json` for deterministic validation failures and the Gemini supervisory return.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 586,
+      "text": "4. Inspect `messages.json` and `store/store.json` when more evidence is needed.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 587,
+      "text": "5. Correct the actual failed requirement; do not skip ahead.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 588,
+      "text": "6. Replace the failed step's return schema with the corrected version.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 589,
+      "text": "7. Commit `nextmessage/nextmessage.json` again.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 590,
+      "text": "8. The normal Supervisor workflow runs again.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 591,
+      "text": "9. The new attempt is appended to the same run/step history.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 592,
+      "text": "10. Only a `PASS` can advance the machine.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 593,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 594,
+      "text": "A raw user prompt or a JSON object without the `execution` envelope is not a valid current-step execution submission. The runtime explicitly treats a missing `execution` object as a deterministic validation failure.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 595,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 596,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 597,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 598,
+      "text": "## 10. Step 3 special behavior",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 599,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 600,
+      "text": "Step 3 additionally depends on the artifact configured at:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 601,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 602,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 603,
+      "text": "external_files.step3_evaluation_artifact.path",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 604,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 605,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 606,
+      "text": "Currently:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 607,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 608,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 609,
+      "text": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 610,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 611,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 612,
+      "text": "The file must contain:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 613,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 614,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 615,
+      "text": "evaluation_heuristic",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 616,
+      "text": "step3_tsr",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 617,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 618,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 619,
+      "text": "The runtime includes that artifact in Step 3 context and validates the Step 3 return against the current contract.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 620,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 621,
+      "text": "If Step 3 suddenly fails after changes to the test/evaluation corpus, check all three of:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 622,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 623,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 624,
+      "text": "config.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 625,
+      "text": "Agents.md",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 626,
+      "text": "send-to-gemini.js",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 627,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 628,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 629,
+      "text": "plus the current `tests/step-3-evaluation.json` content.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 630,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 631,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 632,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 633,
+      "text": "## 11. Dependency synchronization",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 634,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 635,
+      "text": "Dependency synchronization exists because `Agents.md`, the runtime, and shared config must stay aligned.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 636,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 637,
+      "text": "Current map:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 638,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 639,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 640,
+      "text": "Agents.md",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 641,
+      "text": "  -> send-to-gemini.js",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 642,
+      "text": "  -> config.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 643,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 644,
+      "text": "send-to-gemini.js",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 645,
+      "text": "  -> Agents.md",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 646,
+      "text": "  -> config.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 647,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 648,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 649,
+      "text": "`tests/step-3-evaluation.json` is supplied as read-only context during this alignment.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 650,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 651,
+      "text": "The guard file is:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 652,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 653,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 654,
+      "text": "ChatMachines/GeminiSupervisor/dependency-sync-sentinel.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 655,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 656,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 657,
+      "text": "Normal state:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 658,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 659,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 660,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 661,
+      "text": "  \"enabled\": true",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 662,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 663,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 664,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 665,
+      "text": "When the sync workflow writes dependent changes it intentionally commits the sentinel as `false`, which causes any recursively triggered dependency-sync workflow to exit without doing another alignment. It then restores the sentinel to `true`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 666,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 667,
+      "text": "### Do not casually leave the sentinel false",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 668,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 669,
+      "text": "If it is false, a future `Agents.md` or `send-to-gemini.js` change will still trigger the workflow, but the alignment run will intentionally suppress itself.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 670,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 671,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 672,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 673,
+      "text": "## 12. Standalone evaluator versus normal Supervisor session",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 674,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 675,
+      "text": "There are two different concepts that should not be confused.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 676,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 677,
+      "text": "### Normal Supervisor session",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 678,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 679,
+      "text": "Trigger:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 680,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 681,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 682,
+      "text": "ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 683,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 684,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 685,
+      "text": "Workflow:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 686,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 687,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 688,
+      "text": ".github/workflows/gemini-chat.yml",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 689,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 690,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 691,
+      "text": "Runtime:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 692,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 693,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 694,
+      "text": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 695,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 696,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 697,
+      "text": "State:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 698,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 699,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 700,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 701,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 702,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 703,
+      "text": "### Standalone Gemini Evaluation system",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 704,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 705,
+      "text": "Trigger:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 706,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 707,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 708,
+      "text": "ChatMachines/GeminiEvaluation/evaluator-nextmessage/**",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 709,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 710,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 711,
+      "text": "Workflow:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 712,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 713,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 714,
+      "text": ".github/workflows/gemini-supervisor-evaluator.yml",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 715,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 716,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 717,
+      "text": "Runtime:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 718,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 719,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 720,
+      "text": "ChatMachines/GeminiEvaluation/evaluate-supervisor.js",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 721,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 722,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 723,
+      "text": "This system evaluates or revises the Supervisor implementation/specification. It is not the normal per-user-request state-machine session.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 724,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 725,
+      "text": "### Historical audit system",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 726,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 727,
+      "text": "Trigger:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 728,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 729,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 730,
+      "text": "ChatMachines/GeminiEvaluation/historical-audit-nextmessage/nextmessage.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 731,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 732,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 733,
+      "text": "Workflow:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 734,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 735,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 736,
+      "text": ".github/workflows/gemini-supervisor-historical-audit.yml",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 737,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 738,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 739,
+      "text": "This builds a historical evidence archive, segments it deterministically, runs the historical evaluator, and persists audit state under `ChatMachines/GeminiEvaluation/evaluations/<run_nonce>/`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 740,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 741,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 742,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 743,
+      "text": "## 13. Observability: where to look when something goes wrong",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 744,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 745,
+      "text": "Use this order.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 746,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 747,
+      "text": "### 1. GitHub Actions run",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 748,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 749,
+      "text": "Open **Actions** and inspect the relevant workflow.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 750,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 751,
+      "text": "For the normal state machine, look for:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 752,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 753,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 754,
+      "text": "Gemini Supervisor state machine",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 755,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 756,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 757,
+      "text": "The run will show whether failure occurred during checkout, Node setup, Supervisor execution, or checkpoint commit/push.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 758,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 759,
+      "text": "### 2. `runs/<run_nonce>/state.json`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 760,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 761,
+      "text": "This is the best first source for machine status.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 762,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 763,
+      "text": "Look for:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 764,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 765,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 766,
+      "text": "status",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 767,
+      "text": "current_step",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 768,
+      "text": "completed_steps",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 769,
+      "text": "remaining_steps",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 770,
+      "text": "awaiting",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 771,
+      "text": "step_records",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 772,
+      "text": "transition_value",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 773,
+      "text": "last_supervisory_failure",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 774,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 775,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 776,
+      "text": "### 3. `runs/<run_nonce>/messages.json`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 777,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 778,
+      "text": "Use this to inspect the persisted execution/supervision conversation and validation messages.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 779,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 780,
+      "text": "### 4. `runs/<run_nonce>/store/store.json`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 781,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 782,
+      "text": "Use this for audit/evidence records, including deterministic validation and live-ground-truth records.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 783,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 784,
+      "text": "### 5. `nextmessage/nextmessage.json`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 785,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 786,
+      "text": "Verify that:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 787,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 788,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 789,
+      "text": "run_nonce matches the intended run",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 790,
+      "text": "execution.source_role = \"ChatGPT model\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 791,
+      "text": "execution.step matches state.json current_step",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 792,
+      "text": "execution.return_schema is an object",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 793,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 794,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 795,
+      "text": "### 6. `Agents.md`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 796,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 797,
+      "text": "Verify the exact schema required by the current step. Do not use a schema copied from an old run if the contract has changed.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 798,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 799,
+      "text": "### 7. `config.json`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 800,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 801,
+      "text": "Verify all configured paths still point at the intended live files.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 802,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 803,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 804,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 805,
+      "text": "## 14. Common failure modes",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 806,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 807,
+      "text": "### Workflow did not start",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 808,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 809,
+      "text": "Check:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 810,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 811,
+      "text": "1. Was the commit pushed to `main`?",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 812,
+      "text": "2. Did the commit actually change `ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json`?",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 813,
+      "text": "3. Was `trigger_file` moved in `config.json` without also updating `.github/workflows/gemini-chat.yml`?",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 814,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 815,
+      "text": "### `GEMINI_API_KEY is missing`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 816,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 817,
+      "text": "The GitHub Actions repository variable is absent or unavailable to the workflow.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 818,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 819,
+      "text": "### Invalid `run_nonce`",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 820,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 821,
+      "text": "Use only:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 822,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 823,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 824,
+      "text": "A-Z a-z 0-9 _ -",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 825,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 826,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 827,
+      "text": "### Incomplete run container",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 828,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 829,
+      "text": "If any one of these exists without the other two:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 830,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 831,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 832,
+      "text": "state.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 833,
+      "text": "messages.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 834,
+      "text": "store/store.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 835,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 836,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 837,
+      "text": "`send-to-gemini.js` treats the run container as incomplete and stops instead of silently rebuilding it.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 838,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 839,
+      "text": "### Execution step mismatch",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 840,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 841,
+      "text": "If state says Step 2 but the trigger submits Step 3, deterministic validation fails. Correct Step 2; do not jump forward.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 842,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 843,
+      "text": "### Missing `execution` object",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 844,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 845,
+      "text": "The current runtime requires the ChatGPT execution envelope. Raw trigger input is not accepted as a valid current-step execution result.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 846,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 847,
+      "text": "### Step return schema incomplete",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 848,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 849,
+      "text": "Each step has exact required fields. Read the current `Agents.md` section and its field glossary.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 850,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 851,
+      "text": "### Ground-truth blocking finding",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 852,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 853,
+      "text": "A syntactically correct execution return can still fail if a material completion/execution claim cannot be verified against live authoritative evidence.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 854,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 855,
+      "text": "### Dependency-sync workflow fails immediately",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 856,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 857,
+      "text": "Check whether both `Agents.md` and `send-to-gemini.js` changed in the same push. The workflow requires exactly one authoritative mapped base file per dependency-sync event.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 858,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 859,
+      "text": "### Dependency sync unexpectedly does nothing",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 860,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 861,
+      "text": "Check:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 862,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 863,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 864,
+      "text": "ChatMachines/GeminiSupervisor/dependency-sync-sentinel.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 865,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 866,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 867,
+      "text": "If `enabled` is `false`, the run intentionally suppresses itself.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 868,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 869,
+      "text": "### Changed `runs_directory`, but state is not committed",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 870,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 871,
+      "text": "The Node runtime reads `runs_directory` from `config.json`, but the current workflow checkpoint logic still stages the default `ChatMachines/GeminiSupervisor/runs` location directly. Update the workflow when moving the run root.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 872,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 873,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 874,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 875,
+      "text": "## 15. Minimal new-session checklist",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 876,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 877,
+      "text": "Before starting:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 878,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 879,
+      "text": "- [ ] `GEMINI_API_KEY` is configured for GitHub Actions.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 880,
+      "text": "- [ ] `GEMINI_MODEL` is configured if the default model is not desired.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 881,
+      "text": "- [ ] `config.json` points to the intended `Agents.md`, trigger, run root, and Step 3 artifact.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 882,
+      "text": "- [ ] `dependency-sync-sentinel.json` is `enabled: true` unless suppression is intentional.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 883,
+      "text": "- [ ] The new `run_nonce` is unique and path-safe.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 884,
+      "text": "- [ ] The Step 0 `user_request` is verbatim.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 885,
+      "text": "- [ ] The Step 0 return object matches the current `Agents.md` schema.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 886,
+      "text": "- [ ] `execution.source_role` is `ChatGPT model`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 887,
+      "text": "- [ ] `execution.step` is `0` for a new run.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 888,
+      "text": "- [ ] `nextmessage/nextmessage.json` is committed to `main`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 889,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 890,
+      "text": "After each workflow run:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 891,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 892,
+      "text": "- [ ] Read the new checkpoint state.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 893,
+      "text": "- [ ] Confirm `gate_result` / transition value.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 894,
+      "text": "- [ ] On `FAIL`, correct the same step.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 895,
+      "text": "- [ ] On nonterminal `PASS`, execute the next step immediately.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 896,
+      "text": "- [ ] Keep the same `run_nonce` through the whole session.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 897,
+      "text": "- [ ] End only when state is terminal.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 898,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 899,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 900,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 901,
+      "text": "## 16. Recommended operator discipline",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 902,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 903,
+      "text": "For predictable operation:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 904,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 905,
+      "text": "1. Treat `Agents.md` as the step/schema authority.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 906,
+      "text": "2. Treat `state.json` as the current-step authority.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 907,
+      "text": "3. Treat live repository/runtime evidence as the authority for execution/completion claims.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 908,
+      "text": "4. Use one `run_nonce` per user request/session.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 909,
+      "text": "5. Never skip a failed step.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 910,
+      "text": "6. Never use a new `run_nonce` merely to escape a failed gate.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 911,
+      "text": "7. Keep normal session triggering isolated to `nextmessage/nextmessage.json` commits.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 912,
+      "text": "8. When changing `Agents.md` or `send-to-gemini.js`, change only one authoritative base file per dependency-sync push.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 913,
+      "text": "9. Remember that `config.json` path changes may require corresponding workflow/dependency-map changes because GitHub trigger/staging paths exist outside the Node config loader.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 914,
+      "text": "10. Inspect the persisted run container before making claims about whether a session passed, failed, advanced, or completed.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 915,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 916,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 917,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 918,
+      "text": "## 17. Quick reference",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 919,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 920,
+      "text": "### Start/resume normal Supervisor",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 921,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 922,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 923,
+      "text": "Edit:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 924,
+      "text": "ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 925,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 926,
+      "text": "Commit to:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 927,
+      "text": "main",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 928,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 929,
+      "text": "Workflow:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 930,
+      "text": ".github/workflows/gemini-chat.yml",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 931,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 932,
+      "text": "Runtime:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 933,
+      "text": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 934,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 935,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 936,
+      "text": "### Read live session state",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 937,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 938,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 939,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/state.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 940,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 941,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 942,
+      "text": "### Read session conversation/gates",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 943,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 944,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 945,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/messages.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 946,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 947,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 948,
+      "text": "### Read session audit/evidence records",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 949,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 950,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 951,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/store/store.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 952,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 953,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 954,
+      "text": "### Change canonical rules",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 955,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 956,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 957,
+      "text": "ChatMachines/GeminiSupervisor/Agents.md",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 958,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 959,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 960,
+      "text": "This automatically invokes dependency synchronization on `main`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 961,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 962,
+      "text": "### Change runtime",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 963,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 964,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 965,
+      "text": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 966,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 967,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 968,
+      "text": "This automatically invokes dependency synchronization on `main`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 969,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 970,
+      "text": "### Change shared runtime paths",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 971,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 972,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 973,
+      "text": "ChatMachines/GeminiSupervisor/config.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 974,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 975,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 976,
+      "text": "No normal workflow is triggered by that commit alone.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 977,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 978,
+      "text": "### Trigger standalone evaluator",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 979,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 980,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 981,
+      "text": "ChatMachines/GeminiEvaluation/evaluator-nextmessage/**",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 982,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 983,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 984,
+      "text": "### Trigger historical audit",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 985,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 986,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 987,
+      "text": "ChatMachines/GeminiEvaluation/historical-audit-nextmessage/nextmessage.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 988,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 989,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 990,
+      "text": "---",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 991,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 992,
+      "text": "## 18. Current architectural boundary",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 993,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 994,
+      "text": "The present design separates responsibility as follows:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 995,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 996,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 997,
+      "text": "ChatGPT",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 998,
+      "text": "  owns step execution and execution return schemas",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 999,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1000,
+      "text": "GitHub Actions / Node runtime",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1001,
+      "text": "  owns deterministic validation, persistence, live-ground-truth collection,",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1002,
+      "text": "  Gemini API invocation, and state transition mechanics",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1003,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1004,
+      "text": "Gemini",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1005,
+      "text": "  owns the supervisory PASS/FAIL gate",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1006,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1007,
+      "text": "Git repository",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1008,
+      "text": "  owns durable run state, messages, evidence, and configuration",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1009,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1010,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1011,
+      "text": "That role separation is intentional. Do not replace a ChatGPT-owned step by asking Gemini to execute it, and do not replace the Gemini gate by having ChatGPT declare its own PASS.",
+      "eol": "\n"
+    }
+  ]
+}
