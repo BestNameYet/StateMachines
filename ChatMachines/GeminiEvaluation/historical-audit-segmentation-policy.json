@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "name": "semantic-preserving bounded segmentation with capped crosscheck redundancy",
+  "purpose": "Predefine how the historical evidence corpus is divided before any evaluator chooses batches, while allowing the evaluator to decide how those fixed segments should be grouped and selectively crosschecked.",
+  "heuristic": {
+    "principle": "Create the smallest stable evidence units that preserve local meaning without allowing file boundaries to force oversized model contexts.",
+    "preferred_boundary_order": [
+      "git commit boundary",
+      "JSON array/object member boundary when recoverable without changing source text",
+      "Markdown heading boundary",
+      "blank-line paragraph boundary",
+      "line boundary",
+      "hard UTF-8 byte boundary only as a last resort"
+    ],
+    "target_segment_bytes": 120000,
+    "hard_max_segment_bytes": 160000,
+    "base_overlap_bytes": 0,
+    "justification": [
+      "Historical files vary greatly in size, so file-level assignment creates pathological context amplification.",
+      "Stable semantic boundaries reduce the chance that a requirement, commit, or persisted record is split mid-unit.",
+      "A hard byte ceiling bounds the largest indivisible model input even when a source has no useful structural delimiters.",
+      "Base segmentation contains no overlap; redundancy is introduced only by explicit crosscheck assignments so it can be measured and audited."
+    ]
+  },
+  "batch_constraints": {
+    "primary_coverage_fraction": 1.0,
+    "primary_segment_assignment_count": 1,
+    "maximum_total_raw_assignment_multiplier": 1.5,
+    "maximum_crosscheck_raw_fraction": 0.5,
+    "per_primary_batch_rule": "For P primary batches and raw corpus size D, each primary batch must contain no more than D/P raw segment bytes. The planner may increase P when this bound cannot be met.",
+    "crosscheck_rule": "Crosscheck batches may intentionally overlap or redistribute segments, including deterministic or seeded stochastic selection, but all repeated raw bytes count against the extra 0.5D redundancy budget.",
+    "crosscheck_justification_required": true,
+    "stochastic_crosscheck_seed_required": true
+  },
+  "evaluation_pipeline": [
+    "segment raw evidence deterministically",
+    "lead evaluator groups fixed segments into primary batches and crosscheck batches",
+    "validate coverage and byte-budget invariants before any batch evaluation",
+    "evaluate each primary batch exactly once",
+    "evaluate each crosscheck batch exactly once",
+    "synthesize only compact batch outputs; do not resend raw corpus"
+  ],
+  "prohibited": [
+    "recursive Gemini calls from within a batch evaluation",
+    "model-directed compute request loops that resend the same raw context",
+    "whole-audit restart after a later batch failure",
+    "unbounded raw-evidence duplication",
+    "implicit overlap not represented in the batch plan"
+  ]
+}
