@@ -1,0 +1,169 @@
+{
+  "response_type": "final_baseline_audit_staging_design",
+  "normative_baseline": {
+    "description": "Today's immutable final configuration, specification, evaluator harness, and runtime code serving as the sole normative benchmark for run-level compliance across all historical nonce executions.",
+    "files": [
+      "ChatMachines/GeminiSupervisor/Agents.md",
+      "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "ChatMachines/GeminiSupervisor/config.json"
+    ],
+    "how_used": "Frozen as a single shared packet passed to every batch. Nonce runs are evaluated directly against these final criteria (e.g., verbatim request preservation, server-verified model role separation, live ground-truth verification, step-by-step gate progression, and Step 4 failure-first reporting) regardless of what rules existed when the run took place."
+  },
+  "run_audit_model": {
+    "batching_strategy": "Per-nonce container batches evaluated against the immutable final baseline packet. Nonce runs do not require reconstructed historical code or spec snapshots.",
+    "shared_baseline_inputs": [
+      "current_agents_md",
+      "current_runtime_source",
+      "current_step3_evaluation",
+      "ChatMachines/GeminiSupervisor/config.json"
+    ],
+    "per_batch_inputs": [
+      "ChatMachines/GeminiSupervisor/runs/<run_nonce>/state.json",
+      "ChatMachines/GeminiSupervisor/runs/<run_nonce>/messages.json",
+      "ChatMachines/GeminiSupervisor/runs/<run_nonce>/store/store.json"
+    ],
+    "checks": [
+      "container_nonce_consistency_and_isolation",
+      "user_words_verbatim_preservation_step0_through_step4",
+      "chatgpt_and_gemini_role_separation_and_provenance",
+      "return_schema_fidelity_and_glossary_alignment",
+      "deterministic_live_ground_truth_verification_completeness",
+      "blocking_ground_truth_findings_gate_enforcement",
+      "step3_evaluation_heuristic_and_tsr_count_integrity",
+      "step4_failures_first_incomplete_second_verified_completion_last_reporting",
+      "turn_continuation_and_terminal_pass_without_bypassed_gates"
+    ],
+    "result_classes": [
+      "FINAL_BASELINE_SATISFIED",
+      "FINAL_BASELINE_PARTIAL",
+      "FINAL_BASELINE_VIOLATED",
+      "FINAL_BASELINE_INDETERMINATE"
+    ]
+  },
+  "requirement_lineage_model": {
+    "purpose": "Track the chronological evolution of user instructions and desired system requirements across commits, reconstructing when requirements were added, modified, superseded, implemented, or dropped.",
+    "classifications": [
+      "IMPLEMENTED",
+      "SUPERSEDED_BEFORE_IMPLEMENTATION",
+      "MISSING_STILL_OUTSTANDING",
+      "INDETERMINATE"
+    ],
+    "delta_fields": [
+      "requirement_id",
+      "source_commit_sha",
+      "originating_user_instruction_verbatim",
+      "delta_type",
+      "target_component",
+      "superseded_by_requirement_id",
+      "status_in_final_baseline",
+      "evidence_locator"
+    ],
+    "supersession_rules": [
+      "An explicit user instruction or subsequent approved commit modifying, replacing, or revoking a prior requirement marks that earlier requirement SUPERSEDED_BEFORE_IMPLEMENTATION if it was not yet implemented.",
+      "A requirement superseded by later explicit design is not a defect or system failure.",
+      "Architectural pivots (e.g., Apps Script transport deprecated in favor of GitHub Node execution, or external markdown eval docs merged into Agents.md and step-3-evaluation.json) systematically supersede preceding interface requirements."
+    ],
+    "outstanding_defect_rule": "A requirement is classified as MISSING_STILL_OUTSTANDING if and only if it was requested by the user, never implemented in code or specification, never subsequently superseded or revoked by later user instructions or architecture revisions, and remains relevant and active under the final desired baseline."
+  },
+  "prerequisite_artifacts": [
+    {
+      "artifact": "final_normative_baseline_manifest.json",
+      "purpose": "Freeze and catalog today's authoritative contract rules, step return schemas, role boundaries, and ground-truth validation rules.",
+      "required_fields": [
+        "baseline_commit_sha",
+        "agents_md_rules_catalog",
+        "step_schemas_glossary",
+        "ground_truth_policy",
+        "runtime_validation_rules"
+      ]
+    },
+    {
+      "artifact": "requirements_delta_matrix.json",
+      "purpose": "Chronological registry of every user instruction delta extracted from commit history and run state.json records.",
+      "required_fields": [
+        "requirement_id",
+        "introduced_at_commit",
+        "verbatim_request_text",
+        "delta_kind",
+        "classification",
+        "superseded_by",
+        "satisfaction_evidence"
+      ]
+    },
+    {
+      "artifact": "nonce_run_inventory.json",
+      "purpose": "Enumerate all persisted nonce run containers with file presence, timestamp spans, and terminal states.",
+      "required_fields": [
+        "run_nonce",
+        "directory_path",
+        "has_state_file",
+        "has_messages_file",
+        "has_store_file",
+        "initiating_prompt_snippet",
+        "recorded_terminal_status"
+      ]
+    }
+  ],
+  "proposed_batches": [
+    {
+      "batch_id": "BATCH_RUN_01_PROTOTYPE_AND_EARLY_RUNS",
+      "runs": [
+        "demo_20260930T155153_eadd5e5248",
+        "skill_interface_20260930T155700",
+        "skill_reeval_20260930T170100"
+      ],
+      "reason": "Early exploratory and interface consultation runs prior to formal role controls and ground truth enforcement."
+    },
+    {
+      "batch_id": "BATCH_RUN_02_SKILL_AND_SCHEMA_REVISION",
+      "runs": [
+        "skill_bootstrap_update_20260930T170700",
+        "skill_revision_20260930T180700",
+        "skill_revision_schema_reject_20260930T181100",
+        "role_separation_20260930T181400"
+      ],
+      "reason": "Runs introducing skill revisions, initial schema rejections, and role separation boundaries."
+    },
+    {
+      "batch_id": "BATCH_RUN_03_STEP0_FAIL_SERIES",
+      "runs": [
+        "step0_raw_fail_20260930T132500",
+        "step0_raw_fail_20260930T1325_2",
+        "step0_raw_fail_20260930_3",
+        "step0_raw_fail_20260930_4"
+      ],
+      "reason": "Sequential probe runs testing raw verbatim Step 0 rejection and compliant retry behaviors."
+    },
+    {
+      "batch_id": "BATCH_RUN_04_FORMAL_MIGRATIONS_AND_BASELINE",
+      "runs": [
+        "agents_schema_migration_20260930_1",
+        "ground_truth_verification_skill_20260930_1",
+        "work_action_approval_rulebook_20260930_1",
+        "live_ground_truth_integration_20261001_1",
+        "merge_step3_tsr_evaluation_heuristic_20261001_1"
+      ],
+      "reason": "Full multi-step procedure runs establishing canonical schemas, live ground truth, and merged evaluation corpus."
+    },
+    {
+      "batch_id": "BATCH_LINEAGE_CHRONOLOGY",
+      "runs": [],
+      "reason": "Transverse analysis tracking requirement deltas from commit 1 (c0f0b0ca45d9) through commit 235 (b911c9903745) to classify all user requirements into IMPLEMENTED, SUPERSEDED_BEFORE_IMPLEMENTATION, or MISSING_STILL_OUTSTANDING."
+    }
+  ],
+  "completeness_checks": [
+    "Every persisted directory under ChatMachines/GeminiSupervisor/runs/ with a state.json is assigned to an audit batch.",
+    "Every batch receives the identical frozen final normative baseline packet.",
+    "Every user instruction recovered in commit_history, git_log, or run store.json is cataloged in the requirements delta registry.",
+    "Every unfulfilled requirement is affirmatively matched to a superseding instruction or flagged as MISSING_STILL_OUTSTANDING.",
+    "Run evaluations account for all current Agents.md governing rules, including role separation, live ground truth, and Step 4 failure order."
+  ],
+  "differences_from_prior_temporal_contract_plan": [
+    "Eliminated requirement to check out or reconstruct historical code, spec, and test snapshots for each nonce run.",
+    "Established a single immutable final-baseline packet shared by all nonce run audit batches.",
+    "Reoriented historical commit analysis from speculative compliance checking to pure user-instruction and requirement-lineage reconstruction.",
+    "Explicitly codified that historical non-compliance with future rules is evaluated as a property of the historical run against final expectations, while supersession absolves unfulfilled historical requests from being counted as defects."
+  ],
+  "recommended_next_action": "Generate final_normative_baseline_manifest.json and requirements_delta_matrix.json as deterministic prerequisite artifacts, then execute BATCH_RUN_01 through BATCH_RUN_04 and BATCH_LINEAGE_CHRONOLOGY."
+}
