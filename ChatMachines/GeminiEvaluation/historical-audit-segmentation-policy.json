@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "name": "semantic-preserving bounded segmentation with capped crosscheck redundancy and hierarchical synthesis",
   "purpose": "Predefine how the historical evidence corpus is segmented, how large evaluator batches may be, and how compact batch results are hierarchically synthesized. Raw evidence is evaluated in isolated fresh processes and is never reintroduced after the batch layer.",
   "heuristic": {
@@ -15,16 +15,16 @@
     "target_segment_bytes": 120000,
     "hard_max_segment_bytes": 160000,
     "base_overlap_bytes": 0,
-    "target_primary_batch_bytes": 240000,
-    "hard_max_primary_batch_bytes": 320000,
-    "target_crosscheck_batch_bytes": 180000,
-    "hard_max_crosscheck_batch_bytes": 240000,
+    "target_primary_batch_bytes": 180000,
+    "hard_max_primary_batch_bytes": 240000,
+    "target_crosscheck_batch_bytes": 140000,
+    "hard_max_crosscheck_batch_bytes": 200000,
     "primary_batch_count_formula": "ceil(corpus_bytes / target_primary_batch_bytes)",
     "justification": [
       "File-level assignment previously allowed individual evaluator contexts to become pathologically large.",
       "Approximately 120 KB segments are small enough to redistribute semantically while usually preserving multi-record local context.",
-      "A 240 KB primary-batch target keeps a fresh evaluator request materially below the earlier megabyte-scale requests that exhausted the 2,000,000 input-token/minute quota.",
-      "A 320 KB hard primary ceiling allows limited bin-packing slack without permitting a batch to grow back toward megabyte scale.",
+      "A 180 KB primary-batch target leaves substantial headroom below the hard 240 KB ceiling and prevents the planner from operating near the quota-sensitive boundary.",
+      "A 240 KB hard primary ceiling keeps every fresh evaluator request far below the earlier megabyte-scale requests that exhausted the 2,000,000 input-token/minute quota.",
       "Crosscheck batches are smaller because they are redundant evidence passes rather than primary coverage.",
       "Base segmentation contains no overlap; every repeated raw byte is explicit crosscheck cost and is counted against the global redundancy budget."
     ]
@@ -35,8 +35,8 @@
     "maximum_total_raw_assignment_multiplier": 1.5,
     "maximum_crosscheck_raw_fraction": 0.5,
     "primary_batch_count_rule": "The planner must produce at least ceil(D / target_primary_batch_bytes) primary batches and may produce more when semantic grouping or hard batch limits require it.",
-    "primary_batch_size_rule": "No primary batch may exceed hard_max_primary_batch_bytes.",
-    "crosscheck_batch_size_rule": "No crosscheck batch may exceed hard_max_crosscheck_batch_bytes.",
+    "primary_batch_size_rule": "No primary batch may exceed hard_max_primary_batch_bytes. Before returning, the planner must sum size_bytes for every segment in every primary batch and split any batch above the hard limit.",
+    "crosscheck_batch_size_rule": "No crosscheck batch may exceed hard_max_crosscheck_batch_bytes. Before returning, the planner must sum size_bytes for every segment in every crosscheck batch and split any batch above the hard limit.",
     "crosscheck_rule": "Crosscheck batches may intentionally overlap or redistribute already-primary-assigned segments, including deterministic or seeded stochastic selection, but all repeated raw bytes count against the extra 0.5D redundancy budget.",
     "crosscheck_justification_required": true,
     "stochastic_crosscheck_seed_required": true,
