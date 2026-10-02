@@ -73,6 +73,8 @@ jobs:
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           HISTORICAL_AUDIT_PACKET_ROOT: ${{ steps.archive.outputs.packet_dir }}
           HISTORICAL_AUDIT_MANIFEST: ${{ steps.archive.outputs.manifest }}
+          HISTORICAL_AUDIT_API_ATTEMPTS: '8'
+          HISTORICAL_AUDIT_MAX_COMPUTE_ROUNDS: '128'
         run: |
           set -uo pipefail
 
