@@ -16,9 +16,13 @@ const PLACEHOLDER_KEY = '^MISSING_KEY^';
 const PLACEHOLDER_VALUE = '^MISSING_VALUE^';
 const DAMAGE_RATE = 0.10;
 
+function jsonBytes(value) {
+  return Buffer.from(JSON.stringify(value), 'utf8');
+}
+
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n', 'utf8');
+  fs.writeFileSync(filePath, jsonBytes(value));
 }
 
 function readJson(filePath) {
@@ -177,9 +181,10 @@ function verify(challengePath) {
 
   const sourceBytes = fs.readFileSync(sourcePath);
   const expectedFull = projectText(sourceBytes, requestCommitSha);
-  const expectedFullBytes = Buffer.from(JSON.stringify(expectedFull, null, 2) + '\n', 'utf8');
+  const expectedFullBytes = jsonBytes(expectedFull);
 
-  // The reading-room canonical copy is system-owned and is refreshed on every evaluation.
+  // Canonical and challenge JSON are intentionally serialized without formatting
+  // whitespace or a trailing newline, so verification has no whitespace ambiguity.
   fs.writeFileSync(p.canonical, expectedFullBytes);
 
   const submittedBytes = fs.readFileSync(absoluteChallenge);
