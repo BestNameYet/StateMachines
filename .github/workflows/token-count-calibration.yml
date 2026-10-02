@@ -1,0 +1,20 @@
+name: Token count calibration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GitHubNodeTest/token-count-calibration.js
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compare Gemini token count to character ratios
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+        run: node ChatMachines/GitHubNodeTest/token-count-calibration.js
