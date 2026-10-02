@@ -1,0 +1,488 @@
+# Agents.md --- Canonical Rules and Evaluation Contract
+
+## Canonical Evaluation Definitions
+
+```json
+{
+  "evaluation_definitions": {
+    "user_words": {
+      "key": "user_words",
+      "value": "The user's current utterance exactly as written, with references resolved only from relevant prior context.",
+      "definition": "User-authored language is primary instruction evidence; agent summaries never replace it.",
+      "definition_of_evaluation": "Compare preserved request text to the actual user utterance and only the context needed to resolve references.",
+      "pass_criteria": "The complete user-authored instruction is preserved without controller or agent pollution.",
+      "fail_criteria": "The request is truncated, meaningfully normalized, paraphrased as source text, or polluted by non-user text."
+    },
+    "effective_instruction_U": {
+      "key": "effective_instruction_U",
+      "value": "Resolved user request plus every applicable governing rule.",
+      "definition": "U is the complete set of requirements, prohibitions, permissions, questions, corrections, limits, and procedural constraints for the turn.",
+      "definition_of_evaluation": "Construct U from user_words and applicable rules while retaining source traceability.",
+      "pass_criteria": "Every applicable requirement is represented exactly once at the semantic level and retains its source.",
+      "fail_criteria": "A requirement is omitted, invented, scope-changed, or replaced by agent interpretation."
+    },
+    "agent_response_P": {
+      "key": "agent_response_P",
+      "value": "The agent's proposed words plus actions and results actually observed.",
+      "definition": "P distinguishes intention, attempt, execution, and verified completion.",
+      "definition_of_evaluation": "Compare execution-dependent claims to independent live evidence; keep 'will do', 'tried', and 'did' distinct.",
+      "pass_criteria": "P states only what live evidence supports and accurately identifies incomplete or failed work.",
+      "fail_criteria": "P reports intention/attempt as completion, asserts unobserved state, masks remaining work, or relies on self-report as evidence."
+    },
+    "live_ground_truth": {
+      "key": "live_ground_truth",
+      "value": "The freshest authoritative source that directly owns the fact being asserted.",
+      "definition": "Ground truth is obtained from live artifacts, git objects/refs, runtime records, state/message/store records, exact evaluator returns, observation ledger entries, or other execution-proximate sources. Memory, prior assistant self-report, generated summaries, plans, and self-asserted evidence are testimony only.",
+      "definition_of_evaluation": "For each material execution-dependent claim identify authority, freshness, execution proximity, specificity, integrity, locator, exact observed content, and cryptographic observation binding; compare the claim against that source.",
+      "pass_criteria": "Every material claim is supported by live authoritative evidence or is explicitly classified as UNKNOWN/PARTIAL/NOT_EXECUTED without being represented as success.",
+      "fail_criteria": "A claim outruns its evidence, a contradicted/unknown claim is presented as complete, memory/self-report substitutes for a live source, or a live source is available but not checked."
+    },
+    "ground_truth_status": {
+      "key": "ground_truth_status",
+      "value": "VERIFIED|CONTRADICTED|PARTIAL|UNKNOWN|NOT_EXECUTED",
+      "definition": "VERIFIED means direct authoritative support; CONTRADICTED means direct conflict; PARTIAL means only part of the claim is supported; UNKNOWN means the authoritative source is unavailable/ambiguous/unresolved; NOT_EXECUTED means live evidence establishes the claimed action did not occur.",
+      "definition_of_evaluation": "Assign exactly one status from live evidence and preserve modifiers/exceptions rather than collapsing qualified claims.",
+      "pass_criteria": "Status matches the evidence and scope of the complete claim.",
+      "fail_criteria": "UNKNOWN/PARTIAL/NOT_EXECUTED is converted into success or a contradiction is ignored."
+    },
+    "exact_satisfaction": {
+      "key": "exact_satisfaction",
+      "value": "P satisfies U only when every requirement and modifier is met without unauthorized extra work.",
+      "definition": "Semantic equivalence is allowed only when scope, quantity, method, sequence, target, and prohibitions remain intact.",
+      "definition_of_evaluation": "Compare P independently against each decomposed requirement and modifier.",
+      "pass_criteria": "Every requirement passes and no unauthorized action is introduced.",
+      "fail_criteria": "Any required result is missing, prohibition violated, modifier changed, target changed, or extra work introduced."
+    }
+  }
+}
+```
+
+## Governing Rule Catalog
+
+```json
+{
+  "rules": {
+    "shared_configuration_contract_governs_external_references": {
+      "key": "shared_configuration_contract_governs_external_references",
+      "value": "All external file dependencies, triggers, runtime roots, observation ledgers, observation requests, and evaluation artifacts are declared in ChatMachines/GeminiSupervisor/config.json. Specification and runtime refer to named keys in that shared config rather than independently hardcoding external paths.",
+      "definition": "External file locations must remain identical between specification and runtime via one shared supervisor configuration.",
+      "definition_of_evaluation": "Compare external path references in Agents.md and send-to-gemini.js against the entries in ChatMachines/GeminiSupervisor/config.json.",
+      "pass_criteria": "Both specification and runtime resolve external dependencies from config.json using matching keys.",
+      "fail_criteria": "An external file path is hardcoded divergently or bypasses the shared configuration keys.",
+      "scenario_examples": {
+        "rule_following": [
+          {"scenario":"Step 3 test source is resolved via config.json key external_files.step3_evaluation_artifact.path.","criterion_used":"shared config key alignment","status":"PASS"},
+          {"scenario":"Runtime reads triggerPath from config.json key trigger_file.","criterion_used":"config resolution","status":"PASS"},
+          {"scenario":"Ledger location is resolved via config.json key observation_ledger.filename.","criterion_used":"shared config key alignment","status":"PASS"}
+        ],
+        "rule_breaking": [
+          {"scenario":"Runtime hardcodes an external test file path that differs from the path in config.json.","criterion_used":"divergent path","status":"FAIL"},
+          {"scenario":"Agents.md specifies a hardcoded path not present in config.json.","criterion_used":"unconfigured dependency","status":"FAIL"},
+          {"scenario":"Specification and runtime invent different keys for the same file artifact.","criterion_used":"key mismatch","status":"FAIL"}
+        ]
+      }
+    },
+    "return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface": {
+      "key": "return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface",
+      "value": "Every step has a required return schema; the ChatGPT-owned execution result is persisted and Gemini evaluates that exact schema before advancement. A failed earlier gate cannot be bypassed. return_schema_completed refers only to the current step.",
+      "definition": "Per-step return schemas are the canonical execution and gating interface.",
+      "definition_of_evaluation": "Check schema shape, required fields, truthfulness, persistence, role ownership, completion semantics, and current-step gate state.",
+      "pass_criteria": "The current-step schema is complete, truthful, persisted, produced by the required role, and advances only after PASS.",
+      "fail_criteria": "A schema/control requirement is absent/false, a failed step is bypassed, or step completion is misrepresented as whole-procedure completion.",
+      "scenario_examples": {
+        "rule_following": [
+          {"scenario":"Step 2 is persisted and receives Gemini PASS before Step 3.","criterion_used":"gate order","status":"PASS"},
+          {"scenario":"Step 3 marks return_schema_completed only after A-G and tests are complete.","criterion_used":"per-step completion","status":"PASS"},
+          {"scenario":"A Step 2 FAIL remains at Step 2 for correction.","criterion_used":"failed gate cannot be bypassed","status":"PASS"}
+        ],
+        "rule_breaking": [
+          {"scenario":"Step 1 omits a required field but the controller advances.","criterion_used":"schema completeness","status":"FAIL"},
+          {"scenario":"A Step 3 FAIL is followed by Step 4 execution.","criterion_used":"failed gate cannot be bypassed","status":"FAIL"},
+          {"scenario":"return_schema_completed=true is reported as proof that all steps are done.","criterion_used":"per-step completion","status":"FAIL"}
+        ]
+      }
+    },
+    "model_role_separation_and_server_verified_execution_identity_are_mandatory": {
+      "key": "model_role_separation_and_server_verified_execution_identity_are_mandatory",
+      "value": "Steps 0-4 are ChatGPT-owned. Supervisory gates are Gemini-owned. Neither role may execute, repair, retry, or simulate the other role's work. role_completed must be supported by runtime/server evidence.",
+      "definition": "Role ownership is a runtime boundary, not a textual label.",
+      "definition_of_evaluation": "Compare role_required, role_forbidden, role_completed, and role_verification to observed execution locus.",
+      "pass_criteria": "Runtime evidence establishes role_completed equals role_required and not role_forbidden.",
+      "fail_criteria": "Wrong role executed, evidence is missing/conflicting, or output is relabeled to hide origin.",
+      "scenario_examples": {
+        "rule_following": [
+          {"scenario":"ChatGPT authors the execution return through the connected GitHub tool.","criterion_used":"ChatGPT-owned execution","status":"PASS"},
+          {"scenario":"Gemini API produces the supervisory gate inside send-to-gemini.js.","criterion_used":"Gemini-owned gate","status":"PASS"},
+          {"scenario":"A Gemini-authored Step 2 payload is rejected despite valid JSON.","criterion_used":"no role laundering","status":"PASS"}
+        ],
+        "rule_breaking": [
+          {"scenario":"Gemini is asked to generate Step 3 execution content.","criterion_used":"forbidden execution role","status":"FAIL"},
+          {"scenario":"ChatGPT fabricates a Gemini PASS.","criterion_used":"no simulation","status":"FAIL"},
+          {"scenario":"A payload self-labels as ChatGPT while runtime provenance shows Gemini.","criterion_used":"runtime evidence controls","status":"FAIL"}
+        ]
+      }
+    },
+    "chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake": {
+      "key": "chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake",
+      "value": "A nextmessage commit creates a mandatory wait for the corresponding Gemini response. On FAIL ChatGPT corrects the same step and recommits. On PASS with remaining work ChatGPT executes the next step. The turn ends only after the latest response and terminal state.",
+      "definition": "The user-facing turn spans the complete commit-response-control loop.",
+      "definition_of_evaluation": "Inspect outstanding response state, latest gate, current_step, remaining_steps, and required retry/continuation.",
+      "pass_criteria": "No outstanding response exists and either continuation occurs or the procedure is terminal.",
+      "fail_criteria": "The turn ends after a commit, nonterminal PASS, or FAIL without same-step correction.",
+      "scenario_examples": {
+        "rule_following": [
+          {"scenario":"Step 1 PASS immediately continues to Step 2.","criterion_used":"nonterminal continuation","status":"PASS"},
+          {"scenario":"Step 3 FAIL is corrected in the same run.","criterion_used":"same-step retry","status":"PASS"},
+          {"scenario":"Step 4 PASS with no remaining steps ends the turn.","criterion_used":"terminal condition","status":"PASS"}
+        ],
+        "rule_breaking": [
+          {"scenario":"ChatGPT says committed and ends before Gemini responds.","criterion_used":"outstanding response","status":"FAIL"},
+          {"scenario":"Step 0 passes but Step 1 is not submitted.","criterion_used":"nonterminal continuation","status":"FAIL"},
+          {"scenario":"A FAIL is merely reported to the user.","criterion_used":"same-step retry","status":"FAIL"}
+        ]
+      }
+    },
+    "bootstrap_must_create_and_isolate_a_consistent_run_container_before_step_zero": {
+      "key": "bootstrap_must_create_and_isolate_a_consistent_run_container_before_step_zero",
+      "value": "Each run has path-safe run_nonce and isolated state.json, messages.json, store/store.json, and observations.jsonl under runs/<run_nonce>/. Execution and gate records remain in that run.",
+      "definition": "Bootstrap establishes run identity, persistence, and isolation.",
+      "definition_of_evaluation": "Verify the run container files, matching nonce values, isolation, initial request persistence, observation ledger initialization, and bootstrap-before-Step-0 order.",
+      "pass_criteria": "All run-container invariants hold and only the active run is mutated.",
+      "fail_criteria": "Files are absent, nonce mismatches, another run is mutated, or Step 0 occurs before bootstrap.",
+      "scenario_examples": {
+        "rule_following": [
+          {"scenario":"All run files exist with the same nonce including observations.jsonl.","criterion_used":"container consistency","status":"PASS"},
+          {"scenario":"Retry records remain under the same nonce.","criterion_used":"run isolation","status":"PASS"},
+          {"scenario":"Initial user text is persisted before Step 0 completes.","criterion_used":"initial persistence","status":"PASS"}
+        ],
+        "rule_breaking": [
+          {"scenario":"messages.json has another nonce.","criterion_used":"nonce consistency","status":"FAIL"},
+          {"scenario":"Step 0 writes into another run directory.","criterion_used":"isolation","status":"FAIL"},
+          {"scenario":"A required run file is missing.","criterion_used":"container completeness","status":"FAIL"}
+        ]
+      }
+    },
+    "tamper_evident_observation_ledger_and_evidence_gateway_boundary": {
+      "key": "tamper_evident_observation_ledger_and_evidence_gateway_boundary",
+      "value": "All empirical runtime inspections of workspace files, git objects, and run containers must pass through the Evidence Gateway and be appended to runs/<run_nonce>/observations.jsonl in a SHA-256 hash-chained format. The trusted computing base (TCB) consists exclusively of the Node.js supervisor runtime executing in the runner; it does not and cannot intercept external ChatGPT tool executions in GitHub's environment. The observation ledger records only observations produced by runtime code. A broken or tampered ledger hash chain is an immediate blocking failure.",
+      "definition": "Cryptographic hash-chain auditing of all runtime observations establishes empirical fact without overstating the boundary of process observability.",
+      "definition_of_evaluation": "Verify the ledger hash chain from genesis to tip, verifying sequence, obs_id, timestamps, parent_hash, and record_hash. Ensure runtime inspections are logged through the Evidence Gateway.",
+      "pass_criteria": "Observation ledger is unbroken, verified, and records all material empirical inspections.",
+      "fail_criteria": "Ledger chain is tampered, broken, missing, unparseable, or skipped during verification.",
+      "scenario_examples": {
+        "rule_following": [
+          {"scenario":"Every file read by collectGroundTruth generates a logged observation in observations.jsonl with a valid parent hash.","criterion_used":"gateway journaling","status":"PASS"},
+          {"scenario":"The supervisor verifies the entire ledger hash chain before evaluating the step.","criterion_used":"ledger integrity verification","status":"PASS"}
+        ],
+        "rule_breaking": [
+          {"scenario":"A ledger line has a record_hash that does not match its contents.","criterion_used":"tamper detection","status":"FAIL"},
+          {"scenario":"Parent hash does not match previous record's record_hash.","criterion_used":"hash chain break","status":"FAIL"}
+        ]
+      }
+    },
+    "controller_observation_request_and_bound_receipt_protocol": {
+      "key": "controller_observation_request_and_bound_receipt_protocol",
+      "value": "Controllers may submit a repository-backed observation request to the runtime via trigger payload or CLI (--observe) to inspect live state and obtain an authenticated observation receipt containing runtime-generated obs_ids. For Step 4 completed_actions, every completion claim must explicitly bind to a valid, verified, non-tampered obs_id logged in the active run container. Model self-report without bound obs_id is testimony only and cannot support verified completion.",
+      "definition": "Decoupled empirical observation capture allows agents to request ground-truth verification receipts before final submission.",
+      "definition_of_evaluation": "Verify that completed actions cite valid observation_id values that exist in the active run's observation ledger, belong to the current run, have status VERIFIED, and match claimed locators/content hashes.",
+      "pass_criteria": "All completed actions cite valid, verified, cryptographically bound obs_ids.",
+      "fail_criteria": "A completion claim omits obs_id, cites a nonexistent obs_id, cites an obs_id from another run, or cites a non-VERIFIED observation.",
+      "scenario_examples": {
+        "rule_following": [
+          {"scenario":"Step 4 completed_action cites obs_id obs_123_4_abc which exists in observations.jsonl with status VERIFIED for the specified file.","criterion_used":"bound evidence","status":"PASS"}
+        ],
+        "rule_breaking": [
+          {"scenario":"Step 4 marks an action complete with prose evidence but no observation_id.","criterion_used":"unbound completion claim","status":"FAIL"},
+          {"scenario":"Step 4 cites an obs_id whose recorded status is PARTIAL or UNKNOWN.","criterion_used":"non-verified observation cited as success","status":"FAIL"}
+        ]
+      }
+    },
+    "deterministic_randomized_adversarial_verification": {
+      "key": "deterministic_randomized_adversarial_verification",
+      "value": "To prevent memorization or static deception, the runtime generates at least 16 categories of live-state probe queries deterministically seeded by SHA-256(run_nonce + step + attempt + git HEAD). The oracles are computed mechanically from live state via the Evidence Gateway and kept unavailable to the agent until after submission. Probe questions, oracles, and execution results are persisted in the run records for audit.",
+      "definition": "Reproducible randomized live probes test real workspace state dynamically across at least 16 distinct categories.",
+      "definition_of_evaluation": "Inspect the generated adversarial audit record to ensure the seed is derived from live run facts, at least 16 categories are exercised, and all oracles were verified against live state.",
+      "pass_criteria": "Adversarial probes are generated, mechanically evaluated via the Evidence Gateway, and recorded.",
+      "fail_criteria": "Fewer than 16 categories tested, seed non-reproducible, or probe oracles fabricated without Evidence Gateway verification."
+    },
+    "conjunction_gate_governs_step_advancement": {
+      "key": "conjunction_gate_governs_step_advancement",
+      "value": "Real step advancement PASS strictly equals the Boolean conjunction: (groundTruth.aggregate_status === 'PASS' && geminiGate.gate_result === 'PASS'). The gate decision is computed by simple runtime code. Neither Gemini nor ChatGPT can waive, reinterpret, override, or score this conjunction. If ground truth fails or contains blocking findings, the transition result is FAIL regardless of Gemini's returned gate_result.",
+      "definition": "Deterministic code retains absolute veto over step advancement.",
+      "definition_of_evaluation": "Verify that gate_result equals PASS only when both ground-truth aggregate status is PASS and Gemini's gate evaluation is PASS.",
+      "pass_criteria": "Real PASS requires both deterministic ground truth and supervisor PASS; any other condition results in FAIL.",
+      "fail_criteria": "Gemini PASS overrides a ground-truth FAIL, or gateResult is computed using model judgment alone."
+    },
+    "step_four_reporting_must_put_failures_and_incomplete_work_before_verified_completion": {
+      "key": "step_four_reporting_must_put_failures_and_incomplete_work_before_verified_completion",
+      "value": "Step 4 reports failed actions first, incomplete actions second, and only verified completed actions last; every completed action requires bound observation receipts.",
+      "definition": "Final reporting order prevents partial work from being hidden behind completion language.",
+      "definition_of_evaluation": "Compare actual plan/requirements and live evidence to failed_actions, not_completed_actions, and completed_actions.",
+      "pass_criteria": "Every failure/incomplete item is represented first and every completion is bound to a live-ground-truth VERIFIED observation.",
+      "fail_criteria": "A failure/incomplete item is omitted, completions precede failures, or a completion lacks verified bound observation evidence."
+    }
+  }
+}
+```
+
+## Procedure Dependency Chart
+
+```json
+{
+  "dependency_chart": [
+    {"source_value":"ChatMachines/GeminiSupervisor/config.json","decision":"load external file references, ledger config, and runtime path configuration","outputs":["triggerPath","agentsPath","step3EvaluationPath","runsRoot","observationLedgerFile"],"source_code_consumer":"loadSupervisorConfig"},
+    {"source_value":"nextmessage.run_nonce","decision":"select or create isolated run container and verify/init observations.jsonl","outputs":["runs/<run_nonce>/state.json","runs/<run_nonce>/messages.json","runs/<run_nonce>/store/store.json","runs/<run_nonce>/observations.jsonl"],"source_code_consumer":"initRun, ObservationLedger"},
+    {"source_value":"mode: observe or --observe CLI","decision":"execute controller observation requests via Evidence Gateway and write authenticated receipts","outputs":["observation receipts","runs/<run_nonce>/observations.jsonl"],"source_code_consumer":"runObservationMode"},
+    {"source_value":"execution.step","decision":"must equal current_state.procedure.current_step","outputs":["deterministic_validation_failures"],"source_code_consumer":"inspect"},
+    {"source_value":"execution.return_schema","decision":"validate current-step schema, verify bound obs_ids, and extract material execution-dependent claims","outputs":["granular_evaluation template","ground_truth_verification findings"],"source_code_consumer":"validateStep, collectGroundTruth, gateTemplate"},
+    {"source_value":"live workspace/git/run records via Evidence Gateway","decision":"classify each material claim and probe query VERIFIED|CONTRADICTED|PARTIAL|UNKNOWN|NOT_EXECUTED and record to ledger","outputs":["ground_truth_verification","ground_truth_verification_eval","adversarial_probes"],"source_code_consumer":"EvidenceGateway, collectGroundTruth, generateAdversarialProbes"},
+    {"source_value":"ObservationLedger integrity","decision":"verify entire SHA-256 hash chain before accepting evidence","outputs":["ledger_integrity_finding"],"source_code_consumer":"ObservationLedger.verifyChain, collectGroundTruth"},
+    {"source_value":"Step 2 stated_requirements","decision":"constrain Step 3 planning and Step 4 final coverage","outputs":["Gemini supervisory prompt"],"source_code_consumer":"statedRequirements, supervise"},
+    {"source_value":"config.external_files.step3_evaluation_artifact","decision":"supply evaluation_heuristic and complete Step3_TSR tests to Step 3","outputs":["Step_3.F.test_results","supervisory evaluation context"],"source_code_consumer":"loadStep3Evaluation, validateStep, systemText, supervise"},
+    {"source_value":"Step 3 test_results","decision":"any T repeats Step 3; all F permits Step 3 completion","outputs":["Step_3.G.Loop_Decision","Step_3.G.return_to"],"source_code_consumer":"validateStep"},
+    {"source_value":"supervisory_gate.ground_truth_verification_eval","decision":"reject malformed/altered findings and prevent PASS when blocking findings exist","outputs":["supervisory repair or accepted gate"],"source_code_consumer":"groundTruthEvalValid, evalValid"},
+    {"source_value":"Boolean conjunction (groundTruth.aggregate_status === 'PASS' && geminiGate.gate_result === 'PASS')","decision":"PASS advances exactly one step; FAIL remains on same step","outputs":["state.current_step","completed_steps","remaining_steps","last_supervisory_failure"],"source_code_consumer":"main transition logic"},
+    {"source_value":"execution and supervisory records","decision":"persist exact evidence, observations, and outcomes","outputs":["messages.json","store/store.json","state.json step_records","observations.jsonl"],"source_code_consumer":"addMessage, addStore, attemptRecord"}
+  ]
+}
+```
+
+## Supervisory Gate Common Field Glossary
+
+```json
+{
+  "supervisory_gate_common_field_glossary": {
+    "role_required":{"key":"role_required","value":"Gemini model","definition":"Required gate executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"Gemini model.","fail_criteria":"Other/missing."},
+    "role_forbidden":{"key":"role_forbidden","value":"ChatGPT model","definition":"Forbidden gate executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"ChatGPT model.","fail_criteria":"Other/missing."},
+    "role_completed":{"key":"role_completed","value":"Gemini model","definition":"Actual gate executor.","definition_of_evaluation":"Verify runtime provenance.","pass_criteria":"Verified Gemini.","fail_criteria":"Wrong/unverified."},
+    "role_verification":{"key":"role_verification","value":"{method,evidence}","definition":"Runtime role proof.","definition_of_evaluation":"Require non-empty direct provenance.","pass_criteria":"Supports Gemini.","fail_criteria":"Missing/conflicting."},
+    "instruction":{"key":"instruction","value":"evaluation-only instruction","definition":"Gate scope and role boundary.","definition_of_evaluation":"Must require semantic and live-ground-truth evaluation and forbid ChatGPT-step execution/repair.","pass_criteria":"Complete evaluation-only instruction.","fail_criteria":"Wrong-role execution permitted or required checks omitted."},
+    "granular_evaluation":{"key":"granular_evaluation","value":"*_eval tree","definition":"Per-terminal execution-value evaluations.","definition_of_evaluation":"Every terminal execution key/value must be preserved exactly and evaluated.","pass_criteria":"Complete valid tree.","fail_criteria":"Missing/changed/unevaluated value."},
+    "ground_truth_verification_eval":{"key":"ground_truth_verification_eval","value":"{deterministic_findings,claim_evaluations,aggregate_status,supervisor_eval_result,supervisor_eval_comment}","definition":"Supervisor evaluation of immutable deterministic live-ground-truth findings.","definition_of_evaluation":"Preserve runtime findings and aggregate status exactly; independently evaluate every finding; blocking findings prohibit PASS.","pass_criteria":"Exact preservation, complete evaluations, and no blocking finding ignored.","fail_criteria":"Findings altered/omitted, evaluation incomplete, or PASS despite blocking evidence."},
+    "step_level_evaluation":{"key":"step_level_evaluation","value":"{supervisor_eval_result,supervisor_eval_comment}","definition":"Whole-step semantic result.","definition_of_evaluation":"Aggregate all schema, requirement, role, and ground-truth checks.","pass_criteria":"Complete/consistent.","fail_criteria":"Missing/invalid/inconsistent."},
+    "failures":{"key":"failures","value":"array","definition":"Independent failure records.","definition_of_evaluation":"Every detected independent failure must be represented separately.","pass_criteria":"Complete/separate.","fail_criteria":"Missing/collapsed/invented."},
+    "gate_result":{"key":"gate_result","value":"PASS|FAIL","definition":"Transition decision evaluated by Gemini.","definition_of_evaluation":"Gemini sets PASS only when every component passes; runtime enforces realPass = (groundTruth.PASS && gemini.PASS).","pass_criteria":"Correct aggregate.","fail_criteria":"Invalid or inconsistent."}
+  }
+}
+```
+
+## Step 0 Field Definition Glossary
+
+```json
+{
+  "step_0_field_glossary": {
+    "start_of_turn":{"key":"start_of_turn","value":"object","definition":"Step 0 execution return.","definition_of_evaluation":"Require all child fields.","pass_criteria":"Complete.","fail_criteria":"Missing/incomplete."},
+    "start_of_turn.role_required":{"key":"start_of_turn.role_required","value":"ChatGPT model","definition":"Required executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"ChatGPT model.","fail_criteria":"Other/missing."},
+    "start_of_turn.role_forbidden":{"key":"start_of_turn.role_forbidden","value":"Gemini model","definition":"Forbidden executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"Gemini model.","fail_criteria":"Other/missing."},
+    "start_of_turn.role_completed":{"key":"start_of_turn.role_completed","value":"ChatGPT model","definition":"Actual executor.","definition_of_evaluation":"Verify runtime evidence.","pass_criteria":"Verified ChatGPT.","fail_criteria":"Wrong/unverified."},
+    "start_of_turn.role_verification":{"key":"start_of_turn.role_verification","value":"{method,evidence}","definition":"Execution-role proof.","definition_of_evaluation":"Require direct non-empty evidence.","pass_criteria":"Supports ChatGPT.","fail_criteria":"Missing/conflicting."},
+    "start_of_turn.run_nonce":{"key":"start_of_turn.run_nonce","value":"path-safe string","definition":"Run identity.","definition_of_evaluation":"Compare active run.","pass_criteria":"Exact match.","fail_criteria":"Mismatch/missing."},
+    "start_of_turn.user_request":{"key":"start_of_turn.user_request","value":"verbatim user request","definition":"Initial request.","definition_of_evaluation":"Compare user words.","pass_criteria":"Complete/unpolluted.","fail_criteria":"Changed/truncated."},
+    "start_of_turn.current_timestamp":{"key":"start_of_turn.current_timestamp","value":"ISO 8601","definition":"Execution time.","definition_of_evaluation":"Validate format/presence.","pass_criteria":"Valid.","fail_criteria":"Missing/invalid."},
+    "start_of_turn.return_schema_completed":{"key":"start_of_turn.return_schema_completed","value":true,"definition":"Step completion flag.","definition_of_evaluation":"True only with complete Step 0 return.","pass_criteria":"True and complete.","fail_criteria":"False/missing/premature."},
+    "start_of_turn.return_schema_completed_timestamp":{"key":"start_of_turn.return_schema_completed_timestamp","value":"ISO 8601","definition":"Completion time.","definition_of_evaluation":"Require valid timestamp.","pass_criteria":"Valid.","fail_criteria":"Missing/invalid."},
+    "start_of_turn.nonce":{"key":"start_of_turn.nonce","value":"non-empty string","definition":"Request identifier.","definition_of_evaluation":"Require stable traceable value.","pass_criteria":"Present.","fail_criteria":"Missing/empty."}
+  }
+}
+```
+
+## Step 0
+
+```json
+{
+  "step_0": {
+    "required_execution_role":"ChatGPT model",
+    "forbidden_execution_role":"Gemini model",
+    "evaluation_requirements":[
+      {"key":"step_0_preserve_verbatim_request","value":"Preserve complete user utterance.","definition":"Request fidelity.","definition_of_evaluation":"Compare verbatim.","pass_criteria":"Exact user text.","fail_criteria":"Changed/truncated/polluted."},
+      {"key":"step_0_bootstrap_identity","value":"Use active run/request identifiers and initialize observation ledger.","definition":"Traceability.","definition_of_evaluation":"Compare live run container and ledger hash chain.","pass_criteria":"Identifiers match and ledger initialized.","fail_criteria":"Missing/mismatch/broken ledger."},
+      {"key":"step_0_live_ground_truth","value":"Verify bootstrap/run identity claims from the live run-container files and Evidence Gateway; self-asserted role/run evidence is testimony until correlated with runtime findings.","definition":"Step 0 empirical verification.","definition_of_evaluation":"Use deterministic live ground-truth findings plus role provenance.","pass_criteria":"Required live files and identity claims are VERIFIED and no blocking finding exists.","fail_criteria":"Run/role claim contradicted, unknown but asserted successful, or deterministic finding ignored."},
+      {"key":"step_0_persistence_and_gate","value":"Persist execution/gate records and receive PASS before Step 1.","definition":"Durability/order.","definition_of_evaluation":"Inspect live run records and conjunction gate.","pass_criteria":"Persisted and passed.","fail_criteria":"Missing/premature advancement."}
+    ],
+    "execution_return_schema":{"start_of_turn":{"role_required":"ChatGPT model","role_forbidden":"Gemini model","role_completed":"<verified role>","role_verification":{"method":"<method>","evidence":"<evidence>"},"run_nonce":"<run nonce>","user_request":"<verbatim user request>","current_timestamp":"<ISO 8601>","return_schema_completed":true,"return_schema_completed_timestamp":"<ISO 8601>","nonce":"<request nonce>"}},
+    "supervisory_gate_schema":{"supervisory_gate":{"role_required":"Gemini model","role_forbidden":"ChatGPT model","role_completed":"<verified role>","role_verification":{"method":"<method>","evidence":"<evidence>"},"instruction":"Evaluate Step 0 only; correlate execution-dependent claims with immutable runtime ground-truth findings; preserve all *_eval values; do not execute/repair the ChatGPT step.","granular_evaluation":"<*_eval tree>","ground_truth_verification_eval":{"deterministic_findings":"<exact runtime findings>","claim_evaluations":"<one per finding>","aggregate_status":"PASS|FAIL","supervisor_eval_result":"PASS|FAIL","supervisor_eval_comment":"<comment>"},"step_level_evaluation":{"supervisor_eval_result":"PASS|FAIL","supervisor_eval_comment":"<comment>"},"failures":[],"gate_result":"PASS|FAIL"}}
+  }
+}
+```
+
+## Step 1 Field Definition Glossary
+
+```json
+{
+  "step_1_field_glossary": {
+    "step_1_record":{"key":"step_1_record","value":"object","definition":"Step 1 continuity return.","definition_of_evaluation":"Require all child fields.","pass_criteria":"Complete.","fail_criteria":"Missing/incomplete."},
+    "step_1_record.role_required":{"key":"step_1_record.role_required","value":"ChatGPT model","definition":"Required executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"ChatGPT model.","fail_criteria":"Other."},
+    "step_1_record.role_forbidden":{"key":"step_1_record.role_forbidden","value":"Gemini model","definition":"Forbidden executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"Gemini model.","fail_criteria":"Other."},
+    "step_1_record.role_completed":{"key":"step_1_record.role_completed","value":"ChatGPT model","definition":"Actual executor.","definition_of_evaluation":"Verify provenance.","pass_criteria":"Verified ChatGPT.","fail_criteria":"Wrong/unverified."},
+    "step_1_record.role_verification":{"key":"step_1_record.role_verification","value":"{method,evidence}","definition":"Execution role evidence.","definition_of_evaluation":"Require direct evidence.","pass_criteria":"Supports ChatGPT.","fail_criteria":"Missing/conflicting."},
+    "step_1_record.run_nonce":{"key":"step_1_record.run_nonce","value":"string","definition":"Run identity.","definition_of_evaluation":"Compare active run.","pass_criteria":"Exact match.","fail_criteria":"Mismatch."},
+    "step_1_record.user_request":{"key":"step_1_record.user_request","value":"verbatim request","definition":"Preserved request.","definition_of_evaluation":"Compare Step 0.","pass_criteria":"Exact.","fail_criteria":"Changed."},
+    "step_1_record.nonce":{"key":"step_1_record.nonce","value":"string","definition":"Request identity.","definition_of_evaluation":"Compare Step 0.","pass_criteria":"Exact/traceable.","fail_criteria":"Missing/mismatch."},
+    "step_1_record.current_timestamp":{"key":"step_1_record.current_timestamp","value":"ISO 8601","definition":"Execution time.","definition_of_evaluation":"Validate.","pass_criteria":"Valid.","fail_criteria":"Invalid."},
+    "step_1_record.return_schema_completed":{"key":"step_1_record.return_schema_completed","value":true,"definition":"Step completion.","definition_of_evaluation":"True only when complete.","pass_criteria":"True/complete.","fail_criteria":"Premature/missing."},
+    "step_1_record.return_schema_completed_timestamp":{"key":"step_1_record.return_schema_completed_timestamp","value":"ISO 8601","definition":"Completion time.","definition_of_evaluation":"Validate.","pass_criteria":"Valid.","fail_criteria":"Invalid."}
+  }
+}
+```
+
+## Step 1
+
+```json
+{
+  "step_1": {
+    "required_execution_role":"ChatGPT model",
+    "forbidden_execution_role":"Gemini model",
+    "evaluation_requirements":[
+      {"key":"step_1_preserve_request","value":"Preserve complete Step 0 request and identifiers.","definition":"Continuity.","definition_of_evaluation":"Compare Step 0/active run.","pass_criteria":"Exact/consistent.","fail_criteria":"Changed/mismatch."},
+      {"key":"step_1_role_completion_persistence","value":"Use verified ChatGPT role, complete/persist Step 1, and receive PASS before Step 2.","definition":"Step integrity.","definition_of_evaluation":"Inspect role/schema/persistence/gate.","pass_criteria":"All pass.","fail_criteria":"Any fail."}
+    ],
+    "execution_return_schema":{"step_1_record":{"role_required":"ChatGPT model","role_forbidden":"Gemini model","role_completed":"<verified role>","role_verification":{"method":"<method>","evidence":"<evidence>"},"run_nonce":"<run nonce>","user_request":"<verbatim user request>","nonce":"<request nonce>","current_timestamp":"<ISO 8601>","return_schema_completed":true,"return_schema_completed_timestamp":"<ISO 8601>"}},
+    "supervisory_gate_schema":{"supervisory_gate":{"role_required":"Gemini model","role_forbidden":"ChatGPT model","role_completed":"<verified role>","role_verification":{"method":"<method>","evidence":"<evidence>"},"instruction":"Evaluate Step 1 only and preserve every terminal execution key/value; do not execute/repair the ChatGPT step.","granular_evaluation":"<*_eval tree>","ground_truth_verification_eval":{"deterministic_findings":"<exact runtime findings>","claim_evaluations":"<one per finding>","aggregate_status":"PASS|FAIL","supervisor_eval_result":"PASS|FAIL","supervisor_eval_comment":"<comment>"},"step_level_evaluation":{"supervisor_eval_result":"PASS|FAIL","supervisor_eval_comment":"<comment>"},"failures":[],"gate_result":"PASS|FAIL"}}
+  }
+}
+```
+
+## Step 2 Field Definition Glossary
+
+```json
+{
+  "step_2_field_glossary": {
+    "step_2_record":{"key":"step_2_record","value":"object","definition":"Requirement extraction return.","definition_of_evaluation":"Require all child fields.","pass_criteria":"Complete.","fail_criteria":"Missing/incomplete."},
+    "step_2_record.role_required":{"key":"step_2_record.role_required","value":"ChatGPT model","definition":"Required executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"ChatGPT model.","fail_criteria":"Other."},
+    "step_2_record.role_forbidden":{"key":"step_2_record.role_forbidden","value":"Gemini model","definition":"Forbidden executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"Gemini model.","fail_criteria":"Other."},
+    "step_2_record.role_completed":{"key":"step_2_record.role_completed","value":"ChatGPT model","definition":"Actual executor.","definition_of_evaluation":"Verify provenance.","pass_criteria":"Verified ChatGPT.","fail_criteria":"Wrong/unverified."},
+    "step_2_record.role_verification":{"key":"step_2_record.role_verification","value":"{method,evidence}","definition":"Role evidence.","definition_of_evaluation":"Require direct evidence.","pass_criteria":"Supports ChatGPT.","fail_criteria":"Missing/conflicting."},
+    "step_2_record.run_nonce":{"key":"step_2_record.run_nonce","value":"string","definition":"Run identity.","definition_of_evaluation":"Compare active run.","pass_criteria":"Exact.","fail_criteria":"Mismatch."},
+    "step_2_record.user_request_nonce":{"key":"step_2_record.user_request_nonce","value":"string","definition":"Request identity.","definition_of_evaluation":"Compare prior steps.","pass_criteria":"Exact.","fail_criteria":"Mismatch."},
+    "step_2_record.stated_requirements":{"key":"step_2_record.stated_requirements","value":"array<string>","definition":"Only user-stated requirements, preserved verbatim.","definition_of_evaluation":"Compare against user words.","pass_criteria":"All and only user-stated requirements.","fail_criteria":"Omission/invention/paraphrase."},
+    "step_2_record.current_timestamp":{"key":"step_2_record.current_timestamp","value":"ISO 8601","definition":"Execution time.","definition_of_evaluation":"Validate.","pass_criteria":"Valid.","fail_criteria":"Invalid."},
+    "step_2_record.return_schema_completed":{"key":"step_2_record.return_schema_completed","value":true,"definition":"Step completion.","definition_of_evaluation":"True only after complete extraction.","pass_criteria":"True/complete.","fail_criteria":"Premature/missing."},
+    "step_2_record.return_schema_completed_timestamp":{"key":"step_2_record.return_schema_completed_timestamp","value":"ISO 8601","definition":"Completion time.","definition_of_evaluation":"Validate.","pass_criteria":"Valid.","fail_criteria":"Invalid."}
+  }
+}
+```
+
+## Step 2
+
+```json
+{
+  "step_2": {
+    "required_execution_role":"ChatGPT model",
+    "forbidden_execution_role":"Gemini model",
+    "evaluation_requirements":[
+      {"key":"step_2_only_user_stated_requirements","value":"Extract all and only user-stated requirements verbatim.","definition":"No invented requirements.","definition_of_evaluation":"Compare each entry to user words and full coverage.","pass_criteria":"Complete/source-exact.","fail_criteria":"Omitted/invented/paraphrased."},
+      {"key":"step_2_live_ground_truth","value":"Any claim that a prior requirement, artifact, evaluator result, or execution state exists must be correlated with live run/artifact sources via Evidence Gateway rather than memory/self-report.","definition":"Requirement-extraction provenance.","definition_of_evaluation":"Use deterministic runtime findings for execution-dependent source claims.","pass_criteria":"Material source-state claims VERIFIED or accurately non-verified.","fail_criteria":"Unverified source-state assertion is accepted as fact."},
+      {"key":"step_2_role_completion_persistence","value":"Use verified ChatGPT role, complete/persist Step 2, and receive PASS before Step 3.","definition":"Step integrity.","definition_of_evaluation":"Inspect role/schema/persistence/gate.","pass_criteria":"All pass.","fail_criteria":"Any fail."}
+    ],
+    "execution_return_schema":{"step_2_record":{"role_required":"ChatGPT model","role_forbidden":"Gemini model","role_completed":"<verified role>","role_verification":{"method":"<method>","evidence":"<evidence>"},"run_nonce":"<run nonce>","user_request_nonce":"<request nonce>","stated_requirements":["<verbatim requirement>"],"current_timestamp":"<ISO 8601>","return_schema_completed":true,"return_schema_completed_timestamp":"<ISO 8601>"}},
+    "supervisory_gate_schema":{"supervisory_gate":{"role_required":"Gemini model","role_forbidden":"ChatGPT model","role_completed":"<verified role>","role_verification":{"method":"<method>","evidence":"<evidence>"},"instruction":"Evaluate Step 2 only; verify verbatim requirement coverage and correlate any execution-dependent source claims with immutable runtime ground truth; preserve all *_eval values; do not execute/repair the ChatGPT step.","granular_evaluation":"<*_eval tree>","ground_truth_verification_eval":{"deterministic_findings":"<exact runtime findings>","claim_evaluations":"<one per finding>","aggregate_status":"PASS|FAIL","supervisor_eval_result":"PASS|FAIL","supervisor_eval_comment":"<comment>"},"step_level_evaluation":{"supervisor_eval_result":"PASS|FAIL","supervisor_eval_comment":"<comment>"},"failures":[],"gate_result":"PASS|FAIL"}}
+  }
+}
+```
+
+## Step 3 Field Definition Glossary
+
+```json
+{
+  "step_3_field_glossary": {
+    "Step_3":{"key":"Step_3","value":"object","definition":"Planning/test return.","definition_of_evaluation":"Require complete A-G plus control fields.","pass_criteria":"Complete.","fail_criteria":"Missing/incomplete."},
+    "Step_3.role_required":{"key":"Step_3.role_required","value":"ChatGPT model","definition":"Required executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"ChatGPT model.","fail_criteria":"Other."},
+    "Step_3.role_forbidden":{"key":"Step_3.role_forbidden","value":"Gemini model","definition":"Forbidden executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"Gemini model.","fail_criteria":"Other."},
+    "Step_3.role_completed":{"key":"Step_3.role_completed","value":"ChatGPT model","definition":"Actual executor.","definition_of_evaluation":"Verify provenance.","pass_criteria":"Verified ChatGPT.","fail_criteria":"Wrong/unverified."},
+    "Step_3.role_verification":{"key":"Step_3.role_verification","value":"{method,evidence}","definition":"Role evidence.","definition_of_evaluation":"Require direct evidence.","pass_criteria":"Supports ChatGPT.","fail_criteria":"Missing/conflicting."},
+    "Step_3.descriptor":{"key":"Step_3.descriptor","value":"string","definition":"Step purpose.","definition_of_evaluation":"Must describe decomposition/plan/test/loop.","pass_criteria":"Correct.","fail_criteria":"Missing/wrong."},
+    "Step_3.user_request_nonce":{"key":"Step_3.user_request_nonce","value":"string","definition":"Request traceability.","definition_of_evaluation":"Compare prior steps.","pass_criteria":"Exact.","fail_criteria":"Mismatch."},
+    "Step_3.A":{"key":"Step_3.A","value":"{descriptor,U:{instruction,value}}","definition":"Verbatim U preservation.","definition_of_evaluation":"Compare U value to Step 0 user request.","pass_criteria":"Complete/unpolluted.","fail_criteria":"Changed/truncated."},
+    "Step_3.B":{"key":"Step_3.B","value":"clause decomposition","definition":"Clauses with actions/persons/objects.","definition_of_evaluation":"Compare to U and Step 2 requirements.","pass_criteria":"Complete/source-supported.","fail_criteria":"Omission/invention."},
+    "Step_3.C":{"key":"Step_3.C","value":"modifier analysis","definition":"Recursive material-modifier analysis.","definition_of_evaluation":"Each modifier includes meaning_without_modifier, difference, recursive_level.","pass_criteria":"Complete/accurate.","fail_criteria":"Missing/wrong."},
+    "Step_3.D":{"key":"Step_3.D","value":"P plan","definition":"Complete execution plan.","definition_of_evaluation":"Map every Step 2 requirement without unauthorized work.","pass_criteria":"Complete/authorized/ordered.","fail_criteria":"Omission/invention/scope change."},
+    "Step_3.E":{"key":"Step_3.E","value":"UI_output","definition":"Proposed final report if plan is executed and verified.","definition_of_evaluation":"Must not overclaim future/unverified results.","pass_criteria":"Accurate conditional completion report.","fail_criteria":"Promise/unsupported completion."},
+    "Step_3.F":{"key":"Step_3.F","value":"Step3_TSR evaluations","definition":"Every active test is independently evaluated.","definition_of_evaluation":"Compare Test_Count and test results against the canonical evaluation artifact defined in config.json under external_files.step3_evaluation_artifact.","pass_criteria":"Complete/correct.","fail_criteria":"Missing/duplicate/incorrect."},
+    "Step_3.G":{"key":"Step_3.G","value":"loop control","definition":"Any T repeats Step 3; all F completes planning.","definition_of_evaluation":"Compare all test results.","pass_criteria":"Exact control result.","fail_criteria":"Contradiction/premature completion."},
+    "Step_3.current_timestamp":{"key":"Step_3.current_timestamp","value":"ISO 8601","definition":"Execution time.","definition_of_evaluation":"Validate.","pass_criteria":"Valid.","fail_criteria":"Invalid."},
+    "Step_3.return_schema_completed":{"key":"Step_3.return_schema_completed","value":true,"definition":"Step completion.","definition_of_evaluation":"True only when A-G complete and all tests F.","pass_criteria":"True under completion conditions.","fail_criteria":"Premature/missing."},
+    "Step_3.return_schema_completed_timestamp":{"key":"Step_3.return_schema_completed_timestamp","value":"ISO 8601","definition":"Completion time.","definition_of_evaluation":"Validate.","pass_criteria":"Valid.","fail_criteria":"Invalid."}
+  }
+}
+```
+
+## Step 3
+
+```json
+{
+  "step_3": {
+    "required_execution_role":"ChatGPT model",
+    "forbidden_execution_role":"Gemini model",
+    "evaluation_requirements":[
+      {"key":"step_3_complete_U_decomposition","value":"Preserve U and fully decompose clauses/actions/persons/objects/modifiers.","definition":"Planning ground truth.","definition_of_evaluation":"Compare A-C to U/Step 2.","pass_criteria":"Complete/source-supported.","fail_criteria":"Truncation/invention/omission."},
+      {"key":"step_3_plan_satisfies_all_step_2_requirements","value":"P satisfies every Step 2 requirement without unauthorized additions or changed modifiers.","definition":"Plan coverage.","definition_of_evaluation":"Map every requirement to P.","pass_criteria":"Complete faithful mapping.","fail_criteria":"Omission/invention/scope/method/order change."},
+      {"key":"step_3_all_tests_are_evaluated","value":"Evaluate every active Step3_TSR test independently.","definition":"Failure-pattern coverage.","definition_of_evaluation":"Compare test count and results to the canonical Step 3 evaluation artifact resolved via config.json key external_files.step3_evaluation_artifact.path.","pass_criteria":"Complete/correct.","fail_criteria":"Missing/duplicate/incorrect."},
+      {"key":"step_3_live_ground_truth","value":"Any assertion that a referenced file, test source, repository state, evaluator result, or prior execution record exists or has stated content must be correlated with deterministic live ground truth before PASS.","definition":"Plan-source empirical integrity.","definition_of_evaluation":"Compare Step 3 source/evidence claims with runtime findings.","pass_criteria":"Material claims VERIFIED or accurately non-verified and not used as successful premises.","fail_criteria":"Fabricated/stale/unknown source claim supports the plan or blocking finding is ignored."},
+      {"key":"step_3_loop_control","value":"Any T repeats Step 3 from A; all F permits completion.","definition":"Internal validation loop.","definition_of_evaluation":"Compare G to F.","pass_criteria":"Exact.","fail_criteria":"Contradiction."},
+      {"key":"step_3_role_completion_persistence","value":"Use verified ChatGPT role, complete/persist Step 3, receive Gemini PASS and Conjunction Gate PASS, then proceed to implementation/Step 4.","definition":"Step integrity.","definition_of_evaluation":"Inspect role/schema/persistence/gate.","pass_criteria":"All pass.","fail_criteria":"Any fail."}
+    ],
+    "execution_return_schema":{"Step_3":{"role_required":"ChatGPT model","role_forbidden":"Gemini model","role_completed":"<verified role>","role_verification":{"method":"<method>","evidence":"<evidence>"},"descriptor":"<purpose>","user_request_nonce":"<request nonce>","A":{"descriptor":"<purpose>","U":{"instruction":"<instruction>","value":"<verbatim U>"}},"B":{"descriptor":"<purpose>","clauses":{"instruction":"<instruction>","value":[{"clause":"<clause>","actions":["<action>"],"persons":["<person>"],"objects":["<object>"]}]}},"C":{"descriptor":"<purpose>","modifier_analysis":{"instruction":"<instruction>","value":[{"modifier":"<modifier>","meaning_without_modifier":"<meaning>","difference":"<difference>","recursive_level":1}]}},"D":{"descriptor":"<purpose>","P":{"instruction":"<instruction>","value":"<complete plan>"}},"E":{"descriptor":"<purpose>","UI_output":{"instruction":"<instruction>","value":"<proposed final report>"}},"F":{"descriptor":"<purpose>","Step3_TSR_status":{"instruction":"<instruction>","value":"Found"},"Step3_TSR_verbatim_result":{"instruction":"<instruction>","value":"<traceable source evidence>"},"Test_Count":{"instruction":"<instruction>","value":31},"test_results":{"instruction":"<instruction>","value":[{"question_number":"<id>","question":"<question>","result":"F"}]}},"G":{"descriptor":"<purpose>","Loop_Decision":{"instruction":"<instruction>","value":"False"},"return_to":{"instruction":"<instruction>","value":null}},"current_timestamp":"<ISO 8601>","return_schema_completed":true,"return_schema_completed_timestamp":"<ISO 8601>"}},
+    "supervisory_gate_schema":{"supervisory_gate":{"role_required":"Gemini model","role_forbidden":"ChatGPT model","role_completed":"<verified role>","role_verification":{"method":"<method>","evidence":"<evidence>"},"instruction":"Evaluate Step 3 only using Agents.md, Step 2 requirements, the canonical evaluation artifact resolved from config.json (external_files.step3_evaluation_artifact), and immutable runtime ground truth; preserve all *_eval values/findings; do not execute/repair the ChatGPT step.","granular_evaluation":"<*_eval tree>","ground_truth_verification_eval":{"deterministic_findings":"<exact runtime findings>","claim_evaluations":"<one per finding>","aggregate_status":"PASS|FAIL","supervisor_eval_result":"PASS|FAIL","supervisor_eval_comment":"<comment>"},"step_level_evaluation":{"supervisor_eval_result":"PASS|FAIL","supervisor_eval_comment":"<comment>"},"failures":[],"gate_result":"PASS|FAIL"}}
+  }
+}
+```
+
+## Step 4 Field Definition Glossary
+
+```json
+{
+  "step_4_field_glossary": {
+    "Step_4":{"key":"Step_4","value":"object","definition":"Final execution/report return.","definition_of_evaluation":"Require all report/control fields.","pass_criteria":"Complete.","fail_criteria":"Missing/incomplete."},
+    "Step_4.role_required":{"key":"Step_4.role_required","value":"ChatGPT model","definition":"Required executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"ChatGPT model.","fail_criteria":"Other."},
+    "Step_4.role_forbidden":{"key":"Step_4.role_forbidden","value":"Gemini model","definition":"Forbidden executor.","definition_of_evaluation":"Exact comparison.","pass_criteria":"Gemini model.","fail_criteria":"Other."},
+    "Step_4.role_completed":{"key":"Step_4.role_completed","value":"ChatGPT model","definition":"Actual executor.","definition_of_evaluation":"Verify provenance.","pass_criteria":"Verified ChatGPT.","fail_criteria":"Wrong/unverified."},
+    "Step_4.role_verification":{"key":"Step_4.role_verification","value":"{method,evidence}","definition":"Role proof.","definition_of_evaluation":"Require direct evidence.","pass_criteria":"Supports ChatGPT.","fail_criteria":"Missing/conflicting."},
+    "Step_4.failed_actions":{"key":"Step_4.failed_actions","value":"array","definition":"Failed actions with failure, remaining work, evidence.","definition_of_evaluation":"Compare actual execution and live evidence.","pass_criteria":"Every failure represented first.","fail_criteria":"Omitted/invented/delayed failure."},
+    "Step_4.not_completed_actions":{"key":"Step_4.not_completed_actions","value":"array","definition":"Partial/incomplete actions with remaining work/evidence.","definition_of_evaluation":"Compare plan/requirements and live evidence.","pass_criteria":"Every incomplete action represented before completion.","fail_criteria":"Incomplete work omitted/implied complete."},
+    "Step_4.completed_actions":{"key":"Step_4.completed_actions","value":"array","definition":"Only fully completed actions with bound observation evidence.","definition_of_evaluation":"Every claim must cite a valid, verified, non-tampered observation_id recorded in observations.jsonl.","pass_criteria":"Every completion VERIFIED, bound to valid obs_id, and correctly ordered.","fail_criteria":"Unsupported/partial/unbound/contradicted completion."},
+    "Step_4.user_request":{"key":"Step_4.user_request","value":"verbatim request","definition":"Request being reported against.","definition_of_evaluation":"Compare Step 0.","pass_criteria":"Exact/complete.","fail_criteria":"Changed/truncated."},
+    "Step_4.current_timestamp":{"key":"Step_4.current_timestamp","value":"ISO 8601","definition":"Execution time.","definition_of_evaluation":"Validate.","pass_criteria":"Valid.","fail_criteria":"Invalid."},
+    "Step_4.return_schema_completed":{"key":"Step_4.return_schema_completed","value":true,"definition":"Step completion.","definition_of_evaluation":"True only when report is complete and truthful.","pass_criteria":"True/complete.","fail_criteria":"Premature/missing."},
+    "Step_4.return_schema_completed_timestamp":{"key":"Step_4.return_schema_completed_timestamp","value":"ISO 8601","definition":"Completion time.","definition_of_evaluation":"Validate.","pass_criteria":"Valid.","fail_criteria":"Invalid."}
+  }
+}
+```
+
+## Step 4
+
+```json
+{
+  "step_4": {
+    "required_execution_role":"ChatGPT model",
+    "forbidden_execution_role":"Gemini model",
+    "evaluation_requirements":[
+      {"key":"step_4_failures_first","value":"Report every failed action first with remaining work and evidence.","definition":"Failure priority.","definition_of_evaluation":"Compare execution/live evidence to failed_actions/order.","pass_criteria":"All failures first and accurate.","fail_criteria":"Failure omitted/delayed/unsupported."},
+      {"key":"step_4_incomplete_second","value":"Report every partial/incomplete action after failures and before completions.","definition":"Incomplete-work priority.","definition_of_evaluation":"Compare execution/live evidence to not_completed_actions/order.","pass_criteria":"All incomplete work accurately represented.","fail_criteria":"Omitted/implied complete."},
+      {"key":"step_4_live_ground_truth_completion","value":"Every completed action and every material execution/artifact claim must cite an authenticated observation_id (obs_id) from the active run's verified observation ledger (runs/<run_nonce>/observations.jsonl). Prosaic self-report without bound obs_id is rejected.","definition":"Final anti-deception requirement.","definition_of_evaluation":"Correlate completion_evidence observation_id, source, locator, and observed_content against the active ledger; reject unbound or unverified claims.","pass_criteria":"All material completion claims cite valid, verified, non-tampered obs_ids; deterministic findings are preserved/evaluated; no blocking finding exists.","fail_criteria":"Any completed claim lacks valid obs_id, is CONTRADICTED/PARTIAL/UNKNOWN/NOT_EXECUTED in the ledger, locator is fabricated/unverified, or blocking evidence is ignored."},
+      {"key":"step_4_all_requirements_accounted_for","value":"Account for every Step 2 requirement and the executed Step 3 plan.","definition":"Final coverage.","definition_of_evaluation":"Map each requirement to failed/incomplete/completed evidence.","pass_criteria":"Every requirement accounted for.","fail_criteria":"Any omitted/misclassified."},
+      {"key":"step_4_terminal_integrity","value":"Use verified role, complete/persist Step 4, and end only after Conjunction Gate PASS with no remaining steps.","definition":"Terminal integrity.","definition_of_evaluation":"Inspect role/schema/persistence/conjunction gate/state.","pass_criteria":"All terminal conditions pass.","fail_criteria":"Any fail or turn ends with outstanding work/response."}
+    ],
+    "execution_return_schema":{"Step_4":{"role_required":"ChatGPT model","role_forbidden":"Gemini model","role_completed":"<verified role>","role_verification":{"method":"<method>","evidence":"<evidence>"},"failed_actions":[{"action":"<action>","failure":"<failure>","remaining_work":"<remaining>","evidence":[{"source":"<source>","locator":"<locator>","observed_content":"<exact observation>"}]}],"not_completed_actions":[{"action":"<action>","remaining_work":"<remaining>","evidence":[{"source":"<source>","locator":"<locator>","observed_content":"<exact observation>"}]}],"completed_actions":[{"action":"<action>","completion":"complete","completion_evidence":[{"observation_id":"<runtime-generated obs_id from observations.jsonl>","source":"<authoritative source>","locator":"<re-findable locator>","content_hash":"<SHA-256 hash or exact observation>","observed_content":"<exact observation>"}]}],"user_request":"<verbatim user request>","current_timestamp":"<ISO 8601>","return_schema_completed":true,"return_schema_completed_timestamp":"<ISO 8601>"}},
+    "supervisory_gate_schema":{"supervisory_gate":{"role_required":"Gemini model","role_forbidden":"ChatGPT model","role_completed":"<verified role>","role_verification":{"method":"<method>","evidence":"<evidence>"},"instruction":"Evaluate Step 4 only; independently verify all material execution/completion/artifact claims against immutable deterministic ground truth and bound observation ledger entries; preserve all *_eval values/findings; failures first, incomplete second, verified completion last; do not execute/repair the ChatGPT step.","granular_evaluation":"<*_eval tree>","ground_truth_verification_eval":{"deterministic_findings":"<exact runtime findings>","claim_evaluations":"<one per finding>","aggregate_status":"PASS|FAIL","supervisor_eval_result":"PASS|FAIL","supervisor_eval_comment":"<comment>"},"step_level_evaluation":{"supervisor_eval_result":"PASS|FAIL","supervisor_eval_comment":"<comment>"},"failures":[],"gate_result":"PASS|FAIL"}}
+  }
+}
+```
+
+## Runtime Integration Requirements
+
+```json
+{
+  "runtime_integration_requirements": {
+    "shared_configuration_contract":{"key":"shared_configuration_contract","value":"All external references are resolved via ChatMachines/GeminiSupervisor/config.json.","definition":"Neither Agents.md nor send-to-gemini.js independently hardcodes divergent external file paths.","definition_of_evaluation":"Inspect active configuration references against config.json keys.","pass_criteria":"Both files use the matching config keys.","fail_criteria":"Independent divergent path hardcoded."},
+    "agents_md_is_canonical_evaluation_source":{"key":"agents_md_is_canonical_evaluation_source","value":"Agents.md contains all active evaluation definitions and pass/fail criteria.","definition":"No external evaluation-definition file is required.","definition_of_evaluation":"Inspect active prompts/source for external definition dependencies.","pass_criteria":"Agents.md alone defines the contract.","fail_criteria":"Runtime requires evaluator-definitions.md or equivalent."},
+    "tamper_evident_ledger_verification":{"key":"tamper_evident_ledger_verification","value":"The runtime must maintain and verify runs/<run_nonce>/observations.jsonl with SHA-256 hash chaining before evaluating any step.","definition":"Observation history cannot be altered without cryptographic detection.","definition_of_evaluation":"Inspect ledger verification code, genesis invariant, and tamper response.","pass_criteria":"Chain is verified and any discrepancy immediately blocks execution.","fail_criteria":"Ledger unverified or tamper allowed to pass."},
+    "evidence_gateway_mediates_material_reads":{"key":"evidence_gateway_mediates_material_reads","value":"All runtime material inspections of files, git objects, and run containers must pass through the Evidence Gateway and log an observation entry.","definition":"Empirical evidence is recorded systematically by runtime code.","definition_of_evaluation":"Inspect EvidenceGateway methods and invocations in collectGroundTruth.","pass_criteria":"All material reads are logged in observations.jsonl.","fail_criteria":"Reads bypass the gateway or unlogged reads drive findings."},
+    "controller_observation_mode_supported":{"key":"controller_observation_mode_supported","value":"send-to-gemini.js supports repository-backed observation requests (--observe or mode: observe) that execute via the Evidence Gateway and return authenticated observation receipts.","definition":"Agents can request certified observation IDs before submitting completion schemas.","definition_of_evaluation":"Verify CLI and trigger-driven observation modes.","pass_criteria":"Observation mode executes requests and logs receipts.","fail_criteria":"Observation mode missing or accepts model self-generated receipts."},
+    "deterministic_live_ground_truth_precedes_semantic_pass":{"key":"deterministic_live_ground_truth_precedes_semantic_pass","value":"send-to-gemini.js independently inspects live workspace/git/run records before Gemini evaluates execution-dependent claims.","definition":"Empirical evidence is supplied by the runtime, not invented by the model.","definition_of_evaluation":"Inspect collectGroundTruth output, system prompt injection, gate template, validator, and persisted records.","pass_criteria":"Findings are generated before supervision, immutable in the gate, structurally required, persisted, and blocking when material.","fail_criteria":"Supervisor sees only self-claims, findings are mutable/optional, or PASS can ignore blocking evidence."},
+    "deterministic_randomized_adversarial_verification_audited":{"key":"deterministic_randomized_adversarial_verification_audited","value":"The runtime runs 16 live-state probe categories seeded by SHA-256(run_nonce + step + attempt + git HEAD) and records oracles/results in store.","definition":"Live workspace state is tested adversarially and reproducibly.","definition_of_evaluation":"Inspect adversarial probe generator and audit log.","pass_criteria":"16 categories tested and persisted.","fail_criteria":"Probes omitted, categories fewer than 16, or unseeded."},
+    "conjunction_gate_enforcement":{"key":"conjunction_gate_enforcement","value":"The final gate result is evaluated by runtime code: realPass = (groundTruth.aggregate_status === 'PASS' && geminiGate.gate_result === 'PASS'). Every other combination is FAIL.","definition":"Deterministic code holds absolute veto over procedure advancement.","definition_of_evaluation":"Inspect transition evaluation in main.","pass_criteria":"Strict conjunction enforced by code.","fail_criteria":"Model judgment overrides ground truth."},
+    "ground_truth_findings_are_persisted":{"key":"ground_truth_findings_are_persisted","value":"Every attempt persists deterministic findings and ledger references in state step_records and store records.","definition":"Historical execution claims remain auditable from verbatim evidence.","definition_of_evaluation":"Inspect attempt/store records.","pass_criteria":"Exact findings persisted with the evaluated execution.","fail_criteria":"Findings omitted/reconstructed later."},
+    "step_3_evaluation_artifact_is_canonical":{"key":"step_3_evaluation_artifact_is_canonical","value":"The artifact referenced in config.json as step3_evaluation_artifact provides the active evaluation heuristic and complete Step3_TSR question corpus as one parsed JSON object.","definition":"Step 3 uses the combined JSON evaluation artifact without duplicating it into Agents.md and without tracking document reads.","definition_of_evaluation":"Inspect config key external_files.step3_evaluation_artifact, runtime loading, and Step 3 context files.","pass_criteria":"Artifact loaded via shared config; evaluation_heuristic and step3_tsr used together; no evaluation_documents_read tracking field.","fail_criteria":"Artifact unavailable, split divergently, or read tracking reintroduced."}
+  }
+}
+```

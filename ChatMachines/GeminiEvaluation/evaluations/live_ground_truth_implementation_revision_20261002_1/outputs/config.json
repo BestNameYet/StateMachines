@@ -1,0 +1,37 @@
+{
+  "supervisor_name": "GeminiSupervisor",
+  "version": "2.0.0",
+  "trigger_file": "ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json",
+  "agents_file": "ChatMachines/GeminiSupervisor/Agents.md",
+  "runs_directory": "ChatMachines/GeminiSupervisor/runs",
+  "observation_ledger": {
+    "filename": "observations.jsonl",
+    "hash_algorithm": "SHA-256",
+    "genesis_parent_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "observation_requests": {
+    "default_request_filename": "observation_requests.json",
+    "default_receipt_filename": "observation_receipts.json",
+    "cli_flag": "--observe"
+  },
+  "adversarial_probes": {
+    "enabled": true,
+    "categories_count": 16,
+    "seed_components": [
+      "run_nonce",
+      "step",
+      "attempt",
+      "git_head"
+    ]
+  },
+  "external_files": {
+    "step3_evaluation_artifact": {
+      "description": "Merged Step 3 evaluation heuristic and TSR test suite",
+      "path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json"
+    }
+  },
+  "verification_policy": {
+    "conjunction_gate": "realPass = (groundTruth.aggregate_status === 'PASS' && geminiGate.gate_result === 'PASS')",
+    "require_bound_observation_for_completion": true
+  }
+}
