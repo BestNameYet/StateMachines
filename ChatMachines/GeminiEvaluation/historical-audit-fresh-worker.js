@@ -42,6 +42,8 @@ function promptForMode() {
         'Every raw segment must appear in exactly one primary batch. Primary batches collectively cover 100% of the corpus without duplication.',
         'Crosscheck batches may intentionally repeat or redistribute segments, but repeated raw bytes are globally capped by the supplied crosscheck budget.',
         'Respect all supplied hard batch byte ceilings and the minimum primary-batch count implied by the policy.',
+        'Before returning, explicitly sum size_bytes for the segment_ids in every proposed batch. Any primary batch above hard_max_primary_batch_bytes or crosscheck batch above hard_max_crosscheck_batch_bytes MUST be split before you return the plan. The hard ceilings have zero tolerance.',
+        'Prefer batches near the supplied target byte sizes rather than near the hard ceilings. Increase the number of batches whenever needed.',
         'Crosschecks should target ambiguity, boundary effects, high-authority evidence, requirement transitions, or other justified verification needs. Random/stochastic crosschecks are allowed only with a recorded reproducible seed and rationale.',
         'Do not create new segment IDs and do not alter segment boundaries.',
         'Return only JSON with response_type historical_audit_batch_plan and fields: heuristic_statement, primary_batches, crosscheck_batches, completeness_strategy.',
