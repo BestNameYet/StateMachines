@@ -12,6 +12,10 @@ const batchesRoot = path.join(repoRoot, 'ChatMachines/TokenizerCalibration/stage
 const outputRoot = path.join(repoRoot, evalRoot, 'execution');
 const model = 'gemini-3.8-flash';
 const charsPerToken = 3.9;
+const baseDividerMaxTokens = 12000;
+
+const temporaryCompactTaskSuffix = ' Return a compact consolidation. The complete serialized response must remain below 6000 estimated tokens under Math.ceil(characters / 3.9). Prefer merging overlapping records over retaining near-duplicates. Keep names concise, descriptions to one or two sentences, mechanic_summary values to one concise sentence, and include only evidence necessary to preserve distinct implementation support.';
+const temporaryCompactCriteriaSuffix = '\n5. Compactness: The complete serialized response must remain below 6000 estimated tokens using Math.ceil(characters / 3.9); remove redundant wording and redundant evidence while preserving distinct source support.';
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -22,11 +26,30 @@ function writeJson(file, value) {
   fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
 }
 
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 function approximateTokens(value) {
   let text = '';
   if (typeof value === 'string') text = value;
   else if (value !== null && value !== undefined) text = JSON.stringify(value);
   return text ? Math.ceil(text.length / charsPerToken) : 0;
+}
+
+function stripTemporaryCompactness(evaluator) {
+  if (!evaluator) return;
+  if (typeof evaluator.task === 'string' && evaluator.task.endsWith(temporaryCompactTaskSuffix)) {
+    evaluator.task = evaluator.task.slice(0, -temporaryCompactTaskSuffix.length);
+  }
+  if (typeof evaluator.criteria === 'string' && evaluator.criteria.endsWith(temporaryCompactCriteriaSuffix)) {
+    evaluator.criteria = evaluator.criteria.slice(0, -temporaryCompactCriteriaSuffix.length);
+  }
+}
+
+function removeResponseTokenConditions(acceptance) {
+  if (!acceptance || !Array.isArray(acceptance.conditions)) return;
+  acceptance.conditions = acceptance.conditions.filter(condition => condition?.source !== 'response.tokens');
 }
 
 function updateConfig(config) {
@@ -36,17 +59,79 @@ function updateConfig(config) {
     formula: 'Math.ceil(text.length / 3.9)'
   };
 
+  config.stage1_round_policy = {
+    b0: {
+      divider_max_tokens: baseDividerMaxTokens,
+      response_limit: 'response.tokens < divider.max_tokens / 2',
+      division_source: 'precomputed Gemini countTokens batches'
+    },
+    consolidation: {
+      applies_when: 'B > 0',
+      divider_max_tokens_formula: '12000 * (2 ** B)',
+      response_limit_formula: 'floor(round_input_tokens / assigned_b_count)',
+      purpose: 'allow canonical feature lists to grow as batches are recombined while preventing aggregate round expansion'
+    },
+    terminal_round: {
+      response_token_limit: null,
+      note: 'terminal round is exempt from the consolidation response ceiling'
+    }
+  };
+
   for (const rule of config.B_rules || []) {
     const evaluator = rule?.iterator?.evaluator;
     if (!evaluator) continue;
     evaluator.model = model;
 
     if (rule?.when?.B?.gt === 0) {
-      evaluator.task = `${evaluator.task} Return a compact consolidation. The complete serialized response must remain below 6000 estimated tokens under Math.ceil(characters / 3.9). Prefer merging overlapping records over retaining near-duplicates. Keep names concise, descriptions to one or two sentences, mechanic_summary values to one concise sentence, and include only evidence necessary to preserve distinct implementation support.`;
-      evaluator.criteria = `${evaluator.criteria}\n5. Compactness: The complete serialized response must remain below 6000 estimated tokens using Math.ceil(characters / 3.9); remove redundant wording and redundant evidence while preserving distinct source support.`;
+      stripTemporaryCompactness(evaluator);
+      removeResponseTokenConditions(rule.iterator.acceptance);
+      rule.iterator.divider.base_max_tokens = baseDividerMaxTokens;
+      rule.iterator.divider.max_tokens_formula = '12000 * (2 ** B)';
+      rule.iterator.acceptance.dynamic_response_limit = {
+        ordinary_round: 'floor(round_input_tokens / assigned_b_count)',
+        terminal_round: null
+      };
     }
   }
+
   return config;
+}
+
+function scaledIteratorForB(B, config) {
+  const iterator = clone(runtime.resolveIteratorForB(B, config));
+  if (B > 0) {
+    iterator.divider.max_tokens = baseDividerMaxTokens * (2 ** B);
+  }
+  return iterator;
+}
+
+function iteratorForAssignedRound({state, baseIterator, roundInputTokens, assignedBatchCount}) {
+  const iterator = clone(baseIterator);
+
+  if (state.B === 0) return iterator;
+
+  removeResponseTokenConditions(iterator.acceptance);
+
+  if (state.terminalRound === true) {
+    iterator.acceptance.effective_response_token_limit = null;
+    iterator.acceptance.response_limit_reason = 'terminal_round_exempt';
+    return iterator;
+  }
+
+  if (!Number.isInteger(assignedBatchCount) || assignedBatchCount < 1) {
+    throw new Error(`Invalid assigned batch count for B${state.B}: ${assignedBatchCount}`);
+  }
+
+  const responseLimit = Math.floor(roundInputTokens / assignedBatchCount);
+  iterator.acceptance.conditions.push({
+    id: 'response_not_exceeding_round_input_share',
+    source: 'response.tokens',
+    operator: 'lte',
+    value: responseLimit
+  });
+  iterator.acceptance.effective_response_token_limit = responseLimit;
+  iterator.acceptance.response_limit_reason = 'floor(round_input_tokens / assigned_b_count)';
+  return iterator;
 }
 
 function persistBatchResult(B, b, result) {
@@ -55,13 +140,17 @@ function persistBatchResult(B, b, result) {
   writeJson(path.join(dir, `b${b}.json`), result);
 }
 
-function persistRound(round, aggregate) {
+function persistRound(round, aggregate, metadata) {
   const dir = path.join(outputRoot, `B${round.B}`);
   fs.mkdirSync(dir, { recursive: true });
   writeJson(path.join(dir, 'round.json'), {
     B: round.B,
     status: round.status,
     assignedBatchCount: round.assignedBatchCount,
+    roundInputTokens: metadata.roundInputTokens,
+    dividerMaxTokens: metadata.dividerMaxTokens,
+    responseTokenLimit: metadata.responseTokenLimit,
+    terminalRoundOnEntry: metadata.terminalRoundOnEntry,
     aggregateResponseTokens: round.aggregateResponseTokens,
     batches: round.batches,
     aggregate
@@ -73,9 +162,14 @@ function persistState(state, finalReturn = null) {
   if (finalReturn !== null) writeJson(path.join(outputRoot, 'final.json'), finalReturn);
 }
 
-async function processRound({state, config, dependencies, batches}) {
-  const iterator = runtime.resolveIteratorForB(state.B, config);
+async function processRound({state, config, dependencies, batches, iterator, roundInputTokens}) {
   const round = runtime.createRoundState({ B: state.B, batches, iterator });
+  const metadata = {
+    roundInputTokens,
+    dividerMaxTokens: iterator.divider.max_tokens,
+    responseTokenLimit: iterator.acceptance?.effective_response_token_limit ?? null,
+    terminalRoundOnEntry: state.terminalRound === true
+  };
   state.b = 0;
 
   while (state.b < batches.length) {
@@ -104,7 +198,7 @@ async function processRound({state, config, dependencies, batches}) {
         aggregate: null,
         config
       });
-      persistRound(round, null);
+      persistRound(round, null, metadata);
       persistState(state, finalReturn);
       return { terminal: true, finalReturn };
     }
@@ -119,7 +213,7 @@ async function processRound({state, config, dependencies, batches}) {
   });
   round.status = 'complete';
   state.rounds.push(round);
-  persistRound(round, aggregate);
+  persistRound(round, aggregate, metadata);
 
   if (state.terminalRound === true) {
     state.status = 'complete';
@@ -175,23 +269,47 @@ async function main() {
     };
   });
 
-  let result = await processRound({ state, config, dependencies, batches: b0Batches });
+  const b0Iterator = scaledIteratorForB(0, config);
+  const b0RoundInputTokens = expectedB0.reduce((sum, entry) => sum + Number(entry.tokens || 0), 0);
+  let result = await processRound({
+    state,
+    config,
+    dependencies,
+    batches: b0Batches,
+    iterator: b0Iterator,
+    roundInputTokens: b0RoundInputTokens
+  });
   if (result.terminal) {
     console.log(JSON.stringify(result.finalReturn, null, 2));
     return;
   }
 
   while (true) {
-    const iterator = runtime.resolveIteratorForB(state.B, config);
+    const roundInputTokens = approximateTokens(state.currentContext);
+    const divisionIterator = scaledIteratorForB(state.B, config);
     const batches = await runtime.divideContextIntoBatches({
       context: state.currentContext,
-      divider: iterator.divider,
+      divider: divisionIterator.divider,
       config,
       dependencies,
       gemini: null,
       B: state.B
     });
-    result = await processRound({ state, config, dependencies, batches });
+    const iterator = iteratorForAssignedRound({
+      state,
+      baseIterator: divisionIterator,
+      roundInputTokens,
+      assignedBatchCount: batches.length
+    });
+
+    result = await processRound({
+      state,
+      config,
+      dependencies,
+      batches,
+      iterator,
+      roundInputTokens
+    });
     if (result.terminal) {
       console.log(JSON.stringify(result.finalReturn, null, 2));
       return;
