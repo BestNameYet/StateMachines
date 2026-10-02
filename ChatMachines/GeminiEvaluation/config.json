@@ -30,18 +30,18 @@
     {"key":"gemini_supervisor_shared_config","type":"file","path":"../GeminiSupervisor/config.json"},
     {"key":"gemini_supervisor_workflow","type":"file","path":"../../.github/workflows/gemini-chat.yml"}
   ],
-  "evaluation_heuristic": "STAGE-1 CONFIGURATION PLANNING TASK. Prepare the first use of the generic hierarchical evaluation runtime against the CURRENT GeminiSupervisor implementation. The later Stage-1 run must produce a canonical inventory of features and behaviors actually implemented now. This planning run must NOT perform that inventory. Use runtime_spec plus hierarchical_runtime_config and hierarchical_runtime_js as the authoritative runtime/configurable surface. Use the GeminiSupervisor manifest, dependency map, shared config, and workflow to determine the exact repository corpus the Stage-1 runtime should consume. Decide which current files are authoritative implementation evidence, which supporting files should be included, and which historical, generated, persisted-run, or obsolete files should be excluded or optionally sampled. Include external workflow files when they materially implement current behavior. Propose a COMPLETE Stage-1 config.json compatible with audit.js. The proposed config must set concrete values where supportable, including B rules, divider.max_tokens, evaluator model/task/criteria, evaluator response contracts, normalization, mechanical acceptance, retry behavior, termination, failed-b stopping policy, provenance, and program_return envelope. The Stage-1 evaluator response contracts and final feature-inventory return schema belong INSIDE proposed_config.content. Configure B=0 to extract implementation-backed feature records from current source evidence. Configure B>0 to merge, deduplicate, normalize, and consolidate those feature records while preserving proof/provenance. Stage-1 must identify distinct implemented features, behaviors, control mechanisms, state transitions, integrations, persistence mechanisms, evaluation mechanisms, and other current capabilities. Every retained feature must be supported by current-repository evidence. Stage-1 must not search for historical missing requirements, infer historical intent, decide whether a feature should exist, or classify absent behavior as a defect. The terminal round uses the ordinary B>0 reduction path; do not create a separate final evaluator. Recommend exact corpus construction/order and serialization into runtime context. Planning nonce: stage1_current_feature_inventory_20261002_1. Proposed config target: ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1/config.json. Return only the planning object required by evaluation_output_schema.",
+  "evaluation_heuristic": "STAGE-1 CONFIGURATION PLANNING TASK. Prepare the first use of the generic hierarchical evaluation runtime against the CURRENT GeminiSupervisor implementation. The later Stage-1 run must produce a canonical inventory of features and behaviors actually implemented now. This planning run must NOT perform that inventory. Use runtime_spec plus hierarchical_runtime_config and hierarchical_runtime_js as the authoritative runtime/configurable surface. Use the GeminiSupervisor manifest, dependency map, shared config, and workflow to determine the exact repository corpus the Stage-1 runtime should consume. Decide which current files are authoritative implementation evidence, which supporting files should be included, and which historical, generated, persisted-run, or obsolete files should be excluded or optionally sampled. Include external workflow files when they materially implement current behavior. Propose a COMPLETE Stage-1 config.json compatible with audit.js. The proposed config must set concrete values where supportable, including B rules, divider.max_tokens, evaluator model/task/criteria, evaluator response contracts, normalization, mechanical acceptance, retry behavior, termination, failed-b stopping policy, provenance, and program_return envelope. The Stage-1 evaluator response contracts and final feature-inventory return schema belong INSIDE proposed_config.content. Configure B=0 to extract implementation-backed feature records from current source evidence. Configure B>0 to merge, deduplicate, normalize, and consolidate those feature records while preserving proof/provenance. Stage-1 must identify distinct implemented features, behaviors, control mechanisms, state transitions, integrations, persistence mechanisms, evaluation mechanisms, and other current capabilities. Every retained feature must be supported by current-repository evidence. Stage-1 must not search for historical missing requirements, infer historical intent, decide whether a feature should exist, or classify absent behavior as a defect. The terminal round uses the ordinary B>0 reduction path; do not create a separate final evaluator. Recommend exact corpus construction/order and serialization into runtime context. Planning nonce: stage1_current_feature_inventory_20261002_1. Proposed config target: ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1/config.json. Return STRICT valid JSON only. proposed_config.content must be a native JSON object, not serialized JSON text.",
   "evaluation_output_schema": {
     "response_type": "stage1_feature_inventory_configuration_plan",
     "nonce": "stage1_current_feature_inventory_20261002_1",
     "objective": "string",
     "input_plan": [
       {
-        "path": "repository-relative path",
+        "path": "string",
         "classification": "required | supporting | exclude | optional_sample",
         "purpose": "string",
         "reason": "string",
-        "serialization_order": "integer or null"
+        "serialization_order": 0
       }
     ],
     "corpus_construction": {
@@ -53,7 +53,7 @@
     },
     "proposed_config": {
       "target_path": "ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1/config.json",
-      "content": "<complete valid JSON object for the Stage-1 hierarchical runtime configuration; this object must itself contain the Stage-1 evaluator response contracts and program_return envelope>"
+      "content": {}
     },
     "runtime_invocation": {
       "runtime_file": "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
@@ -64,7 +64,7 @@
     "configuration_rationale": [
       {
         "setting": "string",
-        "value": "any JSON value",
+        "value": "string",
         "reason": "string"
       }
     ],
