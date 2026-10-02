@@ -1,0 +1,687 @@
+{
+  "response_type": "stage1_feature_inventory_configuration_plan",
+  "nonce": "stage1_current_feature_inventory_20261002_1",
+  "objective": "Plan the initial execution of the generic hierarchical evaluation runtime to extract an authoritative, implementation-backed inventory of features, state transitions, supervisory gates, and persistence mechanisms currently implemented in GeminiSupervisor without judging historical intent or absent requirements.",
+  "input_plan": [
+    {
+      "path": "ChatMachines/GeminiSupervisor/config.json",
+      "classification": "required",
+      "purpose": "Authoritative shared configuration mapping agents file, trigger file, runs directory, and external evaluation artifacts.",
+      "reason": "Defines runtime topology and source paths consumed by the supervisor execution cycle.",
+      "serialization_order": 1
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/Agents.md",
+      "classification": "required",
+      "purpose": "Canonical contract declaring state transitions, step return contracts, gate semantics, and verification protocol.",
+      "reason": "Authoritative baseline specification governing expected agent behavior and supervisory evaluation rules.",
+      "serialization_order": 2
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+      "classification": "required",
+      "purpose": "Primary active Node.js execution engine implementing orchestration, gate invocation, state persistence, and error handling.",
+      "reason": "Central code implementation establishing live features, actual execution logic, and API interactions.",
+      "serialization_order": 3
+    },
+    {
+      "path": ".github/workflows/gemini-chat.yml",
+      "classification": "required",
+      "purpose": "External CI/CD workflow triggering execution, managing environment secrets, and committing run state.",
+      "reason": "Materially implements operational behavior including trigger path filtering, concurrency locking, and git checkpoints.",
+      "serialization_order": 4
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json",
+      "classification": "required",
+      "purpose": "Active workflow trigger payload specifying step, role, and output contracts.",
+      "reason": "Defines the exact structure of inputs that initiate a supervisor execution step.",
+      "serialization_order": 5
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+      "classification": "supporting",
+      "purpose": "Specification of ground-truth verification requirements integrated into supervisor step reviews.",
+      "reason": "Provides operational semantics for live-ground-truth checks performed by the Node runtime and supervisory gates.",
+      "serialization_order": 6
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+      "classification": "supporting",
+      "purpose": "Rulebook defining safe-word authorization, action classification, and approval levels.",
+      "reason": "Defines authorization logic referenced during supervisory evaluations of system actions.",
+      "serialization_order": 7
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/dependency-map.json",
+      "classification": "supporting",
+      "purpose": "Authoritative file dependency declarations for synchronization across specification and code.",
+      "reason": "Documents structural relationships and change-propagation constraints across supervisor files.",
+      "serialization_order": 8
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "classification": "supporting",
+      "purpose": "Consolidated evaluation heuristic and TSR question dataset referenced by shared config.",
+      "reason": "Exposes the active evaluation mechanism used during Step 3 evaluations.",
+      "serialization_order": 9
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/Code.gs",
+      "classification": "supporting",
+      "purpose": "Google Apps Script bridge handling doPost evaluation and remote script execution.",
+      "reason": "Auxiliary execution bridge providing remote script execution capability.",
+      "serialization_order": 10
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/MANIFEST.md",
+      "classification": "supporting",
+      "purpose": "Structural repository inventory describing current tracked files and classifications.",
+      "reason": "Provides boundary orientation and verification for files included in the evaluation corpus.",
+      "serialization_order": 11
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+      "classification": "optional_sample",
+      "purpose": "Concrete persisted state snapshot demonstrating live runtime state structure.",
+      "reason": "Illustrates concrete fields, attempt tracking, and gate result storage under live conditions.",
+      "serialization_order": 12
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/current_state.json",
+      "classification": "exclude",
+      "purpose": "Legacy root state artifact superseded by runs/<run_nonce>/state.json.",
+      "reason": "Contains obsolete schema snapshots no longer read or written by the active runtime.",
+      "serialization_order": 0
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/messages.json",
+      "classification": "exclude",
+      "purpose": "Legacy root message skeleton superseded by runs/<run_nonce>/messages.json.",
+      "reason": "Static obsolete stub file not actively used in execution.",
+      "serialization_order": 0
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/store/store.json",
+      "classification": "exclude",
+      "purpose": "Legacy root store artifact superseded by runs/<run_nonce>/store/store.json.",
+      "reason": "Empty root stub superseded by per-run store persistence.",
+      "serialization_order": 0
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+      "classification": "exclude",
+      "purpose": "Historical comparator heuristic merged into step-3-evaluation.json.",
+      "reason": "Superseded historical documentation that could bias current implementation inventory.",
+      "serialization_order": 0
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md",
+      "classification": "exclude",
+      "purpose": "Historical evaluator guide superseded by Agents.md.",
+      "reason": "Superseded historical reference retained only for repository provenance.",
+      "serialization_order": 0
+    },
+    {
+      "path": "ChatMachines/GeminiSupervisor/runs/**",
+      "classification": "exclude",
+      "purpose": "Persisted execution artifacts from prior runs (excluding designated optional samples).",
+      "reason": "Run histories are operational outputs rather than current implementation code or specification.",
+      "serialization_order": 0
+    }
+  ],
+  "corpus_construction": {
+    "root_scope": "ChatMachines/GeminiSupervisor and .github/workflows/gemini-chat.yml",
+    "ordering_rule": "Deterministic ascending sequence by serialization_order (1 to 12). Each document is wrapped with an explicit header identifying its relative path and classification.",
+    "serialization_format": "JSON array of structured document objects: [{\"path\": string, \"classification\": string, \"content\": string}].",
+    "boundary_guidance": "Dividers must split on file boundaries where possible. If a file exceeds divider.max_tokens, split on top-level markdown headers or JavaScript function/class boundaries.",
+    "excluded_classes": [
+      "persisted_run_containers",
+      "legacy_root_artifacts",
+      "historical_documentation",
+      "symlinks_and_placeholders"
+    ]
+  },
+  "proposed_config": {
+    "target_path": "ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1/config.json",
+    "content": {
+      "version": "1.0",
+      "token_counter": {
+        "implementation": "heuristic_regex"
+      },
+      "B_rules": [
+        {
+          "when": {
+            "B": {
+              "eq": 0
+            }
+          },
+          "iterator": {
+            "divider": {
+              "max_tokens": 12000,
+              "boundary_strategy": "shift_divisions_until_all_batches_fit"
+            },
+            "evaluator": {
+              "model": "gemini-1.5-flash",
+              "task": "Extract an exhaustive inventory of actual features, mechanisms, state transitions, supervisory gates, error handlings, and persistence behaviors backed strictly by current implementation evidence in the assigned context. Every feature record must cite concrete source evidence (file path, symbol/section, exact line or snippet context). Do not infer historical intent or report absent features as defects.",
+              "criteria": "1. Evidence-backed: Every capability must cite specific implementation evidence in the assigned context.\n2. Concrete classification: Assign each feature to a recognized category (orchestration, supervisory_gate, state_transition, persistence, external_integration, error_handling, validation).\n3. Strict schema adherence: Return valid JSON matching the Stage-1 extraction response contract.\n4. No hallucinated requirements: Report only what is observed in the context.",
+              "response_contract": {
+                "required_fields": [
+                  "inventory_round",
+                  "features",
+                  "feature_count"
+                ],
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "inventory_round": {
+                      "type": "integer"
+                    },
+                    "features": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "feature_id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "orchestration",
+                              "supervisory_gate",
+                              "state_transition",
+                              "persistence",
+                              "external_integration",
+                              "error_handling",
+                              "validation",
+                              "configuration"
+                            ]
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "evidence": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "source_path": {
+                                  "type": "string"
+                                },
+                                "reference_symbol_or_heading": {
+                                  "type": "string"
+                                },
+                                "mechanic_summary": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "source_path",
+                                "reference_symbol_or_heading",
+                                "mechanic_summary"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "feature_id",
+                          "name",
+                          "category",
+                          "description",
+                          "evidence"
+                        ]
+                      }
+                    },
+                    "feature_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "inventory_round",
+                    "features",
+                    "feature_count"
+                  ]
+                }
+              }
+            },
+            "normalization": {
+              "enabled": true,
+              "strategies": [
+                "recover_required_fields_from_malformed_serialization"
+              ]
+            },
+            "acceptance": {
+              "conditions": [
+                {
+                  "id": "invocation_succeeded",
+                  "source": "invocation.status",
+                  "operator": "eq",
+                  "value": "success"
+                },
+                {
+                  "id": "required_fields_recoverable",
+                  "source": "response",
+                  "operator": "required_fields_recoverable",
+                  "value": true
+                },
+                {
+                  "id": "response_below_hard_token_limit",
+                  "source": "response.tokens",
+                  "operator": "lt",
+                  "value": {
+                    "source": "divider.max_tokens",
+                    "divide_by": 2
+                  }
+                }
+              ]
+            },
+            "retry": {
+              "conditionals": [
+                {
+                  "id": "system_error_retry",
+                  "when": {
+                    "condition": "system_error",
+                    "retry_number": {
+                      "eq": 0
+                    }
+                  },
+                  "invoke": {
+                    "fresh": true,
+                    "inputs": [
+                      "original_invocation"
+                    ]
+                  },
+                  "on_success": {
+                    "retain": "retry_response",
+                    "stop_retry_sequence": true
+                  },
+                  "on_failure": {
+                    "status": "failed",
+                    "retain": null,
+                    "stop_retry_sequence": true
+                  }
+                },
+                {
+                  "id": "mechanical_response_retry",
+                  "when": {
+                    "condition": "mechanical_response_failure",
+                    "retry_number": {
+                      "eq": 0
+                    }
+                  },
+                  "invoke": {
+                    "fresh": true,
+                    "inputs": [
+                      "context",
+                      "previous_response",
+                      "mechanical_error",
+                      "task",
+                      "criteria",
+                      "response_contract"
+                    ]
+                  },
+                  "on_success": {
+                    "retain": "retry_response",
+                    "stop_retry_sequence": true
+                  },
+                  "on_failure": {
+                    "retain": "latest_response",
+                    "include_failure_metadata": true,
+                    "stop_retry_sequence": true
+                  }
+                }
+              ]
+            },
+            "termination": {
+              "condition": {
+                "left": {
+                  "source": "round.aggregate_response_tokens"
+                },
+                "operator": "lte",
+                "right": {
+                  "source": "divider.max_tokens"
+                }
+              },
+              "on_true": {
+                "set": {
+                  "terminal_round": true
+                }
+              },
+              "on_false": {
+                "set": {
+                  "terminal_round": false
+                }
+              }
+            },
+            "failed_b_stop": {
+              "condition": {
+                "source": "supervisory.failed_b_count",
+                "operator": "gte",
+                "value": 1
+              },
+              "on_true": "program_failure_return",
+              "on_false": "continue"
+            }
+          }
+        },
+        {
+          "when": {
+            "B": {
+              "gt": 0
+            }
+          },
+          "iterator": {
+            "divider": {
+              "max_tokens": 12000,
+              "boundary_strategy": "shift_divisions_until_all_batches_fit"
+            },
+            "evaluator": {
+              "model": "gemini-1.5-flash",
+              "task": "Deduplicate, normalize, merge, and reconcile the extracted feature inventory records from previous batches. Merge overlapping features under a unified name and comprehensive description while unioning all supporting evidence references and provenance batch IDs. Eliminate exact duplicate entries. Ensure canonical categories are maintained.",
+              "criteria": "1. Evidence preservation: Retain all valid source citations and provenance tags from merged entries.\n2. Deduplication: Merge redundant or overlapping feature descriptions into unified records.\n3. Canonical naming: Use clear, descriptive, consistent naming conventions across all consolidated features.\n4. Strict schema compliance: Return valid JSON matching the consolidated feature inventory schema.",
+              "response_contract": {
+                "required_fields": [
+                  "inventory_round",
+                  "features",
+                  "feature_count",
+                  "consolidation_summary"
+                ],
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "inventory_round": {
+                      "type": "integer"
+                    },
+                    "features": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "feature_id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "evidence": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "source_path": {
+                                  "type": "string"
+                                },
+                                "reference_symbol_or_heading": {
+                                  "type": "string"
+                                },
+                                "mechanic_summary": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "source_path",
+                                "reference_symbol_or_heading",
+                                "mechanic_summary"
+                              ]
+                            }
+                          },
+                          "source_batches": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "feature_id",
+                          "name",
+                          "category",
+                          "description",
+                          "evidence"
+                        ]
+                      }
+                    },
+                    "feature_count": {
+                      "type": "integer"
+                    },
+                    "consolidation_summary": {
+                      "type": "object",
+                      "properties": {
+                        "input_feature_count": {
+                          "type": "integer"
+                        },
+                        "merged_count": {
+                          "type": "integer"
+                        },
+                        "final_count": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "input_feature_count",
+                        "merged_count",
+                        "final_count"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "inventory_round",
+                    "features",
+                    "feature_count",
+                    "consolidation_summary"
+                  ]
+                }
+              }
+            },
+            "normalization": {
+              "enabled": true,
+              "strategies": [
+                "recover_required_fields_from_malformed_serialization"
+              ]
+            },
+            "acceptance": {
+              "conditions": [
+                {
+                  "id": "invocation_succeeded",
+                  "source": "invocation.status",
+                  "operator": "eq",
+                  "value": "success"
+                },
+                {
+                  "id": "required_fields_recoverable",
+                  "source": "response",
+                  "operator": "required_fields_recoverable",
+                  "value": true
+                },
+                {
+                  "id": "response_below_hard_token_limit",
+                  "source": "response.tokens",
+                  "operator": "lt",
+                  "value": {
+                    "source": "divider.max_tokens",
+                    "divide_by": 2
+                  }
+                }
+              ]
+            },
+            "retry": {
+              "conditionals": [
+                {
+                  "id": "system_error_retry",
+                  "when": {
+                    "condition": "system_error",
+                    "retry_number": {
+                      "eq": 0
+                    }
+                  },
+                  "invoke": {
+                    "fresh": true,
+                    "inputs": [
+                      "original_invocation"
+                    ]
+                  },
+                  "on_success": {
+                    "retain": "retry_response",
+                    "stop_retry_sequence": true
+                  },
+                  "on_failure": {
+                    "status": "failed",
+                    "retain": null,
+                    "stop_retry_sequence": true
+                  }
+                },
+                {
+                  "id": "mechanical_response_retry",
+                  "when": {
+                    "condition": "mechanical_response_failure",
+                    "retry_number": {
+                      "eq": 0
+                    }
+                  },
+                  "invoke": {
+                    "fresh": true,
+                    "inputs": [
+                      "context",
+                      "previous_response",
+                      "mechanical_error",
+                      "task",
+                      "criteria",
+                      "response_contract"
+                    ]
+                  },
+                  "on_success": {
+                    "retain": "retry_response",
+                    "stop_retry_sequence": true
+                  },
+                  "on_failure": {
+                    "retain": "latest_response",
+                    "include_failure_metadata": true,
+                    "stop_retry_sequence": true
+                  }
+                }
+              ]
+            },
+            "termination": {
+              "condition": {
+                "left": {
+                  "source": "round.aggregate_response_tokens"
+                },
+                "operator": "lte",
+                "right": {
+                  "source": "divider.max_tokens"
+                }
+              },
+              "on_true": {
+                "set": {
+                  "terminal_round": true
+                }
+              },
+              "on_false": {
+                "set": {
+                  "terminal_round": false
+                }
+              }
+            },
+            "failed_b_stop": {
+              "condition": {
+                "source": "supervisory.failed_b_count",
+                "operator": "gte",
+                "value": 1
+              },
+              "on_true": "program_failure_return",
+              "on_false": "continue"
+            }
+          }
+        }
+      ],
+      "supervisory_state": {
+        "track": {
+          "B": true,
+          "b": true,
+          "b_terminal_status": true,
+          "failed_b_count": true,
+          "retries": true,
+          "response_tokens": true,
+          "provenance": true
+        }
+      },
+      "provenance": {
+        "enabled": true,
+        "retain_batch_identity": true,
+        "retain_ancestry": true
+      },
+      "program_return": {
+        "envelope": {
+          "status": {
+            "source": "runtime.status"
+          },
+          "completion_reason": {
+            "source": "reason"
+          },
+          "terminal_round": {
+            "source": "runtime.terminalRound"
+          },
+          "total_rounds": {
+            "source": "runtime.B"
+          },
+          "final_inventory": {
+            "source": "aggregate.records"
+          },
+          "supervisory_summary": {
+            "source": "runtime.supervisory"
+          }
+        }
+      }
+    }
+  },
+  "runtime_invocation": {
+    "runtime_file": "ChatMachines/GeminiEvaluation/hierarchical-runtime/audit.js",
+    "input_construction": "The calling script loads all files specified in input_plan where classification is 'required' or 'supporting', sorted ascending by serialization_order, as an array of JSON objects [{path, classification, content}]. This array is passed as the initial context parameter to runHierarchicalEvaluation.",
+    "config_loading": "The calling script loads the proposed config from ChatMachines/GeminiEvaluation/evaluations/stage1_current_feature_inventory_20261002_1/config.json using fs.readFileSync and JSON.parse, passing it as config.",
+    "expected_terminal_behavior": "B=0 divides the 12 corpus units into batches within 12,000 tokens, emitting base feature extractions. If aggregate tokens <= 12,000, terminalRound is set to true for round B=1. B=1 receives the aggregated feature records, consolidates them into a unified canonical inventory, and terminates, returning the final inventory via the program_return envelope."
+  },
+  "configuration_rationale": [
+    {
+      "setting": "divider.max_tokens",
+      "value": "12000",
+      "reason": "Allows ample context for substantial repository source files (including send-to-gemini.js and Agents.md) while maintaining a safe margin below model context limits and providing a conservative threshold for single-batch reduction."
+    },
+    {
+      "setting": "acceptance.conditions.response_below_hard_token_limit",
+      "value": "divider.max_tokens / 2 (6000 tokens)",
+      "reason": "Enforces CFG-004 and ALG-009 standard hard limit ensuring model responses remain concise and bounded relative to context size."
+    },
+    {
+      "setting": "failed_b_stop.condition.value",
+      "value": "1",
+      "reason": "In Stage 1 feature inventory, every code and spec fragment must be fully evaluated. A batch failure implies incomplete inventory coverage, requiring immediate run termination."
+    },
+    {
+      "setting": "termination.condition",
+      "value": "round.aggregate_response_tokens <= divider.max_tokens",
+      "reason": "Standard hierarchical reduction termination rule (CFG-009): once the aggregated inventory fits within a single batch, the next B round performs terminal consolidation and finishes."
+    },
+    {
+      "setting": "evaluator.model",
+      "value": "gemini-1.5-flash",
+      "reason": "Provides fast, deterministic structured JSON generation with sufficient window size and low latency for multi-batch hierarchical evaluation."
+    }
+  ],
+  "unresolved_decisions": [
+    {
+      "setting": "token_counter.gemini_api_binding",
+      "reason": "Whether token counting in audit.js should use local regex fallback or call the live Gemini countTokens API endpoint during runtime execution.",
+      "recommended_resolution": "Use local regex-based token counter during offline development/dry-run and pass gemini instance with countTokens during live API runs to ensure precise boundary calculation."
+    }
+  ]
+}
