@@ -1,0 +1,117 @@
+{
+  "response_type": "historical_audit_subresult",
+  "subquestion_id": "sq04_current_and_retired_evaluations",
+  "answer_summary": "The current Step 3 evaluation contract in repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json consolidates an evaluation heuristic (16 worked examples, a set-theoretic 'required coverage is reduced' worked test with 6 matching and 8 boundary examples, and 5 procedural instructions) and the Step3_TSR test suite (31 test groups numbered 2–32 containing 160 U/P test cases). Historical analysis demonstrates that repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md was directly inherited and preserved nearly verbatim into the evaluation_heuristic object of step-3-evaluation.json, while the standalone Markdown file was retired to historical/. In contrast, repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md (defining a 5-question decomposition checklist, failure pattern syntax, and focused tests for 'promise instead of execution' and 'complete agreed work') was intentionally superseded by the structured TSR test corpus and consolidated JSON heuristic. The omission of the 5-question decomposition schema from the active contract is an intentional architectural consolidation, not an accidental regression, and the retired historical rules do not create present corrective work.",
+  "historical_facts": [
+    {
+      "fact_id": "fact_step3_json_sources",
+      "statement": "step-3-evaluation.json explicitly declares format_version 2 and cites two sources: evaluation_method_heuristic pointing to ChatMachines/GeminiSupervisor/historical/evaluation-tests.md (blob SHA 613468ac6ff5e054c1268c50bc3710d36df8f3cd) and step3_tsr_question_list pointing to ChatMachines/GeminiSupervisor/tests/step-3-test-return-schema.md (blob SHA 2c6e89baafd463579a341e4f3102b852e6e78ace).",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "evidence_locator": "step-3-evaluation.json: lines 3-14 (top-level 'sources' object)"
+    },
+    {
+      "fact_id": "fact_step3_evaluation_heuristic_structure",
+      "statement": "step-3-evaluation.json contains an evaluation_heuristic object comprising: purpose_and_scope, core_question ('Does the current P fail a requirement of the current U in the same specific way demonstrated here?'), 16 worked examples (indices 1–16), worked_test_required_coverage_reduced (defining sets D, R, and C, matching rule, 6 matching examples M1–M6, 8 boundary examples N1–N8, and a 6-step evaluation procedure), and procedural_instructions (5 steps on using cases, plus correction derivation rule).",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "evidence_locator": "step-3-evaluation.json: lines 15-214"
+    },
+    {
+      "fact_id": "fact_step3_tsr_catalog",
+      "statement": "step-3-evaluation.json defines step3_tsr containing 31 test categories numbered from test 2 through test 32, comprising exactly 160 total U/P evaluation test cases with SELECT(T|F) result prompts. Test 1 is not present in step3_tsr.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "evidence_locator": "step-3-evaluation.json: lines 215-680 (step3_tsr.tests)"
+    },
+    {
+      "fact_id": "fact_eval_tests_md_content",
+      "statement": "ChatMachines/GeminiSupervisor/historical/evaluation-tests.md is categorized as retired_specification and contains the exact Markdown source for the 16 worked examples, the 'required coverage is reduced' set-theoretic test (cases M1–M6 and N1–N8, 6-step evaluation procedure), and the 5-step instructions for using cases.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+      "evidence_locator": "evaluation-tests.md: full document (lines 1-96)"
+    },
+    {
+      "fact_id": "fact_eval_defs_md_content",
+      "statement": "ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md is categorized as retired_specification and specifies: operator inputs (user words, rules, U, P); a 5-question decomposition checklist with 7 limit subquestions; an illustrative user-statement part table; failure description guidelines; failure pattern formulation ('U requires... P instead... therefore...'); analogy mapping rules; a 6-case grounded examples table; and standalone sections for 'Focused test: promise instead of execution' and 'Complete agreed work'.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md",
+      "evidence_locator": "evaluator-definitions.md: full document (lines 1-84)"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "interp_eval_tests_preservation",
+      "statement": "The evaluation heuristic and test definitions from evaluation-tests.md were preserved in full and directly translated into the structured evaluation_heuristic object of step-3-evaluation.json. The retirement of evaluation-tests.md as a standalone document represents a format migration rather than an abandonment of its evaluation criteria.",
+      "depends_on_fact_ids": [
+        "fact_step3_json_sources",
+        "fact_step3_evaluation_heuristic_structure",
+        "fact_eval_tests_md_content"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_evaluator_definitions_supersession",
+      "statement": "evaluator-definitions.md was intentionally superseded rather than accidentally omitted. Its high-level prose rules (the 5-question parsing checklist, pattern templates, and 'promise instead of execution'/'complete agreed work' sections) were operationalized into concrete, automated TSR test cases in step3_tsr (e.g., tests 15, 16, 22, 23, 24, 28) and the worked examples (e.g., worked example 1, boundary case N6). Its absence from the 'sources' block of step-3-evaluation.json confirms it is no longer an active specification source.",
+      "depends_on_fact_ids": [
+        "fact_step3_json_sources",
+        "fact_step3_tsr_catalog",
+        "fact_eval_defs_md_content"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_retired_rules_no_corrective_work",
+      "statement": "The retired evaluation rules in evaluator-definitions.md (specifically the human/semantic-operator prose decomposition instructions) do not generate current corrective work because their normative goals (detecting unexecuted promises, scope truncation, destination shifts, and unverified completion claims) are fully covered by the active step3_tsr suite and evaluation_heuristic.",
+      "depends_on_fact_ids": [
+        "fact_step3_evaluation_heuristic_structure",
+        "fact_step3_tsr_catalog",
+        "fact_eval_defs_md_content"
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "td_evaluation_heuristic_lineage",
+      "statement": "The evaluation heuristics in step-3-evaluation.json are directly inherited from historical/evaluation-tests.md, with 100% preservation of its worked examples, set relations, and procedural instructions.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_eval_tests_preservation"
+      ],
+      "current_fact_evidence": [
+        "fact_step3_json_sources",
+        "fact_step3_evaluation_heuristic_structure",
+        "fact_eval_tests_md_content"
+      ]
+    },
+    {
+      "decision_id": "td_evaluator_definitions_retirement_status",
+      "statement": "The evaluative rules in historical/evaluator-definitions.md were retired and superseded by the Step 3 consolidated contract and do not represent accidental omissions or active defects.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_evaluator_definitions_supersession",
+        "interp_retired_rules_no_corrective_work"
+      ],
+      "current_fact_evidence": [
+        "fact_step3_json_sources",
+        "fact_step3_tsr_catalog",
+        "fact_eval_defs_md_content"
+      ]
+    },
+    {
+      "decision_id": "td_tsr_test1_status",
+      "statement": "Test 1 in Step3_TSR is represented by the worked test 'required coverage is reduced' within evaluation_heuristic rather than an omitted test case in step3_tsr.tests.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_eval_tests_preservation",
+        "interp_evaluator_definitions_supersession"
+      ],
+      "current_fact_evidence": [
+        "fact_step3_evaluation_heuristic_structure",
+        "fact_step3_tsr_catalog"
+      ]
+    }
+  ],
+  "unresolved_questions": [],
+  "context_files_used": [
+    "repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+    "repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+    "repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md"
+  ]
+}

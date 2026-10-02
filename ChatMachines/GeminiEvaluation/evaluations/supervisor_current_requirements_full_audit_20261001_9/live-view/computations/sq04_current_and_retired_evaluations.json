@@ -1,0 +1,665 @@
+[
+  {
+    "round": 1,
+    "computation_id": "comp_eval_diff",
+    "purpose": "Analyze contents and structure of step-3-evaluation.json, evaluation-tests.md, and evaluator-definitions.md",
+    "code": "const fs = [context.step3_evaluation, context.retired_evaluation_documents];\nconst step3 = JSON.parse(context.step3_evaluation);\n// Check sources declared in step-3-evaluation.json\nconst sources = step3.sources;\nconst heuristicKeys = Object.keys(step3.evaluation_heuristic);\nconst workedExamplesCount = step3.evaluation_heuristic.worked_examples.length;\nconst tsrTests = step3.step3_tsr.tests.map(t => ({ test: t.test, caseCount: t.cases.length }));\n\nreturn {\n  sources,\n  heuristicKeys,\n  workedExamplesCount,\n  tsrTests,\n  totalTsrCases: tsrTests.reduce((acc, t) => acc + t.caseCount, 0)\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "comp_eval_diff",
+      "ok": false,
+      "error": "\"undefined\" is not valid JSON"
+    },
+    "timestamp": "2026-10-02T03:26:36.753Z"
+  },
+  {
+    "round": 2,
+    "computation_id": "comp_inspect_context",
+    "purpose": "Inspect keys and types of the context object",
+    "code": "return Object.keys(context);",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "comp_inspect_context",
+      "ok": true,
+      "result": [
+        "subquestion",
+        "files"
+      ]
+    },
+    "timestamp": "2026-10-02T03:26:37.866Z"
+  },
+  {
+    "round": 3,
+    "computation_id": "comp_inspect_files",
+    "purpose": "Inspect context.files",
+    "code": "return context.files.map(f => ({ path: f.path || f.source_path, entry_id: f.entry_id, len: (f.content || '').length }));",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "comp_inspect_files",
+      "ok": true,
+      "result": [
+        {
+          "len": 55774
+        },
+        {
+          "len": 13171
+        },
+        {
+          "len": 14155
+        }
+      ]
+    },
+    "timestamp": "2026-10-02T03:26:40.819Z"
+  },
+  {
+    "round": 4,
+    "computation_id": "comp_inspect_files_detail",
+    "purpose": "Inspect context.files details",
+    "code": "return context.files.map(f => Object.keys(f));",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "comp_inspect_files_detail",
+      "ok": true,
+      "result": [
+        [
+          "metadata",
+          "content"
+        ],
+        [
+          "metadata",
+          "content"
+        ],
+        [
+          "metadata",
+          "content"
+        ]
+      ]
+    },
+    "timestamp": "2026-10-02T03:26:42.663Z"
+  },
+  {
+    "round": 5,
+    "computation_id": "comp_inspect_metadata",
+    "purpose": "Inspect metadata for all context files",
+    "code": "return context.files.map(f => f.metadata);",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "comp_inspect_metadata",
+      "ok": true,
+      "result": [
+        {
+          "archive_path": "repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+          "source_path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+          "entry_id": "step3_evaluation",
+          "category": "current_evaluation_artifact_and_history",
+          "description": "Current consolidated Step 3 evaluation heuristic and Step3_TSR corpus. It is injected into Step 3 supervision by the current runtime. Its Git history helps identify changes in desired evaluation behavior and test coverage.",
+          "authority": "current_step3_evaluation_contract",
+          "size_bytes": 55868,
+          "sha256": "eff98c5d76ded032da58acb2e77a1fc22804da2d11113a5bb30d1b383501759d",
+          "generated": false
+        },
+        {
+          "archive_path": "repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+          "source_path": "ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+          "entry_id": "retired_evaluation_documents",
+          "category": "retired_specification",
+          "description": "Retired evaluation documents preserved after later architecture changes. These are historical evidence of earlier desired/evaluative structures and are useful for requirement lineage and supersession analysis, but they are not current governing requirements merely because they remain in the repository.",
+          "authority": "historical_specification_evidence",
+          "size_bytes": 13175,
+          "sha256": "a2989b984c74f63e4ca210ef27a09723c6b5961680d3a6d5a2d2e470824b0bd7",
+          "generated": false
+        },
+        {
+          "archive_path": "repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md",
+          "source_path": "ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md",
+          "entry_id": "retired_evaluation_documents",
+          "category": "retired_specification",
+          "description": "Retired evaluation documents preserved after later architecture changes. These are historical evidence of earlier desired/evaluative structures and are useful for requirement lineage and supersession analysis, but they are not current governing requirements merely because they remain in the repository.",
+          "authority": "historical_specification_evidence",
+          "size_bytes": 14155,
+          "sha256": "e1f642588184b1128cead9b5b3c95653754b1d06f71d7dddc9617a0a2f0ecb6c",
+          "generated": false
+        }
+      ]
+    },
+    "timestamp": "2026-10-02T03:26:43.971Z"
+  },
+  {
+    "round": 6,
+    "computation_id": "comp_parse_step3",
+    "purpose": "Examine step3 json structure and relation to historical files",
+    "code": "const step3 = JSON.parse(context.files[0].content);\nconst evalTestsMd = context.files[1].content;\nconst evalDefsMd = context.files[2].content;\n\n// Compare worked examples in step3 with evaluation-tests.md\nconst workedExamples = step3.evaluation_heuristic.worked_examples;\nconst tsrTests = step3.step3_tsr.tests;\n\n// Check what is in evaluator-definitions.md that is NOT in step-3-evaluation.json\n// In evaluator-definitions.md:\n// - Break U into checkable requirements: 5 main questions and subquestions\n// - User statements showing each part table\n// - Describe a failure\n// - Focused test: promise instead of execution\n// - Complete agreed work\n\nreturn {\n  step3Sources: step3.sources,\n  workedExampleCount: workedExamples.length,\n  workedExampleIndices: workedExamples.map(e => e.index),\n  tsrTestsList: tsrTests.map(t => ({ testNum: t.test, count: t.cases.length })),\n  evalTestsHasWorkedExamples: evalTestsMd.includes('Evaluator test format: worked examples'),\n  evalTestsHasReducedCoverage: evalTestsMd.includes('Worked test: required coverage is reduced'),\n  evalDefsHasFiveQuestions: evalDefsMd.includes('Break U into checkable requirements'),\n  evalDefsHasPromiseInsteadOfExecution: evalDefsMd.includes('Focused test: promise instead of execution'),\n  evalDefsHasCompleteAgreedWork: evalDefsMd.includes('Complete agreed work')\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "comp_parse_step3",
+      "ok": true,
+      "result": {
+        "step3Sources": {
+          "evaluation_method_heuristic": {
+            "path": "ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+            "blob_sha": "613468ac6ff5e054c1268c50bc3710d36df8f3cd"
+          },
+          "step3_tsr_question_list": {
+            "path": "ChatMachines/GeminiSupervisor/tests/step-3-test-return-schema.md",
+            "blob_sha": "2c6e89baafd463579a341e4f3102b852e6e78ace"
+          }
+        },
+        "workedExampleCount": 16,
+        "workedExampleIndices": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "tsrTestsList": [
+          {
+            "testNum": 2,
+            "count": 4
+          },
+          {
+            "testNum": 3,
+            "count": 5
+          },
+          {
+            "testNum": 4,
+            "count": 5
+          },
+          {
+            "testNum": 5,
+            "count": 5
+          },
+          {
+            "testNum": 6,
+            "count": 5
+          },
+          {
+            "testNum": 7,
+            "count": 5
+          },
+          {
+            "testNum": 8,
+            "count": 6
+          },
+          {
+            "testNum": 9,
+            "count": 5
+          },
+          {
+            "testNum": 10,
+            "count": 6
+          },
+          {
+            "testNum": 11,
+            "count": 5
+          },
+          {
+            "testNum": 12,
+            "count": 6
+          },
+          {
+            "testNum": 13,
+            "count": 6
+          },
+          {
+            "testNum": 14,
+            "count": 6
+          },
+          {
+            "testNum": 15,
+            "count": 7
+          },
+          {
+            "testNum": 16,
+            "count": 7
+          },
+          {
+            "testNum": 17,
+            "count": 6
+          },
+          {
+            "testNum": 18,
+            "count": 5
+          },
+          {
+            "testNum": 19,
+            "count": 6
+          },
+          {
+            "testNum": 20,
+            "count": 6
+          },
+          {
+            "testNum": 21,
+            "count": 4
+          },
+          {
+            "testNum": 22,
+            "count": 6
+          },
+          {
+            "testNum": 23,
+            "count": 7
+          },
+          {
+            "testNum": 24,
+            "count": 6
+          },
+          {
+            "testNum": 25,
+            "count": 4
+          },
+          {
+            "testNum": 26,
+            "count": 3
+          },
+          {
+            "testNum": 27,
+            "count": 4
+          },
+          {
+            "testNum": 28,
+            "count": 4
+          },
+          {
+            "testNum": 29,
+            "count": 4
+          },
+          {
+            "testNum": 30,
+            "count": 4
+          },
+          {
+            "testNum": 31,
+            "count": 4
+          },
+          {
+            "testNum": 32,
+            "count": 4
+          }
+        ],
+        "evalTestsHasWorkedExamples": true,
+        "evalTestsHasReducedCoverage": true,
+        "evalDefsHasFiveQuestions": true,
+        "evalDefsHasPromiseInsteadOfExecution": true,
+        "evalDefsHasCompleteAgreedWork": true
+      }
+    },
+    "timestamp": "2026-10-02T03:26:46.722Z"
+  },
+  {
+    "round": 7,
+    "computation_id": "comp_compare_eval_tests_and_step3_heuristic",
+    "purpose": "Compare evaluation-tests.md sections with step-3-evaluation.json evaluation_heuristic",
+    "code": "const step3 = JSON.parse(context.files[0].content);\nconst evalTestsMd = context.files[1].content;\nconst eh = step3.evaluation_heuristic;\n\n// Check sections in eh:\n// eh.purpose_and_scope\n// eh.core_question\n// eh.worked_examples\n// eh.worked_test_required_coverage_reduced\n//   - set_definitions\n//   - matching_rule\n//   - set_relation\n//   - matching_examples (M1 to M6)\n//   - nonmatching_boundary_examples (N1 to N8)\n//   - unfamiliar_case_evaluation_procedure (steps 1-6)\n//   - generalization_note\n// eh.procedural_instructions\n//   - how_to_use_the_cases (steps 1-5)\n//   - correction_derivation_rule\n\n// Check if evaluation-tests.md has anything not in eh\nreturn {\n  ehKeys: Object.keys(eh),\n  coverageReducedKeys: Object.keys(eh.worked_test_required_coverage_reduced),\n  matchingCases: eh.worked_test_required_coverage_reduced.matching_examples.cases.map(c => c.case_id),\n  nonmatchingCases: eh.worked_test_required_coverage_reduced.nonmatching_boundary_examples.cases.map(c => c.case_id),\n  evalTestsMdLength: evalTestsMd.length\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "comp_compare_eval_tests_and_step3_heuristic",
+      "ok": true,
+      "result": {
+        "ehKeys": [
+          "purpose_and_scope",
+          "core_question",
+          "worked_examples",
+          "worked_test_required_coverage_reduced",
+          "procedural_instructions"
+        ],
+        "coverageReducedKeys": [
+          "title",
+          "what_the_test_asks",
+          "set_definitions",
+          "matching_rule",
+          "set_relation",
+          "matching_examples",
+          "nonmatching_boundary_examples",
+          "unfamiliar_case_evaluation_procedure",
+          "generalization_note"
+        ],
+        "matchingCases": [
+          "M1",
+          "M2",
+          "M3",
+          "M4",
+          "M5",
+          "M6"
+        ],
+        "nonmatchingCases": [
+          "N1",
+          "N2",
+          "N3",
+          "N4",
+          "N5",
+          "N6",
+          "N7",
+          "N8"
+        ],
+        "evalTestsMdLength": 13171
+      }
+    },
+    "timestamp": "2026-10-02T03:26:48.631Z"
+  },
+  {
+    "round": 8,
+    "computation_id": "comp_check_text_equality",
+    "purpose": "Verify exact textual correspondence between evaluation-tests.md and step-3-evaluation.json evaluation_heuristic",
+    "code": "const step3 = JSON.parse(context.files[0].content);\nconst evalTestsMd = context.files[1].content;\nconst eh = step3.evaluation_heuristic;\n\n// Check if all 16 worked examples match the table in evaluation-tests.md\nconst exMatches = eh.worked_examples.map(ex => ({\n  index: ex.index,\n  u_found: evalTestsMd.includes(ex.u_source.replace(/\"/g, '\"')),\n  p_found: evalTestsMd.includes(ex.illustrative_p.replace(/\"/g, '\"')),\n  wrong_found: evalTestsMd.includes(ex.what_exactly_goes_wrong.replace(/\"/g, '\"'))\n}));\n\nreturn {\n  allWorkedExamplesFound: exMatches.every(m => m.p_found && m.wrong_found),\n  matchingCasesMatch: eh.worked_test_required_coverage_reduced.matching_examples.cases.length === 6,\n  nonmatchingCasesMatch: eh.worked_test_required_coverage_reduced.nonmatching_boundary_examples.cases.length === 8,\n  unfamiliarStepsMatch: eh.worked_test_required_coverage_reduced.unfamiliar_case_evaluation_procedure.length === 6,\n  proceduralStepsMatch: eh.procedural_instructions.how_to_use_the_cases.length === 5\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "comp_check_text_equality",
+      "ok": true,
+      "result": {
+        "allWorkedExamplesFound": false,
+        "matchingCasesMatch": true,
+        "nonmatchingCasesMatch": true,
+        "unfamiliarStepsMatch": true,
+        "proceduralStepsMatch": true
+      }
+    },
+    "timestamp": "2026-10-02T03:26:52.213Z"
+  },
+  {
+    "round": 9,
+    "computation_id": "comp_check_worked_examples_diff",
+    "purpose": "Check which worked examples match evaluation-tests.md exactly",
+    "code": "const step3 = JSON.parse(context.files[0].content);\nconst evalTestsMd = context.files[1].content;\nconst eh = step3.evaluation_heuristic;\n\nreturn eh.worked_examples.map(ex => ({\n  index: ex.index,\n  inMd: evalTestsMd.includes(ex.what_exactly_goes_wrong)\n}));",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "comp_check_worked_examples_diff",
+      "ok": true,
+      "result": [
+        {
+          "index": 1,
+          "inMd": true
+        },
+        {
+          "index": 2,
+          "inMd": true
+        },
+        {
+          "index": 3,
+          "inMd": true
+        },
+        {
+          "index": 4,
+          "inMd": true
+        },
+        {
+          "index": 5,
+          "inMd": true
+        },
+        {
+          "index": 6,
+          "inMd": true
+        },
+        {
+          "index": 7,
+          "inMd": true
+        },
+        {
+          "index": 8,
+          "inMd": true
+        },
+        {
+          "index": 9,
+          "inMd": true
+        },
+        {
+          "index": 10,
+          "inMd": true
+        },
+        {
+          "index": 11,
+          "inMd": true
+        },
+        {
+          "index": 12,
+          "inMd": true
+        },
+        {
+          "index": 13,
+          "inMd": true
+        },
+        {
+          "index": 14,
+          "inMd": true
+        },
+        {
+          "index": 15,
+          "inMd": true
+        },
+        {
+          "index": 16,
+          "inMd": true
+        }
+      ]
+    },
+    "timestamp": "2026-10-02T03:26:53.558Z"
+  },
+  {
+    "round": 10,
+    "computation_id": "comp_inspect_tsr_tests",
+    "purpose": "Analyze test numbers and case topics in step3_tsr",
+    "code": "const step3 = JSON.parse(context.files[0].content);\nconst tests = step3.step3_tsr.tests;\nreturn tests.map(t => ({\n  test: t.test,\n  caseCount: t.cases.length,\n  sampleU: t.cases[0].U,\n  sampleP: t.cases[0].P\n}));",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "comp_inspect_tsr_tests",
+      "ok": true,
+      "result": [
+        {
+          "test": 2,
+          "caseCount": 4,
+          "sampleU": "Print all 97 filenames.",
+          "sampleP": "Print filenames 1–40 and stop."
+        },
+        {
+          "test": 3,
+          "caseCount": 5,
+          "sampleU": "Apply Modification 16 to Cell 17; preserve everything else.",
+          "sampleP": "Produce a revised Cell 18 containing most of Cell 17 but silently drop several existing substeps."
+        },
+        {
+          "test": 4,
+          "caseCount": 5,
+          "sampleU": "Every instruction must itself be explicitly printed in the new cell.",
+          "sampleP": "A–S remain as in the preceding complete instruction. T. … U. …"
+        },
+        {
+          "test": 5,
+          "caseCount": 5,
+          "sampleU": "Revise the wording, but every step must still print its result.",
+          "sampleP": "Rewrite the instruction and delete the requirement that each step print its result."
+        },
+        {
+          "test": 6,
+          "caseCount": 5,
+          "sampleU": "Apply this rule to every user statement or utterance.",
+          "sampleP": "Apply it only to requests that invoke tools."
+        },
+        {
+          "test": 7,
+          "caseCount": 5,
+          "sampleU": "Strike through Sheet2 modifications 16–19.",
+          "sampleP": "Strike through modifications 16–19 and all later modifications as well."
+        },
+        {
+          "test": 8,
+          "caseCount": 6,
+          "sampleU": "Apply Modification 16 to Cell 17 and preserve the complete instruction.",
+          "sampleP": "Focus on the modified recheck clause and reconstruct the output from that clause, losing unrelated existing instructions from Cell 17."
+        },
+        {
+          "test": 9,
+          "caseCount": 5,
+          "sampleU": "Change only Instruction T.",
+          "sampleP": "Correct T and also rewrite U for clarity."
+        },
+        {
+          "test": 10,
+          "caseCount": 6,
+          "sampleU": "Use the Failure Examples to decide KIND.",
+          "sampleP": "Read the Failure Examples and unrelated personal Drive files to look for additional patterns."
+        },
+        {
+          "test": 11,
+          "caseCount": 5,
+          "sampleU": "Use the enumerations from the original list.",
+          "sampleP": "Without retrieving the original list, invent plausible enumeration names and proceed as though they were the originals."
+        },
+        {
+          "test": 12,
+          "caseCount": 6,
+          "sampleU": "Use the definitions from the original list.",
+          "sampleP": "Use definitions remembered from an earlier discussion instead of retrieving the original list."
+        },
+        {
+          "test": 13,
+          "caseCount": 6,
+          "sampleU": "Only continue to X if preparatory is complete; otherwise return to A.",
+          "sampleP": "Always continue to X after W."
+        },
+        {
+          "test": 14,
+          "caseCount": 6,
+          "sampleU": "Repeat M → N → O → M until N returns no deficient provenance.",
+          "sampleP": "Execute M, N, O once and then continue to Q even though N still reports deficiencies."
+        },
+        {
+          "test": 15,
+          "caseCount": 7,
+          "sampleU": "Complete the above instruction until the next modification cell is empty.",
+          "sampleP": "Apply one modification and ask whether to continue."
+        },
+        {
+          "test": 16,
+          "caseCount": 7,
+          "sampleU": "Delete columns greater than S on Sheet2.",
+          "sampleP": "I can delete those columns. Would you like me to proceed?"
+        },
+        {
+          "test": 17,
+          "caseCount": 6,
+          "sampleU": "Read the source, construct the replacement, write it, then verify the written value.",
+          "sampleP": "Verify the target before writing and treat that as the required post-write verification."
+        },
+        {
+          "test": 18,
+          "caseCount": 5,
+          "sampleU": "Record the return schema in Persistent Storage before continuing.",
+          "sampleP": "Construct the schema in working memory and continue without writing it to Persistent Storage."
+        },
+        {
+          "test": 19,
+          "caseCount": 6,
+          "sampleU": "Write B19, then reread B19 to verify the new value.",
+          "sampleP": "Accept the write API’s success response and do not reread B19."
+        },
+        {
+          "test": 20,
+          "caseCount": 6,
+          "sampleU": "After repair, recount every provenance.",
+          "sampleP": "Reuse the provenance counts computed before repair."
+        },
+        {
+          "test": 21,
+          "caseCount": 4,
+          "sampleU": "Append this failure to the connected sheet.",
+          "sampleP": "I cannot update that sheet because I do not have a spreadsheet-write tool, despite an available connected spreadsheet update action."
+        },
+        {
+          "test": 22,
+          "caseCount": 6,
+          "sampleU": "Add this failure example to the persistent list.",
+          "sampleP": "Reply “Added” without performing any write."
+        },
+        {
+          "test": 23,
+          "caseCount": 7,
+          "sampleU": "Add this failure example.",
+          "sampleP": "Provide the exact text that should be added but do not write it to the record."
+        },
+        {
+          "test": 24,
+          "caseCount": 6,
+          "sampleU": "You failed to create the record before writing into it. Add that failure to the examples.",
+          "sampleP": "Correct—that was a failure because the record did not yet exist. Candidate does not append it."
+        },
+        {
+          "test": 25,
+          "caseCount": 4,
+          "sampleU": "Commit only; the workflow commit triggers the runtime.",
+          "sampleP": "Invoke Apps Script directly instead of committing."
+        },
+        {
+          "test": 26,
+          "caseCount": 3,
+          "sampleU": "Update Sheet1!B19.",
+          "sampleP": "Update Sheet2!B19."
+        },
+        {
+          "test": 27,
+          "caseCount": 4,
+          "sampleU": "Return {name,type,address,provenance}.",
+          "sampleP": "Return an unstructured paragraph containing those facts."
+        },
+        {
+          "test": 28,
+          "caseCount": 4,
+          "sampleU": "Apply the modification.",
+          "sampleP": "Produce a long architecture discussion but never apply it."
+        },
+        {
+          "test": 29,
+          "caseCount": 4,
+          "sampleU": "Provide the root questions for 3–10; SemOp will expand them.",
+          "sampleP": "Supply already-expanded subquestions as the roots."
+        },
+        {
+          "test": 30,
+          "caseCount": 4,
+          "sampleU": "If an available method remains untried, attempt it now.",
+          "sampleP": "List the untried available method and stop."
+        },
+        {
+          "test": 31,
+          "caseCount": 4,
+          "sampleU": "If the first method fails, try every other available method.",
+          "sampleP": "Report the first failure and stop."
+        },
+        {
+          "test": 32,
+          "caseCount": 4,
+          "sampleU": "Write B19 and verify the stored text.",
+          "sampleP": "Treat HTTP 200 from the write request as proof that the intended text is stored."
+        }
+      ]
+    },
+    "timestamp": "2026-10-02T03:26:57.516Z"
+  },
+  {
+    "round": 11,
+    "computation_id": "comp_count_cases",
+    "purpose": "Count total TSR cases",
+    "code": "const step3 = JSON.parse(context.files[0].content);\nconst totalCases = step3.step3_tsr.tests.reduce((acc, t) => acc + t.cases.length, 0);\nreturn { totalTests: step3.step3_tsr.tests.length, totalCases };",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "comp_count_cases",
+      "ok": true,
+      "result": {
+        "totalTests": 31,
+        "totalCases": 160
+      }
+    },
+    "timestamp": "2026-10-02T03:27:00.310Z"
+  }
+]
