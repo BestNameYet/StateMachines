@@ -1,0 +1,2189 @@
+[
+  {
+    "round": 1,
+    "computation_id": "manifest_size_analysis",
+    "purpose": "Analyze archive files and sizes to check context constraints",
+    "code": "const files = context.files || []; return files.map(f => ({ path: f.archive_path, size: f.size_bytes, over250k: f.size_bytes > 250000 }));",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "manifest_size_analysis",
+      "ok": true,
+      "result": []
+    },
+    "timestamp": "2026-10-02T03:23:10.822Z"
+  },
+  {
+    "round": 2,
+    "computation_id": "inspect_context",
+    "purpose": "Inspect the structure and keys of context object",
+    "code": "return Object.keys(context);",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "inspect_context",
+      "ok": true,
+      "result": [
+        "task",
+        "archive_manifest"
+      ]
+    },
+    "timestamp": "2026-10-02T03:23:12.254Z"
+  },
+  {
+    "round": 3,
+    "computation_id": "analyze_files",
+    "purpose": "Analyze manifest files and their sizes",
+    "code": "const files = context.archive_manifest.files || []; return files.map(f => ({ path: f.archive_path, size: f.size_bytes, over250k: f.size_bytes > 250000 }));",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "analyze_files",
+      "ok": true,
+      "result": [
+        {
+          "path": "generated/git/by-entry/agents_md.patch.log",
+          "size": 666410,
+          "over250k": true
+        },
+        {
+          "path": "generated/git/by-entry/dependency_map.patch.log",
+          "size": 1523,
+          "over250k": false
+        },
+        {
+          "path": "generated/git/by-entry/dependency_sync_workflow.patch.log",
+          "size": 14125,
+          "over250k": false
+        },
+        {
+          "path": "generated/git/by-entry/live_ground_truth_skill.patch.log",
+          "size": 17881,
+          "over250k": false
+        },
+        {
+          "path": "generated/git/by-entry/runtime_source.patch.log",
+          "size": 412728,
+          "over250k": true
+        },
+        {
+          "path": "generated/git/by-entry/state_machine_workflow.patch.log",
+          "size": 20337,
+          "over250k": false
+        },
+        {
+          "path": "generated/git/by-entry/step3_evaluation.patch.log",
+          "size": 228944,
+          "over250k": false
+        },
+        {
+          "path": "generated/git/by-entry/supervisor_config.patch.log",
+          "size": 1289,
+          "over250k": false
+        },
+        {
+          "path": "generated/git/by-entry/work_action_approval_rulebook.patch.log",
+          "size": 23484,
+          "over250k": false
+        },
+        {
+          "path": "generated/git/live-supervisor-lineage.log",
+          "size": 98781,
+          "over250k": false
+        },
+        {
+          "path": "metadata/historical-audit-data.json",
+          "size": 11857,
+          "over250k": false
+        },
+        {
+          "path": "metadata/historical-audit-trigger.json",
+          "size": 4843,
+          "over250k": false
+        },
+        {
+          "path": "repo/.github/workflows/gemini-chat.yml",
+          "size": 1953,
+          "over250k": false
+        },
+        {
+          "path": "repo/.github/workflows/gemini-supervisor-dependency-sync.yml",
+          "size": 13173,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/Agents.md",
+          "size": 60929,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/commit history/commit-history.md",
+          "size": 351195,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/commit history/git-log.txt",
+          "size": 97008,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/config.json",
+          "size": 670,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/dependency-map.json",
+          "size": 849,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+          "size": 13175,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md",
+          "size": 14155,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json",
+          "size": 237925,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/state.json",
+          "size": 419929,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json",
+          "size": 197864,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/messages.json",
+          "size": 306396,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+          "size": 128750,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/store/store.json",
+          "size": 428347,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json",
+          "size": 156380,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/state.json",
+          "size": 305355,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json",
+          "size": 142281,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json",
+          "size": 128710,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/state.json",
+          "size": 279528,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json",
+          "size": 142361,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json",
+          "size": 201924,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json",
+          "size": 437449,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json",
+          "size": 260988,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/messages.json",
+          "size": 304087,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/state.json",
+          "size": 112958,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/store/store.json",
+          "size": 410884,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/messages.json",
+          "size": 521237,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/state.json",
+          "size": 288323,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/store/store.json",
+          "size": 788864,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/messages.json",
+          "size": 252671,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/state.json",
+          "size": 139285,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/store/store.json",
+          "size": 384045,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/messages.json",
+          "size": 377132,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/state.json",
+          "size": 190417,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/store/store.json",
+          "size": 556055,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/messages.json",
+          "size": 172931,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/state.json",
+          "size": 72211,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/store/store.json",
+          "size": 240996,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/messages.json",
+          "size": 225593,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/state.json",
+          "size": 73822,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/store/store.json",
+          "size": 295375,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/messages.json",
+          "size": 47960,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/state.json",
+          "size": 20576,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/store/store.json",
+          "size": 9962,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json",
+          "size": 34991,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json",
+          "size": 37585,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json",
+          "size": 18111,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/messages.json",
+          "size": 614,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/state.json",
+          "size": 807,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/store/store.json",
+          "size": 872,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/messages.json",
+          "size": 254181,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/state.json",
+          "size": 79612,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/store/store.json",
+          "size": 329019,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json",
+          "size": 183435,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/state.json",
+          "size": 352347,
+          "over250k": true
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json",
+          "size": 164202,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+          "size": 52178,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+          "size": 16772,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+          "size": 55868,
+          "over250k": false
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+          "size": 22540,
+          "over250k": false
+        }
+      ]
+    },
+    "timestamp": "2026-10-02T03:23:13.184Z"
+  },
+  {
+    "round": 4,
+    "computation_id": "inspect_task",
+    "purpose": "Inspect context.task",
+    "code": "return context.task;",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "inspect_task",
+      "ok": true,
+      "result": "Perform the full GeminiSupervisor current-requirements audit using the supplied historical evidence archive. The principal question is: does the GeminiSupervisor machine that exists today actually contain and enforce everything the user still wants today, and if not, exactly what surviving requirements are missing, partial, unenforced, or incorrectly represented? First independently choose and state the heuristic you believe best solves that problem; do not mechanically adopt a prewritten heuristic. Our working proposal is that historical facts should be separated from semantic interpretations, and truth decisions that depend on historical meaning should explicitly depend on those interpretations. Treat requirement lifecycle and implementation state as independent dimensions where useful: an old requirement can be implemented or unimplemented and still later be superseded; once a later user requirement replaces it, that superseded requirement does not create present corrective work. Detect partial as well as full supersession. Historical Git and nonce records should primarily establish requirement lineage, implementation provenance, exercised behavior, failures, and supersession. They are not automatically the normative target. The normative implementation question concerns the machine that exists today. Establish what today's machine actually does from executable source, workflows, configuration, persisted structures and deterministic behavior; do not infer executable behavior merely from Agents.md, filenames, historical model self-report, or prior completion claims. Recover the user's surviving desired requirements from the historical evidence, account for every relevant historical instruction, and compare each surviving requirement exhaustively against the current machine. For historical semantics preserve the dependency chain historical facts -> interpretations -> truth decisions, including explicit evidence locators and unresolved alternatives where necessary. Treat an outstanding defect as present corrective work only when the requirement remains active/current and today's machine does not adequately implement or enforce it. Use the lead-planner/sub-evaluator architecture to divide context as needed. Execute sub-evaluators strictly sequentially in the GitHub Node evaluator process, one complete sub-evaluation at a time; do not parallelize them. Keep every subquestion at or below the runtime context ceiling and prefer many narrowly scoped subquestions over a few large ones. Treat any Gemini input-token quota exhaustion as evidence that the current subtask decomposition is too coarse; do not retry the same oversized subtask as though the quota event were merely transient. Instead the decomposition must be made finer. Use model-directed JavaScript computation whenever useful rather than relying on hand inspection. Do not sample. Reconcile all sub-evaluator findings, report contradictions and indeterminate cases, and run completeness checks proving that every supplied nonce run and every recovered relevant user requirement has been accounted for. Return the final historical_audit_result with a verified description of the machine today, surviving requirements, superseded requirements, outstanding gaps, historical facts, interpretations, truth_decisions, subquestion_reconciliation, completeness_checks, and unresolved_ambiguities."
+    },
+    "timestamp": "2026-10-02T03:23:17.695Z"
+  },
+  {
+    "round": 5,
+    "computation_id": "inspect_metadata",
+    "purpose": "Inspect metadata JSON files",
+    "code": "const trigger = context.archive_manifest.files.find(f => f.archive_path === 'metadata/historical-audit-trigger.json'); return { trigger };",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "inspect_metadata",
+      "ok": true,
+      "result": {
+        "trigger": {
+          "archive_path": "metadata/historical-audit-trigger.json",
+          "source_path": "ChatMachines/GeminiEvaluation/historical-audit-nextmessage/nextmessage.json",
+          "entry_id": null,
+          "category": "audit_request_metadata",
+          "description": "Exact trigger/request and archive selection used for this historical-audit run.",
+          "authority": "run_request",
+          "size_bytes": 4843,
+          "sha256": "113787684aad7c1ccfc7d69369ac4ac055cb38b6619aa3c268d73a5569798078",
+          "generated": false
+        }
+      }
+    },
+    "timestamp": "2026-10-02T03:23:19.104Z"
+  },
+  {
+    "round": 6,
+    "computation_id": "categorize_manifest",
+    "purpose": "Categorize manifest files and see sizes",
+    "code": "const files = context.archive_manifest.files; return files.map(f => ({ path: f.archive_path, size: f.size_bytes, desc: f.description, cat: f.category }));",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "categorize_manifest",
+      "ok": true,
+      "result": [
+        {
+          "path": "generated/git/by-entry/agents_md.patch.log",
+          "size": 666410,
+          "desc": "Fresh path-scoped chronological Git history with patches for agents_md: Current canonical Supervisor specification. Its present contents are evidence of today's stated requirements. Its Git history is generated into the archive to show how requested requirements and schemas changed over time. Specification text alone does not prove runtime enforcement.",
+          "cat": "generated_file_history"
+        },
+        {
+          "path": "generated/git/by-entry/dependency_map.patch.log",
+          "size": 1523,
+          "desc": "Fresh path-scoped chronological Git history with patches for dependency_map: Standalone file-to-file dependency map consumed by the dependency synchronization workflow. Establishes which peer artifacts are expected to remain aligned when a mapped authoritative file changes.",
+          "cat": "generated_file_history"
+        },
+        {
+          "path": "generated/git/by-entry/dependency_sync_workflow.patch.log",
+          "size": 14125,
+          "desc": "Fresh path-scoped chronological Git history with patches for dependency_sync_workflow: Current maintenance workflow that synchronizes mapped Supervisor dependency files after Agents.md or runtime-source changes. It is part of the machine-maintenance architecture, not the normal user-request execution path.",
+          "cat": "generated_file_history"
+        },
+        {
+          "path": "generated/git/by-entry/live_ground_truth_skill.patch.log",
+          "size": 17881,
+          "desc": "Fresh path-scoped chronological Git history with patches for live_ground_truth_skill: Skill document defining live ground-truth verification concepts used during development. The current runtime contains deterministic ground-truth mechanisms, but this document itself is descriptive evidence rather than executable enforcement.",
+          "cat": "generated_file_history"
+        },
+        {
+          "path": "generated/git/by-entry/runtime_source.patch.log",
+          "size": 412728,
+          "desc": "Fresh path-scoped chronological Git history with patches for runtime_source: Current Node.js Supervisor runtime. The current file is primary evidence of implemented validation, Gemini supervision, state transitions, persistence, and ground-truth checks. Its generated Git history is evidence of implementation changes over time.",
+          "cat": "generated_file_history"
+        },
+        {
+          "path": "generated/git/by-entry/state_machine_workflow.patch.log",
+          "size": 20337,
+          "desc": "Fresh path-scoped chronological Git history with patches for state_machine_workflow: Current GitHub Actions entrypoint for normal Supervisor execution. Establishes the actual repository event that starts the machine, Node runtime setup, environment, and which run-state changes are committed.",
+          "cat": "generated_file_history"
+        },
+        {
+          "path": "generated/git/by-entry/step3_evaluation.patch.log",
+          "size": 228944,
+          "desc": "Fresh path-scoped chronological Git history with patches for step3_evaluation: Current consolidated Step 3 evaluation heuristic and Step3_TSR corpus. It is injected into Step 3 supervision by the current runtime. Its Git history helps identify changes in desired evaluation behavior and test coverage.",
+          "cat": "generated_file_history"
+        },
+        {
+          "path": "generated/git/by-entry/supervisor_config.patch.log",
+          "size": 1289,
+          "desc": "Fresh path-scoped chronological Git history with patches for supervisor_config: Current shared Supervisor path/dependency configuration consumed by the runtime. Its history can show when external artifacts and runtime surfaces became canonical.",
+          "cat": "generated_file_history"
+        },
+        {
+          "path": "generated/git/by-entry/work_action_approval_rulebook.patch.log",
+          "size": 23484,
+          "desc": "Fresh path-scoped chronological Git history with patches for work_action_approval_rulebook: Persisted work/action approval rulebook produced during Supervisor development. Its existence proves the artifact was created; whether the current runtime actually enforces it must be decided from executable wiring, not from this file alone.",
+          "cat": "generated_file_history"
+        },
+        {
+          "path": "generated/git/live-supervisor-lineage.log",
+          "size": 98781,
+          "desc": "Fresh complete Git lineage for the Supervisor and predecessor paths at the workflow checkout, generated directly from Git with rename/copy detection.",
+          "cat": "generated_raw_git_history"
+        },
+        {
+          "path": "metadata/historical-audit-data.json",
+          "size": 11857,
+          "desc": "Exact historical-audit source map used to construct this packet, including descriptions and authority guidance.",
+          "cat": "evidence_routing_metadata"
+        },
+        {
+          "path": "metadata/historical-audit-trigger.json",
+          "size": 4843,
+          "desc": "Exact trigger/request and archive selection used for this historical-audit run.",
+          "cat": "audit_request_metadata"
+        },
+        {
+          "path": "repo/.github/workflows/gemini-chat.yml",
+          "size": 1953,
+          "desc": "Current GitHub Actions entrypoint for normal Supervisor execution. Establishes the actual repository event that starts the machine, Node runtime setup, environment, and which run-state changes are committed.",
+          "cat": "current_execution_orchestration_and_history"
+        },
+        {
+          "path": "repo/.github/workflows/gemini-supervisor-dependency-sync.yml",
+          "size": 13173,
+          "desc": "Current maintenance workflow that synchronizes mapped Supervisor dependency files after Agents.md or runtime-source changes. It is part of the machine-maintenance architecture, not the normal user-request execution path.",
+          "cat": "current_dependency_maintenance"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/Agents.md",
+          "size": 60929,
+          "desc": "Current canonical Supervisor specification. Its present contents are evidence of today's stated requirements. Its Git history is generated into the archive to show how requested requirements and schemas changed over time. Specification text alone does not prove runtime enforcement.",
+          "cat": "current_specification_and_requirement_history"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/commit history/commit-history.md",
+          "size": 351195,
+          "desc": "Generated commit-by-commit narrative for the Supervisor lineage. Useful for locating candidate initiating prompts, design movements, and prior semantic interpretations. Its SUCCESS/FAILURE judgments are not authoritative and were previously shown to over-infer semantics; corroborate claims with raw Git, nonce records, or verbatim user evidence.",
+          "cat": "historical_interpretation"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/commit history/git-log.txt",
+          "size": 97008,
+          "desc": "Previously generated raw Git log snapshot for the GeminiSupervisor and predecessor lineage through its recorded cutoff. Useful as a fixed historical snapshot, but the workflow also generates a fresh live lineage log so later commits are not omitted.",
+          "cat": "historical_git_snapshot"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/config.json",
+          "size": 670,
+          "desc": "Current shared Supervisor path/dependency configuration consumed by the runtime. Its history can show when external artifacts and runtime surfaces became canonical.",
+          "cat": "current_runtime_configuration_and_history"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/dependency-map.json",
+          "size": 849,
+          "desc": "Standalone file-to-file dependency map consumed by the dependency synchronization workflow. Establishes which peer artifacts are expected to remain aligned when a mapped authoritative file changes.",
+          "cat": "current_dependency_routing"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+          "size": 13175,
+          "desc": "Retired evaluation documents preserved after later architecture changes. These are historical evidence of earlier desired/evaluative structures and are useful for requirement lineage and supersession analysis, but they are not current governing requirements merely because they remain in the repository.",
+          "cat": "retired_specification"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md",
+          "size": 14155,
+          "desc": "Retired evaluation documents preserved after later architecture changes. These are historical evidence of earlier desired/evaluative structures and are useful for requirement lineage and supersession analysis, but they are not current governing requirements merely because they remain in the repository.",
+          "cat": "retired_specification"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json",
+          "size": 237925,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/state.json",
+          "size": 419929,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json",
+          "size": 197864,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/messages.json",
+          "size": 306396,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+          "size": 128750,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/store/store.json",
+          "size": 428347,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json",
+          "size": 156380,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/state.json",
+          "size": 305355,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json",
+          "size": 142281,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json",
+          "size": 128710,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/state.json",
+          "size": 279528,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json",
+          "size": 142361,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json",
+          "size": 201924,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json",
+          "size": 437449,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json",
+          "size": 260988,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/messages.json",
+          "size": 304087,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/state.json",
+          "size": 112958,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/store/store.json",
+          "size": 410884,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/messages.json",
+          "size": 521237,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/state.json",
+          "size": 288323,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/store/store.json",
+          "size": 788864,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/messages.json",
+          "size": 252671,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/state.json",
+          "size": 139285,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/store/store.json",
+          "size": 384045,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/messages.json",
+          "size": 377132,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/state.json",
+          "size": 190417,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/store/store.json",
+          "size": 556055,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/messages.json",
+          "size": 172931,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/state.json",
+          "size": 72211,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/store/store.json",
+          "size": 240996,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/messages.json",
+          "size": 225593,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/state.json",
+          "size": 73822,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/store/store.json",
+          "size": 295375,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/messages.json",
+          "size": 47960,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/state.json",
+          "size": 20576,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/store/store.json",
+          "size": 9962,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json",
+          "size": 34991,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json",
+          "size": 37585,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json",
+          "size": 18111,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/messages.json",
+          "size": 614,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/state.json",
+          "size": 807,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/store/store.json",
+          "size": 872,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/messages.json",
+          "size": 254181,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/state.json",
+          "size": 79612,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/store/store.json",
+          "size": 329019,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json",
+          "size": 183435,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/state.json",
+          "size": 352347,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json",
+          "size": 164202,
+          "desc": "All persisted Supervisor nonce containers. Each run may contain state.json, messages.json, and store/store.json recording submitted execution returns, deterministic validation findings, Gemini supervisory responses, transition values, step progression, and run metadata. These files establish what the runtime recorded, not whether every embedded model claim was factually true.",
+          "cat": "historical_execution_records"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+          "size": 52178,
+          "desc": "Current Node.js Supervisor runtime. The current file is primary evidence of implemented validation, Gemini supervision, state transitions, persistence, and ground-truth checks. Its generated Git history is evidence of implementation changes over time.",
+          "cat": "current_executable_and_implementation_history"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+          "size": 16772,
+          "desc": "Skill document defining live ground-truth verification concepts used during development. The current runtime contains deterministic ground-truth mechanisms, but this document itself is descriptive evidence rather than executable enforcement.",
+          "cat": "requested_skill_artifact"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+          "size": 55868,
+          "desc": "Current consolidated Step 3 evaluation heuristic and Step3_TSR corpus. It is injected into Step 3 supervision by the current runtime. Its Git history helps identify changes in desired evaluation behavior and test coverage.",
+          "cat": "current_evaluation_artifact_and_history"
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+          "size": 22540,
+          "desc": "Persisted work/action approval rulebook produced during Supervisor development. Its existence proves the artifact was created; whether the current runtime actually enforces it must be decided from executable wiring, not from this file alone.",
+          "cat": "requested_control_artifact"
+        }
+      ]
+    },
+    "timestamp": "2026-10-02T03:23:21.901Z"
+  },
+  {
+    "round": 7,
+    "computation_id": "filter_under_250k",
+    "purpose": "Find all files under 250k",
+    "code": "const under = context.archive_manifest.files.filter(f => f.size_bytes <= 250000); const over = context.archive_manifest.files.filter(f => f.size_bytes > 250000); return { under_count: under.length, over_count: over.length, over_paths: over.map(f => ({ path: f.archive_path, size: f.size_bytes })) };",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "filter_under_250k",
+      "ok": true,
+      "result": {
+        "under_count": 50,
+        "over_count": 23,
+        "over_paths": [
+          {
+            "path": "generated/git/by-entry/agents_md.patch.log",
+            "size": 666410
+          },
+          {
+            "path": "generated/git/by-entry/runtime_source.patch.log",
+            "size": 412728
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/commit history/commit-history.md",
+            "size": 351195
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/state.json",
+            "size": 419929
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/messages.json",
+            "size": 306396
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/store/store.json",
+            "size": 428347
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/state.json",
+            "size": 305355
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/state.json",
+            "size": 279528
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json",
+            "size": 437449
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json",
+            "size": 260988
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/messages.json",
+            "size": 304087
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/store/store.json",
+            "size": 410884
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/messages.json",
+            "size": 521237
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/state.json",
+            "size": 288323
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/store/store.json",
+            "size": 788864
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/messages.json",
+            "size": 252671
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/store/store.json",
+            "size": 384045
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/messages.json",
+            "size": 377132
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/store/store.json",
+            "size": 556055
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/store/store.json",
+            "size": 295375
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/messages.json",
+            "size": 254181
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/store/store.json",
+            "size": 329019
+          },
+          {
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/state.json",
+            "size": 352347
+          }
+        ]
+      }
+    },
+    "timestamp": "2026-10-02T03:23:26.770Z"
+  },
+  {
+    "round": 8,
+    "computation_id": "nonce_run_file_sizes",
+    "purpose": "Check files and sizes for every nonce run",
+    "code": "const files = context.archive_manifest.files;\nconst nonceRuns = {};\nfor (const f of files) {\n  const m = f.archive_path.match(/runs\\/([^\\/]+)\\/(.*)/);\n  if (m) {\n    const runId = m[1];\n    if (!nonceRuns[runId]) nonceRuns[runId] = [];\n    nonceRuns[runId].push({ file: m[2], size: f.size_bytes, path: f.archive_path });\n  }\n}\nreturn nonceRuns;",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "nonce_run_file_sizes",
+      "ok": true,
+      "result": {
+        "agents_schema_migration_20260930_1": [
+          {
+            "file": "messages.json",
+            "size": 237925,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 419929,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 197864,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json"
+          }
+        ],
+        "demo_20260930T155153_eadd5e5248": [
+          {
+            "file": "messages.json",
+            "size": 306396,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 128750,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 428347,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/store/store.json"
+          }
+        ],
+        "ground_truth_verification_skill_20260930_1": [
+          {
+            "file": "messages.json",
+            "size": 156380,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 305355,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 142281,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json"
+          }
+        ],
+        "live_ground_truth_integration_20261001_1": [
+          {
+            "file": "messages.json",
+            "size": 128710,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 279528,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 142361,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json"
+          }
+        ],
+        "merge_step3_tsr_evaluation_heuristic_20261001_1": [
+          {
+            "file": "messages.json",
+            "size": 201924,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 437449,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 260988,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json"
+          }
+        ],
+        "role_separation_20260930T181400": [
+          {
+            "file": "messages.json",
+            "size": 304087,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 112958,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 410884,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/store/store.json"
+          }
+        ],
+        "skill_bootstrap_update_20260930T170700": [
+          {
+            "file": "messages.json",
+            "size": 521237,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 288323,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 788864,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/store/store.json"
+          }
+        ],
+        "skill_interface_20260930T155700": [
+          {
+            "file": "messages.json",
+            "size": 252671,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 139285,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 384045,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/store/store.json"
+          }
+        ],
+        "skill_reeval_20260930T170100": [
+          {
+            "file": "messages.json",
+            "size": 377132,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 190417,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 556055,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/store/store.json"
+          }
+        ],
+        "skill_revision_20260930T180700": [
+          {
+            "file": "messages.json",
+            "size": 172931,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 72211,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 240996,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/store/store.json"
+          }
+        ],
+        "skill_revision_schema_reject_20260930T181100": [
+          {
+            "file": "messages.json",
+            "size": 225593,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 73822,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 295375,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/store/store.json"
+          }
+        ],
+        "step0_raw_fail_20260930_3": [
+          {
+            "file": "messages.json",
+            "size": 47960,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 20576,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 9962,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/store/store.json"
+          }
+        ],
+        "step0_raw_fail_20260930_4": [
+          {
+            "file": "messages.json",
+            "size": 34991,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 37585,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 18111,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json"
+          }
+        ],
+        "step0_raw_fail_20260930T1325_2": [
+          {
+            "file": "messages.json",
+            "size": 614,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 807,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 872,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/store/store.json"
+          }
+        ],
+        "step0_raw_fail_20260930T132500": [
+          {
+            "file": "messages.json",
+            "size": 254181,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 79612,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 329019,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/store/store.json"
+          }
+        ],
+        "work_action_approval_rulebook_20260930_1": [
+          {
+            "file": "messages.json",
+            "size": 183435,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json"
+          },
+          {
+            "file": "state.json",
+            "size": 352347,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/state.json"
+          },
+          {
+            "file": "store/store.json",
+            "size": 164202,
+            "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json"
+          }
+        ]
+      }
+    },
+    "timestamp": "2026-10-02T03:23:29.517Z"
+  },
+  {
+    "round": 9,
+    "computation_id": "check_git_lineage",
+    "purpose": "Check if we can inspect git-log or lineage log in computation",
+    "code": "return { keys: Object.keys(context), hasFiles: !!context.files };",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "check_git_lineage",
+      "ok": true,
+      "result": {
+        "keys": [
+          "task",
+          "archive_manifest"
+        ],
+        "hasFiles": false
+      }
+    },
+    "timestamp": "2026-10-02T03:23:33.001Z"
+  },
+  {
+    "round": 10,
+    "computation_id": "list_under_250k",
+    "purpose": "List all 50 files <= 250000 bytes",
+    "code": "const files = context.archive_manifest.files.filter(f => f.size_bytes <= 250000);\nreturn files.map(f => ({ path: f.archive_path, size: f.size_bytes }));",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "list_under_250k",
+      "ok": true,
+      "result": [
+        {
+          "path": "generated/git/by-entry/dependency_map.patch.log",
+          "size": 1523
+        },
+        {
+          "path": "generated/git/by-entry/dependency_sync_workflow.patch.log",
+          "size": 14125
+        },
+        {
+          "path": "generated/git/by-entry/live_ground_truth_skill.patch.log",
+          "size": 17881
+        },
+        {
+          "path": "generated/git/by-entry/state_machine_workflow.patch.log",
+          "size": 20337
+        },
+        {
+          "path": "generated/git/by-entry/step3_evaluation.patch.log",
+          "size": 228944
+        },
+        {
+          "path": "generated/git/by-entry/supervisor_config.patch.log",
+          "size": 1289
+        },
+        {
+          "path": "generated/git/by-entry/work_action_approval_rulebook.patch.log",
+          "size": 23484
+        },
+        {
+          "path": "generated/git/live-supervisor-lineage.log",
+          "size": 98781
+        },
+        {
+          "path": "metadata/historical-audit-data.json",
+          "size": 11857
+        },
+        {
+          "path": "metadata/historical-audit-trigger.json",
+          "size": 4843
+        },
+        {
+          "path": "repo/.github/workflows/gemini-chat.yml",
+          "size": 1953
+        },
+        {
+          "path": "repo/.github/workflows/gemini-supervisor-dependency-sync.yml",
+          "size": 13173
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/Agents.md",
+          "size": 60929
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/commit history/git-log.txt",
+          "size": 97008
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/config.json",
+          "size": 670
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/dependency-map.json",
+          "size": 849
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+          "size": 13175
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md",
+          "size": 14155
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json",
+          "size": 237925
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json",
+          "size": 197864
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+          "size": 128750
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json",
+          "size": 156380
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json",
+          "size": 142281
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json",
+          "size": 128710
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json",
+          "size": 142361
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json",
+          "size": 201924
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/state.json",
+          "size": 112958
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/state.json",
+          "size": 139285
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/state.json",
+          "size": 190417
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/messages.json",
+          "size": 172931
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/state.json",
+          "size": 72211
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/store/store.json",
+          "size": 240996
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/messages.json",
+          "size": 225593
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/state.json",
+          "size": 73822
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/messages.json",
+          "size": 47960
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/state.json",
+          "size": 20576
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/store/store.json",
+          "size": 9962
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json",
+          "size": 34991
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json",
+          "size": 37585
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json",
+          "size": 18111
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/messages.json",
+          "size": 614
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/state.json",
+          "size": 807
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/store/store.json",
+          "size": 872
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/state.json",
+          "size": 79612
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json",
+          "size": 183435
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json",
+          "size": 164202
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/send-to-gemini.js",
+          "size": 52178
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+          "size": 16772
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+          "size": 55868
+        },
+        {
+          "path": "repo/ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+          "size": 22540
+        }
+      ]
+    },
+    "timestamp": "2026-10-02T03:23:36.711Z"
+  },
+  {
+    "round": 11,
+    "computation_id": "list_all_nonce_runs",
+    "purpose": "List all nonce runs and their files",
+    "code": "const files = context.archive_manifest.files;\nconst runs = new Set();\nfor (const f of files) {\n  const m = f.archive_path.match(/runs\\/([^\\/]+)/);\n  if (m) runs.add(m[1]);\n}\nreturn Array.from(runs).sort();",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "list_all_nonce_runs",
+      "ok": true,
+      "result": [
+        "agents_schema_migration_20260930_1",
+        "demo_20260930T155153_eadd5e5248",
+        "ground_truth_verification_skill_20260930_1",
+        "live_ground_truth_integration_20261001_1",
+        "merge_step3_tsr_evaluation_heuristic_20261001_1",
+        "role_separation_20260930T181400",
+        "skill_bootstrap_update_20260930T170700",
+        "skill_interface_20260930T155700",
+        "skill_reeval_20260930T170100",
+        "skill_revision_20260930T180700",
+        "skill_revision_schema_reject_20260930T181100",
+        "step0_raw_fail_20260930T132500",
+        "step0_raw_fail_20260930T1325_2",
+        "step0_raw_fail_20260930_3",
+        "step0_raw_fail_20260930_4",
+        "work_action_approval_rulebook_20260930_1"
+      ]
+    },
+    "timestamp": "2026-10-02T03:24:00.666Z"
+  },
+  {
+    "round": 12,
+    "computation_id": "nonce_run_breakdown",
+    "purpose": "Breakdown nonce runs by files under/over 250k",
+    "code": "const files = context.archive_manifest.files;\nconst nonceRuns = {};\nfor (const f of files) {\n  const m = f.archive_path.match(/runs\\/([^\\/]+)/);\n  if (m) {\n    const r = m[1];\n    if (!nonceRuns[r]) nonceRuns[r] = { under: [], over: [] };\n    if (f.size_bytes <= 250000) {\n      nonceRuns[r].under.push({ path: f.archive_path, size: f.size_bytes });\n    } else {\n      nonceRuns[r].over.push({ path: f.archive_path, size: f.size_bytes });\n    }\n  }\n}\nreturn nonceRuns;",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "nonce_run_breakdown",
+      "ok": true,
+      "result": {
+        "agents_schema_migration_20260930_1": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json",
+              "size": 237925
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json",
+              "size": 197864
+            }
+          ],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/state.json",
+              "size": 419929
+            }
+          ]
+        },
+        "demo_20260930T155153_eadd5e5248": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json",
+              "size": 128750
+            }
+          ],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/messages.json",
+              "size": 306396
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/store/store.json",
+              "size": 428347
+            }
+          ]
+        },
+        "ground_truth_verification_skill_20260930_1": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json",
+              "size": 156380
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json",
+              "size": 142281
+            }
+          ],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/state.json",
+              "size": 305355
+            }
+          ]
+        },
+        "live_ground_truth_integration_20261001_1": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json",
+              "size": 128710
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json",
+              "size": 142361
+            }
+          ],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/state.json",
+              "size": 279528
+            }
+          ]
+        },
+        "merge_step3_tsr_evaluation_heuristic_20261001_1": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json",
+              "size": 201924
+            }
+          ],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/state.json",
+              "size": 437449
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/store/store.json",
+              "size": 260988
+            }
+          ]
+        },
+        "role_separation_20260930T181400": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/state.json",
+              "size": 112958
+            }
+          ],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/messages.json",
+              "size": 304087
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/store/store.json",
+              "size": 410884
+            }
+          ]
+        },
+        "skill_bootstrap_update_20260930T170700": {
+          "under": [],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/messages.json",
+              "size": 521237
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/state.json",
+              "size": 288323
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_bootstrap_update_20260930T170700/store/store.json",
+              "size": 788864
+            }
+          ]
+        },
+        "skill_interface_20260930T155700": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/state.json",
+              "size": 139285
+            }
+          ],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/messages.json",
+              "size": 252671
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/store/store.json",
+              "size": 384045
+            }
+          ]
+        },
+        "skill_reeval_20260930T170100": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/state.json",
+              "size": 190417
+            }
+          ],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/messages.json",
+              "size": 377132
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/store/store.json",
+              "size": 556055
+            }
+          ]
+        },
+        "skill_revision_20260930T180700": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/messages.json",
+              "size": 172931
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/state.json",
+              "size": 72211
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/store/store.json",
+              "size": 240996
+            }
+          ],
+          "over": []
+        },
+        "skill_revision_schema_reject_20260930T181100": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/messages.json",
+              "size": 225593
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/state.json",
+              "size": 73822
+            }
+          ],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/store/store.json",
+              "size": 295375
+            }
+          ]
+        },
+        "step0_raw_fail_20260930_3": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/messages.json",
+              "size": 47960
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/state.json",
+              "size": 20576
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/store/store.json",
+              "size": 9962
+            }
+          ],
+          "over": []
+        },
+        "step0_raw_fail_20260930_4": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json",
+              "size": 34991
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json",
+              "size": 37585
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json",
+              "size": 18111
+            }
+          ],
+          "over": []
+        },
+        "step0_raw_fail_20260930T1325_2": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/messages.json",
+              "size": 614
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/state.json",
+              "size": 807
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/store/store.json",
+              "size": 872
+            }
+          ],
+          "over": []
+        },
+        "step0_raw_fail_20260930T132500": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/state.json",
+              "size": 79612
+            }
+          ],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/messages.json",
+              "size": 254181
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/store/store.json",
+              "size": 329019
+            }
+          ]
+        },
+        "work_action_approval_rulebook_20260930_1": {
+          "under": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json",
+              "size": 183435
+            },
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json",
+              "size": 164202
+            }
+          ],
+          "over": [
+            {
+              "path": "repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/state.json",
+              "size": 352347
+            }
+          ]
+        }
+      }
+    },
+    "timestamp": "2026-10-02T03:24:09.872Z"
+  },
+  {
+    "round": 13,
+    "computation_id": "design_subquestion_groups",
+    "purpose": "Design subquestions and verify context file sizes strictly <= 250000",
+    "code": "const files = context.archive_manifest.files;\nconst sizeMap = Object.fromEntries(files.map(f => [f.archive_path, f.size_bytes]));\n\nconst proposedGroups = [\n  {\n    id: 'current_machine_runtime_behavior',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/send-to-gemini.js',\n      'repo/ChatMachines/GeminiSupervisor/config.json',\n      'repo/.github/workflows/gemini-chat.yml'\n    ]\n  },\n  {\n    id: 'current_machine_workflows_and_sync',\n    files: [\n      'repo/.github/workflows/gemini-supervisor-dependency-sync.yml',\n      'repo/ChatMachines/GeminiSupervisor/dependency-map.json',\n      'generated/git/by-entry/dependency_sync_workflow.patch.log',\n      'generated/git/by-entry/state_machine_workflow.patch.log',\n      'generated/git/by-entry/dependency_map.patch.log',\n      'generated/git/by-entry/supervisor_config.patch.log'\n    ]\n  },\n  {\n    id: 'current_specification_and_contract',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/Agents.md',\n      'repo/ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json',\n      'repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md'\n    ]\n  },\n  {\n    id: 'current_and_historical_evaluation_rules',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json',\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md',\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md'\n    ]\n  },\n  {\n    id: 'step3_evaluation_evolution',\n    files: [\n      'generated/git/by-entry/step3_evaluation.patch.log'\n    ]\n  },\n  {\n    id: 'historical_git_lineage_and_audit_trigger',\n    files: [\n      'generated/git/live-supervisor-lineage.log',\n      'metadata/historical-audit-data.json',\n      'metadata/historical-audit-trigger.json'\n    ]\n  },\n  {\n    id: 'historical_git_log_and_patch_history',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/commit history/git-log.txt',\n      'generated/git/by-entry/work_action_approval_rulebook.patch.log',\n      'generated/git/by-entry/live_ground_truth_skill.patch.log'\n    ]\n  },\n  {\n    id: 'nonce_step0_failures',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/store/store.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/store/store.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/state.json'\n    ]\n  },\n  {\n    id: 'nonce_skill_interface_and_reeval',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/state.json'\n    ]\n  },\n  {\n    id: 'nonce_skill_reeval_and_role_separation',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/state.json'\n    ]\n  },\n  {\n    id: 'nonce_skill_revision_and_schema_reject',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/state.json'\n    ]\n  },\n  {\n    id: 'nonce_skill_revision_schema_reject_detail',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/messages.json'\n    ]\n  },\n  {\n    id: 'nonce_skill_revision_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/store/store.json'\n    ]\n  },\n  {\n    id: 'nonce_agents_schema_migration_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json'\n    ]\n  },\n  {\n    id: 'nonce_agents_schema_migration_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json'\n    ]\n  },\n  {\n    id: 'nonce_work_action_approval_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json'\n    ]\n  },\n  {\n    id: 'nonce_work_action_approval_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json'\n    ]\n  },\n  {\n    id: 'nonce_ground_truth_verification_run',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json'\n    ]\n  },\n  {\n    id: 'nonce_ground_truth_verification_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json'\n    ]\n  },\n  {\n    id: 'nonce_live_ground_truth_integration_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json'\n    ]\n  },\n  {\n    id: 'nonce_live_ground_truth_integration_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json'\n    ]\n  },\n  {\n    id: 'nonce_step3_tsr_evaluation_heuristic_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json'\n    ]\n  },\n  {\n    id: 'requirement_supersession_and_lifecycle_mapping',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md',\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md',\n      'repo/ChatMachines/GeminiSupervisor/Agents.md',\n      'generated/git/live-supervisor-lineage.log'\n    ]\n  },\n  {\n    id: 'completeness_reconciliation_and_defect_audit',\n    files: [\n      'metadata/historical-audit-data.json',\n      'repo/ChatMachines/GeminiSupervisor/send-to-gemini.js',\n      'repo/ChatMachines/GeminiSupervisor/Agents.md'\n    ]\n  }\n];\n\nreturn proposedGroups.map(g => {\n  let total = 0;\n  for (const f of g.files) {\n    if (sizeMap[f] === undefined) return { id: g.id, error: 'Unknown file ' + f };\n    total += sizeMap[f];\n  }\n  return { id: g.id, count: g.files.length, total_bytes: total, ok: total <= 250000 };\n});",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "design_subquestion_groups",
+      "ok": true,
+      "result": [
+        {
+          "id": "current_machine_runtime_behavior",
+          "count": 3,
+          "total_bytes": 54801,
+          "ok": true
+        },
+        {
+          "id": "current_machine_workflows_and_sync",
+          "count": 6,
+          "total_bytes": 51296,
+          "ok": true
+        },
+        {
+          "id": "current_specification_and_contract",
+          "count": 3,
+          "total_bytes": 100241,
+          "ok": true
+        },
+        {
+          "id": "current_and_historical_evaluation_rules",
+          "count": 3,
+          "total_bytes": 83198,
+          "ok": true
+        },
+        {
+          "id": "step3_evaluation_evolution",
+          "count": 1,
+          "total_bytes": 228944,
+          "ok": true
+        },
+        {
+          "id": "historical_git_lineage_and_audit_trigger",
+          "count": 3,
+          "total_bytes": 115481,
+          "ok": true
+        },
+        {
+          "id": "historical_git_log_and_patch_history",
+          "count": 3,
+          "total_bytes": 138373,
+          "ok": true
+        },
+        {
+          "id": "nonce_step0_failures",
+          "count": 10,
+          "total_bytes": 251090,
+          "ok": false
+        },
+        {
+          "id": "nonce_skill_interface_and_reeval",
+          "count": 2,
+          "total_bytes": 268035,
+          "ok": false
+        },
+        {
+          "id": "nonce_skill_reeval_and_role_separation",
+          "count": 2,
+          "total_bytes": 303375,
+          "ok": false
+        },
+        {
+          "id": "nonce_skill_revision_and_schema_reject",
+          "count": 3,
+          "total_bytes": 318964,
+          "ok": false
+        },
+        {
+          "id": "nonce_skill_revision_schema_reject_detail",
+          "count": 1,
+          "total_bytes": 225593,
+          "ok": true
+        },
+        {
+          "id": "nonce_skill_revision_store",
+          "count": 1,
+          "total_bytes": 240996,
+          "ok": true
+        },
+        {
+          "id": "nonce_agents_schema_migration_messages",
+          "count": 1,
+          "total_bytes": 237925,
+          "ok": true
+        },
+        {
+          "id": "nonce_agents_schema_migration_store",
+          "count": 1,
+          "total_bytes": 197864,
+          "ok": true
+        },
+        {
+          "id": "nonce_work_action_approval_messages",
+          "count": 1,
+          "total_bytes": 183435,
+          "ok": true
+        },
+        {
+          "id": "nonce_work_action_approval_store",
+          "count": 1,
+          "total_bytes": 164202,
+          "ok": true
+        },
+        {
+          "id": "nonce_ground_truth_verification_run",
+          "count": 1,
+          "total_bytes": 156380,
+          "ok": true
+        },
+        {
+          "id": "nonce_ground_truth_verification_store",
+          "count": 1,
+          "total_bytes": 142281,
+          "ok": true
+        },
+        {
+          "id": "nonce_live_ground_truth_integration_messages",
+          "count": 1,
+          "total_bytes": 128710,
+          "ok": true
+        },
+        {
+          "id": "nonce_live_ground_truth_integration_store",
+          "count": 1,
+          "total_bytes": 142361,
+          "ok": true
+        },
+        {
+          "id": "nonce_step3_tsr_evaluation_heuristic_messages",
+          "count": 1,
+          "total_bytes": 201924,
+          "ok": true
+        },
+        {
+          "id": "requirement_supersession_and_lifecycle_mapping",
+          "count": 4,
+          "total_bytes": 187040,
+          "ok": true
+        },
+        {
+          "id": "completeness_reconciliation_and_defect_audit",
+          "count": 3,
+          "total_bytes": 124964,
+          "ok": true
+        }
+      ]
+    },
+    "timestamp": "2026-10-02T03:24:32.441Z"
+  },
+  {
+    "round": 14,
+    "computation_id": "verify_refined_subquestions",
+    "purpose": "Verify refined subquestions all stay under 250,000 bytes",
+    "code": "const files = context.archive_manifest.files;\nconst sizeMap = Object.fromEntries(files.map(f => [f.archive_path, f.size_bytes]));\n\nconst refinedGroups = [\n  {\n    id: 'sq01_runtime_executable_implementation',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/send-to-gemini.js',\n      'repo/ChatMachines/GeminiSupervisor/config.json',\n      'repo/.github/workflows/gemini-chat.yml'\n    ]\n  },\n  {\n    id: 'sq02_orchestration_and_dependency_sync',\n    files: [\n      'repo/.github/workflows/gemini-supervisor-dependency-sync.yml',\n      'repo/ChatMachines/GeminiSupervisor/dependency-map.json',\n      'generated/git/by-entry/dependency_sync_workflow.patch.log',\n      'generated/git/by-entry/state_machine_workflow.patch.log',\n      'generated/git/by-entry/dependency_map.patch.log',\n      'generated/git/by-entry/supervisor_config.patch.log'\n    ]\n  },\n  {\n    id: 'sq03_canonical_specification_and_controls',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/Agents.md',\n      'repo/ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json',\n      'repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md'\n    ]\n  },\n  {\n    id: 'sq04_current_and_retired_evaluations',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json',\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md',\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md'\n    ]\n  },\n  {\n    id: 'sq05_step3_evaluation_heuristic_history',\n    files: [\n      'generated/git/by-entry/step3_evaluation.patch.log'\n    ]\n  },\n  {\n    id: 'sq06_live_git_lineage_and_metadata',\n    files: [\n      'generated/git/live-supervisor-lineage.log',\n      'metadata/historical-audit-data.json',\n      'metadata/historical-audit-trigger.json'\n    ]\n  },\n  {\n    id: 'sq07_git_history_snapshot_and_artifact_patches',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/commit history/git-log.txt',\n      'generated/git/by-entry/work_action_approval_rulebook.patch.log',\n      'generated/git/by-entry/live_ground_truth_skill.patch.log'\n    ]\n  },\n  {\n    id: 'sq08_nonce_step0_failures_batch_a',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/store/store.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json'\n    ]\n  },\n  {\n    id: 'sq09_nonce_step0_failures_batch_b',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/store/store.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/state.json'\n    ]\n  },\n  {\n    id: 'sq10_nonce_demo_run',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json'\n    ]\n  },\n  {\n    id: 'sq11_nonce_skill_interface',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/state.json'\n    ]\n  },\n  {\n    id: 'sq12_nonce_skill_reeval',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/state.json'\n    ]\n  },\n  {\n    id: 'sq13_nonce_role_separation',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/state.json'\n    ]\n  },\n  {\n    id: 'sq14_nonce_skill_revision_execution',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/state.json'\n    ]\n  },\n  {\n    id: 'sq15_nonce_skill_revision_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/store/store.json'\n    ]\n  },\n  {\n    id: 'sq16_nonce_skill_revision_schema_reject_state',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/state.json'\n    ]\n  },\n  {\n    id: 'sq17_nonce_skill_revision_schema_reject_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/messages.json'\n    ]\n  },\n  {\n    id: 'sq18_nonce_agents_schema_migration_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json'\n    ]\n  },\n  {\n    id: 'sq19_nonce_agents_schema_migration_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json'\n    ]\n  },\n  {\n    id: 'sq20_nonce_work_action_approval_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json'\n    ]\n  },\n  {\n    id: 'sq21_nonce_work_action_approval_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json'\n    ]\n  },\n  {\n    id: 'sq22_nonce_ground_truth_verification_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json'\n    ]\n  },\n  {\n    id: 'sq23_nonce_ground_truth_verification_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json'\n    ]\n  },\n  {\n    id: 'sq24_nonce_live_ground_truth_integration_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json'\n    ]\n  },\n  {\n    id: 'sq25_nonce_live_ground_truth_integration_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json'\n    ]\n  },\n  {\n    id: 'sq26_nonce_merge_step3_tsr_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json'\n    ]\n  },\n  {\n    id: 'sq27_requirement_supersession_and_lifecycle_mapping',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md',\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md',\n      'repo/ChatMachines/GeminiSupervisor/Agents.md',\n      'generated/git/live-supervisor-lineage.log'\n    ]\n  },\n  {\n    id: 'sq28_completeness_reconciliation_and_defect_audit',\n    files: [\n      'metadata/historical-audit-data.json',\n      'repo/ChatMachines/GeminiSupervisor/send-to-gemini.js',\n      'repo/ChatMachines/GeminiSupervisor/Agents.md'\n    ]\n  }\n];\n\nconst results = refinedGroups.map(g => {\n  let total = 0;\n  for (const f of g.files) {\n    if (sizeMap[f] === undefined) return { id: g.id, error: 'Unknown file: ' + f };\n    total += sizeMap[f];\n  }\n  return { id: g.id, total_bytes: total, ok: total <= 250000 };\n});\n\nreturn {\n  all_ok: results.every(r => r.ok),\n  count: results.length,\n  max_bytes: Math.max(...results.map(r => r.total_bytes)),\n  details: results\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "verify_refined_subquestions",
+      "ok": true,
+      "result": {
+        "all_ok": true,
+        "count": 28,
+        "max_bytes": 245142,
+        "details": [
+          {
+            "id": "sq01_runtime_executable_implementation",
+            "total_bytes": 54801,
+            "ok": true
+          },
+          {
+            "id": "sq02_orchestration_and_dependency_sync",
+            "total_bytes": 51296,
+            "ok": true
+          },
+          {
+            "id": "sq03_canonical_specification_and_controls",
+            "total_bytes": 100241,
+            "ok": true
+          },
+          {
+            "id": "sq04_current_and_retired_evaluations",
+            "total_bytes": 83198,
+            "ok": true
+          },
+          {
+            "id": "sq05_step3_evaluation_heuristic_history",
+            "total_bytes": 228944,
+            "ok": true
+          },
+          {
+            "id": "sq06_live_git_lineage_and_metadata",
+            "total_bytes": 115481,
+            "ok": true
+          },
+          {
+            "id": "sq07_git_history_snapshot_and_artifact_patches",
+            "total_bytes": 138373,
+            "ok": true
+          },
+          {
+            "id": "sq08_nonce_step0_failures_batch_a",
+            "total_bytes": 169185,
+            "ok": true
+          },
+          {
+            "id": "sq09_nonce_step0_failures_batch_b",
+            "total_bytes": 81905,
+            "ok": true
+          },
+          {
+            "id": "sq10_nonce_demo_run",
+            "total_bytes": 128750,
+            "ok": true
+          },
+          {
+            "id": "sq11_nonce_skill_interface",
+            "total_bytes": 139285,
+            "ok": true
+          },
+          {
+            "id": "sq12_nonce_skill_reeval",
+            "total_bytes": 190417,
+            "ok": true
+          },
+          {
+            "id": "sq13_nonce_role_separation",
+            "total_bytes": 112958,
+            "ok": true
+          },
+          {
+            "id": "sq14_nonce_skill_revision_execution",
+            "total_bytes": 245142,
+            "ok": true
+          },
+          {
+            "id": "sq15_nonce_skill_revision_store",
+            "total_bytes": 240996,
+            "ok": true
+          },
+          {
+            "id": "sq16_nonce_skill_revision_schema_reject_state",
+            "total_bytes": 73822,
+            "ok": true
+          },
+          {
+            "id": "sq17_nonce_skill_revision_schema_reject_messages",
+            "total_bytes": 225593,
+            "ok": true
+          },
+          {
+            "id": "sq18_nonce_agents_schema_migration_messages",
+            "total_bytes": 237925,
+            "ok": true
+          },
+          {
+            "id": "sq19_nonce_agents_schema_migration_store",
+            "total_bytes": 197864,
+            "ok": true
+          },
+          {
+            "id": "sq20_nonce_work_action_approval_messages",
+            "total_bytes": 183435,
+            "ok": true
+          },
+          {
+            "id": "sq21_nonce_work_action_approval_store",
+            "total_bytes": 164202,
+            "ok": true
+          },
+          {
+            "id": "sq22_nonce_ground_truth_verification_messages",
+            "total_bytes": 156380,
+            "ok": true
+          },
+          {
+            "id": "sq23_nonce_ground_truth_verification_store",
+            "total_bytes": 142281,
+            "ok": true
+          },
+          {
+            "id": "sq24_nonce_live_ground_truth_integration_messages",
+            "total_bytes": 128710,
+            "ok": true
+          },
+          {
+            "id": "sq25_nonce_live_ground_truth_integration_store",
+            "total_bytes": 142361,
+            "ok": true
+          },
+          {
+            "id": "sq26_nonce_merge_step3_tsr_messages",
+            "total_bytes": 201924,
+            "ok": true
+          },
+          {
+            "id": "sq27_requirement_supersession_and_lifecycle_mapping",
+            "total_bytes": 187040,
+            "ok": true
+          },
+          {
+            "id": "sq28_completeness_reconciliation_and_defect_audit",
+            "total_bytes": 124964,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "timestamp": "2026-10-02T03:24:41.155Z"
+  },
+  {
+    "round": 15,
+    "computation_id": "verify_all_paths_exist",
+    "purpose": "Verify all assigned paths strictly match manifest archive_path values",
+    "code": "const manifestPaths = new Set(context.archive_manifest.files.map(f => f.archive_path));\n\nconst testSubquestions = [\n  {\n    id: 'sq01_runtime_executable_implementation',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/send-to-gemini.js',\n      'repo/ChatMachines/GeminiSupervisor/config.json',\n      'repo/.github/workflows/gemini-chat.yml'\n    ]\n  },\n  {\n    id: 'sq02_orchestration_and_dependency_sync',\n    files: [\n      'repo/.github/workflows/gemini-supervisor-dependency-sync.yml',\n      'repo/ChatMachines/GeminiSupervisor/dependency-map.json',\n      'generated/git/by-entry/dependency_sync_workflow.patch.log',\n      'generated/git/by-entry/state_machine_workflow.patch.log',\n      'generated/git/by-entry/dependency_map.patch.log',\n      'generated/git/by-entry/supervisor_config.patch.log'\n    ]\n  },\n  {\n    id: 'sq03_canonical_specification_and_controls',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/Agents.md',\n      'repo/ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json',\n      'repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md'\n    ]\n  },\n  {\n    id: 'sq04_current_and_retired_evaluations',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json',\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md',\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md'\n    ]\n  },\n  {\n    id: 'sq05_step3_evaluation_heuristic_history',\n    files: [\n      'generated/git/by-entry/step3_evaluation.patch.log'\n    ]\n  },\n  {\n    id: 'sq06_live_git_lineage_and_metadata',\n    files: [\n      'generated/git/live-supervisor-lineage.log',\n      'metadata/historical-audit-data.json',\n      'metadata/historical-audit-trigger.json'\n    ]\n  },\n  {\n    id: 'sq07_git_history_snapshot_and_artifact_patches',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/commit history/git-log.txt',\n      'generated/git/by-entry/work_action_approval_rulebook.patch.log',\n      'generated/git/by-entry/live_ground_truth_skill.patch.log'\n    ]\n  },\n  {\n    id: 'sq08_nonce_step0_failures_batch_a',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_3/store/store.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930_4/store/store.json'\n    ]\n  },\n  {\n    id: 'sq09_nonce_step0_failures_batch_b',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/state.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T1325_2/store/store.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/step0_raw_fail_20260930T132500/state.json'\n    ]\n  },\n  {\n    id: 'sq10_nonce_demo_run',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/demo_20260930T155153_eadd5e5248/state.json'\n    ]\n  },\n  {\n    id: 'sq11_nonce_skill_interface',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_interface_20260930T155700/state.json'\n    ]\n  },\n  {\n    id: 'sq12_nonce_skill_reeval',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_reeval_20260930T170100/state.json'\n    ]\n  },\n  {\n    id: 'sq13_nonce_role_separation',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/role_separation_20260930T181400/state.json'\n    ]\n  },\n  {\n    id: 'sq14_nonce_skill_revision_execution',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/messages.json',\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/state.json'\n    ]\n  },\n  {\n    id: 'sq15_nonce_skill_revision_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_20260930T180700/store/store.json'\n    ]\n  },\n  {\n    id: 'sq16_nonce_skill_revision_schema_reject_state',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/state.json'\n    ]\n  },\n  {\n    id: 'sq17_nonce_skill_revision_schema_reject_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/skill_revision_schema_reject_20260930T181100/messages.json'\n    ]\n  },\n  {\n    id: 'sq18_nonce_agents_schema_migration_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/messages.json'\n    ]\n  },\n  {\n    id: 'sq19_nonce_agents_schema_migration_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/agents_schema_migration_20260930_1/store/store.json'\n    ]\n  },\n  {\n    id: 'sq20_nonce_work_action_approval_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/messages.json'\n    ]\n  },\n  {\n    id: 'sq21_nonce_work_action_approval_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/work_action_approval_rulebook_20260930_1/store/store.json'\n    ]\n  },\n  {\n    id: 'sq22_nonce_ground_truth_verification_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/messages.json'\n    ]\n  },\n  {\n    id: 'sq23_nonce_ground_truth_verification_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/ground_truth_verification_skill_20260930_1/store/store.json'\n    ]\n  },\n  {\n    id: 'sq24_nonce_live_ground_truth_integration_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/messages.json'\n    ]\n  },\n  {\n    id: 'sq25_nonce_live_ground_truth_integration_store',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/live_ground_truth_integration_20261001_1/store/store.json'\n    ]\n  },\n  {\n    id: 'sq26_nonce_merge_step3_tsr_messages',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/runs/merge_step3_tsr_evaluation_heuristic_20261001_1/messages.json'\n    ]\n  },\n  {\n    id: 'sq27_requirement_supersession_and_lifecycle_mapping',\n    files: [\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluation-tests.md',\n      'repo/ChatMachines/GeminiSupervisor/historical/evaluator-definitions.md',\n      'repo/ChatMachines/GeminiSupervisor/Agents.md',\n      'generated/git/live-supervisor-lineage.log'\n    ]\n  },\n  {\n    id: 'sq28_completeness_reconciliation_and_defect_audit',\n    files: [\n      'metadata/historical-audit-data.json',\n      'repo/ChatMachines/GeminiSupervisor/send-to-gemini.js',\n      'repo/ChatMachines/GeminiSupervisor/Agents.md'\n    ]\n  }\n];\n\nconst invalidPaths = [];\nfor (const sq of testSubquestions) {\n  for (const f of sq.files) {\n    if (!manifestPaths.has(f)) invalidPaths.push({ sq: sq.id, path: f });\n  }\n}\nreturn { invalidPaths, totalSubquestions: testSubquestions.length };",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "verify_all_paths_exist",
+      "ok": true,
+      "result": {
+        "invalidPaths": [],
+        "totalSubquestions": 28
+      }
+    },
+    "timestamp": "2026-10-02T03:24:52.948Z"
+  }
+]
