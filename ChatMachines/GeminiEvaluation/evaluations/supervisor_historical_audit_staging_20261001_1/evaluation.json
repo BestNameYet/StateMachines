@@ -1,0 +1,503 @@
+{
+  "response_type": "historical_audit_staging_design",
+  "current_machine": {
+    "actual_summary": "The active GeminiSupervisor machine is a Node.js-executed GitHub Actions state machine running in .github/workflows/gemini-chat.yml. It is triggered by Git pushes modifying ChatMachines/GeminiSupervisor/nextmessage/nextmessage.json. The runtime (send-to-gemini.js) reads path configuration from config.json, initializes or loads isolated run containers under runs/<run_nonce>/ (containing state.json, messages.json, and store/store.json), extracts user-claimed returns from trigger.execution, executes deterministic pre-supervision checks and live-ground-truth inspections against the workspace and git object store, formats a supervisory prompt with system text from Agents.md (and tests/step-3-evaluation.json for Step 3), calls Google Gemini API (gemini-3.8-flash) to evaluate the step, parses the structured response, commits transitions (PASS advances step, FAIL retains step), and commits changes back to Git.",
+    "implemented_components": [
+      {
+        "path": ".github/workflows/gemini-chat.yml",
+        "type": "workflow_orchestrator",
+        "actual_behavior": "Triggers on main branch push when nextmessage/nextmessage.json changes; sets up Node 22, executes send-to-gemini.js with GEMINI_API_KEY and GEMINI_MODEL env vars, and auto-commits/pushes updated runs/ state with message 'Gemini Supervisor checkpoint: <run> Step <step> <gate>'.",
+        "evidence_basis": "Workflow file inspection (.github/workflows/gemini-chat.yml) and git commit history entries showing automated bot commits."
+      },
+      {
+        "path": "ChatMachines/GeminiSupervisor/config.json",
+        "type": "runtime_configuration",
+        "actual_behavior": "Supplies JSON-defined paths for trigger_file, agents_file, runs_directory, and external_files.step3_evaluation_artifact (tests/step-3-evaluation.json) containing keys 'evaluation_heuristic' and 'step3_tsr'.",
+        "evidence_basis": "File content in config.json and loadSupervisorConfig() in send-to-gemini.js."
+      },
+      {
+        "path": "ChatMachines/GeminiSupervisor/send-to-gemini.js",
+        "type": "state_machine_runtime",
+        "actual_behavior": "Implements stepsFrom(agents), initRun(runNonce, steps), inspect(trigger, step), collectGroundTruth({ run, runNonce, step, returnSchema }), supervise(...), and transition persistence. Enforces that role_required, role_completed, and role_forbidden conform to 'ChatGPT model' for execution and 'Gemini model' for supervisory gate. Runs deterministic validation of schema, checks live files and git SHAs, constructs supervisory prompt with template, calls Gemini API up to 4 repair attempts, writes state.json, messages.json, store/store.json, and advances or loops steps.",
+        "evidence_basis": "Runtime source code in send-to-gemini.js."
+      },
+      {
+        "path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+        "type": "evaluation_corpus",
+        "actual_behavior": "Merged single JSON artifact providing evaluation_heuristic (worked examples and matching rules for U vs P) and step3_tsr (31 multi-case tests for requirement coverage). Injected into system prompt during Step 3 supervision.",
+        "evidence_basis": "send-to-gemini.js loadStep3Evaluation() and systemText(step, agents, groundTruth)."
+      },
+      {
+        "path": ".github/workflows/gemini-supervisor-dependency-sync.yml",
+        "type": "dependency_synchronization_workflow",
+        "actual_behavior": "Triggers when Agents.md or send-to-gemini.js changes; verifies sentinel enabled flag; runs ChatMachines/GeminiEvaluation/evaluate-supervisor.js to compute dependency updates if one changed, staging replacements via GeminiEvaluation.",
+        "evidence_basis": "Workflow definition in .github/workflows/gemini-supervisor-dependency-sync.yml."
+      },
+      {
+        "path": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/",
+        "type": "persisted_run_container",
+        "actual_behavior": "Provides triple-file storage (state.json, messages.json, store/store.json) tracking step attempts, deterministic validation failures, ground truth verification findings, Gemini raw messages, and transition outcomes.",
+        "evidence_basis": "send-to-gemini.js initRun(), addMessage(), addStore(), and 16 persisted run containers in repo manifest."
+      }
+    ],
+    "intended_but_not_proven_by_execution": [
+      "Full autonomous loop closure without human/external intervention across multiple sequential steps in a single workflow run: the GitHub Actions runner only executes one turn per nextmessage push, so cross-step progression requires repeated external commits to nextmessage.json.",
+      "Work-action-approval-rulebook safe-word gating: while work-action-approval-rulebook.json was generated and committed, send-to-gemini.js does not inspect or enforce safe-words prior to executing file operations.",
+      "Complete historical immutability of run containers: historical run containers reflect the schema and validation logic of the commit in which they were recorded, not current validation rules."
+    ],
+    "important_behavioral_limits": [
+      "Single-turn execution per push: Each nextmessage commit triggers exactly one step evaluation attempt. If a step passes and remaining_steps exist, status becomes awaiting_chatgpt_execution; the state machine halts until another commit arrives.",
+      "Supervisory repairs capped at 4 attempts: If Gemini fails JSON format or schema validation 4 times, the runtime terminates with an error and does not advance.",
+      "Role enforcement relies on trigger source metadata: execution.source_role is checked against 'ChatGPT model' string in trigger payload; live server verification inspects git/workspace presence rather than cryptographic attestation of LLM client origin.",
+      "Git object verification in collectGroundTruth requires full 40-character SHAs and local git availability; shallow checkouts cause UNKNOWN status."
+    ]
+  },
+  "recommended_audit_model": {
+    "batching_strategy": "chronological_epoch_batches_with_run_isolation",
+    "rationale": "GeminiSupervisor underwent five distinct contractual and architectural eras across its 235 commits: (1) Apps Script Prototype (commits 1-36), (2) Early Hybrid/Eval Migration (commits 37-110), (3) First Nonce Runs and Skill Experiments (commits 111-134), (4) Deterministic Gate and Schema Strictness Evolution (commits 135-169), and (5) Live Ground-Truth and Unified Step 3 Architecture (commits 170-235). Evaluating runs and user instructions grouped by these contract epochs ensures that each run is evaluated strictly against the governing Agents.md, runtime code, and evaluation heuristics active at its time of execution, avoiding retroactive application of modern constraints.",
+    "mechanical_batch_boundary_rule": "Batches are bounded by landmark architectural Git SHAs where the procedure contract or runtime execution model changed discontinuously. Batch 1: Commits 1-76 (Prototype & Setup; no nonce runs). Batch 2: Commits 77-110 (Initial Node runner and bootstrap transition; no persisted runs). Batch 3: Commits 111-134 (First persisted runs: demo, skill_interface, skill_reeval, skill_bootstrap_update, skill_revision, skill_revision_schema_reject, role_separation). Batch 4: Commits 135-169 (Step 0 raw failure tests and agents_schema_migration_20260930_1). Batch 5: Commits 170-211 (Ground truth verification skill, rulebook, and live ground truth integration runs). Batch 6: Commits 212-235 (Evaluation split, Step 3 merge run, and current repository freeze).",
+    "temporal_versioning_method": "For any nonce run or commit under audit, the governing contract is reconstructed by extracting the tree snapshot at commit C_trigger (the commit that provided the nextmessage trigger) or C_advance (the checkpoint commit written by the bot). The authoritative contract snapshot consists of git:C_trigger:ChatMachines/GeminiSupervisor/Agents.md, git:C_trigger:ChatMachines/GeminiSupervisor/send-to-gemini.js, and whichever evaluation documentation existed at git:C_trigger (e.g. evaluator-definitions.md vs tests/step-3-evaluation.json)."
+  },
+  "prerequisite_artifacts": [
+    {
+      "artifact": "temporal_contract_index.json",
+      "purpose": "Maps every commit range and every run_nonce to its exact governing commit SHA, applicable Agents.md blob SHA, runtime source blob SHA, and active evaluation artifacts.",
+      "construction_method": "Automated script parsing commit-history.md and git log --topo-order to identify file blob SHAs for Agents.md, send-to-gemini.js, and test fixtures at every run's creation commit.",
+      "required_fields": [
+        "run_nonce",
+        "start_commit_sha",
+        "end_commit_sha",
+        "governing_agents_blob_sha",
+        "governing_runtime_blob_sha",
+        "governing_eval_artifact_path",
+        "governing_eval_artifact_blob_sha",
+        "contract_epoch_id"
+      ]
+    },
+    {
+      "artifact": "user_instruction_lineage_catalog.json",
+      "purpose": "Extracts every verbatim initiating user prompt across commit history, nextmessage payloads, and run state records into a normalized catalog for supersession tracking.",
+      "construction_method": "Extract user prompt texts from commit-history.md 'Initiating user-prompt evidence', git diffs of nextmessage/nextmessage.json, and runs/<run_nonce>/state.json user_request fields, assigning a stable instruction_id and commit timestamp.",
+      "required_fields": [
+        "instruction_id",
+        "origin_commit_sha",
+        "origin_timestamp",
+        "origin_source_locator",
+        "verbatim_text",
+        "extracted_clauses",
+        "target_component",
+        "associated_run_nonce"
+      ]
+    },
+    {
+      "artifact": "nonce_run_inventory.json",
+      "purpose": "Comprehensive structural audit of all 16 persisted run containers verifying container integrity (state.json, messages.json, store/store.json) before batch evaluation.",
+      "construction_method": "Filesystem traversal of ChatMachines/GeminiSupervisor/runs/* verifying JSON parseability, matching run_nonce across all 3 files, event counts, and terminal step status.",
+      "required_fields": [
+        "run_nonce",
+        "run_directory",
+        "first_commit_sha",
+        "final_commit_sha",
+        "commit_count",
+        "step_progression",
+        "terminal_status",
+        "has_step4_pass",
+        "container_files_present"
+      ]
+    }
+  ],
+  "batch_input_contract": [
+    {
+      "input": "governing_agents_snapshot",
+      "source_rule": "git cat-file blob <governing_agents_blob_sha>",
+      "role": "specification_contract",
+      "authoritative_for": [
+        "procedure_steps",
+        "required_step_return_schemas",
+        "role_rules",
+        "evaluation_definitions",
+        "pass_fail_criteria"
+      ]
+    },
+    {
+      "input": "governing_runtime_snapshot",
+      "source_rule": "git cat-file blob <governing_runtime_blob_sha>",
+      "role": "implementation_contract",
+      "authoritative_for": [
+        "implemented_validation_rules",
+        "prompt_injection_structure",
+        "ground_truth_verification_method",
+        "state_machine_transition_logic"
+      ]
+    },
+    {
+      "input": "run_container_artifacts",
+      "source_rule": "git archive or filesystem read of runs/<run_nonce>/* at checkpoint commit",
+      "role": "execution_and_supervisory_records",
+      "authoritative_for": [
+        "persisted_execution_return",
+        "recorded_supervisory_gate",
+        "deterministic_findings_at_runtime",
+        "actual_gate_transitions"
+      ]
+    },
+    {
+      "input": "temporal_commit_window",
+      "source_rule": "git log --numstat <start_commit_sha>..<end_commit_sha>",
+      "role": "historical_action_evidence",
+      "authoritative_for": [
+        "git_changes_enacted",
+        "initiating_user_prompts",
+        "chronological_supersession_sequence"
+      ]
+    }
+  ],
+  "nonce_run_evaluation_method": {
+    "requirements_reconstruction": [
+      "1. Resolve the governing commit C of the run from temporal_contract_index.json.",
+      "2. Extract U_request = state.json's initial user_request / store.initial_user_message.",
+      "3. Extract U_rules = the governing Agents.md rules and step schemas active at commit C.",
+      "4. Synthesize effective instruction U = { U_request, U_rules, active_evaluation_artifacts } without modern back-projections."
+    ],
+    "checks": [
+      "CONTAINER_INTEGRITY: Verify state.json, messages.json, and store/store.json all exist, have matching run_nonce, and valid JSON.",
+      "ROLE_CONFORMANCE: Verify execution returns claim and prove ChatGPT role ownership, and supervisory returns claim and prove Gemini role ownership according to the rules active at commit C.",
+      "SCHEMA_VALIDITY: Validate execution.return_schema against the governing step schema of commit C.",
+      "DETERMINISTIC_GROUND_TRUTH: Verify whether empirical claims (file paths, commit SHAs, git blobs) cited in completion_evidence actually existed at commit C.",
+      "TRANSITION_CORRECTNESS: Verify that state.procedure.current_step and completed_steps advanced if and only if supervisory_gate.gate_result was PASS.",
+      "USER_GOAL_SATISFACTION: Verify whether the substantive request in U_request was fully accomplished in the final run artifacts."
+    ],
+    "result_classes": [
+      "RUN_PASSED_FULL_COMPLIANCE",
+      "RUN_PASSED_HISTORICAL_RULES_BUT_DEFICIENT_BY_CURRENT_RULES",
+      "RUN_FAILED_SUPERVISORY_GATE",
+      "RUN_ABORTED_OR_INCOMPLETE",
+      "RUN_CORRUPTED_OR_SCHEMA_VIOLATION"
+    ],
+    "evidence_precedence": [
+      "1. Live git blobs, tree entries, and commit objects at snapshot commit C (highest precedence - ground truth).",
+      "2. Persisted runtime deterministic validation findings recorded in store.json and state.json at execution time.",
+      "3. Supervisory gate schema and evaluative comments recorded by Gemini.",
+      "4. Candidate execution return schema submitted by ChatGPT.",
+      "5. Agent self-report, narrative explanations, and summary text (lowest precedence - testimony only)."
+    ]
+  },
+  "instruction_supersession_method": {
+    "instruction_unit_definition": "An instruction unit is an atomic directive, constraint, or modification requested by a user prompt (recovered from commit message, nextmessage, or state.json) that specifies a discrete change to code, files, schema, prompt, or behavior.",
+    "classifications": [
+      "IMPLEMENTED",
+      "SUPERSEDED_BEFORE_IMPLEMENTATION",
+      "MISSING_STILL_OUTSTANDING",
+      "INDETERMINATE"
+    ],
+    "algorithm": [
+      "Step 1: For each instruction unit I_k identified at commit C_origin, define its target component T (e.g. Agents.md, send-to-gemini.js, test corpus) and scope of work S.",
+      "Step 2: Trace the chronological chain of subsequent user prompts U_{k+1}, U_{k+2}, ... and commits C_{origin+1}, C_{origin+2}, ... touching target T.",
+      "Step 3: Check if an implementation commit C_impl exists between C_origin and any subsequent prompt where diff(C_impl) satisfies S against verifiable ground truth. If yes, classify as IMPLEMENTED.",
+      "Step 4: If not implemented, check if a subsequent user prompt U_later explicitly revokes, redefines, redirects, or replaces scope S before an implementation was required or attempted. If yes, classify as SUPERSEDED_BEFORE_IMPLEMENTATION.",
+      "Step 5: If the instruction was never implemented, was never revoked or contradicted by a subsequent user prompt, and the required scope remains absent from the final repository state, classify as MISSING_STILL_OUTSTANDING (Defect).",
+      "Step 6: If surviving evidence is ambiguous, partial, or lacks verifiable text/diffs to ascertain intent or completion, classify as INDETERMINATE."
+    ],
+    "evidence_required": [
+      "Originating user prompt text and source locator (commit SHA, nextmessage locator, or state.json line).",
+      "Explicit target path or component identified in the prompt or diff.",
+      "Git diff of implementing commit (for IMPLEMENTED).",
+      "Verbatim text of superseding user prompt and its commit SHA (for SUPERSEDED_BEFORE_IMPLEMENTATION).",
+      "Verification of current main file content demonstrating omission (for MISSING_STILL_OUTSTANDING)."
+    ]
+  },
+  "proposed_batch_result_schema": {
+    "type": "object",
+    "required": [
+      "batch_id",
+      "contract_epoch",
+      "runs_evaluated",
+      "instructions_evaluated",
+      "batch_summary"
+    ],
+    "properties": {
+      "batch_id": {
+        "type": "string"
+      },
+      "contract_epoch": {
+        "type": "string"
+      },
+      "governing_commit_range": {
+        "type": "object",
+        "properties": {
+          "start_sha": {
+            "type": "string"
+          },
+          "end_sha": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "start_sha",
+          "end_sha"
+        ]
+      },
+      "runs_evaluated": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "run_nonce",
+            "eval_result_class",
+            "step_evaluations",
+            "ground_truth_compliance",
+            "findings"
+          ],
+          "properties": {
+            "run_nonce": {
+              "type": "string"
+            },
+            "eval_result_class": {
+              "type": "string",
+              "enum": [
+                "RUN_PASSED_FULL_COMPLIANCE",
+                "RUN_PASSED_HISTORICAL_RULES_BUT_DEFICIENT_BY_CURRENT_RULES",
+                "RUN_FAILED_SUPERVISORY_GATE",
+                "RUN_ABORTED_OR_INCOMPLETE",
+                "RUN_CORRUPTED_OR_SCHEMA_VIOLATION"
+              ]
+            },
+            "step_evaluations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "step",
+                  "attempt_count",
+                  "schema_valid",
+                  "role_conformance",
+                  "gate_result"
+                ]
+              }
+            },
+            "ground_truth_compliance": {
+              "type": "boolean"
+            },
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "instructions_evaluated": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "instruction_id",
+            "origin_commit_sha",
+            "classification",
+            "evidence_basis"
+          ],
+          "properties": {
+            "instruction_id": {
+              "type": "string"
+            },
+            "origin_commit_sha": {
+              "type": "string"
+            },
+            "classification": {
+              "type": "string",
+              "enum": [
+                "IMPLEMENTED",
+                "SUPERSEDED_BEFORE_IMPLEMENTATION",
+                "MISSING_STILL_OUTSTANDING",
+                "INDETERMINATE"
+              ]
+            },
+            "superseded_by_instruction_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "implemented_by_commit_sha": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "evidence_basis": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "batch_summary": {
+        "type": "object",
+        "required": [
+          "total_runs",
+          "total_instructions",
+          "missing_outstanding_defects"
+        ],
+        "properties": {
+          "total_runs": {
+            "type": "integer"
+          },
+          "total_instructions": {
+            "type": "integer"
+          },
+          "implemented_count": {
+            "type": "integer"
+          },
+          "superseded_count": {
+            "type": "integer"
+          },
+          "missing_outstanding_defects": {
+            "type": "integer"
+          },
+          "indeterminate_count": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "final_reconciliation_schema": {
+    "type": "object",
+    "required": [
+      "audit_title",
+      "total_commits_audited",
+      "total_nonce_runs_audited",
+      "total_instructions_audited",
+      "nonce_run_reconciliation",
+      "instruction_reconciliation",
+      "defects_identified",
+      "audit_completeness_certification"
+    ],
+    "properties": {
+      "audit_title": {
+        "type": "string"
+      },
+      "total_commits_audited": {
+        "type": "integer"
+      },
+      "total_nonce_runs_audited": {
+        "type": "integer"
+      },
+      "total_instructions_audited": {
+        "type": "integer"
+      },
+      "nonce_run_reconciliation": {
+        "type": "object",
+        "properties": {
+          "compliant_runs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "historically_compliant_only": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "failed_or_incomplete_runs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "instruction_reconciliation": {
+        "type": "object",
+        "properties": {
+          "implemented_total": {
+            "type": "integer"
+          },
+          "superseded_total": {
+            "type": "integer"
+          },
+          "missing_outstanding_total": {
+            "type": "integer"
+          },
+          "indeterminate_total": {
+            "type": "integer"
+          }
+        }
+      },
+      "defects_identified": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "instruction_id",
+            "origin_commit_sha",
+            "verbatim_text",
+            "impact_on_current_machine"
+          ],
+          "properties": {
+            "instruction_id": {
+              "type": "string"
+            },
+            "origin_commit_sha": {
+              "type": "string"
+            },
+            "verbatim_text": {
+              "type": "string"
+            },
+            "impact_on_current_machine": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "audit_completeness_certification": {
+        "type": "object",
+        "required": [
+          "all_runs_covered_exactly_once",
+          "all_instructions_covered_exactly_once",
+          "zero_unclassified_items"
+        ],
+        "properties": {
+          "all_runs_covered_exactly_once": {
+            "type": "boolean"
+          },
+          "all_instructions_covered_exactly_once": {
+            "type": "boolean"
+          },
+          "zero_unclassified_items": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "completeness_checks": [
+    "CHECK_RUN_COVERAGE: Sum of unique run_nonce values evaluated across all batches must exactly equal 16 (the total set of persisted run containers in ChatMachines/GeminiSupervisor/runs/).",
+    "CHECK_RUN_DISJOINTNESS: Intersection of run_nonce sets across all batches must be empty (no run evaluated twice).",
+    "CHECK_INSTRUCTION_COVERAGE: Every instruction_id in user_instruction_lineage_catalog.json must appear in exactly one batch result.",
+    "CHECK_STATUS_MUTUAL_EXCLUSION: Every instruction in every batch must have exactly one status from {IMPLEMENTED, SUPERSEDED_BEFORE_IMPLEMENTATION, MISSING_STILL_OUTSTANDING, INDETERMINATE}.",
+    "CHECK_TEMPORAL_MONOTONICITY: Supersession links must satisfy origin_timestamp(I_superseding) >= origin_timestamp(I_original).",
+    "CHECK_GROUND_TRUTH_INTEGRITY: For any claim classified as IMPLEMENTED, the cited implementing commit SHA must be resolvable via git cat-file -e."
+  ],
+  "risks_and_ambiguities": [
+    {
+      "issue": "Historical runs occurred before live-ground-truth verification was integrated in commit 208-209.",
+      "handling_rule": "Evaluate runs prior to commit 208 against the Agents.md and send-to-gemini.js contract in effect at their respective commit; classify runs that met their contemporaneous rules as RUN_PASSED_HISTORICAL_RULES_BUT_DEFICIENT_BY_CURRENT_RULES without marking them as operational failures of their own time."
+    },
+    {
+      "issue": "User prompt wording was not preserved verbatim for standalone manual commits prior to commit 112.",
+      "handling_rule": "For commits 1-110 lacking preserved user text, rely on commit messages and diff evidence to identify the engineering objective; if the instruction cannot be determined without speculation, classify as INDETERMINATE rather than guessing."
+    },
+    {
+      "issue": "Multiple runs for Step 0 raw fail (step0_raw_fail_20260930T132500, step0_raw_fail_20260930T1325_2, step0_raw_fail_20260930_3, step0_raw_fail_20260930_4) were explicit negative/failure probe tests.",
+      "handling_rule": "Assess Step 0 probe runs according to their prompt intent: if the user prompt stated 'this message will fail step 0', a supervisory gate result of FAIL or rejection at Step 0 is a goal satisfaction, not an execution defect."
+    },
+    {
+      "issue": "Step 3 evaluation artifact path changed across commits (from evaluation-tests.md and step-3-test-return-schema.md to tests/step-3-evaluation.json).",
+      "handling_rule": "Resolve Step 3 test references dynamically using temporal_contract_index.json; do not require tests/step-3-evaluation.json when evaluating runs prior to commit 226."
+    }
+  ],
+  "recommended_next_action": "Execute the generation of the three prerequisite artifacts: (1) temporal_contract_index.json, (2) user_instruction_lineage_catalog.json, and (3) nonce_run_inventory.json. Once generated and verified by completeness checks, stage Batch 1 (Commits 1-76) and Batch 2 (Commits 77-110) to the evaluator."
+}
