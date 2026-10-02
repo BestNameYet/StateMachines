@@ -63,18 +63,33 @@ jobs:
           echo "run_nonce=$RUN_NONCE" >> "$GITHUB_OUTPUT"
           echo "run_dir=$RUN_DIR" >> "$GITHUB_OUTPUT"
           echo "packet_dir=$PACKET_DIR" >> "$GITHUB_OUTPUT"
-          echo "manifest=$PACKET_DIR/archive-manifest.json" >> "$GITHUB_OUTPUT"
 
-      - name: Supervise delegated audit process
+      - name: Segment historical evidence deterministically
+        id: segment
+        shell: bash
+        run: |
+          set -euo pipefail
+          POLICY='ChatMachines/GeminiEvaluation/historical-audit-segmentation-policy.json'
+          PACKET_DIR='${{ steps.archive.outputs.packet_dir }}'
+          RUN_DIR='${{ steps.archive.outputs.run_dir }}'
+
+          node ChatMachines/GeminiEvaluation/historical-audit-segmenter.js \
+            "$PACKET_DIR" "$POLICY"
+
+          cp "$PACKET_DIR/segment-manifest.json" "$RUN_DIR/evidence/segment-manifest.json"
+          cp "$POLICY" "$RUN_DIR/evidence/segmentation-policy.json"
+          echo "segment_manifest=$PACKET_DIR/segment-manifest.json" >> "$GITHUB_OUTPUT"
+
+      - name: Supervise isolated flat-batch audit
         id: evaluator
         shell: bash
         env:
           GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           HISTORICAL_AUDIT_PACKET_ROOT: ${{ steps.archive.outputs.packet_dir }}
-          HISTORICAL_AUDIT_MANIFEST: ${{ steps.archive.outputs.manifest }}
-          HISTORICAL_AUDIT_API_ATTEMPTS: '8'
-          HISTORICAL_AUDIT_MAX_COMPUTE_ROUNDS: '128'
+          HISTORICAL_AUDIT_SEGMENT_MANIFEST: ${{ steps.segment.outputs.segment_manifest }}
+          HISTORICAL_AUDIT_SEGMENTATION_POLICY: ${{ github.workspace }}/ChatMachines/GeminiEvaluation/historical-audit-segmentation-policy.json
+          HISTORICAL_AUDIT_TRIGGER: ${{ github.workspace }}/ChatMachines/GeminiEvaluation/historical-audit-nextmessage/nextmessage.json
         run: |
           set -uo pipefail
 
@@ -88,29 +103,37 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          publish_view() {
-            local status="$1"
-            node ChatMachines/GeminiEvaluation/historical-audit-process-view.js "$status" || true
-            git add "$RUN_DIR/evidence" "$RUN_DIR/live-view" 2>/dev/null || true
+          publish_state() {
+            git add \
+              "$RUN_DIR/evidence" \
+              "$RUN_DIR/live-view" \
+              "$RUN_DIR/batch-plan.json" \
+              "$RUN_DIR/batch-plan-validation.json" \
+              "$RUN_DIR/batch-results" \
+              "$RUN_DIR/synthesis" \
+              "$RUN_DIR/synthesis-tree.json" \
+              "$RUN_DIR/evaluation.json" \
+              "$RUN_DIR/run-metadata.json" \
+              "$RUN_DIR/process.log" 2>/dev/null || true
             if git diff --cached --quiet; then
               return 0
             fi
-            git commit -m "Historical audit live view: $RUN_NONCE [$status]"
+            git commit -m "Historical audit supervised state: $RUN_NONCE"
             if ! git push origin HEAD:main; then
-              echo "Live-view push could not advance main; continuing evaluator with local process view." >&2
+              echo "State push could not advance main; continuing evaluator locally." >&2
             fi
           }
 
-          publish_view running
+          publish_state
 
           set +e
-          node ChatMachines/GeminiEvaluation/historical-audit-evaluator.js > >(tee -a "$LOG_FILE") 2>&1 &
+          node ChatMachines/GeminiEvaluation/historical-audit-flat-evaluator.js > >(tee -a "$LOG_FILE") 2>&1 &
           EVALUATOR_PID=$!
           set -e
 
           while kill -0 "$EVALUATOR_PID" 2>/dev/null; do
             sleep 15
-            publish_view running || true
+            publish_state || true
           done
 
           set +e
@@ -118,12 +141,7 @@ jobs:
           EVALUATOR_STATUS=$?
           set -e
 
-          if [[ "$EVALUATOR_STATUS" -eq 0 ]]; then
-            publish_view complete || true
-          else
-            publish_view failed || true
-          fi
-
+          publish_state || true
           exit "$EVALUATOR_STATUS"
 
       - name: Persist exact audit state
