@@ -1,0 +1,146 @@
+name: GeminiSupervisor truth challenge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiSupervisor/truth-selector.json
+      - ChatMachines/GeminiSupervisor/active-projections/**
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gemini-supervisor-truth-challenge
+  cancel-in-progress: false
+
+jobs:
+  truth-challenge:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Determine challenge phase
+        id: phase
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BEFORE='${{ github.event.before }}'
+          SHA='${{ github.sha }}'
+
+          if [ "$BEFORE" = '0000000000000000000000000000000000000000' ]; then
+            CHANGED=$(git diff-tree --no-commit-id --name-only -r "$SHA")
+          else
+            CHANGED=$(git diff --name-only "$BEFORE" "$SHA")
+          fi
+
+          SELECTOR_CHANGED=false
+          ACTIVE_CHANGED=false
+
+          if printf '%s\n' "$CHANGED" | grep -qx 'ChatMachines/GeminiSupervisor/truth-selector.json'; then
+            SELECTOR_CHANGED=true
+          fi
+
+          if printf '%s\n' "$CHANGED" | grep -q '^ChatMachines/GeminiSupervisor/active-projections/'; then
+            ACTIVE_CHANGED=true
+          fi
+
+          if [ "$SELECTOR_CHANGED" = true ] && [ "$ACTIVE_CHANGED" = true ]; then
+            echo 'A worker commit may change either the selector or active puzzle projections, not both.' >&2
+            exit 1
+          fi
+
+          if [ "$ACTIVE_CHANGED" = true ]; then
+            echo 'mode=verify' >> "$GITHUB_OUTPUT"
+          elif [ "$SELECTOR_CHANGED" = true ]; then
+            echo 'mode=generate' >> "$GITHUB_OUTPUT"
+          else
+            echo 'mode=noop' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate seeded puzzle projections
+        if: steps.phase.outputs.mode == 'generate'
+        run: node ChatMachines/GeminiSupervisor/scripts/truth-challenge-engine.js generate
+
+      - name: Commit issued puzzle projections
+        if: steps.phase.outputs.mode == 'generate'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A \
+            ChatMachines/GeminiSupervisor/active-projections \
+            ChatMachines/GeminiSupervisor/.truth-challenges \
+            ChatMachines/GeminiSupervisor/.truth-challenge-state.json \
+            ChatMachines/GeminiSupervisor/truth-status.json
+
+          if git diff --cached --quiet; then
+            echo 'No challenge generated.'
+            exit 0
+          fi
+
+          git commit -m 'Issue GeminiSupervisor truth-reading puzzle'
+          git push origin HEAD:main
+
+      - name: Verify seed/proof swaps
+        if: steps.phase.outputs.mode == 'verify'
+        id: verify
+        shell: bash
+        run: |
+          set +e
+          node ChatMachines/GeminiSupervisor/scripts/truth-challenge-engine.js verify
+          CODE=$?
+          set -e
+
+          if [ "$CODE" -eq 0 ]; then
+            echo 'result=PASS' >> "$GITHUB_OUTPUT"
+          elif [ "$CODE" -eq 2 ]; then
+            echo 'result=FAIL' >> "$GITHUB_OUTPUT"
+          else
+            exit "$CODE"
+          fi
+
+      - name: Commit PASS cleanup or FAIL restoration
+        if: steps.phase.outputs.mode == 'verify'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A \
+            ChatMachines/GeminiSupervisor/active-projections \
+            ChatMachines/GeminiSupervisor/.truth-challenges \
+            ChatMachines/GeminiSupervisor/.truth-challenge-state.json \
+            ChatMachines/GeminiSupervisor/truth-selector.json \
+            ChatMachines/GeminiSupervisor/truth-status.json
+
+          if git diff --cached --quiet; then
+            echo 'No truth-challenge state change to commit.'
+          else
+            if [ '${{ steps.verify.outputs.result }}' = 'PASS' ]; then
+              git commit -m 'Complete GeminiSupervisor truth-reading puzzle'
+            else
+              git commit -m 'Restore GeminiSupervisor truth-reading puzzle after failed proof'
+            fi
+            git push origin HEAD:main
+          fi
+
+      - name: Mark failed proof
+        if: steps.phase.outputs.mode == 'verify' && steps.verify.outputs.result == 'FAIL'
+        run: |
+          echo 'Truth-reading puzzle failed; original seeded projections were restored.' >&2
+          exit 1
