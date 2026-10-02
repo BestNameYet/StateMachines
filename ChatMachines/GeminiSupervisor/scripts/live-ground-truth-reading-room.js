@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { isDeepStrictEqual } = require('util');
 
 const repoRoot = path.resolve(__dirname, '../../..');
 const supervisorRoot = path.join(repoRoot, 'ChatMachines/GeminiSupervisor');
@@ -13,6 +14,8 @@ const readingRoom = path.join(supervisorRoot, 'live-ground-truth/reading-room');
 const DOC_NAME = 'Agents.reader.json';
 const PLACEHOLDER_KEY = '^MISSING_KEY^';
 const PLACEHOLDER_VALUE = '^MISSING_VALUE^';
+const TRACKING_KEY = 'tracking_number';
+const TRACKING_DIGITS = 100;
 const DAMAGE_RATE = 0.10;
 
 function jsonBytes(value) {
@@ -58,6 +61,20 @@ function projectAgents() {
   };
 }
 
+function reverseString(value) {
+  return [...value].reverse().join('');
+}
+
+function randomTrackingNumber() {
+  while (true) {
+    let value = '';
+    for (let i = 0; i < TRACKING_DIGITS; i++) {
+      value += String(crypto.randomInt(0, 10));
+    }
+    if (value !== reverseString(value)) return value;
+  }
+}
+
 function substantial(item) {
   if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
   const text = typeof item.text === 'string' ? item.text.trim() : '';
@@ -98,13 +115,32 @@ function chooseDamageIndices(items) {
   return [...selected].sort((a, b) => a - b);
 }
 
-function reverseAndDamageProjection(full) {
+function damageProjection(full) {
   const damaged = structuredClone(full);
-  damaged.items.reverse();
+  damaged[TRACKING_KEY] = reverseString(full[TRACKING_KEY]);
   for (const index of chooseDamageIndices(damaged.items)) {
     damaged.items[index] = { [PLACEHOLDER_KEY]: PLACEHOLDER_VALUE };
   }
   return damaged;
+}
+
+function withoutTracking(value) {
+  const copy = structuredClone(value);
+  delete copy[TRACKING_KEY];
+  return copy;
+}
+
+function validTrackingPair(canonical, submitted) {
+  const canonicalNumber = canonical?.[TRACKING_KEY];
+  const submittedNumber = submitted?.[TRACKING_KEY];
+
+  return (
+    typeof canonicalNumber === 'string' &&
+    typeof submittedNumber === 'string' &&
+    /^\d{100}$/.test(canonicalNumber) &&
+    /^\d{100}$/.test(submittedNumber) &&
+    submittedNumber === reverseString(canonicalNumber)
+  );
 }
 
 function validateCommitSha(value) {
@@ -134,6 +170,7 @@ function issue(commitSha) {
 
   const p = pathsFor(commitSha);
   const full = projectAgents();
+  full[TRACKING_KEY] = randomTrackingNumber();
 
   fs.mkdirSync(readingRoom, { recursive: true });
   rm(p.active);
@@ -141,9 +178,9 @@ function issue(commitSha) {
   rm(p.pass);
 
   writeJson(p.canonical, full);
-  writeJson(p.active, reverseAndDamageProjection(full));
+  writeJson(p.active, damageProjection(full));
 
-  console.log(`[live-ground-truth] issued reverse-order ${path.basename(p.active)}`);
+  console.log(`[live-ground-truth] issued ${path.basename(p.active)} with reversed tracking pair`);
 }
 
 function parseChallengePath(challengePath) {
@@ -167,9 +204,11 @@ function verify(challengePath, evaluationCommitSha) {
   if (!fs.existsSync(absoluteChallenge)) throw new Error(`Challenge file not found: ${challengePath}`);
   if (!fs.existsSync(resultPaths.canonical)) throw new Error(`Canonical ${DOC_NAME} is missing`);
 
-  const canonicalBytes = fs.readFileSync(resultPaths.canonical);
-  const submittedBytes = fs.readFileSync(absoluteChallenge);
-  const pass = submittedBytes.equals(canonicalBytes);
+  const canonical = readJson(resultPaths.canonical);
+  const submitted = readJson(absoluteChallenge);
+  const trackingPass = validTrackingPair(canonical, submitted);
+  const contentPass = isDeepStrictEqual(withoutTracking(submitted), withoutTracking(canonical));
+  const pass = trackingPass && contentPass;
 
   rm(absoluteChallenge);
   rm(resultPaths.active);
@@ -177,15 +216,14 @@ function verify(challengePath, evaluationCommitSha) {
   rm(resultPaths.pass);
 
   if (pass) {
-    fs.writeFileSync(resultPaths.pass, canonicalBytes);
+    writeJson(resultPaths.pass, submitted);
     console.log(`[live-ground-truth] PASS ${evaluationSha}`);
     return true;
   }
 
   writeJson(resultPaths.failed, { status: 'FAILED' });
-  const canonical = JSON.parse(canonicalBytes.toString('utf8'));
-  writeJson(resultPaths.active, reverseAndDamageProjection(canonical));
-  console.log(`[live-ground-truth] FAILED ${evaluationSha}; issued fresh reverse-order random damage`);
+  writeJson(resultPaths.active, damageProjection(canonical));
+  console.log(`[live-ground-truth] FAILED ${evaluationSha}; issued fresh random damage with the same reversed tracking pair`);
   return false;
 }
 
