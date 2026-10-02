@@ -1,0 +1,281 @@
+[
+  {
+    "round": 1,
+    "computation_id": "parse_step3_json",
+    "purpose": "Analyze tests/step-3-evaluation.json structure, test numbers, case counts, worked examples, heuristic structure, and meta fields.",
+    "code": "const data = JSON.parse(context);\nconst testSummary = data.step3_tsr.tests.map(t => ({\n  test: t.test,\n  caseCount: t.cases.length\n}));\nconst totalCases = testSummary.reduce((acc, t) => acc + t.caseCount, 0);\nreturn {\n  document_type: data.document_type,\n  format_version: data.format_version,\n  sources: data.sources,\n  heuristic_sections: Object.keys(data.evaluation_heuristic),\n  worked_examples_count: data.evaluation_heuristic.worked_examples.length,\n  worked_test_title: data.evaluation_heuristic.worked_test_required_coverage_reduced.title,\n  matching_cases_count: data.evaluation_heuristic.worked_test_required_coverage_reduced.matching_examples.cases.length,\n  nonmatching_cases_count: data.evaluation_heuristic.worked_test_required_coverage_reduced.nonmatching_boundary_examples.cases.length,\n  unfamiliar_case_steps: data.evaluation_heuristic.worked_test_required_coverage_reduced.unfamiliar_case_evaluation_procedure.length,\n  procedural_steps: data.evaluation_heuristic.procedural_instructions.how_to_use_the_cases.length,\n  tsr_tests_count: data.step3_tsr.tests.length,\n  test_numbers: testSummary.map(t => t.test),\n  test_summary: testSummary,\n  total_cases: totalCases\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "parse_step3_json",
+      "ok": false,
+      "error": "\"[object Object]\" is not valid JSON"
+    },
+    "timestamp": "2026-10-02T03:36:21.264Z"
+  },
+  {
+    "round": 2,
+    "computation_id": "inspect_context",
+    "purpose": "Inspect the context variable keys and structure",
+    "code": "return {\n  type: typeof context,\n  keys: typeof context === 'object' ? Object.keys(context) : null\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "inspect_context",
+      "ok": true,
+      "result": {
+        "type": "object",
+        "keys": [
+          "subquestion",
+          "files"
+        ]
+      }
+    },
+    "timestamp": "2026-10-02T03:36:22.961Z"
+  },
+  {
+    "round": 3,
+    "computation_id": "parse_step3_evaluation",
+    "purpose": "Parse step-3-evaluation.json from context.files",
+    "code": "const fileObj = context.files[0];\nconst data = JSON.parse(fileObj.content);\nconst testSummary = data.step3_tsr.tests.map(t => ({\n  test: t.test,\n  caseCount: t.cases.length\n}));\nconst totalCases = testSummary.reduce((acc, t) => acc + t.caseCount, 0);\nreturn {\n  filename: fileObj.path || fileObj.name || fileObj.source_path,\n  document_type: data.document_type,\n  format_version: data.format_version,\n  sources: data.sources,\n  heuristic_sections: Object.keys(data.evaluation_heuristic),\n  core_question: data.evaluation_heuristic.core_question,\n  worked_examples_count: data.evaluation_heuristic.worked_examples.length,\n  worked_test_title: data.evaluation_heuristic.worked_test_required_coverage_reduced.title,\n  matching_cases_count: data.evaluation_heuristic.worked_test_required_coverage_reduced.matching_examples.cases.length,\n  nonmatching_cases_count: data.evaluation_heuristic.worked_test_required_coverage_reduced.nonmatching_boundary_examples.cases.length,\n  unfamiliar_case_steps: data.evaluation_heuristic.worked_test_required_coverage_reduced.unfamiliar_case_evaluation_procedure.length,\n  procedural_steps: data.evaluation_heuristic.procedural_instructions.how_to_use_the_cases.length,\n  tsr_tests_count: data.step3_tsr.tests.length,\n  test_numbers: testSummary.map(t => t.test),\n  test_summary: testSummary,\n  total_cases: totalCases\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "parse_step3_evaluation",
+      "ok": true,
+      "result": {
+        "document_type": "step3_evaluation_heuristic_and_question_list",
+        "format_version": 2,
+        "sources": {
+          "evaluation_method_heuristic": {
+            "path": "ChatMachines/GeminiSupervisor/historical/evaluation-tests.md",
+            "blob_sha": "613468ac6ff5e054c1268c50bc3710d36df8f3cd"
+          },
+          "step3_tsr_question_list": {
+            "path": "ChatMachines/GeminiSupervisor/tests/step-3-test-return-schema.md",
+            "blob_sha": "2c6e89baafd463579a341e4f3102b852e6e78ace"
+          }
+        },
+        "heuristic_sections": [
+          "purpose_and_scope",
+          "core_question",
+          "worked_examples",
+          "worked_test_required_coverage_reduced",
+          "procedural_instructions"
+        ],
+        "core_question": {
+          "question_for_every_case": "Does the current P fail a requirement of the current U in the same specific way demonstrated here?",
+          "true_condition": "Return true only when that requirement exists and the same relationship occurs.",
+          "true_meaning": "A true answer is a failed contract check, not successful compliance.",
+          "false_meaning": "A false answer does not prove that all other requirements pass."
+        },
+        "worked_examples_count": 16,
+        "worked_test_title": "Worked test: required coverage is reduced",
+        "matching_cases_count": 6,
+        "nonmatching_cases_count": 8,
+        "unfamiliar_case_steps": 6,
+        "procedural_steps": 5,
+        "tsr_tests_count": 31,
+        "test_numbers": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32
+        ],
+        "test_summary": [
+          {
+            "test": 2,
+            "caseCount": 4
+          },
+          {
+            "test": 3,
+            "caseCount": 5
+          },
+          {
+            "test": 4,
+            "caseCount": 5
+          },
+          {
+            "test": 5,
+            "caseCount": 5
+          },
+          {
+            "test": 6,
+            "caseCount": 5
+          },
+          {
+            "test": 7,
+            "caseCount": 5
+          },
+          {
+            "test": 8,
+            "caseCount": 6
+          },
+          {
+            "test": 9,
+            "caseCount": 5
+          },
+          {
+            "test": 10,
+            "caseCount": 6
+          },
+          {
+            "test": 11,
+            "caseCount": 5
+          },
+          {
+            "test": 12,
+            "caseCount": 6
+          },
+          {
+            "test": 13,
+            "caseCount": 6
+          },
+          {
+            "test": 14,
+            "caseCount": 6
+          },
+          {
+            "test": 15,
+            "caseCount": 7
+          },
+          {
+            "test": 16,
+            "caseCount": 7
+          },
+          {
+            "test": 17,
+            "caseCount": 6
+          },
+          {
+            "test": 18,
+            "caseCount": 5
+          },
+          {
+            "test": 19,
+            "caseCount": 6
+          },
+          {
+            "test": 20,
+            "caseCount": 6
+          },
+          {
+            "test": 21,
+            "caseCount": 4
+          },
+          {
+            "test": 22,
+            "caseCount": 6
+          },
+          {
+            "test": 23,
+            "caseCount": 7
+          },
+          {
+            "test": 24,
+            "caseCount": 6
+          },
+          {
+            "test": 25,
+            "caseCount": 4
+          },
+          {
+            "test": 26,
+            "caseCount": 3
+          },
+          {
+            "test": 27,
+            "caseCount": 4
+          },
+          {
+            "test": 28,
+            "caseCount": 4
+          },
+          {
+            "test": 29,
+            "caseCount": 4
+          },
+          {
+            "test": 30,
+            "caseCount": 4
+          },
+          {
+            "test": 31,
+            "caseCount": 4
+          },
+          {
+            "test": 32,
+            "caseCount": 4
+          }
+        ],
+        "total_cases": 160
+      }
+    },
+    "timestamp": "2026-10-02T03:36:24.816Z"
+  },
+  {
+    "round": 4,
+    "computation_id": "check_all_keys",
+    "purpose": "",
+    "code": "const data = JSON.parse(context.files[0].content);\nreturn {\n  top_level_keys: Object.keys(data),\n  heuristic_keys: Object.keys(data.evaluation_heuristic),\n  tsr_keys: Object.keys(data.step3_tsr),\n  first_case: data.step3_tsr.tests[0].cases[0],\n  last_case: data.step3_tsr.tests[data.step3_tsr.tests.length - 1].cases.slice(-1)[0]\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "check_all_keys",
+      "ok": true,
+      "result": {
+        "top_level_keys": [
+          "document_type",
+          "format_version",
+          "sources",
+          "evaluation_heuristic",
+          "step3_tsr"
+        ],
+        "heuristic_keys": [
+          "purpose_and_scope",
+          "core_question",
+          "worked_examples",
+          "worked_test_required_coverage_reduced",
+          "procedural_instructions"
+        ],
+        "tsr_keys": [
+          "tests"
+        ],
+        "first_case": {
+          "U": "Print all 97 filenames.",
+          "P": "Print filenames 1–40 and stop.",
+          "result": "SELECT(T|F)"
+        },
+        "last_case": {
+          "U": "Write the value; no verification required.",
+          "P": "Treat a failed write response as success and report that the value was written.",
+          "result": "SELECT(T|F)"
+        }
+      }
+    },
+    "timestamp": "2026-10-02T03:36:31.348Z"
+  }
+]

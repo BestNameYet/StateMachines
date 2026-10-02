@@ -1,0 +1,116 @@
+{
+  "response_type": "historical_audit_subresult",
+  "subquestion_id": "subq_current_step3_eval_contract",
+  "answer_summary": "The current Step 3 evaluation artifact ('tests/step-3-evaluation.json', format version 2) defines a structured evaluative contract combining a semantic evaluation heuristic and the Step3_TSR test corpus. The heuristic establishes inverted failure logic ('true' means a contract check failed), 16 worked examples of failure modes, a formal set-theoretic test specification ('required coverage is reduced') with sets D, R, C, 6 matching cases (M1–M6), 8 non-matching boundary cases (N1–N8), and a 6-step evaluation procedure. The Step3_TSR corpus contains 31 test suites (numbered 2 through 32; Test 1 is omitted) comprising 160 test cases, each formatted with 'U', 'P', and 'result': 'SELECT(T|F)'. Because runtime loader code is outside this assigned context file, whether all 160 test cases are actively executed during runtime supervision or function as static evaluation/prompt corpus is mechanically indeterminate from the artifact alone.",
+  "historical_facts": [
+    {
+      "fact_id": "fact_step3_json_meta",
+      "statement": "tests/step-3-evaluation.json specifies document_type 'step3_evaluation_heuristic_and_question_list' and format_version 2, citing source files 'ChatMachines/GeminiSupervisor/historical/evaluation-tests.md' (sha: 613468ac6ff5e054c1268c50bc3710d36df8f3cd) and 'ChatMachines/GeminiSupervisor/tests/step-3-test-return-schema.md' (sha: 2c6e89baafd463579a341e4f3102b852e6e78ace).",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "evidence_locator": "lines 2-15"
+    },
+    {
+      "fact_id": "fact_step3_core_question",
+      "statement": "The core question for evaluation is 'Does the current P fail a requirement of the current U in the same specific way demonstrated here?', where true_meaning is defined as 'A true answer is a failed contract check, not successful compliance' and false_meaning is 'A false answer does not prove that all other requirements pass.'",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "evidence_locator": "lines 22-29"
+    },
+    {
+      "fact_id": "fact_step3_worked_examples",
+      "statement": "The artifact contains 16 worked examples (indices 1 through 16), each specifying 'u_source', 'illustrative_p', 'what_exactly_goes_wrong', and 'what_would_satisfy_this_part_of_u'.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "evidence_locator": "lines 30-138"
+    },
+    {
+      "fact_id": "fact_step3_coverage_reduced_heuristic",
+      "statement": "The section 'worked_test_required_coverage_reduced' defines set relations D (qualifying domain), R (required members), and C (covered members), specifying a match when R = D and C is a proper subset of R. It provides 6 matching cases (M1–M6), 8 non-matching boundary cases (N1–N8), and a 6-step 'unfamiliar_case_evaluation_procedure'.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "evidence_locator": "lines 139-257"
+    },
+    {
+      "fact_id": "fact_step3_procedural_instructions",
+      "statement": "The artifact specifies a 5-step procedural instruction list for using the cases against actual candidate proposals P and effective instructions U, alongside a correction derivation rule forbidding copying example corrections directly into tasks.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "evidence_locator": "lines 258-285"
+    },
+    {
+      "fact_id": "fact_step3_tsr_test_corpus",
+      "statement": "The 'step3_tsr' section contains 31 test suites numbered consecutively from 2 through 32 (test suite 1 is absent), containing exactly 160 test case objects. Each test case has fields 'U', 'P', and 'result' set to the template string 'SELECT(T|F)'.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "evidence_locator": "lines 287-638"
+    },
+    {
+      "fact_id": "fact_step3_runtime_code_absence",
+      "statement": "tests/step-3-evaluation.json is a pure JSON data file and contains no executable JavaScript runtime code, loader statements, or test runner assertions within its own content.",
+      "source_archive_path": "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json",
+      "evidence_locator": "entire file"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "interp_eval_inverted_quality_gate",
+      "statement": "The evaluative contract operates on an inverted-boolean quality gate: a evaluation case returns true if and only if P exhibits the specific contract violation demonstrated by the heuristic case. Passing compliance corresponds to avoiding all defined failure patterns (returning false on failure detectors).",
+      "depends_on_fact_ids": [
+        "fact_step3_core_question",
+        "fact_step3_coverage_reduced_heuristic"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_tsr_prompt_questionnaire_corpus",
+      "statement": "Because every case in step3_tsr.tests uses 'result': 'SELECT(T|F)', this corpus functions as a semantic evaluation prompt bank / questionnaire for an LLM or human semantic operator rather than an automated deterministic unit test suite with pre-computed ground truth booleans.",
+      "depends_on_fact_ids": [
+        "fact_step3_tsr_test_corpus",
+        "fact_step3_core_question"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_active_vs_static_indeterminate",
+      "statement": "Without the runtime executable files (e.g. GeminiSupervisor runtime scripts) in the assigned context, it cannot be mechanically verified whether the 31 test suites (160 cases) are actively loaded and queried during live Step 3 supervision turns or maintained as a reference test benchmark.",
+      "depends_on_fact_ids": [
+        "fact_step3_runtime_code_absence",
+        "fact_step3_json_meta"
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "dec_step3_eval_criteria_structure",
+      "statement": "The Step 3 evaluation artifact defines formal heuristic criteria (inverted boolean failure detection, 16 worked examples, set-theoretic subset-reduction testing, and 5 procedural application rules) alongside a 31-suite, 160-case TSR corpus.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_eval_inverted_quality_gate"
+      ],
+      "current_fact_evidence": [
+        "fact_step3_json_meta",
+        "fact_step3_core_question",
+        "fact_step3_worked_examples",
+        "fact_step3_coverage_reduced_heuristic",
+        "fact_step3_procedural_instructions",
+        "fact_step3_tsr_test_corpus"
+      ]
+    },
+    {
+      "decision_id": "dec_tsr_suites_active_execution",
+      "statement": "All test suites in tests/step-3-evaluation.json are actively executed during runtime supervision.",
+      "truth_value": "INDETERMINATE",
+      "depends_on_interpretation_ids": [
+        "interp_tsr_prompt_questionnaire_corpus",
+        "interp_active_vs_static_indeterminate"
+      ],
+      "current_fact_evidence": [
+        "fact_step3_runtime_code_absence",
+        "fact_step3_tsr_test_corpus"
+      ]
+    }
+  ],
+  "unresolved_questions": [
+    "Which specific loader function in the runtime (e.g., in GeminiSupervisor runtime modules) imports tests/step-3-evaluation.json, and which top-level keys ('evaluation_heuristic' vs. 'step3_tsr') are injected into the runtime prompt context?",
+    "Why does the step3_tsr test numbering start at test 2 rather than test 1?"
+  ],
+  "context_files_used": [
+    "ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json"
+  ]
+}
