@@ -1,0 +1,131 @@
+{
+  "response_type": "historical_audit_subresult",
+  "subquestion_id": "subq_current_normative_spec_and_rules",
+  "answer_summary": "The canonical specification (Agents.md) defines a 5-step sequential procedure (Steps 0–4) executed by ChatGPT and supervised by Gemini, enforced exclusively via per-step return schemas, supervisory gate schemas, and deterministic runtime ground-truth verification. In contrast, work-action-approval-rulebook.json asserts an orthogonal set of control gates centered on user-selected safe words, pre-actions, and an ActionPlanReturn schema; however, Agents.md contains zero references to this rulebook, safe words, or its schema. The skill document (live-ground-truth-verification/SKILL.md) provides descriptive heuristics, source taxonomies, and a 10-step procedure for verifying claims, whose core invariants (five status values, rejection of self-report/memory, and blocking contradictory findings) are codified as normative rules in Agents.md.",
+  "historical_facts": [
+    {
+      "fact_id": "fact_agents_evaluation_definitions",
+      "statement": "Agents.md defines six canonical evaluation concepts: user_words, effective_instruction_U, agent_response_P, live_ground_truth, ground_truth_status (VERIFIED|CONTRADICTED|PARTIAL|UNKNOWN|NOT_EXECUTED), and exact_satisfaction.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/Agents.md",
+      "evidence_locator": "Agents.md, section 'Canonical Evaluation Definitions'"
+    },
+    {
+      "fact_id": "fact_agents_governing_rules",
+      "statement": "Agents.md specifies seven governing rules: shared_configuration_contract_governs_external_references, return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface, model_role_separation_and_server_verified_execution_identity_are_mandatory, chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake, bootstrap_must_create_and_isolate_a_consistent_run_container_before_step_zero, live_ground_truth_verification_against_pathological_deception, and step_four_reporting_must_put_failures_and_incomplete_work_before_verified_completion.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/Agents.md",
+      "evidence_locator": "Agents.md, section 'Governing Rule Catalog'"
+    },
+    {
+      "fact_id": "fact_agents_step_roles_and_schemas",
+      "statement": "Agents.md defines Steps 0 through 4 as strictly ChatGPT-executed (role_required: 'ChatGPT model', role_forbidden: 'Gemini model') and supervisory gates as strictly Gemini-evaluated (role_required: 'Gemini model', role_forbidden: 'ChatGPT model'), each step governed by a specific execution_return_schema (start_of_turn, step_1_record, step_2_record, Step_3 with A-G sections, Step_4 with failed/not_completed/completed actions) and supervisory_gate_schema.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/Agents.md",
+      "evidence_locator": "Agents.md, sections 'Step 0' through 'Step 4'"
+    },
+    {
+      "fact_id": "fact_agents_runtime_integration_rules",
+      "statement": "Agents.md asserts six runtime integration requirements, declaring that Agents.md is the canonical evaluation source, shared configuration via config.json governs external dependencies, deterministic live ground truth precedes semantic pass, findings are persisted, transition semantics remain gate_result-driven (PASS advances, FAIL retries), and the Step 3 evaluation artifact in config.json is canonical.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/Agents.md",
+      "evidence_locator": "Agents.md, section 'Runtime Integration Requirements'"
+    },
+    {
+      "fact_id": "fact_agents_no_rulebook_reference",
+      "statement": "Agents.md contains zero textual references to 'work-action-approval-rulebook.json', 'safe_word', 'safe word', 'pre_action', or 'action_plan_return_schema'.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/Agents.md",
+      "evidence_locator": "Agents.md (entire document)"
+    },
+    {
+      "fact_id": "fact_rulebook_contents",
+      "statement": "work-action-approval-rulebook.json defines five rules: safe_word_authorization_required_before_every_action, action_set_definition_includes_reads_checks_and_analogous_operations, pre_action_set_definition, complete_action_plan_must_precede_permission_request (including draft 2020-12 action_plan_return_schema), and approved_plan_scope_is_immutable_except_removing_uncompleted_work.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+      "evidence_locator": "work-action-approval-rulebook.json, rule items 0 through 4"
+    },
+    {
+      "fact_id": "fact_skill_structure_and_taxonomy",
+      "statement": "The live-ground-truth-verification skill document provides semantic trigger guidelines, a 10-step mandatory verification procedure, ground-truth source taxonomies across 10 categories, authority/freshness rules, five evidence status classifications (VERIFIED, CONTRADICTED, PARTIAL, UNKNOWN, NOT EXECUTED), and failure rules.",
+      "source_archive_path": "repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+      "evidence_locator": "SKILL.md, sections 'Semantic Trigger', 'Ground-Truth Source Taxonomy', 'Mandatory Verification Procedure', and 'Evidence Status'"
+    }
+  ],
+  "interpretations": [
+    {
+      "interpretation_id": "interp_canonical_exclusivity_in_agents_md",
+      "statement": "Agents.md positions itself as the complete and exclusive canonical evaluation and procedure specification, mandating that per-step return schemas are the exclusive execution control surface and that Agents.md alone defines the evaluation criteria.",
+      "depends_on_fact_ids": [
+        "fact_agents_evaluation_definitions",
+        "fact_agents_governing_rules",
+        "fact_agents_step_roles_and_schemas",
+        "fact_agents_runtime_integration_rules"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_rulebook_is_unintegrated_specification",
+      "statement": "The work-action-approval rulebook represents an unintegrated control framework whose safe-word authorization gates, action classification hierarchies, and ActionPlanReturn schema are completely absent from the canonical procedure workflow defined in Agents.md.",
+      "depends_on_fact_ids": [
+        "fact_agents_no_rulebook_reference",
+        "fact_rulebook_contents",
+        "fact_agents_governing_rules"
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "interpretation_id": "interp_skill_normative_vs_descriptive",
+      "statement": "The skill document combines descriptive explanatory prose (illustrative user questions, source taxonomy suggestions, and conceptual rationale) with strict normative mandates (never use memory/self-report as ground truth, never convert UNKNOWN/PARTIAL/NOT_EXECUTED to success, verify before answering), which Agents.md operationalizes as hard supervisory gating constraints.",
+      "depends_on_fact_ids": [
+        "fact_agents_evaluation_definitions",
+        "fact_agents_governing_rules",
+        "fact_skill_structure_and_taxonomy"
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "truth_decisions": [
+    {
+      "decision_id": "dec_canonical_spec_scope",
+      "statement": "Agents.md asserts a closed 5-step return-schema control loop between ChatGPT and Gemini where return schemas are the exclusive control surface and no safe-word approval gates exist.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_canonical_exclusivity_in_agents_md",
+        "interp_rulebook_is_unintegrated_specification"
+      ],
+      "current_fact_evidence": [
+        "fact_agents_governing_rules",
+        "fact_agents_step_roles_and_schemas",
+        "fact_agents_no_rulebook_reference"
+      ]
+    },
+    {
+      "decision_id": "dec_rulebook_status",
+      "statement": "The control gates and ActionPlanReturn schema declared in work-action-approval-rulebook.json are asserted within that artifact but are neither referenced by nor incorporated into the canonical specification (Agents.md).",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_rulebook_is_unintegrated_specification"
+      ],
+      "current_fact_evidence": [
+        "fact_agents_no_rulebook_reference",
+        "fact_rulebook_contents"
+      ]
+    },
+    {
+      "decision_id": "dec_skill_normative_codification",
+      "statement": "The live-ground-truth-verification skill document serves as descriptive and methodological guidance, but its core invariant and five-value status classification are codified as mandatory requirements in Agents.md.",
+      "truth_value": "TRUE",
+      "depends_on_interpretation_ids": [
+        "interp_skill_normative_vs_descriptive"
+      ],
+      "current_fact_evidence": [
+        "fact_agents_evaluation_definitions",
+        "fact_agents_governing_rules",
+        "fact_skill_structure_and_taxonomy"
+      ]
+    }
+  ],
+  "unresolved_questions": [
+    "Whether the executable runtime (send-to-gemini.js or other runner scripts) contains any legacy or disconnected code paths loading work-action-approval-rulebook.json, which is absent from Agents.md."
+  ],
+  "context_files_used": [
+    "repo/ChatMachines/GeminiSupervisor/Agents.md",
+    "repo/ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+    "repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md"
+  ]
+}

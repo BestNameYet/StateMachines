@@ -1,0 +1,304 @@
+[
+  {
+    "round": 1,
+    "computation_id": "analyze_context_cross_references",
+    "purpose": "Analyze cross-references between Agents.md, work-action-approval-rulebook.json, and SKILL.md, and inspect schema structures.",
+    "code": "const agents = context['repo/ChatMachines/GeminiSupervisor/Agents.md'];\nconst rulebook = context['repo/ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json'];\nconst skill = context['repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md'];\n\nconst agentsHasRulebook = agents.includes('rulebook') || agents.includes('safe_word') || agents.includes('safe word');\nconst agentsHasSkill = agents.includes('live-ground-truth-verification') || agents.includes('skills/');\nconst agentsParsedJSONs = [];\n\n// Let's parse all json blocks in Agents.md\nconst jsonBlockRegex = /```json\\n([\\s\\S]*?)\\n```/g;\nlet match;\nwhile ((match = jsonBlockRegex.exec(agents)) !== null) {\n  try {\n    agentsParsedJSONs.push(Object.keys(JSON.parse(match[1])));\n  } catch (e) {\n    agentsParsedJSONs.push('PARSE_ERROR: ' + e.message);\n  }\n}\n\nlet parsedRulebook;\ntry {\n  parsedRulebook = JSON.parse(rulebook);\n} catch(e) {\n  parsedRulebook = e.message;\n}\n\nreturn {\n  agentsHasRulebook,\n  agentsHasSkill,\n  agentsParsedJSONBlocks: agentsParsedJSONs,\n  rulebookRuleCount: Array.isArray(parsedRulebook) ? parsedRulebook.length : 0,\n  rulebookRuleIds: Array.isArray(parsedRulebook) ? parsedRulebook.map(r => r.rule_id) : []\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "analyze_context_cross_references",
+      "ok": false,
+      "error": "Cannot read properties of undefined (reading 'includes')"
+    },
+    "timestamp": "2026-10-02T03:35:49.711Z"
+  },
+  {
+    "round": 2,
+    "computation_id": "check_keys",
+    "purpose": "Check the keys of context",
+    "code": "return Object.keys(context);",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "check_keys",
+      "ok": true,
+      "result": [
+        "subquestion",
+        "files"
+      ]
+    },
+    "timestamp": "2026-10-02T03:35:50.973Z"
+  },
+  {
+    "round": 3,
+    "computation_id": "check_files_keys",
+    "purpose": "Check the keys of context.files",
+    "code": "return Object.keys(context.files);",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "check_files_keys",
+      "ok": true,
+      "result": [
+        "0",
+        "1",
+        "2"
+      ]
+    },
+    "timestamp": "2026-10-02T03:35:52.012Z"
+  },
+  {
+    "round": 4,
+    "computation_id": "inspect_files",
+    "purpose": "Inspect files array",
+    "code": "return context.files.map(f => ({ path: f.path, entry_id: f.entry_id, len: f.content.length }));",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "inspect_files",
+      "ok": true,
+      "result": [
+        {
+          "len": 60929
+        },
+        {
+          "len": 22540
+        },
+        {
+          "len": 16762
+        }
+      ]
+    },
+    "timestamp": "2026-10-02T03:35:53.306Z"
+  },
+  {
+    "round": 5,
+    "computation_id": "inspect_file_obj_keys",
+    "purpose": "Inspect keys on file object",
+    "code": "return context.files.map(f => Object.keys(f));",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "inspect_file_obj_keys",
+      "ok": true,
+      "result": [
+        [
+          "metadata",
+          "content"
+        ],
+        [
+          "metadata",
+          "content"
+        ],
+        [
+          "metadata",
+          "content"
+        ]
+      ]
+    },
+    "timestamp": "2026-10-02T03:35:54.984Z"
+  },
+  {
+    "round": 6,
+    "computation_id": "extract_file_metadata",
+    "purpose": "Extract metadata for each file",
+    "code": "return context.files.map(f => f.metadata);",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "extract_file_metadata",
+      "ok": true,
+      "result": [
+        {
+          "archive_path": "repo/ChatMachines/GeminiSupervisor/Agents.md",
+          "source_path": "ChatMachines/GeminiSupervisor/Agents.md",
+          "entry_id": "agents_md",
+          "category": "current_specification_and_requirement_history",
+          "description": "Current canonical Supervisor specification. Its present contents are evidence of today's stated requirements. Its Git history is generated into the archive to show how requested requirements and schemas changed over time. Specification text alone does not prove runtime enforcement.",
+          "authority": "current_normative_specification",
+          "size_bytes": 60929,
+          "sha256": "721d300d531f75342ec350568f3eb5c65929d3f491c11fe8f9740a47d7b94d94",
+          "generated": false
+        },
+        {
+          "archive_path": "repo/ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+          "source_path": "ChatMachines/GeminiSupervisor/work-action-approval-rulebook.json",
+          "entry_id": "work_action_approval_rulebook",
+          "category": "requested_control_artifact",
+          "description": "Persisted work/action approval rulebook produced during Supervisor development. Its existence proves the artifact was created; whether the current runtime actually enforces it must be decided from executable wiring, not from this file alone.",
+          "authority": "artifact_existence_primary_behavior_secondary",
+          "size_bytes": 22540,
+          "sha256": "ffba81001e1ed02e94b836e8953581af9c2df0044ae828cc2f9b431d5458027d",
+          "generated": false
+        },
+        {
+          "archive_path": "repo/ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+          "source_path": "ChatMachines/GeminiSupervisor/skills/live-ground-truth-verification/SKILL.md",
+          "entry_id": "live_ground_truth_skill",
+          "category": "requested_skill_artifact",
+          "description": "Skill document defining live ground-truth verification concepts used during development. The current runtime contains deterministic ground-truth mechanisms, but this document itself is descriptive evidence rather than executable enforcement.",
+          "authority": "specification_supporting_evidence",
+          "size_bytes": 16772,
+          "sha256": "98f31b0131f3ee40d522f6a4ea428ad957c690b838d102a0d1907f5aae90d871",
+          "generated": false
+        }
+      ]
+    },
+    "timestamp": "2026-10-02T03:35:56.336Z"
+  },
+  {
+    "round": 7,
+    "computation_id": "analyze_contents",
+    "purpose": "Analyze contents of Agents.md, work-action-approval-rulebook.json, and SKILL.md",
+    "code": "const agents = context.files[0].content;\nconst rulebook = context.files[1].content;\nconst skill = context.files[2].content;\n\nconst agentsHasRulebook = agents.includes('rulebook') || agents.includes('safe_word') || agents.includes('safe word');\nconst agentsHasSkill = agents.includes('live-ground-truth-verification') || agents.includes('skills/');\n\nconst jsonBlockRegex = /```json\\n([\\s\\S]*?)\\n```/g;\nlet match;\nconst parsedBlocks = [];\nwhile ((match = jsonBlockRegex.exec(agents)) !== null) {\n  try {\n    parsedBlocks.push(Object.keys(JSON.parse(match[1])));\n  } catch (e) {\n    parsedBlocks.push('PARSE_ERROR: ' + e.message);\n  }\n}\n\nlet parsedRulebook = JSON.parse(rulebook);\n\nreturn {\n  agentsHasRulebook,\n  agentsHasSkill,\n  agentsParsedBlocks: parsedBlocks,\n  rulebookCount: parsedRulebook.length,\n  rulebookRuleIds: parsedRulebook.map(r => r.rule_id)\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "analyze_contents",
+      "ok": true,
+      "result": {
+        "agentsHasRulebook": false,
+        "agentsHasSkill": false,
+        "agentsParsedBlocks": [
+          [
+            "evaluation_definitions"
+          ],
+          [
+            "rules"
+          ],
+          [
+            "dependency_chart"
+          ],
+          [
+            "supervisory_gate_common_field_glossary"
+          ],
+          [
+            "step_0_field_glossary"
+          ],
+          [
+            "step_0"
+          ],
+          [
+            "step_1_field_glossary"
+          ],
+          [
+            "step_1"
+          ],
+          [
+            "step_2_field_glossary"
+          ],
+          [
+            "step_2"
+          ],
+          [
+            "step_3_field_glossary"
+          ],
+          [
+            "step_3"
+          ],
+          [
+            "step_4_field_glossary"
+          ],
+          [
+            "step_4"
+          ],
+          [
+            "runtime_integration_requirements"
+          ]
+        ],
+        "rulebookCount": 5,
+        "rulebookRuleIds": [
+          "safe_word_authorization_required_before_every_action",
+          "action_set_definition_includes_reads_checks_and_analogous_operations",
+          "pre_action_set_definition",
+          "complete_action_plan_must_precede_permission_request",
+          "approved_plan_scope_is_immutable_except_removing_uncompleted_work"
+        ]
+      }
+    },
+    "timestamp": "2026-10-02T03:35:57.925Z"
+  },
+  {
+    "round": 8,
+    "computation_id": "extract_agents_rules_and_steps",
+    "purpose": "Extract rules, step requirements, and integration requirements from Agents.md",
+    "code": "const agents = context.files[0].content;\nconst jsonBlockRegex = /```json\\n([\\s\\S]*?)\\n```/g;\nlet match;\nconst sections = {};\nwhile ((match = jsonBlockRegex.exec(agents)) !== null) {\n  const obj = JSON.parse(match[1]);\n  Object.assign(sections, obj);\n}\n\nreturn {\n  evaluation_definitions: Object.keys(sections.evaluation_definitions),\n  rules: Object.keys(sections.rules),\n  runtime_integration_requirements: Object.keys(sections.runtime_integration_requirements),\n  step_0_eval_reqs: sections.step_0.evaluation_requirements.map(r => r.key),\n  step_1_eval_reqs: sections.step_1.evaluation_requirements.map(r => r.key),\n  step_2_eval_reqs: sections.step_2.evaluation_requirements.map(r => r.key),\n  step_3_eval_reqs: sections.step_3.evaluation_requirements.map(r => r.key),\n  step_4_eval_reqs: sections.step_4.evaluation_requirements.map(r => r.key),\n  step_0_roles: { req: sections.step_0.required_execution_role, forb: sections.step_0.forbidden_execution_role },\n  step_1_roles: { req: sections.step_1.required_execution_role, forb: sections.step_1.forbidden_execution_role },\n  step_2_roles: { req: sections.step_2.required_execution_role, forb: sections.step_2.forbidden_execution_role },\n  step_3_roles: { req: sections.step_3.required_execution_role, forb: sections.step_3.forbidden_execution_role },\n  step_4_roles: { req: sections.step_4.required_execution_role, forb: sections.step_4.forbidden_execution_role }\n};",
+    "result": {
+      "response_type": "historical_audit_compute_result",
+      "computation_id": "extract_agents_rules_and_steps",
+      "ok": true,
+      "result": {
+        "evaluation_definitions": [
+          "user_words",
+          "effective_instruction_U",
+          "agent_response_P",
+          "live_ground_truth",
+          "ground_truth_status",
+          "exact_satisfaction"
+        ],
+        "rules": [
+          "shared_configuration_contract_governs_external_references",
+          "return_schema_is_the_exclusive_per_step_execution_and_completion_control_surface",
+          "model_role_separation_and_server_verified_execution_identity_are_mandatory",
+          "chatgpt_turn_must_span_every_nonterminal_nextmessage_to_gemini_response_handshake",
+          "bootstrap_must_create_and_isolate_a_consistent_run_container_before_step_zero",
+          "live_ground_truth_verification_against_pathological_deception",
+          "step_four_reporting_must_put_failures_and_incomplete_work_before_verified_completion"
+        ],
+        "runtime_integration_requirements": [
+          "shared_configuration_contract",
+          "agents_md_is_canonical_evaluation_source",
+          "deterministic_live_ground_truth_precedes_semantic_pass",
+          "ground_truth_findings_are_persisted",
+          "transition_semantics_are_unchanged",
+          "step_3_evaluation_artifact_is_canonical"
+        ],
+        "step_0_eval_reqs": [
+          "step_0_preserve_verbatim_request",
+          "step_0_bootstrap_identity",
+          "step_0_live_ground_truth",
+          "step_0_persistence_and_gate"
+        ],
+        "step_1_eval_reqs": [
+          "step_1_preserve_request",
+          "step_1_role_completion_persistence"
+        ],
+        "step_2_eval_reqs": [
+          "step_2_only_user_stated_requirements",
+          "step_2_live_ground_truth",
+          "step_2_role_completion_persistence"
+        ],
+        "step_3_eval_reqs": [
+          "step_3_complete_U_decomposition",
+          "step_3_plan_satisfies_all_step_2_requirements",
+          "step_3_all_tests_are_evaluated",
+          "step_3_live_ground_truth",
+          "step_3_loop_control",
+          "step_3_role_completion_persistence"
+        ],
+        "step_4_eval_reqs": [
+          "step_4_failures_first",
+          "step_4_incomplete_second",
+          "step_4_live_ground_truth_completion",
+          "step_4_all_requirements_accounted_for",
+          "step_4_terminal_integrity"
+        ],
+        "step_0_roles": {
+          "req": "ChatGPT model",
+          "forb": "Gemini model"
+        },
+        "step_1_roles": {
+          "req": "ChatGPT model",
+          "forb": "Gemini model"
+        },
+        "step_2_roles": {
+          "req": "ChatGPT model",
+          "forb": "Gemini model"
+        },
+        "step_3_roles": {
+          "req": "ChatGPT model",
+          "forb": "Gemini model"
+        },
+        "step_4_roles": {
+          "req": "ChatGPT model",
+          "forb": "Gemini model"
+        }
+      }
+    },
+    "timestamp": "2026-10-02T03:36:00.358Z"
+  }
+]
