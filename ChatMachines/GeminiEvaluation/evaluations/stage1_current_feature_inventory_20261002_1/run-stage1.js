@@ -35,8 +35,16 @@ function updateConfig(config) {
     characters_per_token: charsPerToken,
     formula: 'Math.ceil(text.length / 3.9)'
   };
+
   for (const rule of config.B_rules || []) {
-    if (rule?.iterator?.evaluator) rule.iterator.evaluator.model = model;
+    const evaluator = rule?.iterator?.evaluator;
+    if (!evaluator) continue;
+    evaluator.model = model;
+
+    if (rule?.when?.B?.gt === 0) {
+      evaluator.task = `${evaluator.task} Return a compact consolidation. The complete serialized response must remain below 6000 estimated tokens under Math.ceil(characters / 3.9). Prefer merging overlapping records over retaining near-duplicates. Keep names concise, descriptions to one or two sentences, mechanic_summary values to one concise sentence, and include only evidence necessary to preserve distinct implementation support.`;
+      evaluator.criteria = `${evaluator.criteria}\n5. Compactness: The complete serialized response must remain below 6000 estimated tokens using Math.ceil(characters / 3.9); remove redundant wording and redundant evidence while preserving distinct source support.`;
+    }
   }
   return config;
 }
