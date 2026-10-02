@@ -1,26 +1,46 @@
 {
   "runtime_root": ".",
-  "supervisor_root": "../GeminiSupervisor",
   "new_message_folder": "evaluator-nextmessage",
   "new_message_file": "nextmessage.json",
-  "messages_file": "live-ground-truth-implementation-messages.json",
+  "messages_file": "truth-reader-implementation-messages.json",
+  "generic_messages_file": "truth-reader-implementation-messages.json",
   "evaluation_output_file": "program-evaluation.json",
-  "revision_deliverables_output_path": "revision-deliverables",
-  "revision_agents_output_file": "revised-Agents.md",
-  "revision_program_output_file": "revised-send-to-gemini.js",
-  "source_revision_enabled": true,
-  "source_revision_config_output_path": "revision-deliverables/config.json",
-  "source_revision_program_output_path": "revision-deliverables/revised-send-to-gemini.js",
-  "agents_file": "Agents.md",
-  "program_file": "send-to-gemini.js",
-  "artifact_target_file": "tests/step-3-evaluation.json",
-  "artifact_revision_enabled": false,
   "default_model": "gemini-3.8-flash",
   "request_timeout_ms": 180000,
-  "evaluation_mode": "supervisor",
+  "evaluation_mode": "generic",
+  "generic_reuse_message_history": false,
   "evaluations_root": "evaluations",
   "run_evaluation_file": "evaluation.json",
   "run_messages_file": "messages.json",
   "run_outputs_directory": "outputs",
-  "write_latest_compatibility_outputs": false
+  "write_latest_compatibility_outputs": false,
+  "generic_inputs": [
+    {
+      "key": "truth_reader_design",
+      "type": "literal",
+      "value": "Design and author the complete implementation for a workflow-only truth-reading challenge. The authoritative source documents are never modified. Maintain pre-created projection copies in a reading-library location. Each projection contains fixed, distributed placeholder markers such as __TRUTH_SEED_001__, __TRUTH_SEED_002__, etc., spaced so successful return of every seed demonstrates coverage across the projection. A committed selector/control form uses enumerated booleans such as doc1=true, doc2=false; no arbitrary paths are accepted. On a worker/user commit selecting one or more docs, GitHub Actions runs a trusted Node.js script. The script maps selected doc IDs through an allowlisted catalog, replaces every placeholder in each selected projection copy with a fresh cryptographically random seed, records the complete expected ordered seed vector in workflow-owned state, and commits the seeded reader projections using GITHUB_TOKEN. The workflow-generated commit must not recursively trigger itself. The worker may retrieve the seeded projections by any mechanism; the only requirement is that the fresh values enter worker context. The worker then commits a separate evidence file containing the complete ordered seed vector. A workflow validates exact equality mechanically; Gemini/model judgment is not involved. FAIL performs no mutations. PASS performs one atomic cleanup/reset commit: selected docs booleans false, self empty, readers blank/reset, projection copies restored to their placeholder form (or temporary seeded outputs deleted if the implementation chooses generated reader instances), and PASS evidence/status persisted as appropriate. No sentinel is required because FAIL changes nothing and PASS cleanup is atomic at the commit boundary. Keep the seed-generation/verification implementation in a separate workflow-only JS file, not send-to-gemini.js. Source documents remain immutable. Prefer path-filtered push triggers on selector/evidence files plus normal GITHUB_TOKEN recursion suppression. Include an explicit document catalog with stable IDs and source/projection paths; use at least these known documents as catalog examples: Agents.md, config.json, tests/step-3-evaluation.json, README.md, MANIFEST.md. The implementation should be portable to the ModelConduct/Supervisor repository root. Produce concrete complete files, not patches or prose-only pseudocode."
+    }
+  ],
+  "evaluation_heuristic": "Act as an implementation engineer. Return a minimal, internally consistent set of complete repository files that implement the supplied truth-reader design. Prefer one workflow-only Node.js program and one GitHub Actions workflow, plus concrete selector/control and evidence trigger JSON files and any catalog/projection-template files required. Every returned file must have an explicit repository-relative path and complete contents. Ensure the workflow can distinguish selection commits from evidence commits, does not create an infinite commit-trigger loop, uses crypto.randomBytes or equivalent CSPRNG, validates all expected seeds exactly and in order, performs zero mutations on FAIL, and performs cleanup/reset in one workflow-generated commit on PASS. The document selector must be enumerated booleans (doc1=true style), not arbitrary paths. Projection placeholders must be distributed across each projection so full seed return mandates broad coverage. Do not modify authoritative docs. Do not put secrets or expected seed values in logs, filenames, commit messages, workflow outputs, or artifacts. State any unavoidable unresolved issue explicitly rather than silently weakening the proof.",
+  "evaluation_output_schema": {
+    "response_type": "truth_reader_implementation",
+    "files": [
+      {
+        "path": "repository-relative path",
+        "purpose": "string",
+        "content": "complete file contents"
+      }
+    ],
+    "design_checks": {
+      "authoritative_docs_immutable": true,
+      "enumerated_doc_selector": true,
+      "distributed_projection_placeholders": true,
+      "workflow_only_seed_authority": true,
+      "exact_complete_seed_match": true,
+      "fail_is_noop": true,
+      "pass_atomic_cleanup": true,
+      "recursive_workflow_loop_prevented": true
+    },
+    "unresolved_requirements": []
+  }
 }
