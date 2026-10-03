@@ -33,9 +33,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sed -i 's/const STRIP_LEFT = 70;/const STRIP_LEFT = 90;/' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
-          sed -i 's/const STRIP_LOCAL_TOP = 0;/const STRIP_LOCAL_TOP = 2;/' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
-          sed -i 's/const STRIP_HEIGHT = 20;/const STRIP_HEIGHT = 16;/' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
+          sed -i 's/const top = PAD_Y + (row \* CHAR_HEIGHT);/const top = PAD_Y + (row * CHAR_HEIGHT) + 5;/g' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
+          sed -i 's/y < top + CHAR_HEIGHT/y < top + 10/g' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
           node ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
 
       - name: Commit solved locator
