@@ -2,8 +2,8 @@
   "runtime_root": ".",
   "new_message_folder": "evaluator-nextmessage",
   "new_message_file": "nextmessage.json",
-  "messages_file": "corpus-normalization-messages.json",
-  "generic_messages_file": "corpus-normalization-messages.json",
+  "messages_file": "corpus-alignment-messages.json",
+  "generic_messages_file": "corpus-alignment-messages.json",
   "evaluation_output_file": "program-evaluation.json",
   "default_model": "gemini-3.8-flash",
   "request_timeout_ms": 180000,
@@ -21,21 +21,15 @@
       "path": "../GeminiSupervisor/Agents.md"
     }
   ],
-  "evaluation_heuristic": "Revise the supplied Agents.md corpus into one complete semantically equivalent projection containing exactly 61,200 Unicode code points, measured after JSON decoding by Array.from(revised_projection).length. Preserve every governing requirement, prohibition, permission, schema field, branch, loop, role boundary, evaluation definition, pass/fail condition, dependency, example distinction, and control-flow relationship. Do not introduce new normative requirements and do not weaken or delete existing ones. Preserve ordering where ordering is semantically meaningful. Editorially rephrase, condense, or expand explanatory prose only as needed to reach the exact target. Do not satisfy the target with meaningless padding, repeated filler, arbitrary whitespace runs, or synthetic placeholder text. The revised_projection field must contain the entire final corpus, not a patch, summary, ellipsis, or Markdown fence around the whole document. Report the source and revised counts, but the runtime will independently verify the revised projection count.",
+  "evaluation_heuristic": "The authoritative Agents.md corpus is exactly 60,929 Unicode code points. The target projection is exactly 61,200 Unicode code points, so author one append-only addition of exactly 271 Unicode code points measured after JSON decoding by Array.from(addition).length. The addition must be meaningful explanatory prose about the existing evaluation contract, explicitly non-normative, and must not add, remove, weaken, strengthen, reinterpret, or supersede any governing requirement. Do not use meaningless padding, repeated filler, arbitrary whitespace runs, or placeholders. The addition must be usable verbatim as source + addition, so include any leading newlines or Markdown heading syntax inside the 271-character addition itself. Return only the configured JSON schema.",
   "evaluation_output_schema": {
-    "response_type": "corpus_projection_revision",
+    "response_type": "corpus_alignment_addition",
     "character_metric": "Unicode code points measured by Array.from(text).length",
-    "target_character_count": 61200,
-    "source_character_count": 0,
-    "revised_character_count": 61200,
-    "revised_projection": "complete revised Agents.md projection",
-    "preservation_report": {
-      "requirements_preserved": true,
-      "schemas_preserved": true,
-      "control_flow_preserved": true,
-      "role_boundaries_preserved": true,
-      "new_normative_requirements_added": false
-    },
-    "editorial_summary": "brief description of non-semantic edits used to reach the target"
+    "source_character_count": 60929,
+    "addition_target_character_count": 271,
+    "projected_total_character_count": 61200,
+    "addition": "exactly 271 Unicode code points including any separators or heading syntax",
+    "normative_change": false,
+    "purpose": "brief description of the explanatory addition"
   }
 }
