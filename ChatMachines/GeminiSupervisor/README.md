@@ -1022,58 +1022,175 @@ Truth-readable documents are registered under `truth_readable_registry` in `Chat
 
 Stable readers live under `ChatMachines/GeminiSupervisor/stable-readers/`. They are deterministic ordered JSON projections mechanically derived from the canonical files. The canonical source does not need to use the same representation as the projection; the stable projection is the normalized reading surface used by the verification gate.
 
-#### Canonical `flatten` definition
+#### Canonical JSON flattening and shuffle representation
 
-`flatten` means **flatten the hierarchy, not the information**. Every terminal object property becomes one projection element, and every array member becomes one projection element. Nested containers recurse until terminal units are reached. Every projection element preserves the complete ancestry needed to locate that unit in the original structure. When ancestry passes through an array, that level is represented by an array containing exactly one original member. The resulting outer projection array therefore contains self-locating minimal JSON fragments that can be merged recursively to rebuild the original structure without guessing any omitted key, array position, or container relationship.
+`Agents.md` remains the authoritative canonical source; the projection is a deterministic derivative reading and shuffle representation and does not replace `Agents.md`. For `Agents.md`, the deterministic first-stage projection converts Markdown headings into JSON keys around the JSON content beneath them; the canonical projection used for the flattening and shuffle representation is 100% JSON.
 
-For an object:
+In the flattened projection, every terminal object property is one fundamental projection element. Each such element is a minimal self-locating JSON fragment that retains the full nested ancestor route from the projection root to that terminal property, with each object predecessor exposing only the branch needed to reach that property. Every array member is likewise a fundamental projection element and is represented at its array boundary as an array containing exactly one member; nested arrays and arrays containing objects use the same rule recursively.
 
-```json
-{"user_words":{"key":"user_words","value":"..."}}
-```
+Provenance is the retained nested JSON structure itself: do not add a separate provenance field, generic path array, index metadata, or normalized identifier. Original keys and values are preserved exactly, including apparently redundant keys such as a parent `user_words` object containing an internal `"key": "user_words"`; exact reconstruction takes precedence over deduplication or normalization.
 
-flattens to:
+Reconstruction is executed by recursively summing and merging the lowest-level projection elements at matching nesting signatures to rebuild the original JSON structure. Extra metadata is not invented to resolve or redesign this specified representation.
 
-```json
-[
-  {"user_words":{"key":"user_words"}},
-  {"user_words":{"value":"..."}}
-]
-```
+Shuffle semantics operate as follows: construct the deterministic projection first, flatten it into the top-level array of minimal self-locating fragments, minify the JSON, and shuffle only the indices and elements of that outermost projection array. Shuffle semantics do not shuffle raw Markdown, characters, keys, values, or content inside an individual fragment. Pretty-printed JSON in README examples is explanatory only; the machine representation may be minified after construction.
 
-For an array of objects:
+Concise examples demonstrating this architecture:
+
+1. **Object terminal properties:**
+
+Source:
 
 ```json
-{"rule_following":[{"scenario":"A","status":"PASS"},{"scenario":"B","status":"PASS"}]}
+{
+  "user_words": {
+    "key": "user_words",
+    "value": "Resolved text",
+    "definition": "Primary instruction evidence"
+  }
+}
 ```
 
-flattens recursively to:
-
-```json
-[
-  {"rule_following":[{"scenario":"A"}]},
-  {"rule_following":[{"status":"PASS"}]},
-  {"rule_following":[{"scenario":"B"}]},
-  {"rule_following":[{"status":"PASS"}]}
-]
-```
-
-For arbitrary object/array nesting:
-
-```json
-{"groups":[{"items":[{"name":"A"},{"name":"B"}]}]}
-```
-
-flattens to:
+Projects to three fragments, one for key, one for value, and one for definition:
 
 ```json
 [
-  {"groups":[{"items":[{"name":"A"}]}]},
-  {"groups":[{"items":[{"name":"B"}]}]}
+  {
+    "user_words": {
+      "key": "user_words"
+    }
+  },
+  {
+    "user_words": {
+      "value": "Resolved text"
+    }
+  },
+  {
+    "user_words": {
+      "definition": "Primary instruction evidence"
+    }
+  }
 ]
 ```
 
-The same recursion applies at any depth. Flattening may change the outer sequence of projection elements when a later operation intentionally shuffles that outer array, but it must not discard ancestry or mutate the internal structure of any projection element.
+2. **Arbitrarily nested object where key and value become separate full-route fragments:**
+
+Source:
+
+```json
+{
+  "procedure": {
+    "step_contract": {
+      "step_0": {
+        "key": "start_of_turn",
+        "value": "ready"
+      }
+    }
+  }
+}
+```
+
+Projects to two minimal self-locating fragments, each retaining its complete nested ancestor route:
+
+```json
+[
+  {
+    "procedure": {
+      "step_contract": {
+        "step_0": {
+          "key": "start_of_turn"
+        }
+      }
+    }
+  },
+  {
+    "procedure": {
+      "step_contract": {
+        "step_0": {
+          "value": "ready"
+        }
+      }
+    }
+  }
+]
+```
+
+3. **Array source:**
+
+Source:
+
+```json
+{
+  "rule_following": [
+    "A",
+    "B",
+    "C"
+  ]
+}
+```
+
+Projects to three one-member-array fragments:
+
+```json
+[
+  {
+    "rule_following": [
+      "A"
+    ]
+  },
+  {
+    "rule_following": [
+      "B"
+    ]
+  },
+  {
+    "rule_following": [
+      "C"
+    ]
+  }
+]
+```
+
+4. **Mixed nested array and object:**
+
+Source:
+
+```json
+{
+  "outer": [
+    {
+      "inner": [
+        "A",
+        "B"
+      ]
+    }
+  ]
+}
+```
+
+Projects to two full-route fragments:
+
+```json
+[
+  {
+    "outer": [
+      {
+        "inner": [
+          "A"
+        ]
+      }
+    ]
+  },
+  {
+    "outer": [
+      {
+        "inner": [
+          "B"
+        ]
+      }
+    ]
+  }
+]
+```
 
 Reader synchronization is implemented by `ChatMachines/GeminiSupervisor/scripts/sync-stable-readers.js` and `.github/workflows/gemini-supervisor-reader-sync.yml`. A stable reader is regenerated only when its own canonical source/provenance changes.
 
