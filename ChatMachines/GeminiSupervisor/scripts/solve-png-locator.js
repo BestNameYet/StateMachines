@@ -20,10 +20,6 @@ const FONT_SIZE = 20;
 const ROWS = Math.floor((HEIGHT - (2 * PAD_Y)) / CHAR_HEIGHT);
 const COLUMNS = Math.floor((WIDTH - (2 * PAD_X)) / CHAR_WIDTH);
 const INDEX_PREFIX_CHARS = 8;
-const STRIP_LEFT = 90;
-const STRIP_WIDTH = WIDTH - STRIP_LEFT;
-const STRIP_LOCAL_TOP = 0;
-const STRIP_HEIGHT = 20;
 const ACTIVE_RE = /^Agents\.reader\.json-([0-9a-f]{40})$/i;
 const CARD_RE = /^[0-9a-f]{32}\.png$/;
 
@@ -71,90 +67,82 @@ function xmlEscape(text) {
     .replace(/'/g, '&apos;');
 }
 
-function candidateSvg(value, prefixIndex) {
-  const line = `[${prefixIndex}] ${JSON.stringify(value)}`;
+function candidateCardSvg(value) {
+  const texts = [];
+  for (let row = 0; row < ROWS; row++) {
+    const line = `[${row}] ${JSON.stringify(value)}`;
+    const y = PAD_Y + ((row + 1) * CHAR_HEIGHT) - 3;
+    texts.push(`<text x="${PAD_X}" y="${y}">${xmlEscape(line)}</text>`);
+  }
   return Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${CHAR_HEIGHT}" viewBox="0 0 ${WIDTH} ${CHAR_HEIGHT}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">` +
     `<rect width="100%" height="100%" fill="white"/>` +
-    `<g xml:space="preserve" fill="black" font-family="DejaVu Sans Mono, monospace" font-size="${FONT_SIZE}px">` +
-    `<text x="${PAD_X}" y="17">${xmlEscape(line)}</text></g></svg>`,
+    `<g xml:space="preserve" fill="black" font-family="DejaVu Sans Mono, monospace" font-size="${FONT_SIZE}px">${texts.join('')}</g>` +
+    `</svg>`,
     'utf8'
   );
 }
 
-function stripHash(raw, width, channels, top) {
+function rowHash(raw, width, channels, row) {
   const hash = crypto.createHash('sha256');
-  for (let y = top; y < top + STRIP_HEIGHT; y++) {
-    const start = ((y * width) + STRIP_LEFT) * channels;
-    const end = start + (STRIP_WIDTH * channels);
+  const top = PAD_Y + (row * CHAR_HEIGHT);
+  for (let y = top; y < top + CHAR_HEIGHT; y++) {
+    const start = (y * width) * channels;
+    const end = start + (width * channels);
     hash.update(raw.subarray(start, end));
   }
   return hash.digest('hex');
 }
 
-async function candidateHash(value, prefixIndex) {
-  const { data, info } = await sharp(candidateSvg(value, prefixIndex))
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  return stripHash(data, info.width, info.channels, STRIP_LOCAL_TOP);
+function rowHasInk(raw, width, channels, row) {
+  const top = PAD_Y + (row * CHAR_HEIGHT);
+  for (let y = top; y < top + CHAR_HEIGHT; y++) {
+    const start = (y * width) * channels;
+    const end = start + (width * channels);
+    for (let i = start; i < end; i++) if (raw[i] !== 255) return true;
+  }
+  return false;
 }
 
 async function buildCandidateMaps(canonical) {
   const byKey = new Map();
   for (const item of canonical) byKey.set(JSON.stringify(item), item);
   const unique = [...byKey.entries()];
-  const maps = { one: new Map(), two: new Map() };
+  const maps = Array.from({ length: ROWS }, () => new Map());
 
-  const batchSize = 32;
+  const batchSize = 16;
   for (let offset = 0; offset < unique.length; offset += batchSize) {
     const batch = unique.slice(offset, offset + batchSize);
     const results = await Promise.all(batch.map(async ([key, value]) => {
-      const [one, two] = await Promise.all([
-        candidateHash(value, 0),
-        candidateHash(value, 10)
-      ]);
-      return { key, one, two };
+      const { data, info } = await sharp(candidateCardSvg(value))
+        .removeAlpha().raw().toBuffer({ resolveWithObject: true });
+      return { key, hashes: Array.from({ length: ROWS }, (_, row) => rowHash(data, info.width, info.channels, row)) };
     }));
     for (const result of results) {
-      for (const [kind, hash] of [['one', result.one], ['two', result.two]]) {
-        const existing = maps[kind].get(hash);
+      for (let row = 0; row < ROWS; row++) {
+        const hash = result.hashes[row];
+        const existing = maps[row].get(hash);
         if (existing && existing !== result.key) {
-          throw new Error(`Pixel hash collision between distinct values (${kind}-digit prefix)`);
+          throw new Error(`Pixel collision at row ${row}: ${existing} <> ${result.key}`);
         }
-        maps[kind].set(hash, result.key);
+        maps[row].set(hash, result.key);
       }
     }
   }
-  console.log(`[solver] candidate pixel signatures=${unique.length * 2}`);
+  console.log(`[solver] exact-position signatures=${unique.length * ROWS}`);
   return maps;
 }
 
 async function decodeCard(filePath, maps, canonicalByKey) {
-  const { data, info } = await sharp(filePath)
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  const { data, info } = await sharp(filePath).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   if (info.width !== WIDTH || info.height !== HEIGHT) {
     throw new Error(`Unexpected card dimensions ${path.basename(filePath)}: ${info.width}x${info.height}`);
   }
-
   const rows = [];
   for (let row = 0; row < ROWS; row++) {
-    const top = PAD_Y + (row * CHAR_HEIGHT) + STRIP_LOCAL_TOP;
-    const hash = stripHash(data, info.width, info.channels, top);
-    const map = row < 10 ? maps.one : maps.two;
-    const key = map.get(hash);
+    const key = maps[row].get(rowHash(data, info.width, info.channels, row));
     if (!key) {
-      let nonWhite = false;
-      for (let y = top; y < top + STRIP_HEIGHT && !nonWhite; y++) {
-        const start = ((y * info.width) + STRIP_LEFT) * info.channels;
-        const end = start + (STRIP_WIDTH * info.channels);
-        for (let i = start; i < end; i++) {
-          if (data[i] !== 255) { nonWhite = true; break; }
-        }
-      }
-      if (!nonWhite) break;
+      if (!rowHasInk(data, info.width, info.channels, row)) break;
       throw new Error(`Unmatched rendered row ${row} in ${path.basename(filePath)}`);
     }
     rows.push({ row, key, value: canonicalByKey.get(key) });
@@ -189,17 +177,13 @@ async function main() {
   if (challenge.challenge !== 'agents-png-locator-v2') throw new Error(`Unsupported challenge ${challenge.challenge}`);
 
   const canonical = projectAgents();
-  if (canonical.length !== challenge.item_count) {
-    throw new Error(`Canonical item count mismatch ${canonical.length} != ${challenge.item_count}`);
-  }
+  if (canonical.length !== challenge.item_count) throw new Error(`Canonical item count mismatch ${canonical.length} != ${challenge.item_count}`);
   const canonicalKeys = canonical.map(JSON.stringify);
   const canonicalByKey = new Map(canonical.map((item) => [JSON.stringify(item), item]));
   const maps = await buildCandidateMaps(canonical);
 
   const cardNames = fs.readdirSync(readingRoom).filter((name) => CARD_RE.test(name)).sort();
-  if (cardNames.length !== challenge.card_model.total_cards) {
-    throw new Error(`Card count mismatch ${cardNames.length} != ${challenge.card_model.total_cards}`);
-  }
+  if (cardNames.length !== challenge.card_model.total_cards) throw new Error(`Card count mismatch ${cardNames.length} != ${challenge.card_model.total_cards}`);
 
   const placement = new Map();
   let mixedCount = 0;
@@ -207,22 +191,16 @@ async function main() {
 
   for (const name of cardNames) {
     const rows = await decodeCard(path.join(readingRoom, name), maps, canonicalByKey);
+    const fullStart = contiguousStart(rows.map((r) => r.key), canonicalKeys);
+    if (fullStart >= 0) { referenceCount++; continue; }
+
     const evenRows = rows.filter((r) => r.row % 2 === 0);
     const oddRows = rows.filter((r) => r.row % 2 === 1);
     const evenStart = contiguousStart(evenRows.map((r) => r.key), canonicalKeys);
     const oddStart = contiguousStart(oddRows.map((r) => r.key), canonicalKeys);
-
-    const fullStart = contiguousStart(rows.map((r) => r.key), canonicalKeys);
-    if (fullStart >= 0) {
-      referenceCount++;
-      continue;
-    }
-
     const evenOrdered = evenStart >= 0;
     const oddOrdered = oddStart >= 0;
-    if (evenOrdered === oddOrdered) {
-      throw new Error(`Could not determine unique ordered parity for mixed card ${name}: even=${evenStart}, odd=${oddStart}`);
-    }
+    if (evenOrdered === oddOrdered) throw new Error(`Could not determine ordered parity for ${name}: even=${evenStart}, odd=${oddStart}`);
 
     mixedCount++;
     const shuffledRows = evenOrdered ? oddRows : evenRows;
@@ -232,12 +210,8 @@ async function main() {
     }
   }
 
-  if (mixedCount !== challenge.card_model.mixed_interleave_cards) {
-    throw new Error(`Mixed card count mismatch ${mixedCount} != ${challenge.card_model.mixed_interleave_cards}`);
-  }
-  if (referenceCount !== challenge.card_model.dense_ordered_reference_cards) {
-    throw new Error(`Reference card count mismatch ${referenceCount} != ${challenge.card_model.dense_ordered_reference_cards}`);
-  }
+  if (mixedCount !== challenge.card_model.mixed_interleave_cards) throw new Error(`Mixed card count mismatch ${mixedCount} != ${challenge.card_model.mixed_interleave_cards}`);
+  if (referenceCount !== challenge.card_model.dense_ordered_reference_cards) throw new Error(`Reference card count mismatch ${referenceCount} != ${challenge.card_model.dense_ordered_reference_cards}`);
 
   const locator = [];
   for (const key of canonicalKeys) {
@@ -245,11 +219,9 @@ async function main() {
     if (!queue || !queue.length) throw new Error(`No unused shuffled occurrence for ${key}`);
     locator.push(queue.shift());
   }
-
   let leftovers = 0;
   for (const queue of placement.values()) leftovers += queue.length;
   if (leftovers !== 0) throw new Error(`Unused shuffled slots remain: ${leftovers}`);
-  if (locator.length !== canonical.length) throw new Error('Locator length mismatch');
 
   challenge.locator = locator;
   fs.writeFileSync(activePath, JSON.stringify(challenge) + '\n', 'utf8');
