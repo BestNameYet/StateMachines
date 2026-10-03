@@ -3,8 +3,8 @@
   "canonical_path": "ChatMachines/GeminiSupervisor/README.md",
   "format": "text",
   "source_provenance": {
-    "source_blob_sha": "65093f40a8e5bfc6538e7b007d045ec46233bbb5",
-    "source_commit_sha": "76d4ab017cd32249e89e4aac86e94619516d5020"
+    "source_blob_sha": "98b77b163005d21e2d1d6cacfa41b5772a33a4f7",
+    "source_commit_sha": "cba52561f066b69d127755c25a568c141a676db8"
   },
   "items": [
     {
@@ -6154,7 +6154,7 @@
     {
       "type": "content",
       "line_number": 1025,
-      "text": "Reader synchronization is implemented by `ChatMachines/GeminiSupervisor/scripts/sync-stable-readers.js` and `.github/workflows/gemini-supervisor-reader-sync.yml`. A stable reader is regenerated only when its own canonical source/provenance changes.",
+      "text": "#### Canonical `flatten` definition",
       "eol": "\n"
     },
     {
@@ -6166,7 +6166,7 @@
     {
       "type": "content",
       "line_number": 1027,
-      "text": "### Step 0 generated form",
+      "text": "`flatten` means **flatten the hierarchy, not the information**. Every terminal object property becomes one projection element, and every array member becomes one projection element. Nested containers recurse until terminal units are reached. Every projection element preserves the complete ancestry needed to locate that unit in the original structure. When ancestry passes through an array, that level is represented by an array containing exactly one original member. The resulting outer projection array therefore contains self-locating minimal JSON fragments that can be merged recursively to rebuild the original structure without guessing any omitted key, array position, or container relationship.",
       "eol": "\n"
     },
     {
@@ -6178,7 +6178,7 @@
     {
       "type": "content",
       "line_number": 1029,
-      "text": "A new Step 0 run uses a system-generated form rather than requiring the worker to manufacture the entire return schema from scratch:",
+      "text": "For an object:",
       "eol": "\n"
     },
     {
@@ -6190,73 +6190,73 @@
     {
       "type": "content",
       "line_number": 1031,
-      "text": "```text",
+      "text": "```json",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1032,
-      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/step-0-form.json",
+      "text": "{\"user_words\":{\"key\":\"user_words\",\"value\":\"...\"}}",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1033,
-      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/.step-0-form.lock.json",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1034,
       "text": "```",
       "eol": "\n"
     },
     {
       "type": "content",
-      "line_number": 1035,
+      "line_number": 1034,
       "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1035,
+      "text": "flattens to:",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1036,
-      "text": "The generator is `ChatMachines/GeminiSupervisor/scripts/generate-step-0-form.js`. The system pre-populates and locks the run nonce, verbatim user request, required and forbidden roles, generation timestamp, Step 0 identity, and selectable truth-readable document universe. The worker fills the execution fields and document-selection booleans.",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1037,
-      "text": "",
+      "text": "```json",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1038,
-      "text": "On the first Step 0 trigger, the state-machine workflow creates the form and stops. After the completed form is committed, the truth-reader workflow creates the challenge for that same run nonce. Once the nonce has a durable truth-reader PASS receipt, the state-machine workflow uses the completed form as Step 0's return schema and resumes the existing Supervisor gate.",
+      "text": "[",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1039,
-      "text": "",
+      "text": "  {\"user_words\":{\"key\":\"user_words\"}},",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1040,
-      "text": "### Nonce-scoped full and repair projections",
+      "text": "  {\"user_words\":{\"value\":\"...\"}}",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1041,
-      "text": "",
+      "text": "]",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1042,
-      "text": "Truth challenges are isolated under:",
+      "text": "```",
       "eol": "\n"
     },
     {
@@ -6268,31 +6268,31 @@
     {
       "type": "content",
       "line_number": 1044,
-      "text": "```text",
+      "text": "For an array of objects:",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1045,
-      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/truth-reader/",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1046,
-      "text": "```",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1047,
       "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
+      "line_number": 1046,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1047,
+      "text": "{\"rule_following\":[{\"scenario\":\"A\",\"status\":\"PASS\"},{\"scenario\":\"B\",\"status\":\"PASS\"}]}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
       "line_number": 1048,
-      "text": "For each selected document, the challenge generator copies the current stable reader into an intact worker-visible `<doc_id>.full.json` and creates an editable damaged `<doc_id>.repair.json`. Both are bound to the run nonce and carry document/source/reader provenance.",
+      "text": "```",
       "eol": "\n"
     },
     {
@@ -6304,7 +6304,7 @@
     {
       "type": "content",
       "line_number": 1050,
-      "text": "A machine-owned baseline is retained while the challenge is active:",
+      "text": "flattens recursively to:",
       "eol": "\n"
     },
     {
@@ -6316,49 +6316,49 @@
     {
       "type": "content",
       "line_number": 1052,
-      "text": "```text",
+      "text": "```json",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1053,
-      "text": "truth-reader/.baseline/<doc_id>.full.json",
+      "text": "[",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1054,
-      "text": "truth-reader/.baseline/<doc_id>.repair.json",
+      "text": "  {\"rule_following\":[{\"scenario\":\"A\"}]},",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1055,
-      "text": "```",
+      "text": "  {\"rule_following\":[{\"status\":\"PASS\"}]},",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1056,
-      "text": "",
+      "text": "  {\"rule_following\":[{\"scenario\":\"B\"}]},",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1057,
-      "text": "This prevents a worker from changing both visible files to manufacture a match.",
+      "text": "  {\"rule_following\":[{\"status\":\"PASS\"}]}",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1058,
-      "text": "",
+      "text": "]",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1059,
-      "text": "### Random distributed damage",
+      "text": "```",
       "eol": "\n"
     },
     {
@@ -6370,7 +6370,7 @@
     {
       "type": "content",
       "line_number": 1061,
-      "text": "The repair copy damages approximately 10% of eligible projection records using cryptographically secure randomness. Eligible records are divided into multiple regions and random removals are selected across those regions, preventing all damage from clustering in one document area and avoiding a predictable every-Nth pattern.",
+      "text": "For arbitrary object/array nesting:",
       "eol": "\n"
     },
     {
@@ -6382,163 +6382,163 @@
     {
       "type": "content",
       "line_number": 1063,
-      "text": "Substantial content records are preferred over empty or punctuation-only records. Every selected record is replaced by the same generic placeholder:",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1064,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1065,
       "text": "```json",
       "eol": "\n"
     },
     {
       "type": "content",
+      "line_number": 1064,
+      "text": "{\"groups\":[{\"items\":[{\"name\":\"A\"},{\"name\":\"B\"}]}]}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1065,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
       "line_number": 1066,
-      "text": "{",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1067,
-      "text": "  \"^MISSING_KEY^\": \"^MISSING_VALUE^\"",
+      "text": "flattens to:",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1068,
-      "text": "}",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1069,
-      "text": "```",
+      "text": "```json",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1070,
-      "text": "",
+      "text": "[",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1071,
-      "text": "There are no seed values, numbered gaps, answer arrays, or worker-visible gap maps. The worker compares the repair projection with the supplied full projection and restores the repair projection completely.",
+      "text": "  {\"groups\":[{\"items\":[{\"name\":\"A\"}]}]},",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1072,
-      "text": "",
+      "text": "  {\"groups\":[{\"items\":[{\"name\":\"B\"}]}]}",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1073,
-      "text": "### Deterministic verification",
+      "text": "]",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1074,
-      "text": "",
+      "text": "```",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1075,
-      "text": "The verifier is `ChatMachines/GeminiSupervisor/scripts/truth-challenge-engine.js`; the workflow is `.github/workflows/truth-challenge.yml`.",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1076,
-      "text": "",
+      "text": "The same recursion applies at any depth. Flattening may change the outer sequence of projection elements when a later operation intentionally shuffles that outer array, but it must not discard ancestry or mutate the internal structure of any projection element.",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1077,
-      "text": "PASS requires: the run binding to match; the visible full projection to remain exactly equal to its trusted full baseline; no missing placeholders to remain; the repaired projection to be deeply and structurally equal to the intact full projection; and every selected document to pass. Partial repair is FAIL. Gemini cannot override this result.",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1078,
-      "text": "",
+      "text": "Reader synchronization is implemented by `ChatMachines/GeminiSupervisor/scripts/sync-stable-readers.js` and `.github/workflows/gemini-supervisor-reader-sync.yml`. A stable reader is regenerated only when its own canonical source/provenance changes.",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1079,
-      "text": "On FAIL, the exact original damaged repair copy is restored from the trusted baseline, so retry uses the same damage pattern. On PASS, a durable `truth-reader/PASS.json` receipt remains under the run nonce while the transient full files, repair files, baseline, manifest, and FAIL status are removed.",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1080,
-      "text": "",
+      "text": "### Step 0 generated form",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1081,
-      "text": "The earlier global seed/proof selector/status model is retired. Runtime settings are recorded under `truth_reader_runtime` in `dependency-map.json`.",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1082,
-      "text": "",
+      "text": "A new Step 0 run uses a system-generated form rather than requiring the worker to manufacture the entire return schema from scratch:",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1083,
-      "text": "### Historical run cutoff",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1084,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1085,
-      "text": "All Supervisor nonces that existed before this nonce-scoped repair design were physically moved out of the active runs directory into:",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1086,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1087,
       "text": "```text",
       "eol": "\n"
     },
     {
       "type": "content",
+      "line_number": 1085,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/step-0-form.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1086,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/.step-0-form.lock.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1087,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
       "line_number": 1088,
-      "text": "ChatMachines/GeminiSupervisor/historical/runs/",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1089,
-      "text": "```",
+      "text": "The generator is `ChatMachines/GeminiSupervisor/scripts/generate-step-0-form.js`. The system pre-populates and locks the run nonce, verbatim user request, required and forbidden roles, generation timestamp, Step 0 identity, and selectable truth-readable document universe. The worker fills the execution fields and document-selection booleans.",
       "eol": "\n"
     },
     {
@@ -6550,13 +6550,325 @@
     {
       "type": "content",
       "line_number": 1091,
-      "text": "Their original Git subtrees were preserved. The active `ChatMachines/GeminiSupervisor/runs/` path is reserved for runs created under the new architecture. The cutoff inventory is recorded in `ChatMachines/GeminiSupervisor/historical-runs.json`.",
+      "text": "On the first Step 0 trigger, the state-machine workflow creates the form and stops. After the completed form is committed, the truth-reader workflow creates the challenge for that same run nonce. Once the nonce has a durable truth-reader PASS receipt, the state-machine workflow uses the completed form as Step 0's return schema and resumes the existing Supervisor gate.",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1092,
       "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1093,
+      "text": "### Nonce-scoped full and repair projections",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1094,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1095,
+      "text": "Truth challenges are isolated under:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1096,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1097,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1098,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/truth-reader/",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1099,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1100,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1101,
+      "text": "For each selected document, the challenge generator copies the current stable reader into an intact worker-visible `<doc_id>.full.json` and creates an editable damaged `<doc_id>.repair.json`. Both are bound to the run nonce and carry document/source/reader provenance.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1102,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1103,
+      "text": "A machine-owned baseline is retained while the challenge is active:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1104,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1105,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1106,
+      "text": "truth-reader/.baseline/<doc_id>.full.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1107,
+      "text": "truth-reader/.baseline/<doc_id>.repair.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1108,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1109,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1110,
+      "text": "This prevents a worker from changing both visible files to manufacture a match.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1111,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1112,
+      "text": "### Random distributed damage",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1113,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1114,
+      "text": "The repair copy damages approximately 10% of eligible projection records using cryptographically secure randomness. Eligible records are divided into multiple regions and random removals are selected across those regions, preventing all damage from clustering in one document area and avoiding a predictable every-Nth pattern.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1115,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1116,
+      "text": "Substantial content records are preferred over empty or punctuation-only records. Every selected record is replaced by the same generic placeholder:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1117,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1118,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1119,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1120,
+      "text": "  \"^MISSING_KEY^\": \"^MISSING_VALUE^\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1121,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1122,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1123,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1124,
+      "text": "There are no seed values, numbered gaps, answer arrays, or worker-visible gap maps. The worker compares the repair projection with the supplied full projection and restores the repair projection completely.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1125,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1126,
+      "text": "### Deterministic verification",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1127,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1128,
+      "text": "The verifier is `ChatMachines/GeminiSupervisor/scripts/truth-challenge-engine.js`; the workflow is `.github/workflows/truth-challenge.yml`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1129,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1130,
+      "text": "PASS requires: the run binding to match; the visible full projection to remain exactly equal to its trusted full baseline; no missing placeholders to remain; the repaired projection to be deeply and structurally equal to the intact full projection; and every selected document to pass. Partial repair is FAIL. Gemini cannot override this result.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1131,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1132,
+      "text": "On FAIL, the exact original damaged repair copy is restored from the trusted baseline, so retry uses the same damage pattern. On PASS, a durable `truth-reader/PASS.json` receipt remains under the run nonce while the transient full files, repair files, baseline, manifest, and FAIL status are removed.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1133,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1134,
+      "text": "The earlier global seed/proof selector/status model is retired. Runtime settings are recorded under `truth_reader_runtime` in `dependency-map.json`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1135,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1136,
+      "text": "### Historical run cutoff",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1137,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1138,
+      "text": "All Supervisor nonces that existed before this nonce-scoped repair design were physically moved out of the active runs directory into:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1139,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1140,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1141,
+      "text": "ChatMachines/GeminiSupervisor/historical/runs/",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1142,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1143,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1144,
+      "text": "Their original Git subtrees were preserved. The active `ChatMachines/GeminiSupervisor/runs/` path is reserved for runs created under the new architecture. The cutoff inventory is recorded in `ChatMachines/GeminiSupervisor/historical-runs.json`.",
       "eol": "\n"
     }
   ]
