@@ -34,8 +34,8 @@ jobs:
         run: |
           set -euo pipefail
           sed -i 's/const STRIP_LEFT = 70;/const STRIP_LEFT = 90;/' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
-          sed -i 's/const STRIP_LOCAL_TOP = 2;/const STRIP_LOCAL_TOP = 0;/' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
-          sed -i 's/const STRIP_HEIGHT = 16;/const STRIP_HEIGHT = 20;/' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
+          sed -i 's/const STRIP_LOCAL_TOP = 0;/const STRIP_LOCAL_TOP = 2;/' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
+          sed -i 's/const STRIP_HEIGHT = 20;/const STRIP_HEIGHT = 16;/' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
           node ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
 
       - name: Commit solved locator
@@ -54,5 +54,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "$ACTIVE"
           git diff --cached --quiet && { echo 'Solver produced no locator change.' >&2; exit 1; }
-          git commit -m "Submit solved PNG locator challenge"
+          git commit -m 'Submit solved PNG locator challenge'
           git push origin HEAD:main
