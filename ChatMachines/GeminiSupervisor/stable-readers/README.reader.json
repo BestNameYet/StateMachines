@@ -3,8 +3,8 @@
   "canonical_path": "ChatMachines/GeminiSupervisor/README.md",
   "format": "text",
   "source_provenance": {
-    "source_blob_sha": "98b77b163005d21e2d1d6cacfa41b5772a33a4f7",
-    "source_commit_sha": "cba52561f066b69d127755c25a568c141a676db8"
+    "source_blob_sha": "9baace032cedb4483fc676b8bda297f073d4ac93",
+    "source_commit_sha": "39789c004ce6340259ce932f8554efc1b29b43be"
   },
   "items": [
     {
@@ -6154,7 +6154,7 @@
     {
       "type": "content",
       "line_number": 1025,
-      "text": "#### Canonical `flatten` definition",
+      "text": "#### Canonical JSON flattening and shuffle representation",
       "eol": "\n"
     },
     {
@@ -6166,7 +6166,7 @@
     {
       "type": "content",
       "line_number": 1027,
-      "text": "`flatten` means **flatten the hierarchy, not the information**. Every terminal object property becomes one projection element, and every array member becomes one projection element. Nested containers recurse until terminal units are reached. Every projection element preserves the complete ancestry needed to locate that unit in the original structure. When ancestry passes through an array, that level is represented by an array containing exactly one original member. The resulting outer projection array therefore contains self-locating minimal JSON fragments that can be merged recursively to rebuild the original structure without guessing any omitted key, array position, or container relationship.",
+      "text": "`Agents.md` remains the authoritative canonical source; the projection is a deterministic derivative reading and shuffle representation and does not replace `Agents.md`. For `Agents.md`, the deterministic first-stage projection converts Markdown headings into JSON keys around the JSON content beneath them; the canonical projection used for the flattening and shuffle representation is 100% JSON.",
       "eol": "\n"
     },
     {
@@ -6178,7 +6178,7 @@
     {
       "type": "content",
       "line_number": 1029,
-      "text": "For an object:",
+      "text": "In the flattened projection, every terminal object property is one fundamental projection element. Each such element is a minimal self-locating JSON fragment that retains the full nested ancestor route from the projection root to that terminal property, with each object predecessor exposing only the branch needed to reach that property. Every array member is likewise a fundamental projection element and is represented at its array boundary as an array containing exactly one member; nested arrays and arrays containing objects use the same rule recursively.",
       "eol": "\n"
     },
     {
@@ -6190,19 +6190,19 @@
     {
       "type": "content",
       "line_number": 1031,
-      "text": "```json",
+      "text": "Provenance is the retained nested JSON structure itself: do not add a separate provenance field, generic path array, index metadata, or normalized identifier. Original keys and values are preserved exactly, including apparently redundant keys such as a parent `user_words` object containing an internal `\"key\": \"user_words\"`; exact reconstruction takes precedence over deduplication or normalization.",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1032,
-      "text": "{\"user_words\":{\"key\":\"user_words\",\"value\":\"...\"}}",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1033,
-      "text": "```",
+      "text": "Reconstruction is executed by recursively summing and merging the lowest-level projection elements at matching nesting signatures to rebuild the original JSON structure. Extra metadata is not invented to resolve or redesign this specified representation.",
       "eol": "\n"
     },
     {
@@ -6214,7 +6214,7 @@
     {
       "type": "content",
       "line_number": 1035,
-      "text": "flattens to:",
+      "text": "Shuffle semantics operate as follows: construct the deterministic projection first, flatten it into the top-level array of minimal self-locating fragments, minify the JSON, and shuffle only the indices and elements of that outermost projection array. Shuffle semantics do not shuffle raw Markdown, characters, keys, values, or content inside an individual fragment. Pretty-printed JSON in README examples is explanatory only; the machine representation may be minified after construction.",
       "eol": "\n"
     },
     {
@@ -6226,648 +6226,1350 @@
     {
       "type": "content",
       "line_number": 1037,
-      "text": "```json",
+      "text": "Concise examples demonstrating this architecture:",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1038,
-      "text": "[",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1039,
-      "text": "  {\"user_words\":{\"key\":\"user_words\"}},",
+      "text": "1. **Object terminal properties:**",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1040,
-      "text": "  {\"user_words\":{\"value\":\"...\"}}",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1041,
-      "text": "]",
+      "text": "Source:",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1042,
-      "text": "```",
+      "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1043,
-      "text": "",
+      "text": "```json",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1044,
-      "text": "For an array of objects:",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1045,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1046,
-      "text": "```json",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1047,
-      "text": "{\"rule_following\":[{\"scenario\":\"A\",\"status\":\"PASS\"},{\"scenario\":\"B\",\"status\":\"PASS\"}]}",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1048,
-      "text": "```",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1049,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1050,
-      "text": "flattens recursively to:",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1051,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1052,
-      "text": "```json",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1053,
-      "text": "[",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1054,
-      "text": "  {\"rule_following\":[{\"scenario\":\"A\"}]},",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1055,
-      "text": "  {\"rule_following\":[{\"status\":\"PASS\"}]},",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1056,
-      "text": "  {\"rule_following\":[{\"scenario\":\"B\"}]},",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1057,
-      "text": "  {\"rule_following\":[{\"status\":\"PASS\"}]}",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1058,
-      "text": "]",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1059,
-      "text": "```",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1060,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1061,
-      "text": "For arbitrary object/array nesting:",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1062,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1063,
-      "text": "```json",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1064,
-      "text": "{\"groups\":[{\"items\":[{\"name\":\"A\"},{\"name\":\"B\"}]}]}",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1065,
-      "text": "```",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1066,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1067,
-      "text": "flattens to:",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1068,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1069,
-      "text": "```json",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1070,
-      "text": "[",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1071,
-      "text": "  {\"groups\":[{\"items\":[{\"name\":\"A\"}]}]},",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1072,
-      "text": "  {\"groups\":[{\"items\":[{\"name\":\"B\"}]}]}",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1073,
-      "text": "]",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1074,
-      "text": "```",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1075,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1076,
-      "text": "The same recursion applies at any depth. Flattening may change the outer sequence of projection elements when a later operation intentionally shuffles that outer array, but it must not discard ancestry or mutate the internal structure of any projection element.",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1077,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1078,
-      "text": "Reader synchronization is implemented by `ChatMachines/GeminiSupervisor/scripts/sync-stable-readers.js` and `.github/workflows/gemini-supervisor-reader-sync.yml`. A stable reader is regenerated only when its own canonical source/provenance changes.",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1079,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1080,
-      "text": "### Step 0 generated form",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1081,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1082,
-      "text": "A new Step 0 run uses a system-generated form rather than requiring the worker to manufacture the entire return schema from scratch:",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1083,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1084,
-      "text": "```text",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1085,
-      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/step-0-form.json",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1086,
-      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/.step-0-form.lock.json",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1087,
-      "text": "```",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1088,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1089,
-      "text": "The generator is `ChatMachines/GeminiSupervisor/scripts/generate-step-0-form.js`. The system pre-populates and locks the run nonce, verbatim user request, required and forbidden roles, generation timestamp, Step 0 identity, and selectable truth-readable document universe. The worker fills the execution fields and document-selection booleans.",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1090,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1091,
-      "text": "On the first Step 0 trigger, the state-machine workflow creates the form and stops. After the completed form is committed, the truth-reader workflow creates the challenge for that same run nonce. Once the nonce has a durable truth-reader PASS receipt, the state-machine workflow uses the completed form as Step 0's return schema and resumes the existing Supervisor gate.",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1092,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1093,
-      "text": "### Nonce-scoped full and repair projections",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1094,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1095,
-      "text": "Truth challenges are isolated under:",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1096,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1097,
-      "text": "```text",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1098,
-      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/truth-reader/",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1099,
-      "text": "```",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1100,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1101,
-      "text": "For each selected document, the challenge generator copies the current stable reader into an intact worker-visible `<doc_id>.full.json` and creates an editable damaged `<doc_id>.repair.json`. Both are bound to the run nonce and carry document/source/reader provenance.",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1102,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1103,
-      "text": "A machine-owned baseline is retained while the challenge is active:",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1104,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1105,
-      "text": "```text",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1106,
-      "text": "truth-reader/.baseline/<doc_id>.full.json",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1107,
-      "text": "truth-reader/.baseline/<doc_id>.repair.json",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1108,
-      "text": "```",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1109,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1110,
-      "text": "This prevents a worker from changing both visible files to manufacture a match.",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1111,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1112,
-      "text": "### Random distributed damage",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1113,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1114,
-      "text": "The repair copy damages approximately 10% of eligible projection records using cryptographically secure randomness. Eligible records are divided into multiple regions and random removals are selected across those regions, preventing all damage from clustering in one document area and avoiding a predictable every-Nth pattern.",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1115,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1116,
-      "text": "Substantial content records are preferred over empty or punctuation-only records. Every selected record is replaced by the same generic placeholder:",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1117,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1118,
-      "text": "```json",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1119,
       "text": "{",
       "eol": "\n"
     },
     {
       "type": "content",
-      "line_number": 1120,
-      "text": "  \"^MISSING_KEY^\": \"^MISSING_VALUE^\"",
+      "line_number": 1045,
+      "text": "  \"user_words\": {",
       "eol": "\n"
     },
     {
       "type": "content",
-      "line_number": 1121,
+      "line_number": 1046,
+      "text": "    \"key\": \"user_words\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1047,
+      "text": "    \"value\": \"Resolved text\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1048,
+      "text": "    \"definition\": \"Primary instruction evidence\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1049,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1050,
       "text": "}",
       "eol": "\n"
     },
     {
       "type": "content",
-      "line_number": 1122,
+      "line_number": 1051,
       "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1052,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1053,
+      "text": "Projects to three fragments, one for key, one for value, and one for definition:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1054,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1055,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1056,
+      "text": "[",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1057,
+      "text": "  {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1058,
+      "text": "    \"user_words\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1059,
+      "text": "      \"key\": \"user_words\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1060,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1061,
+      "text": "  },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1062,
+      "text": "  {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1063,
+      "text": "    \"user_words\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1064,
+      "text": "      \"value\": \"Resolved text\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1065,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1066,
+      "text": "  },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1067,
+      "text": "  {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1068,
+      "text": "    \"user_words\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1069,
+      "text": "      \"definition\": \"Primary instruction evidence\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1070,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1071,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1072,
+      "text": "]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1073,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1074,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1075,
+      "text": "2. **Arbitrarily nested object where key and value become separate full-route fragments:**",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1076,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1077,
+      "text": "Source:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1078,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1079,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1080,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1081,
+      "text": "  \"procedure\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1082,
+      "text": "    \"step_contract\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1083,
+      "text": "      \"step_0\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1084,
+      "text": "        \"key\": \"start_of_turn\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1085,
+      "text": "        \"value\": \"ready\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1086,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1087,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1088,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1089,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1090,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1091,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1092,
+      "text": "Projects to two minimal self-locating fragments, each retaining its complete nested ancestor route:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1093,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1094,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1095,
+      "text": "[",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1096,
+      "text": "  {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1097,
+      "text": "    \"procedure\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1098,
+      "text": "      \"step_contract\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1099,
+      "text": "        \"step_0\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1100,
+      "text": "          \"key\": \"start_of_turn\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1101,
+      "text": "        }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1102,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1103,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1104,
+      "text": "  },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1105,
+      "text": "  {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1106,
+      "text": "    \"procedure\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1107,
+      "text": "      \"step_contract\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1108,
+      "text": "        \"step_0\": {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1109,
+      "text": "          \"value\": \"ready\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1110,
+      "text": "        }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1111,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1112,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1113,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1114,
+      "text": "]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1115,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1116,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1117,
+      "text": "3. **Array source:**",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1118,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1119,
+      "text": "Source:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1120,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1121,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1122,
+      "text": "{",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1123,
-      "text": "",
+      "text": "  \"rule_following\": [",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1124,
-      "text": "There are no seed values, numbered gaps, answer arrays, or worker-visible gap maps. The worker compares the repair projection with the supplied full projection and restores the repair projection completely.",
+      "text": "    \"A\",",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1125,
-      "text": "",
+      "text": "    \"B\",",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1126,
-      "text": "### Deterministic verification",
+      "text": "    \"C\"",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1127,
-      "text": "",
+      "text": "  ]",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1128,
-      "text": "The verifier is `ChatMachines/GeminiSupervisor/scripts/truth-challenge-engine.js`; the workflow is `.github/workflows/truth-challenge.yml`.",
+      "text": "}",
       "eol": "\n"
     },
     {
       "type": "content",
       "line_number": 1129,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1130,
-      "text": "PASS requires: the run binding to match; the visible full projection to remain exactly equal to its trusted full baseline; no missing placeholders to remain; the repaired projection to be deeply and structurally equal to the intact full projection; and every selected document to pass. Partial repair is FAIL. Gemini cannot override this result.",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1131,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1132,
-      "text": "On FAIL, the exact original damaged repair copy is restored from the trusted baseline, so retry uses the same damage pattern. On PASS, a durable `truth-reader/PASS.json` receipt remains under the run nonce while the transient full files, repair files, baseline, manifest, and FAIL status are removed.",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1133,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1134,
-      "text": "The earlier global seed/proof selector/status model is retired. Runtime settings are recorded under `truth_reader_runtime` in `dependency-map.json`.",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1135,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1136,
-      "text": "### Historical run cutoff",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1137,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1138,
-      "text": "All Supervisor nonces that existed before this nonce-scoped repair design were physically moved out of the active runs directory into:",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1139,
-      "text": "",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1140,
-      "text": "```text",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1141,
-      "text": "ChatMachines/GeminiSupervisor/historical/runs/",
-      "eol": "\n"
-    },
-    {
-      "type": "content",
-      "line_number": 1142,
       "text": "```",
       "eol": "\n"
     },
     {
       "type": "content",
-      "line_number": 1143,
+      "line_number": 1130,
       "text": "",
       "eol": "\n"
     },
     {
       "type": "content",
+      "line_number": 1131,
+      "text": "Projects to three one-member-array fragments:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1132,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1133,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1134,
+      "text": "[",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1135,
+      "text": "  {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1136,
+      "text": "    \"rule_following\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1137,
+      "text": "      \"A\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1138,
+      "text": "    ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1139,
+      "text": "  },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1140,
+      "text": "  {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1141,
+      "text": "    \"rule_following\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1142,
+      "text": "      \"B\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1143,
+      "text": "    ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
       "line_number": 1144,
+      "text": "  },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1145,
+      "text": "  {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1146,
+      "text": "    \"rule_following\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1147,
+      "text": "      \"C\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1148,
+      "text": "    ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1149,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1150,
+      "text": "]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1151,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1152,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1153,
+      "text": "4. **Mixed nested array and object:**",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1154,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1155,
+      "text": "Source:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1156,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1157,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1158,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1159,
+      "text": "  \"outer\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1160,
+      "text": "    {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1161,
+      "text": "      \"inner\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1162,
+      "text": "        \"A\",",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1163,
+      "text": "        \"B\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1164,
+      "text": "      ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1165,
+      "text": "    }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1166,
+      "text": "  ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1167,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1168,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1169,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1170,
+      "text": "Projects to two full-route fragments:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1171,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1172,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1173,
+      "text": "[",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1174,
+      "text": "  {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1175,
+      "text": "    \"outer\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1176,
+      "text": "      {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1177,
+      "text": "        \"inner\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1178,
+      "text": "          \"A\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1179,
+      "text": "        ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1180,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1181,
+      "text": "    ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1182,
+      "text": "  },",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1183,
+      "text": "  {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1184,
+      "text": "    \"outer\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1185,
+      "text": "      {",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1186,
+      "text": "        \"inner\": [",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1187,
+      "text": "          \"B\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1188,
+      "text": "        ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1189,
+      "text": "      }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1190,
+      "text": "    ]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1191,
+      "text": "  }",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1192,
+      "text": "]",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1193,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1194,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1195,
+      "text": "Reader synchronization is implemented by `ChatMachines/GeminiSupervisor/scripts/sync-stable-readers.js` and `.github/workflows/gemini-supervisor-reader-sync.yml`. A stable reader is regenerated only when its own canonical source/provenance changes.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1196,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1197,
+      "text": "### Step 0 generated form",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1198,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1199,
+      "text": "A new Step 0 run uses a system-generated form rather than requiring the worker to manufacture the entire return schema from scratch:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1200,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1201,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1202,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/step-0-form.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1203,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/.step-0-form.lock.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1204,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1205,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1206,
+      "text": "The generator is `ChatMachines/GeminiSupervisor/scripts/generate-step-0-form.js`. The system pre-populates and locks the run nonce, verbatim user request, required and forbidden roles, generation timestamp, Step 0 identity, and selectable truth-readable document universe. The worker fills the execution fields and document-selection booleans.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1207,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1208,
+      "text": "On the first Step 0 trigger, the state-machine workflow creates the form and stops. After the completed form is committed, the truth-reader workflow creates the challenge for that same run nonce. Once the nonce has a durable truth-reader PASS receipt, the state-machine workflow uses the completed form as Step 0's return schema and resumes the existing Supervisor gate.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1209,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1210,
+      "text": "### Nonce-scoped full and repair projections",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1211,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1212,
+      "text": "Truth challenges are isolated under:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1213,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1214,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1215,
+      "text": "ChatMachines/GeminiSupervisor/runs/<run_nonce>/truth-reader/",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1216,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1217,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1218,
+      "text": "For each selected document, the challenge generator copies the current stable reader into an intact worker-visible `<doc_id>.full.json` and creates an editable damaged `<doc_id>.repair.json`. Both are bound to the run nonce and carry document/source/reader provenance.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1219,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1220,
+      "text": "A machine-owned baseline is retained while the challenge is active:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1221,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1222,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1223,
+      "text": "truth-reader/.baseline/<doc_id>.full.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1224,
+      "text": "truth-reader/.baseline/<doc_id>.repair.json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1225,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1226,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1227,
+      "text": "This prevents a worker from changing both visible files to manufacture a match.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1228,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1229,
+      "text": "### Random distributed damage",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1230,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1231,
+      "text": "The repair copy damages approximately 10% of eligible projection records using cryptographically secure randomness. Eligible records are divided into multiple regions and random removals are selected across those regions, preventing all damage from clustering in one document area and avoiding a predictable every-Nth pattern.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1232,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1233,
+      "text": "Substantial content records are preferred over empty or punctuation-only records. Every selected record is replaced by the same generic placeholder:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1234,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1235,
+      "text": "```json",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1236,
+      "text": "{",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1237,
+      "text": "  \"^MISSING_KEY^\": \"^MISSING_VALUE^\"",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1238,
+      "text": "}",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1239,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1240,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1241,
+      "text": "There are no seed values, numbered gaps, answer arrays, or worker-visible gap maps. The worker compares the repair projection with the supplied full projection and restores the repair projection completely.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1242,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1243,
+      "text": "### Deterministic verification",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1244,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1245,
+      "text": "The verifier is `ChatMachines/GeminiSupervisor/scripts/truth-challenge-engine.js`; the workflow is `.github/workflows/truth-challenge.yml`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1246,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1247,
+      "text": "PASS requires: the run binding to match; the visible full projection to remain exactly equal to its trusted full baseline; no missing placeholders to remain; the repaired projection to be deeply and structurally equal to the intact full projection; and every selected document to pass. Partial repair is FAIL. Gemini cannot override this result.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1248,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1249,
+      "text": "On FAIL, the exact original damaged repair copy is restored from the trusted baseline, so retry uses the same damage pattern. On PASS, a durable `truth-reader/PASS.json` receipt remains under the run nonce while the transient full files, repair files, baseline, manifest, and FAIL status are removed.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1250,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1251,
+      "text": "The earlier global seed/proof selector/status model is retired. Runtime settings are recorded under `truth_reader_runtime` in `dependency-map.json`.",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1252,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1253,
+      "text": "### Historical run cutoff",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1254,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1255,
+      "text": "All Supervisor nonces that existed before this nonce-scoped repair design were physically moved out of the active runs directory into:",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1256,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1257,
+      "text": "```text",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1258,
+      "text": "ChatMachines/GeminiSupervisor/historical/runs/",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1259,
+      "text": "```",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1260,
+      "text": "",
+      "eol": "\n"
+    },
+    {
+      "type": "content",
+      "line_number": 1261,
       "text": "Their original Git subtrees were preserved. The active `ChatMachines/GeminiSupervisor/runs/` path is reserved for runs created under the new architecture. The cutoff inventory is recorded in `ChatMachines/GeminiSupervisor/historical-runs.json`.",
       "eol": "\n"
     }
