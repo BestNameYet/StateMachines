@@ -33,6 +33,45 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js')
+          s = p.read_text()
+          old_rows = "const ROWS = Math.floor((HEIGHT - (2 * PAD_Y)) / CHAR_HEIGHT);"
+          new_rows = "const RAW_ROWS = Math.floor((HEIGHT - (2 * PAD_Y)) / CHAR_HEIGHT);\nconst ROWS = RAW_ROWS - (RAW_ROWS % 2);"
+          if old_rows not in s:
+              raise SystemExit('expected solver ROWS declaration not found')
+          s = s.replace(old_rows, new_rows, 1)
+          needle = "  return items;\n}\n\nfunction xmlEscape"
+          replacement = """  const targetItemCount = Math.ceil(items.length / ROWS) * ROWS;
+          while (items.length < targetItemCount) {
+            let splitIndex = -1;
+            let longest = 1;
+            for (let i = 0; i < items.length; i++) {
+              const length = items[i]?.text?.length || 0;
+              if (length > longest) {
+                longest = length;
+                splitIndex = i;
+              }
+            }
+            if (splitIndex < 0) throw new Error(`Cannot split projected items to ${targetItemCount}`);
+            const original = items[splitIndex];
+            const midpoint = Math.ceil(original.text.length / 2);
+            items.splice(
+              splitIndex,
+              1,
+              { type: 'content', text: original.text.slice(0, midpoint), eol: '' },
+              { type: 'content', text: original.text.slice(midpoint), eol: original.eol }
+            );
+          }
+          return items;
+        }
+
+        function xmlEscape"""
+          if needle not in s:
+              raise SystemExit('expected solver projectAgents return not found')
+          p.write_text(s.replace(needle, replacement, 1))
+          PY
           sed -i 's/const top = PAD_Y + (row \* CHAR_HEIGHT);/const top = PAD_Y + (row * CHAR_HEIGHT) + 5;/g' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
           sed -i 's/y < top + CHAR_HEIGHT/y < top + 10/g' ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
           node ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
