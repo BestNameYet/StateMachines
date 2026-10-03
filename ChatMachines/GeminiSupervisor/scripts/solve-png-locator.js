@@ -20,10 +20,10 @@ const FONT_SIZE = 20;
 const ROWS = Math.floor((HEIGHT - (2 * PAD_Y)) / CHAR_HEIGHT);
 const COLUMNS = Math.floor((WIDTH - (2 * PAD_X)) / CHAR_WIDTH);
 const INDEX_PREFIX_CHARS = 8;
-const STRIP_LEFT = 90;
+const STRIP_LEFT = 70;
 const STRIP_WIDTH = WIDTH - STRIP_LEFT;
-const STRIP_LOCAL_TOP = 2;
-const STRIP_HEIGHT = 16;
+const STRIP_LOCAL_TOP = 0;
+const STRIP_HEIGHT = 20;
 const ACTIVE_RE = /^Agents\.reader\.json-([0-9a-f]{40})$/i;
 const CARD_RE = /^[0-9a-f]{32}\.png$/;
 
@@ -76,7 +76,7 @@ function candidateSvg(value, prefixIndex) {
   return Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${CHAR_HEIGHT}" viewBox="0 0 ${WIDTH} ${CHAR_HEIGHT}">` +
     `<rect width="100%" height="100%" fill="white"/>` +
-    `<g fill="black" font-family="DejaVu Sans Mono, monospace" font-size="${FONT_SIZE}px">` +
+    `<g xml:space="preserve" fill="black" font-family="DejaVu Sans Mono, monospace" font-size="${FONT_SIZE}px">` +
     `<text x="${PAD_X}" y="17">${xmlEscape(line)}</text></g></svg>`,
     'utf8'
   );

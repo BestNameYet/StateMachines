@@ -211,7 +211,7 @@ function cardSvg(slots) {
   return Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${VIEWPORT_WIDTH}" height="${VIEWPORT_HEIGHT}" viewBox="0 0 ${VIEWPORT_WIDTH} ${VIEWPORT_HEIGHT}">` +
     `<rect width="100%" height="100%" fill="white"/>` +
-    `<g fill="black" font-family="DejaVu Sans Mono, monospace" font-size="${FONT_SIZE_PX}px">${texts}</g>` +
+    `<g xml:space="preserve" fill="black" font-family="DejaVu Sans Mono, monospace" font-size="${FONT_SIZE_PX}px">${texts}</g>` +
     `</svg>`,
     'utf8'
   );
