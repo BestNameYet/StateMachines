@@ -20,7 +20,8 @@ const CONSERVATIVE_CHARACTER_WIDTH_PX = 12;
 const PAD_X = 24;
 const PAD_Y = 20;
 const FONT_SIZE_PX = 20;
-const ROWS = Math.floor((VIEWPORT_HEIGHT - (2 * PAD_Y)) / CHARACTER_HEIGHT_PX);
+const RAW_ROWS = Math.floor((VIEWPORT_HEIGHT - (2 * PAD_Y)) / CHARACTER_HEIGHT_PX);
+const ROWS = RAW_ROWS - (RAW_ROWS % 2);
 const COLUMNS = Math.floor((VIEWPORT_WIDTH - (2 * PAD_X)) / CONSERVATIVE_CHARACTER_WIDTH_PX);
 const CPX = ROWS * COLUMNS;
 const INDEX_PREFIX_CHARS = 8;
@@ -80,6 +81,31 @@ function projectAgents() {
     if (match[0] === '' && re.lastIndex === text.length) break;
     items.push(...splitLineToRenderableItems(match[1], match[2]));
     if (match[2] === '') break;
+  }
+
+  // Make the canonical projected array fill complete even-row cards exactly.
+  // Splitting preserves document order and bytes: the first fragment has no EOL and
+  // the second fragment retains the original EOL. At most ROWS-1 splits are needed.
+  const targetItemCount = Math.ceil(items.length / ROWS) * ROWS;
+  while (items.length < targetItemCount) {
+    let splitIndex = -1;
+    let longest = 1;
+    for (let i = 0; i < items.length; i++) {
+      const length = items[i]?.text?.length || 0;
+      if (length > longest) {
+        longest = length;
+        splitIndex = i;
+      }
+    }
+    if (splitIndex < 0) throw new Error(`Cannot split projected items to ${targetItemCount}`);
+    const original = items[splitIndex];
+    const midpoint = Math.ceil(original.text.length / 2);
+    items.splice(
+      splitIndex,
+      1,
+      { type: 'content', text: original.text.slice(0, midpoint), eol: '' },
+      { type: 'content', text: original.text.slice(midpoint), eol: original.eol }
+    );
   }
 
   for (const item of items) {
@@ -258,17 +284,23 @@ async function buildChallenge(commitSha) {
   const canonical = full.items;
   const shuffled = shuffle(canonical);
 
-  const referenceCardCount = nominalCardCount(canonical);
-  const referenceGroups = partitionBalanced(canonical, referenceCardCount, ROWS);
+  if (canonical.length % ROWS !== 0) throw new Error('Canonical item count must fill whole ordered cards');
+  const referenceCardCount = canonical.length / ROWS;
+  const referenceGroups = [];
+  for (let i = 0; i < canonical.length; i += ROWS) {
+    referenceGroups.push(canonical.slice(i, i + ROWS));
+  }
 
   const pairs = canonical.map((ordered, i) => ({ ordered, shuffled: shuffled[i] }));
-  const pairCost = (pair) => entryChars(pair.ordered) + entryChars(pair.shuffled);
-  const mixedCardCount = Math.max(
-    1,
-    referenceCardCount * 2,
-    Math.ceil(pairs.length / Math.floor(ROWS / 2))
-  );
-  const mixedGroups = partitionBalanced(pairs, mixedCardCount, Math.floor(ROWS / 2), pairCost);
+  const pairsPerMixedCard = ROWS / 2;
+  const mixedCardCount = referenceCardCount * 2;
+  const mixedGroups = [];
+  for (let i = 0; i < pairs.length; i += pairsPerMixedCard) {
+    mixedGroups.push(pairs.slice(i, i + pairsPerMixedCard));
+  }
+  if (mixedGroups.length !== mixedCardCount) {
+    throw new Error(`Expected ${mixedCardCount} mixed cards, got ${mixedGroups.length}`);
+  }
 
   fs.mkdirSync(readingRoom, { recursive: true });
   removeGeneratedCards();
