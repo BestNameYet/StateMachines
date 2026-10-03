@@ -20,7 +20,7 @@ const FONT_SIZE = 20;
 const ROWS = Math.floor((HEIGHT - (2 * PAD_Y)) / CHAR_HEIGHT);
 const COLUMNS = Math.floor((WIDTH - (2 * PAD_X)) / CHAR_WIDTH);
 const INDEX_PREFIX_CHARS = 8;
-const STRIP_LEFT = 70;
+const STRIP_LEFT = 90;
 const STRIP_WIDTH = WIDTH - STRIP_LEFT;
 const STRIP_LOCAL_TOP = 0;
 const STRIP_HEIGHT = 20;
@@ -146,7 +146,6 @@ async function decodeCard(filePath, maps, canonicalByKey) {
     const map = row < 10 ? maps.one : maps.two;
     const key = map.get(hash);
     if (!key) {
-      // Cards are bottom-padded with white; once content ends, all later rows are blank.
       let nonWhite = false;
       for (let y = top; y < top + STRIP_HEIGHT && !nonWhite; y++) {
         const start = ((y * info.width) + STRIP_LEFT) * info.channels;
