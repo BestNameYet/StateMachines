@@ -1,0 +1,53 @@
+name: Test PNG Reader Agent
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiSupervisor/live-ground-truth/agent-test-trigger.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: test-png-reader-agent
+  cancel-in-progress: false
+
+jobs:
+  test-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Read PNG cards and solve locator with Gemini
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          PNG_AGENT_BATCH_SIZE: '6'
+          PNG_AGENT_TIMEOUT_MS: '300000'
+        run: node ChatMachines/GeminiSupervisor/scripts/agent-png-reader-test.js
+
+      - name: Commit model-produced locator only
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='ChatMachines/GeminiSupervisor/live-ground-truth/reading-room'
+          mapfile -t ACTIVE < <(find "$ROOT" -maxdepth 1 -type f -name 'Agents.reader.json-*' ! -name '*-PASS' ! -name '*-FAILED' | sort)
+          if [ "${#ACTIVE[@]}" -ne 1 ]; then
+            echo "Expected exactly one active challenge; found ${#ACTIVE[@]}." >&2
+            exit 1
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "${ACTIVE[0]}"
+          git diff --cached --quiet && { echo 'Agent produced no locator change.' >&2; exit 1; }
+          git commit -m 'Submit Gemini visual-agent PNG locator challenge'
+          git push origin HEAD:main
