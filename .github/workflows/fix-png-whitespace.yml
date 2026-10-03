@@ -1,0 +1,42 @@
+name: Fix PNG Whitespace Rendering
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiSupervisor/live-ground-truth/fix-renderer-trigger.json
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Preserve whitespace in raster text and normalize solver crop
+        shell: bash
+        run: |
+          set -euo pipefail
+          GEN='ChatMachines/GeminiSupervisor/scripts/live-ground-truth-reading-room.js'
+          SOL='ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js'
+          sed -i 's/<g fill="black"/<g xml:space="preserve" fill="black"/g' "$GEN" "$SOL"
+          sed -i 's/const STRIP_LEFT = 90;/const STRIP_LEFT = 70;/' "$SOL"
+          sed -i 's/const STRIP_LOCAL_TOP = 2;/const STRIP_LOCAL_TOP = 0;/' "$SOL"
+          sed -i 's/const STRIP_HEIGHT = 16;/const STRIP_HEIGHT = 20;/' "$SOL"
+          git diff -- "$GEN" "$SOL"
+
+      - name: Commit renderer fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ChatMachines/GeminiSupervisor/scripts/live-ground-truth-reading-room.js ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
+          git diff --cached --quiet && { echo 'No renderer changes produced.' >&2; exit 1; }
+          git commit -m 'Preserve whitespace in PNG reading-room renderer'
+          git push origin HEAD:main
