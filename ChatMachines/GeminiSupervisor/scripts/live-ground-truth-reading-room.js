@@ -313,6 +313,11 @@ async function buildChallenge(commitSha) {
   const challenge = {
     challenge: 'agents-png-locator-v2',
     source_blob_sha: full.source_blob_sha,
+    handshake: {
+      protocol: 'This challenge is a handshake. Issuing the challenge is the request leg; committing a completed locator is the response leg; a verifier PASS is the acknowledgement that closes the handshake.',
+      no_end_of_turn: 'Do not end the turn while this handshake remains open. Continue the read, solve, submit, and evaluate sequence until the verifier returns PASS, unless live evidence establishes an external blocker that makes continuation impossible.',
+      completion_condition: 'The handshake is complete only after the verifier returns PASS for the active challenge. A plan, partial locator, submission without PASS, or statement of completion does not close the handshake.'
+    },
     viewport: {
       width_px: VIEWPORT_WIDTH,
       height_px: VIEWPORT_HEIGHT,
