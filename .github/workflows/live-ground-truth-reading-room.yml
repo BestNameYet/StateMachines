@@ -29,6 +29,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Install PNG renderer
+        run: npm install --no-save --no-package-lock sharp
+
       - name: Determine operation
         id: operation
         shell: bash
@@ -46,10 +49,16 @@ jobs:
 
           REQUEST='ChatMachines/GeminiSupervisor/live-ground-truth/read-request.json'
           ROOM='ChatMachines/GeminiSupervisor/live-ground-truth/reading-room'
+          CHANGE_COUNT=$(printf '%s\n' "$CHANGED" | sed '/^$/d' | wc -l | tr -d ' ')
 
           REQUEST_CHANGED=false
           if printf '%s\n' "$CHANGED" | grep -qx "$REQUEST"; then
             REQUEST_CHANGED=true
+          fi
+
+          if printf '%s\n' "$CHANGED" | grep -Eq "^${ROOM}/[0-9a-f]{32}\.png$"; then
+            echo 'Reading-room PNG cards are system-owned and may not be modified by a reader commit.' >&2
+            exit 1
           fi
 
           if printf '%s\n' "$CHANGED" | grep -qx "$ROOM/Agents.reader.json"; then
@@ -64,28 +73,50 @@ jobs:
 
           mapfile -t CHALLENGES < <(printf '%s\n' "$CHANGED" | grep -E "^${ROOM}/Agents\.reader\.json-[0-9a-fA-F]{40}$" || true)
 
-          if [ "$REQUEST_CHANGED" = true ] && [ "${#CHALLENGES[@]}" -gt 0 ]; then
-            echo 'A commit may submit a read request or a repaired challenge, not both.' >&2
-            exit 1
-          fi
-
           if [ "$REQUEST_CHANGED" = true ]; then
+            if [ "$CHANGE_COUNT" -ne 1 ]; then
+              echo 'A read-request commit may change only read-request.json.' >&2
+              exit 1
+            fi
             echo 'mode=issue' >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           if [ "${#CHALLENGES[@]}" -eq 1 ]; then
+            if [ "$CHANGE_COUNT" -ne 1 ]; then
+              echo 'A challenge submission commit may change only the active challenge JSON.' >&2
+              exit 1
+            fi
+            CHALLENGE="${CHALLENGES[0]}"
+            NAME="${CHALLENGE##*/}"
+            CHALLENGE_SHA="${NAME#Agents.reader.json-}"
             echo 'mode=verify' >> "$GITHUB_OUTPUT"
-            echo "challenge=${CHALLENGES[0]}" >> "$GITHUB_OUTPUT"
+            echo "challenge=$CHALLENGE" >> "$GITHUB_OUTPUT"
+            echo "challenge_sha=$CHALLENGE_SHA" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           echo "Expected exactly one repaired challenge; found ${#CHALLENGES[@]}." >&2
           exit 1
 
+      - name: Restore challenge manifest
+        if: steps.operation.outputs.mode == 'verify'
+        uses: actions/cache/restore@v4
+        with:
+          path: .live-ground-truth-cache/${{ steps.operation.outputs.challenge_sha }}.json
+          key: live-ground-truth-reading-room-${{ steps.operation.outputs.challenge_sha }}
+          fail-on-cache-miss: true
+
       - name: Issue fresh reading challenge
         if: steps.operation.outputs.mode == 'issue'
         run: node ChatMachines/GeminiSupervisor/scripts/live-ground-truth-reading-room.js issue '${{ github.sha }}'
+
+      - name: Save issued challenge manifest
+        if: steps.operation.outputs.mode == 'issue'
+        uses: actions/cache/save@v4
+        with:
+          path: .live-ground-truth-cache/${{ github.sha }}.json
+          key: live-ground-truth-reading-room-${{ github.sha }}
 
       - name: Evaluate committed reading challenge
         if: steps.operation.outputs.mode == 'verify'
@@ -105,6 +136,13 @@ jobs:
             exit "$CODE"
           fi
 
+      - name: Save replacement manifest after failure
+        if: steps.operation.outputs.mode == 'verify' && steps.evaluate.outputs.result == 'FAILED'
+        uses: actions/cache/save@v4
+        with:
+          path: .live-ground-truth-cache/${{ github.sha }}.json
+          key: live-ground-truth-reading-room-${{ github.sha }}
+
       - name: Commit reading-room result
         shell: bash
         run: |
@@ -121,11 +159,11 @@ jobs:
           fi
 
           if [ '${{ steps.operation.outputs.mode }}' = 'issue' ]; then
-            git commit -m 'Issue live ground truth reading challenge for ${{ github.sha }}'
+            git commit -m 'Issue PNG live ground truth reading challenge for ${{ github.sha }}'
           elif [ '${{ steps.evaluate.outputs.result }}' = 'PASS' ]; then
-            git commit -m 'PASS live ground truth reading challenge ${{ github.sha }}'
+            git commit -m 'PASS PNG live ground truth reading challenge ${{ github.sha }}'
           else
-            git commit -m 'FAILED live ground truth reading challenge ${{ github.sha }} and issue fresh damage'
+            git commit -m 'FAILED PNG live ground truth reading challenge ${{ github.sha }} and issue fresh cards'
           fi
 
           git push origin HEAD:main
