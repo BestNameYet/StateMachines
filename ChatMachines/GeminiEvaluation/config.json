@@ -2,8 +2,8 @@
   "runtime_root": ".",
   "new_message_folder": "evaluator-nextmessage",
   "new_message_file": "nextmessage.json",
-  "messages_file": "truth-reader-implementation-messages.json",
-  "generic_messages_file": "truth-reader-implementation-messages.json",
+  "messages_file": "corpus-normalization-messages.json",
+  "generic_messages_file": "corpus-normalization-messages.json",
   "evaluation_output_file": "program-evaluation.json",
   "default_model": "gemini-3.8-flash",
   "request_timeout_ms": 180000,
@@ -16,34 +16,26 @@
   "write_latest_compatibility_outputs": false,
   "generic_inputs": [
     {
-      "key": "truth_reader_design",
-      "type": "literal",
-      "value": "Design and author the complete implementation for a workflow-only truth-reading challenge. Authoritative source documents are never modified. A committed selector/control form uses enumerated booleans such as doc1=true, doc2=false; arbitrary paths are rejected. On a worker/user commit selecting one or more docs, GitHub Actions runs a trusted Node.js script. For each selected document, the script reads the CURRENT authoritative source file and creates a complete JSON reading projection from its actual content; never use synthetic summaries or abbreviated substitute text. If the source is already JSON, represent its complete current value in a JSON-friendly projection that preserves all content and attach truth-seed fields at distributed structural locations. If the source is non-JSON text/Markdown, convert the complete source into an ordered JSON reading structure. Prefer an array of records, one paragraph per element where practical (or one line per element when paragraph splitting is unsuitable), e.g. [{index:0, topic:null, text:'...', truth_seed:'...'}]. Heading/topic information may be preserved as a topic field or topic key, but ordering and duplicate text must never be lost. Distribute fresh cryptographically random truth seeds across the full projection so the complete ordered seed list demonstrates broad document coverage. The projections are ephemeral/read-library artifacts derived from current source content; authoritative sources remain untouched. The workflow records the complete expected ordered seed vector in workflow-owned state without leaking raw seeds to logs, filenames, commit messages, workflow outputs, or artifacts, then commits the seeded JSON projections using GITHUB_TOKEN. The workflow-generated commit must not recursively trigger itself. The worker may retrieve the projections by any mechanism; the requirement is only that fresh values enter worker context. The worker then commits a separate evidence file containing the complete ordered seed vector. A workflow validates exact equality mechanically; Gemini/model judgment is not involved. FAIL performs no mutations. PASS performs one atomic cleanup/reset commit: selected docs booleans false, self empty, readers blank/deleted/reset as appropriate, evidence cleared, seeded projections removed or reset, and PASS status persisted. No sentinel is required because FAIL changes nothing and PASS cleanup is atomic at the commit boundary. Keep seed generation/verification in a separate workflow-only JS file, not send-to-gemini.js. Prefer path-filtered push triggers on selector/evidence files plus normal GITHUB_TOKEN recursion suppression. Include an explicit document catalog with stable IDs and source/projection paths; use as examples Agents.md, config.json, tests/step-3-evaluation.json, README.md, MANIFEST.md. Implementation should be portable to ModelConduct/Supervisor repository root. Produce concrete complete files, not patches or prose-only pseudocode."
+      "key": "agents_md_corpus",
+      "type": "file",
+      "path": "../GeminiSupervisor/Agents.md"
     }
   ],
-  "evaluation_heuristic": "Act as an implementation engineer. Return a minimal, internally consistent set of complete repository files implementing the supplied truth-reader design. Prefer one workflow-only Node.js program, one GitHub Actions workflow, selector/control JSON, evidence JSON, status/state files as needed, and a catalog. Do NOT author fake or manually summarized projection copies. The Node program must generate projections from the actual current source document on each selected read transaction. Every projection must be JSON. For non-JSON sources, preserve the entire source as an ordered array of paragraph or line records with explicit indices and optional topic metadata; each challenged record carries a seed field. For JSON sources, preserve the entire current JSON value and add/associate distributed seed fields without losing any source data. Seed placement must cover the whole document, with a deterministic spacing policy based on chunk count/size so returning all seeds demonstrates broad coverage. Every returned file must have an explicit repository-relative path and complete contents. Ensure workflow can distinguish selection commits from evidence commits, does not create an infinite commit-trigger loop, uses crypto.randomBytes or equivalent CSPRNG, validates all expected seeds exactly and in order, performs zero mutations on FAIL, and cleanup/reset occurs in one workflow-generated commit on PASS. Selector must be enumerated booleans, not arbitrary paths. Do not put raw expected seed values in logs, filenames, commit messages, workflow outputs, or artifacts. State unavoidable unresolved issues explicitly.",
+  "evaluation_heuristic": "Revise the supplied Agents.md corpus into one complete semantically equivalent projection containing exactly 61,200 Unicode code points, measured after JSON decoding by Array.from(revised_projection).length. Preserve every governing requirement, prohibition, permission, schema field, branch, loop, role boundary, evaluation definition, pass/fail condition, dependency, example distinction, and control-flow relationship. Do not introduce new normative requirements and do not weaken or delete existing ones. Preserve ordering where ordering is semantically meaningful. Editorially rephrase, condense, or expand explanatory prose only as needed to reach the exact target. Do not satisfy the target with meaningless padding, repeated filler, arbitrary whitespace runs, or synthetic placeholder text. The revised_projection field must contain the entire final corpus, not a patch, summary, ellipsis, or Markdown fence around the whole document. Report the source and revised counts, but the runtime will independently verify the revised projection count.",
   "evaluation_output_schema": {
-    "response_type": "truth_reader_implementation",
-    "files": [
-      {
-        "path": "repository-relative path",
-        "purpose": "string",
-        "content": "complete file contents"
-      }
-    ],
-    "design_checks": {
-      "authoritative_docs_immutable": true,
-      "enumerated_doc_selector": true,
-      "projection_from_current_source": true,
-      "all_projections_are_json": true,
-      "non_json_full_content_preserved": true,
-      "distributed_seed_coverage": true,
-      "workflow_only_seed_authority": true,
-      "exact_complete_seed_match": true,
-      "fail_is_noop": true,
-      "pass_atomic_cleanup": true,
-      "recursive_workflow_loop_prevented": true
+    "response_type": "corpus_projection_revision",
+    "character_metric": "Unicode code points measured by Array.from(text).length",
+    "target_character_count": 61200,
+    "source_character_count": 0,
+    "revised_character_count": 61200,
+    "revised_projection": "complete revised Agents.md projection",
+    "preservation_report": {
+      "requirements_preserved": true,
+      "schemas_preserved": true,
+      "control_flow_preserved": true,
+      "role_boundaries_preserved": true,
+      "new_normative_requirements_added": false
     },
-    "unresolved_requirements": []
+    "editorial_summary": "brief description of non-semantic edits used to reach the target"
   }
 }
