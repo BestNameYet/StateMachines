@@ -1,0 +1,64 @@
+name: Upgrade PNG Reading Room Cards
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiSupervisor/live-ground-truth/upgrade-cards-trigger.json
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Enforce even full-grid card construction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('ChatMachines/GeminiSupervisor/scripts/live-ground-truth-reading-room.js')
+          s = p.read_text()
+
+          old = "const ROWS = Math.floor((VIEWPORT_HEIGHT - (2 * PAD_Y)) / CHARACTER_HEIGHT_PX);"
+          new = "const RAW_ROWS = Math.floor((VIEWPORT_HEIGHT - (2 * PAD_Y)) / CHARACTER_HEIGHT_PX);\nconst ROWS = RAW_ROWS - (RAW_ROWS % 2);"
+          if old not in s:
+              raise SystemExit('ROWS definition not found')
+          s = s.replace(old, new, 1)
+
+          marker = """  for (const item of items) {\n    if (entryChars(item) > COLUMNS) {\n"""
+          normalize = """  // Make the canonical projected array fill complete even-row cards exactly.\n  // Splitting preserves document order and bytes: the first fragment has no EOL and\n  // the second fragment retains the original EOL. At most ROWS-1 splits are needed.\n  const targetItemCount = Math.ceil(items.length / ROWS) * ROWS;\n  while (items.length < targetItemCount) {\n    let splitIndex = -1;\n    let longest = 1;\n    for (let i = 0; i < items.length; i++) {\n      const length = items[i]?.text?.length || 0;\n      if (length > longest) {\n        longest = length;\n        splitIndex = i;\n      }\n    }\n    if (splitIndex < 0) throw new Error(`Cannot split projected items to ${targetItemCount}`);\n    const original = items[splitIndex];\n    const midpoint = Math.ceil(original.text.length / 2);\n    items.splice(\n      splitIndex,\n      1,\n      { type: 'content', text: original.text.slice(0, midpoint), eol: '' },\n      { type: 'content', text: original.text.slice(midpoint), eol: original.eol }\n    );\n  }\n\n""" + marker
+          if marker not in s:
+              raise SystemExit('projection validation marker not found')
+          s = s.replace(marker, normalize, 1)
+
+          old_block = """  const referenceCardCount = nominalCardCount(canonical);\n  const referenceGroups = partitionBalanced(canonical, referenceCardCount, ROWS);\n\n  const pairs = canonical.map((ordered, i) => ({ ordered, shuffled: shuffled[i] }));\n  const pairCost = (pair) => entryChars(pair.ordered) + entryChars(pair.shuffled);\n  const mixedCardCount = Math.max(\n    1,\n    referenceCardCount * 2,\n    Math.ceil(pairs.length / Math.floor(ROWS / 2))\n  );\n  const mixedGroups = partitionBalanced(pairs, mixedCardCount, Math.floor(ROWS / 2), pairCost);\n"""
+          new_block = """  if (canonical.length % ROWS !== 0) throw new Error('Canonical item count must fill whole ordered cards');\n  const referenceCardCount = canonical.length / ROWS;\n  const referenceGroups = [];\n  for (let i = 0; i < canonical.length; i += ROWS) {\n    referenceGroups.push(canonical.slice(i, i + ROWS));\n  }\n\n  const pairs = canonical.map((ordered, i) => ({ ordered, shuffled: shuffled[i] }));\n  const pairsPerMixedCard = ROWS / 2;\n  const mixedCardCount = referenceCardCount * 2;\n  const mixedGroups = [];\n  for (let i = 0; i < pairs.length; i += pairsPerMixedCard) {\n    mixedGroups.push(pairs.slice(i, i + pairsPerMixedCard));\n  }\n  if (mixedGroups.length !== mixedCardCount) {\n    throw new Error(`Expected ${mixedCardCount} mixed cards, got ${mixedGroups.length}`);\n  }\n"""
+          if old_block not in s:
+              raise SystemExit('challenge partition block not found')
+          s = s.replace(old_block, new_block, 1)
+
+          p.write_text(s)
+          PY
+
+          git diff --check
+          git diff -- ChatMachines/GeminiSupervisor/scripts/live-ground-truth-reading-room.js
+
+      - name: Commit exact-grid generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ChatMachines/GeminiSupervisor/scripts/live-ground-truth-reading-room.js
+          git diff --cached --quiet && { echo 'No generator changes produced.' >&2; exit 1; }
+          git commit -m 'Enforce exact even-grid PNG reading-room cards'
+          git push origin HEAD:main
