@@ -19,10 +19,11 @@ const CHARACTER_HEIGHT_PX = 20;
 const CONSERVATIVE_CHARACTER_WIDTH_PX = 12;
 const PAD_X = 24;
 const PAD_Y = 20;
-const FONT_SIZE_PX = 16;
+const FONT_SIZE_PX = 20;
 const ROWS = Math.floor((VIEWPORT_HEIGHT - (2 * PAD_Y)) / CHARACTER_HEIGHT_PX);
 const COLUMNS = Math.floor((VIEWPORT_WIDTH - (2 * PAD_X)) / CONSERVATIVE_CHARACTER_WIDTH_PX);
 const CPX = ROWS * COLUMNS;
+const INDEX_PREFIX_CHARS = 8;
 const CARD_NAME_RE = /^[0-9a-f]{32}\.png$/;
 const ACTIVE_RE = /^Agents\.reader\.json-([0-9a-f]{40})$/i;
 const manifestRoot = process.env.READING_ROOM_MANIFEST_DIR || path.join(repoRoot, '.live-ground-truth-cache');
@@ -45,6 +46,29 @@ function gitBlobSha(bytes) {
   return crypto.createHash('sha1').update(header).update(bytes).digest('hex');
 }
 
+function entryChars(value) {
+  return JSON.stringify(value).length + INDEX_PREFIX_CHARS;
+}
+
+function splitLineToRenderableItems(text, eol) {
+  if (text === '') return [{ type: 'content', text: '', eol }];
+
+  const chunks = [];
+  let current = '';
+  for (const ch of text) {
+    const candidate = current + ch;
+    const probe = { type: 'content', text: candidate, eol: '\r\n' };
+    if (current && entryChars(probe) > COLUMNS) {
+      chunks.push({ type: 'content', text: current, eol: '' });
+      current = ch;
+    } else {
+      current = candidate;
+    }
+  }
+  chunks.push({ type: 'content', text: current, eol });
+  return chunks;
+}
+
 function projectAgents() {
   const bytes = fs.readFileSync(sourcePath);
   const text = bytes.toString('utf8');
@@ -54,8 +78,14 @@ function projectAgents() {
 
   while ((match = re.exec(text)) !== null) {
     if (match[0] === '' && re.lastIndex === text.length) break;
-    items.push({ type: 'content', text: match[1], eol: match[2] });
+    items.push(...splitLineToRenderableItems(match[1], match[2]));
     if (match[2] === '') break;
+  }
+
+  for (const item of items) {
+    if (entryChars(item) > COLUMNS) {
+      throw new Error(`Projected item exceeds conservative row width: ${entryChars(item)} > ${COLUMNS}`);
+    }
   }
 
   return {
@@ -93,23 +123,15 @@ function shuffle(values) {
   return out;
 }
 
-function entryChars(value) {
-  return JSON.stringify(value).length + 8;
-}
-
 function nominalCardCount(values) {
   const totalChars = values.reduce((sum, value) => sum + entryChars(value), 0);
-  return Math.max(
-    1,
-    Math.ceil(totalChars / CPX),
-    Math.ceil(values.length / ROWS)
-  );
+  return Math.max(1, Math.ceil(totalChars / CPX), Math.ceil(values.length / ROWS));
 }
 
-function partitionBalanced(values, cardCount, maxItems) {
+function partitionBalanced(values, cardCount, maxItems, costFn = entryChars) {
   const groups = [];
   let cursor = 0;
-  const costs = values.map(entryChars);
+  const costs = values.map(costFn);
   const suffix = new Array(values.length + 1).fill(0);
   for (let i = values.length - 1; i >= 0; i--) suffix[i] = suffix[i + 1] + costs[i];
 
@@ -127,8 +149,7 @@ function partitionBalanced(values, cardCount, maxItems) {
     while (group.length < hardMax && cursor < values.length) {
       const cost = costs[cursor];
       const mustTake = group.length === 0;
-      const wouldExceed = !mustTake && used + cost > target;
-      if (wouldExceed) break;
+      if (!mustTake && used + cost > target) break;
       group.push(values[cursor]);
       used += cost;
       cursor++;
@@ -147,18 +168,23 @@ function partitionBalanced(values, cardCount, maxItems) {
   return groups;
 }
 
-function orderedSlots(values, parity) {
+function buildMixedSlots(pairs, orderedParity) {
   const slots = [];
-  const orderedOnOdd = parity === 'odd';
-  for (const value of values) {
+  const placementSlots = [];
+  const orderedOnOdd = orderedParity === 'odd';
+
+  for (const pair of pairs) {
     if (orderedOnOdd) {
-      slots.push(value, null);
+      slots.push(pair.ordered, pair.shuffled);
+      placementSlots.push(false, true);
     } else {
-      slots.push(null, value);
+      slots.push(pair.shuffled, pair.ordered);
+      placementSlots.push(true, false);
     }
   }
-  if (slots.length > ROWS) throw new Error(`Ordered card exceeds ${ROWS} rows`);
-  return slots;
+
+  if (slots.length > ROWS) throw new Error(`Mixed card exceeds ${ROWS} rows`);
+  return { slots, placementSlots };
 }
 
 function xmlEscape(text) {
@@ -171,20 +197,15 @@ function xmlEscape(text) {
 }
 
 function visibleLine(value, index) {
-  if (value === null) return 'null';
   return `[${index}] ${JSON.stringify(value)}`;
 }
 
 function cardSvg(slots) {
-  const maxWidth = VIEWPORT_WIDTH - (2 * PAD_X);
   const texts = slots.map((value, row) => {
     const line = visibleLine(value, row);
-    const y = PAD_Y + ((row + 1) * CHARACTER_HEIGHT_PX) - 4;
-    const estimatedWidth = Math.max(1, line.length * CONSERVATIVE_CHARACTER_WIDTH_PX);
-    const lengthAttrs = estimatedWidth > maxWidth
-      ? ` textLength="${maxWidth}" lengthAdjust="spacingAndGlyphs"`
-      : '';
-    return `<text x="${PAD_X}" y="${y}"${lengthAttrs}>${xmlEscape(line)}</text>`;
+    if (line.length > COLUMNS) throw new Error(`Rendered row ${row} exceeds conservative width: ${line.length} > ${COLUMNS}`);
+    const y = PAD_Y + ((row + 1) * CHARACTER_HEIGHT_PX) - 3;
+    return `<text x="${PAD_X}" y="${y}">${xmlEscape(line)}</text>`;
   }).join('');
 
   return Buffer.from(
@@ -236,12 +257,18 @@ async function buildChallenge(commitSha) {
   const full = projectAgents();
   const canonical = full.items;
   const shuffled = shuffle(canonical);
-  const shuffledCardCount = nominalCardCount(shuffled);
-  const orderedCardCount = Math.max(1, shuffledCardCount * 2);
 
-  const shuffledGroups = partitionBalanced(shuffled, shuffledCardCount, ROWS);
-  const orderedMax = Math.floor(ROWS / 2);
-  const orderedGroups = partitionBalanced(canonical, orderedCardCount, orderedMax);
+  const referenceCardCount = nominalCardCount(canonical);
+  const referenceGroups = partitionBalanced(canonical, referenceCardCount, ROWS);
+
+  const pairs = canonical.map((ordered, i) => ({ ordered, shuffled: shuffled[i] }));
+  const pairCost = (pair) => entryChars(pair.ordered) + entryChars(pair.shuffled);
+  const mixedCardCount = Math.max(
+    1,
+    referenceCardCount * 2,
+    Math.ceil(pairs.length / Math.floor(ROWS / 2))
+  );
+  const mixedGroups = partitionBalanced(pairs, mixedCardCount, Math.floor(ROWS / 2), pairCost);
 
   fs.mkdirSync(readingRoom, { recursive: true });
   removeGeneratedCards();
@@ -249,28 +276,42 @@ async function buildChallenge(commitSha) {
   removeActiveChallenges();
 
   const cards = {};
-  for (const group of shuffledGroups) {
+
+  for (const group of referenceGroups) {
     const { fileName, pngSha256 } = await writeCard(group);
-    cards[fileName] = { role: 'shuffled', slots: group, png_sha256: pngSha256 };
+    cards[fileName] = {
+      role: 'ordered-reference',
+      slots: group,
+      placement_slots: Array(group.length).fill(false),
+      png_sha256: pngSha256
+    };
   }
-  for (const group of orderedGroups) {
-    const parity = crypto.randomInt(0, 2) === 0 ? 'odd' : 'even';
-    const slots = orderedSlots(group, parity);
+
+  for (const group of mixedGroups) {
+    const orderedParity = crypto.randomInt(0, 2) === 0 ? 'odd' : 'even';
+    const { slots, placementSlots } = buildMixedSlots(group, orderedParity);
     const { fileName, pngSha256 } = await writeCard(slots);
-    cards[fileName] = { role: 'ordered', parity, slots, png_sha256: pngSha256 };
+    cards[fileName] = {
+      role: 'mixed',
+      ordered_parity: orderedParity,
+      slots,
+      placement_slots: placementSlots,
+      png_sha256: pngSha256
+    };
   }
 
   fs.mkdirSync(manifestRoot, { recursive: true });
   writeJson(manifestPath(sha), {
-    challenge: 'agents-png-locator-v1',
+    challenge: 'agents-png-locator-v2',
     challenge_commit_sha: sha,
     source_blob_sha: full.source_blob_sha,
     item_count: canonical.length,
+    logical_copies: { ordered: 2, shuffled: 1 },
     cards
   });
 
   const challenge = {
-    challenge: 'agents-png-locator-v1',
+    challenge: 'agents-png-locator-v2',
     source_blob_sha: full.source_blob_sha,
     viewport: {
       width_px: VIEWPORT_WIDTH,
@@ -282,22 +323,25 @@ async function buildChallenge(commitSha) {
       cpx: CPX
     },
     card_model: {
-      shuffled_cards: shuffledGroups.length,
-      ordered_reference_cards: orderedGroups.length,
+      logical_ordered_copies: 2,
+      logical_shuffled_copies: 1,
+      dense_ordered_reference_cards: referenceGroups.length,
+      mixed_interleave_cards: mixedGroups.length,
       total_cards: Object.keys(cards).length,
       filenames_are_random: true,
       collection_is_mixed: true,
-      ordered_reference_rule: 'Counting the first visible row as 1, each ordered-reference card places canonical members only on one parity: all odd rows or all even rows. Opposite-parity rows are null and are not canonical members.',
-      placement_rule: 'Only dense shuffled cards are legal placement sources. Ordered-reference cards are reference-only.'
+      interleave_rule: 'On every mixed card, counting the first visible row as 1, the ordered-array copy occupies only one parity (all odd rows or all even rows). The shuffled-array copy occupies the opposite parity.',
+      placement_rule: 'Only shuffled rows on mixed cards are legal placement sources. Dense ordered-reference rows and ordered-parity rows on mixed cards are reference-only.'
     },
-    answer_format: 'locator[n] = [png_filename, array_index_in_that_png]',
+    answer_format: 'locator[n] = [png_filename, zero_based_array_index_in_that_png]',
     item_count: canonical.length,
     locator: Array(canonical.length).fill(null)
   };
 
   const active = pathsFor(sha).active;
   writeJson(active, challenge);
-  console.log(`[live-ground-truth] issued ${path.basename(active)} with ${Object.keys(cards).length} mixed PNG cards (${shuffledGroups.length} shuffled, ${orderedGroups.length} ordered-reference)`);
+  console.log(`[live-ground-truth] issued ${path.basename(active)} with ${Object.keys(cards).length} random PNG cards (${referenceGroups.length} dense ordered-reference, ${mixedGroups.length} ordered+shuffled interleave)`);
+  console.log(`[live-ground-truth] logical corpus = ordered x2 + shuffled x1; Cpx=${CPX}; items=${canonical.length}`);
   return challenge;
 }
 
@@ -315,18 +359,26 @@ function cardInventory(challengeCommitSha) {
   const filePath = manifestPath(challengeCommitSha);
   if (!fs.existsSync(filePath)) throw new Error(`Challenge manifest not restored: ${filePath}`);
   const manifest = readJson(filePath);
-  if (!manifest || manifest.challenge !== 'agents-png-locator-v1' || !manifest.cards) {
+  if (!manifest || manifest.challenge !== 'agents-png-locator-v2' || !manifest.cards) {
     throw new Error('Invalid challenge manifest');
   }
 
   const inventory = new Map();
   for (const [name, card] of Object.entries(manifest.cards)) {
-    if (!CARD_NAME_RE.test(name) || !Array.isArray(card.slots)) throw new Error(`Invalid manifest card: ${name}`);
+    if (!CARD_NAME_RE.test(name) || !Array.isArray(card.slots) || !Array.isArray(card.placement_slots)) {
+      throw new Error(`Invalid manifest card: ${name}`);
+    }
+    if (card.slots.length !== card.placement_slots.length) throw new Error(`Placement mask mismatch: ${name}`);
+
     const pngPath = path.join(readingRoom, name);
     if (!fs.existsSync(pngPath)) throw new Error(`Challenge PNG is missing: ${name}`);
     const actualSha = sha256(fs.readFileSync(pngPath));
     if (actualSha !== card.png_sha256) throw new Error(`Challenge PNG was modified: ${name}`);
-    inventory.set(name, { slots: card.slots, placement: card.role === 'shuffled' });
+
+    inventory.set(name, {
+      slots: card.slots,
+      placementSlots: card.placement_slots
+    });
   }
   return { manifest, inventory };
 }
@@ -334,13 +386,13 @@ function cardInventory(challengeCommitSha) {
 function verifyLocator(locator, canonical, inventory) {
   if (!Array.isArray(locator) || locator.length !== canonical.length) return false;
 
-  const used = new Set();
-  let placementSlotCount = 0;
+  let legalPlacementCount = 0;
   for (const card of inventory.values()) {
-    if (card.placement) placementSlotCount += card.slots.length;
+    legalPlacementCount += card.placementSlots.filter(Boolean).length;
   }
-  if (placementSlotCount !== canonical.length) return false;
+  if (legalPlacementCount !== canonical.length) return false;
 
+  const used = new Set();
   for (let n = 0; n < canonical.length; n++) {
     const loc = locator[n];
     if (!Array.isArray(loc) || loc.length !== 2) return false;
@@ -349,7 +401,7 @@ function verifyLocator(locator, canonical, inventory) {
     if (!Number.isInteger(arrayIndex) || arrayIndex < 0) return false;
 
     const card = inventory.get(fileName);
-    if (!card || !card.placement || arrayIndex >= card.slots.length) return false;
+    if (!card || arrayIndex >= card.slots.length || card.placementSlots[arrayIndex] !== true) return false;
 
     const unique = `${fileName}:${arrayIndex}`;
     if (used.has(unique)) return false;
@@ -374,7 +426,7 @@ async function verify(challengePath, evaluationCommitSha) {
   const pass =
     manifest.source_blob_sha === full.source_blob_sha &&
     manifest.item_count === full.items.length &&
-    submitted?.challenge === 'agents-png-locator-v1' &&
+    submitted?.challenge === 'agents-png-locator-v2' &&
     submitted?.source_blob_sha === full.source_blob_sha &&
     verifyLocator(submitted.locator, full.items, inventory);
 
@@ -385,8 +437,7 @@ async function verify(challengePath, evaluationCommitSha) {
     writeJson(resultPaths.pass, {
       status: 'PASS',
       source_blob_sha: full.source_blob_sha,
-      item_count: full.items.length,
-      locator: submitted.locator
+      item_count: full.items.length
     });
     console.log(`[live-ground-truth] PASS ${evaluationSha}`);
     return true;
