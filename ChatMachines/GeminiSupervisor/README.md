@@ -1022,6 +1022,59 @@ Truth-readable documents are registered under `truth_readable_registry` in `Chat
 
 Stable readers live under `ChatMachines/GeminiSupervisor/stable-readers/`. They are deterministic ordered JSON projections mechanically derived from the canonical files. The canonical source does not need to use the same representation as the projection; the stable projection is the normalized reading surface used by the verification gate.
 
+#### Canonical `flatten` definition
+
+`flatten` means **flatten the hierarchy, not the information**. Every terminal object property becomes one projection element, and every array member becomes one projection element. Nested containers recurse until terminal units are reached. Every projection element preserves the complete ancestry needed to locate that unit in the original structure. When ancestry passes through an array, that level is represented by an array containing exactly one original member. The resulting outer projection array therefore contains self-locating minimal JSON fragments that can be merged recursively to rebuild the original structure without guessing any omitted key, array position, or container relationship.
+
+For an object:
+
+```json
+{"user_words":{"key":"user_words","value":"..."}}
+```
+
+flattens to:
+
+```json
+[
+  {"user_words":{"key":"user_words"}},
+  {"user_words":{"value":"..."}}
+]
+```
+
+For an array of objects:
+
+```json
+{"rule_following":[{"scenario":"A","status":"PASS"},{"scenario":"B","status":"PASS"}]}
+```
+
+flattens recursively to:
+
+```json
+[
+  {"rule_following":[{"scenario":"A"}]},
+  {"rule_following":[{"status":"PASS"}]},
+  {"rule_following":[{"scenario":"B"}]},
+  {"rule_following":[{"status":"PASS"}]}
+]
+```
+
+For arbitrary object/array nesting:
+
+```json
+{"groups":[{"items":[{"name":"A"},{"name":"B"}]}]}
+```
+
+flattens to:
+
+```json
+[
+  {"groups":[{"items":[{"name":"A"}]}]},
+  {"groups":[{"items":[{"name":"B"}]}]}
+]
+```
+
+The same recursion applies at any depth. Flattening may change the outer sequence of projection elements when a later operation intentionally shuffles that outer array, but it must not discard ancestry or mutate the internal structure of any projection element.
+
 Reader synchronization is implemented by `ChatMachines/GeminiSupervisor/scripts/sync-stable-readers.js` and `.github/workflows/gemini-supervisor-reader-sync.yml`. A stable reader is regenerated only when its own canonical source/provenance changes.
 
 ### Step 0 generated form
@@ -1089,4 +1142,3 @@ ChatMachines/GeminiSupervisor/historical/runs/
 ```
 
 Their original Git subtrees were preserved. The active `ChatMachines/GeminiSupervisor/runs/` path is reserved for runs created under the new architecture. The cutoff inventory is recorded in `ChatMachines/GeminiSupervisor/historical-runs.json`.
-
