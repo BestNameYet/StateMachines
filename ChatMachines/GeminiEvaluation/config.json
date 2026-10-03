@@ -2,9 +2,10 @@
   "runtime_root": ".",
   "new_message_folder": "evaluator-nextmessage",
   "new_message_file": "nextmessage.json",
-  "messages_file": "corpus-alignment-messages.json",
-  "generic_messages_file": "corpus-alignment-messages.json",
+  "messages_file": "generic-evaluator-messages.json",
+  "generic_messages_file": "generic-evaluator-messages.json",
   "evaluation_output_file": "program-evaluation.json",
+  "revision_deliverables_output_path": "revision-deliverables",
   "default_model": "gemini-3.8-flash",
   "request_timeout_ms": 180000,
   "evaluation_mode": "generic",
@@ -16,20 +17,23 @@
   "write_latest_compatibility_outputs": false,
   "generic_inputs": [
     {
-      "key": "agents_md_corpus",
+      "key": "current_supervisor_readme",
       "type": "file",
-      "path": "../GeminiSupervisor/Agents.md"
+      "path": "../GeminiSupervisor/README.md"
     }
   ],
-  "evaluation_heuristic": "The authoritative Agents.md corpus is exactly 60,929 Unicode code points. The target projection is exactly 61,200 Unicode code points, so author one append-only addition of exactly 271 Unicode code points measured after JSON decoding by Array.from(addition).length. The addition must be meaningful explanatory prose about the existing evaluation contract, explicitly non-normative, and must not add, remove, weaken, strengthen, reinterpret, or supersede any governing requirement. Do not use meaningless padding, repeated filler, arbitrary whitespace runs, or placeholders. The addition must be usable verbatim as source + addition, so include any leading newlines or Markdown heading syntax inside the 271-character addition itself. Return only the configured JSON schema.",
+  "evaluation_heuristic": "README REVISION TASK. Revise the supplied current_supervisor_readme as a complete Markdown document. Preserve all existing README content and structure except where necessary to add the documentation specified below. Do not modify the canonical ChatMachines/GeminiSupervisor/README.md directly; the requested product is a separate revision artifact for review. Add a subsection titled `#### Canonical JSON flattening and shuffle representation` under `## 19. Deterministic truth-reader verification`, within `### Stable canonical projections`, after the introductory stable-projection explanation and before reader-synchronization mechanics. Document this exact architecture without redesigning it: Agents.md remains the authoritative canonical source; the projection is a deterministic derivative reading/shuffle representation and does not replace Agents.md. For Agents.md, the deterministic first-stage projection converts Markdown headings into JSON keys around the JSON content beneath them; the canonical projection used for the flattening/shuffle representation is 100% JSON. In the flattened projection, every terminal object property is one fundamental projection element. Each such element is a minimal self-locating JSON fragment that retains the full nested ancestor route from the projection root to that terminal property, with each object predecessor exposing only the branch needed to reach that property. Every array member is likewise a fundamental projection element and is represented at its array boundary as an array containing exactly one member; nested arrays and arrays containing objects use the same rule recursively. Provenance is the retained nested JSON structure itself: do not add a separate provenance field, generic path array, index metadata, or normalized identifier. Preserve original keys and values exactly, including apparently redundant keys such as a parent `user_words` object containing an internal `\"key\": \"user_words\"`; exact reconstruction takes precedence over deduplication or normalization. Explain reconstruction as recursively summing/merging the lowest-level projection elements at matching nesting signatures to rebuild the original JSON structure. Do not invent extra metadata to resolve or redesign the specified representation. Explain shuffle semantics exactly: construct the deterministic projection first, flatten it into the top-level array of minimal self-locating fragments, minify the JSON, and shuffle only the indices/elements of that outermost projection array. Do not shuffle raw Markdown, characters, keys, values, or content inside an individual fragment. Pretty-printed JSON in README examples is explanatory only; the machine representation may be minified after construction. Include concise examples demonstrating: (1) object terminal properties, e.g. source `{\"user_words\":{\"key\":\"user_words\",\"value\":\"Resolved text\",\"definition\":\"Primary instruction evidence\"}}` projecting to three fragments, one for key, one for value, one for definition; (2) an arbitrarily nested object where key and value become separate full-route fragments; (3) an array source `{\"rule_following\":[\"A\",\"B\",\"C\"]}` projecting to three one-member-array fragments; and (4) a mixed nested array/object such as `{\"outer\":[{\"inner\":[\"A\",\"B\"]}]}` projecting to two full-route fragments. Keep the explanation operational and unambiguous. Do not claim the projection is character-level flattening and do not describe separate path/index provenance. Return the complete revised README, not a patch, diff, excerpt, ellipsis, or summary.",
   "evaluation_output_schema": {
-    "response_type": "corpus_alignment_addition",
-    "character_metric": "Unicode code points measured by Array.from(text).length",
-    "source_character_count": 60929,
-    "addition_target_character_count": 271,
-    "projected_total_character_count": 61200,
-    "addition": "exactly 271 Unicode code points including any separators or heading syntax",
-    "normative_change": false,
-    "purpose": "brief description of the explanatory addition"
+    "response_type": "supervisor_readme_revision",
+    "artifacts": [
+      {
+        "path": "ChatMachines/GeminiEvaluation/revision-deliverables/revised-GeminiSupervisor-README.md",
+        "action": "create",
+        "content_type": "text/markdown",
+        "content": "<complete revised contents of ChatMachines/GeminiSupervisor/README.md; no Markdown wrapper fence, diff, ellipsis, or omitted unchanged sections>"
+      }
+    ],
+    "changes_made": ["string"],
+    "canonical_source_modified": false
   }
 }
