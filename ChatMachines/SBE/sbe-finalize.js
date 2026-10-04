@@ -11,11 +11,10 @@ const [
   headRef,
   headSha,
   submissionFile,
-  sealedArchive,
-  evaluationFile
+  sealedArchive
 ] = process.argv.slice(2);
 
-if ([trustedDir, submissionDir, requestId, prNumber, headRef, headSha, submissionFile, sealedArchive, evaluationFile].some(v => !v)) {
+if ([trustedDir, submissionDir, requestId, prNumber, headRef, headSha, submissionFile, sealedArchive].some(v => !v)) {
   throw new Error('Missing SBE finalize argument.');
 }
 if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(requestId)) throw new Error(`Invalid request id: ${requestId}`);
@@ -39,9 +38,6 @@ function sha256File(file) {
   return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 }
 
-const evaluation = JSON.parse(fs.readFileSync(evaluationFile, 'utf8'));
-if (evaluation.result !== 'PASS') throw new Error('Refusing to finalize an SBE result that is not PASS.');
-
 const destination = path.join('SBE', 'sealed', requestId, headSha);
 const absoluteDestination = path.join(trustedDir, destination);
 fs.mkdirSync(absoluteDestination, { recursive: true });
@@ -55,10 +51,7 @@ fs.writeFileSync(path.join(absoluteDestination, 'manifest.json'), JSON.stringify
   source_file: submissionFile,
   sealed_archive: `${destination}/submission.7z`,
   archive_sha256: sha256File(archiveDestination),
-  evaluation_result: 'PASS',
-  evaluator_model: evaluation.model || null,
-  evaluated_at: evaluation.evaluated_at || null,
-  evaluation_sha256: sha256File(evaluationFile),
+  evaluation_status: 'PENDING',
   sealed_at: new Date().toISOString()
 }, null, 2) + '\n');
 
@@ -89,11 +82,11 @@ fs.writeFileSync(path.join(submissionDir, '.delete-processing-branch'), JSON.str
   delete_branch: true,
   request_id: requestId,
   pr_number: Number(prNumber),
-  evaluated_head_sha: headSha,
+  source_head_sha: headSha,
   source_file: submissionFile,
   sealed_path: destination,
   created_at: new Date().toISOString()
 }, null, 2) + '\n');
 run(submissionDir, ['git', 'add', '.delete-processing-branch']);
-run(submissionDir, ['git', 'commit', '-m', 'Mark completed SBE branch for deletion']);
+run(submissionDir, ['git', 'commit', '-m', 'Mark sealed SBE branch for deletion']);
 run(submissionDir, ['git', 'push', 'origin', `HEAD:${headRef}`]);
