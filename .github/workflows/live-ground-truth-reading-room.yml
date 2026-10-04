@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ChatMachines/GeminiSupervisor/live-ground-truth/read-request.json
+      - ChatMachines/GeminiSupervisor/live-ground-truth/eval-trigger.json
       - ChatMachines/GeminiSupervisor/live-ground-truth/reading-room/task_semantic_define_each_array_item-*.json
 
 permissions:
@@ -45,6 +46,7 @@ jobs:
           fi
 
           REQUEST='ChatMachines/GeminiSupervisor/live-ground-truth/read-request.json'
+          EVAL_TRIGGER='ChatMachines/GeminiSupervisor/live-ground-truth/eval-trigger.json'
           ROOM='ChatMachines/GeminiSupervisor/live-ground-truth/reading-room'
           TASK='task_semantic_define_each_array_item'
           CHANGE_COUNT=$(printf '%s\n' "$CHANGED" | sed '/^$/d' | wc -l | tr -d ' ')
@@ -52,6 +54,11 @@ jobs:
           REQUEST_CHANGED=false
           if printf '%s\n' "$CHANGED" | grep -qx "$REQUEST"; then
             REQUEST_CHANGED=true
+          fi
+
+          EVAL_TRIGGER_CHANGED=false
+          if printf '%s\n' "$CHANGED" | grep -qx "$EVAL_TRIGGER"; then
+            EVAL_TRIGGER_CHANGED=true
           fi
 
           if printf '%s\n' "$CHANGED" | grep -Eq "^${ROOM}/${TASK}-[0-9a-fA-F]{40}-(PASS|FAILED)\\.json$"; then
@@ -67,6 +74,21 @@ jobs:
               exit 1
             fi
             echo 'mode=issue' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "$EVAL_TRIGGER_CHANGED" = true ]; then
+            if [ "$CHANGE_COUNT" -ne 1 ]; then
+              echo 'A comprehension-task evaluation-trigger commit may change only eval-trigger.json.' >&2
+              exit 1
+            fi
+            mapfile -t ACTIVE < <(find "$ROOM" -maxdepth 1 -type f -printf '%p\n' | grep -E "/${TASK}-[0-9a-fA-F]{40}\\.json$" || true)
+            if [ "${#ACTIVE[@]}" -ne 1 ]; then
+              echo "Expected exactly one active comprehension task for explicit verification; found ${#ACTIVE[@]}." >&2
+              exit 1
+            fi
+            echo 'mode=verify' >> "$GITHUB_OUTPUT"
+            echo "task_instance=${ACTIVE[0]}" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
