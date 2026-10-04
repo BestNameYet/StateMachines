@@ -1,0 +1,49 @@
+name: Challenge Processing Request
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize, labeled]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  dispatch-verification:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'processing/') &&
+      contains(github.event.pull_request.labels.*.name, 'enhancement')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR contains encrypted batches only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILES=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[].filename')
+          test -n "$FILES"
+          while IFS= read -r file; do
+            [[ "$file" =~ ^challenge-processing/[^/]+/batch-[0-9]+\.7z$ ]] || {
+              echo "Unapproved processing file: $file" >&2
+              exit 1
+            }
+          done <<< "$FILES"
+
+      - name: Dispatch trusted verifier
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/dispatches" \
+            -f event_type='challenge-verification' \
+            -F "client_payload[pr_number]=${PR_NUMBER}" \
+            -f "client_payload[head_ref]=${HEAD_REF}" \
+            -f "client_payload[head_sha]=${HEAD_SHA}"
