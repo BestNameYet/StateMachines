@@ -2,7 +2,7 @@ name: SBE Delete Processing Branch
 
 on:
   workflow_run:
-    workflows: ['SBE Seal and Evaluate']
+    workflows: ['SBE Seal Submission']
     types: [completed]
 
 permissions:
@@ -10,7 +10,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  delete-processing-branch:
+  delete-and-evaluate:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
 
@@ -25,14 +25,15 @@ jobs:
           PR_NUMBER=$(jq -r '.workflow_run.pull_requests[0].number // empty' "$EVENT_PATH")
           HEAD_REF=$(jq -r '.workflow_run.pull_requests[0].head.ref // empty' "$EVENT_PATH")
           if [ -z "$PR_NUMBER" ] || [ -z "$HEAD_REF" ]; then
-            echo 'Successful SBE run has no associated pull request.' >&2
+            echo 'Successful SBE sealing run has no associated pull request.' >&2
             exit 1
           fi
           [[ "$HEAD_REF" =~ ^processing/[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
           echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
           echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
 
-      - name: Verify delete marker and sealed result
+      - name: Verify delete marker and sealed artifact
+        id: verify
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
@@ -49,13 +50,13 @@ jobs:
           const fs = require('fs');
           const m = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
           if (m.sbe_version !== 1 || m.delete_branch !== true) throw new Error('Invalid SBE delete marker.');
-          for (const key of ['request_id','evaluated_head_sha','source_file','sealed_path']) {
+          for (const key of ['request_id','source_head_sha','source_file','sealed_path']) {
             if (typeof m[key] !== 'string' || !m[key]) throw new Error(`Marker missing ${key}.`);
           }
           if (!Number.isInteger(m.pr_number)) throw new Error('Marker missing pr_number.');
           console.log(m.request_id);
           console.log(m.pr_number);
-          console.log(m.evaluated_head_sha);
+          console.log(m.source_head_sha);
           console.log(m.source_file);
           console.log(m.sealed_path);
           NODE
@@ -63,21 +64,22 @@ jobs:
 
           REQUEST_ID="${VALUES[0]}"
           MARKER_PR="${VALUES[1]}"
-          EVALUATED_SHA="${VALUES[2]}"
+          SOURCE_SHA="${VALUES[2]}"
           SOURCE_FILE="${VALUES[3]}"
           SEALED_PATH="${VALUES[4]}"
 
           [ "$MARKER_PR" = "$PR_NUMBER" ]
+          [ "$HEAD_REF" = "processing/${REQUEST_ID}" ]
           [[ "$REQUEST_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
-          [[ "$EVALUATED_SHA" =~ ^[0-9a-fA-F]{40}$ ]]
+          [[ "$SOURCE_SHA" =~ ^[0-9a-fA-F]{40}$ ]]
           [[ "$SOURCE_FILE" =~ ^[A-Za-z0-9._/-]+\.gz$ ]]
           [[ "$SOURCE_FILE" != *'..'* ]]
-          [ "$SEALED_PATH" = "SBE/sealed/${REQUEST_ID}/${EVALUATED_SHA}" ]
+          [ "$SEALED_PATH" = "SBE/sealed/${REQUEST_ID}/${SOURCE_SHA}" ]
 
           CURRENT_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${HEAD_REF}" --jq '.object.sha')
           PARENT_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${CURRENT_SHA}" --jq '.parents[0].sha')
-          [ "$PARENT_SHA" = "$EVALUATED_SHA" ] || {
-            echo 'Processing branch changed after the evaluated submission; refusing deletion.' >&2
+          [ "$PARENT_SHA" = "$SOURCE_SHA" ] || {
+            echo 'Processing branch changed after the sealed submission; refusing deletion.' >&2
             exit 1
           }
 
@@ -91,18 +93,24 @@ jobs:
           MANIFEST="$RUNNER_TEMP/sbe-manifest.json"
           gh api --method GET "repos/${GITHUB_REPOSITORY}/contents/${SEALED_PATH}/manifest.json" \
             -f ref=main --jq '.content' | tr -d '\n' | base64 --decode > "$MANIFEST"
-          REQUEST_ID="$REQUEST_ID" PR_NUMBER="$PR_NUMBER" EVALUATED_SHA="$EVALUATED_SHA" SOURCE_FILE="$SOURCE_FILE" node - "$MANIFEST" <<'NODE'
+          REQUEST_ID="$REQUEST_ID" PR_NUMBER="$PR_NUMBER" SOURCE_SHA="$SOURCE_SHA" SOURCE_FILE="$SOURCE_FILE" SEALED_PATH="$SEALED_PATH" node - "$MANIFEST" <<'NODE'
           const fs = require('fs');
           const m = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
           if (m.sbe_version !== 1) throw new Error('Manifest version mismatch.');
           if (m.request_id !== process.env.REQUEST_ID) throw new Error('Manifest request mismatch.');
           if (String(m.pr_number) !== process.env.PR_NUMBER) throw new Error('Manifest PR mismatch.');
-          if (m.source_head_sha !== process.env.EVALUATED_SHA) throw new Error('Manifest SHA mismatch.');
+          if (m.source_head_sha !== process.env.SOURCE_SHA) throw new Error('Manifest SHA mismatch.');
           if (m.source_file !== process.env.SOURCE_FILE) throw new Error('Manifest source-file mismatch.');
-          if (m.evaluation_result !== 'PASS') throw new Error('SBE completion evaluation is not PASS.');
+          if (m.sealed_archive !== `${process.env.SEALED_PATH}/submission.7z`) throw new Error('Manifest archive path mismatch.');
+          if (m.evaluation_status !== 'PENDING') throw new Error('Manifest is not pending post-seal evaluation.');
           NODE
 
-      - name: Close pull request and delete branch
+          echo "request_id=$REQUEST_ID" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "source_file=$SOURCE_FILE" >> "$GITHUB_OUTPUT"
+          echo "sealed_path=$SEALED_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Close pull request and delete processing branch
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
@@ -112,3 +120,113 @@ jobs:
           set -euo pipefail
           gh api --method PATCH "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" -f state=closed >/dev/null
           gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${HEAD_REF}"
+
+      - name: Checkout trusted main after branch deletion
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: trusted
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Decrypt sealed artifact and run Gemini completion evaluation
+        id: evaluate
+        env:
+          GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          SBE_REQUEST_ID: ${{ steps.verify.outputs.request_id }}
+          SEALED_PATH: ${{ steps.verify.outputs.sealed_path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARCHIVE="trusted/${SEALED_PATH}/submission.7z"
+          OUT="$RUNNER_TEMP/sbe-unsealed"
+          mkdir -p "$OUT"
+
+          if command -v 7z >/dev/null 2>&1; then
+            SEVEN=7z
+          elif command -v 7zz >/dev/null 2>&1; then
+            SEVEN=7zz
+          else
+            echo 'No 7z-compatible executable is available.' >&2
+            exit 1
+          fi
+
+          "$SEVEN" x "-p${GZ_PASSWORD}" "-o${OUT}" -y "$ARCHIVE" >/dev/null
+          mapfile -t GZ_FILES < <(find "$OUT" -type f -name '*.gz' -print)
+          [ "${#GZ_FILES[@]}" -eq 1 ] || {
+            echo "Expected exactly one .gz in sealed submission; found ${#GZ_FILES[@]}." >&2
+            exit 1
+          }
+
+          set +e
+          node trusted/ChatMachines/SBE/sbe-evaluate.js \
+            "trusted/SBE/requests/${SBE_REQUEST_ID}.json" \
+            "${GZ_FILES[0]}" \
+            "$RUNNER_TEMP/sbe-evaluation.json"
+          CODE=$?
+          set -e
+
+          if [ "$CODE" -eq 0 ]; then
+            echo 'result=PASS' >> "$GITHUB_OUTPUT"
+          elif [ "$CODE" -eq 2 ]; then
+            echo 'result=FAIL' >> "$GITHUB_OUTPUT"
+          else
+            exit "$CODE"
+          fi
+
+      - name: Encrypt and persist post-delete evaluation
+        env:
+          GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
+          REQUEST_ID: ${{ steps.verify.outputs.request_id }}
+          SOURCE_SHA: ${{ steps.verify.outputs.source_sha }}
+          SEALED_PATH: ${{ steps.verify.outputs.sealed_path }}
+          EVAL_RESULT: ${{ steps.evaluate.outputs.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          node trusted/ChatMachines/SBE/sbe-pack.js \
+            "$RUNNER_TEMP/sbe-evaluation.json" \
+            "$RUNNER_TEMP/evaluation.7z"
+
+          cp "$RUNNER_TEMP/evaluation.7z" "trusted/${SEALED_PATH}/evaluation.7z"
+
+          REQUEST_ID="$REQUEST_ID" SOURCE_SHA="$SOURCE_SHA" EVAL_RESULT="$EVAL_RESULT" SEALED_PATH="$SEALED_PATH" \
+          node - "$RUNNER_TEMP/sbe-evaluation.json" "trusted/${SEALED_PATH}/manifest.json" <<'NODE'
+          const fs = require('fs');
+          const evaluation = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const manifestPath = process.argv[3];
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          if (evaluation.request_id !== process.env.REQUEST_ID) throw new Error('Evaluation request mismatch.');
+          if (evaluation.result !== process.env.EVAL_RESULT) throw new Error('Evaluation result mismatch.');
+          manifest.evaluation_status = evaluation.result;
+          manifest.evaluator_model = evaluation.model || null;
+          manifest.evaluated_at = evaluation.evaluated_at || null;
+          manifest.evaluation_archive = `${process.env.SEALED_PATH}/evaluation.7z`;
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+          NODE
+
+          cd trusted
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$SEALED_PATH/manifest.json" "$SEALED_PATH/evaluation.7z"
+          git commit -m "Record SBE evaluation ${REQUEST_ID} ${SOURCE_SHA}"
+
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo 'Unable to persist SBE evaluation after three attempts.' >&2
+              exit 1
+            fi
+            git fetch origin main
+            git rebase origin/main
+          done
+
+          if [ "$EVAL_RESULT" != 'PASS' ]; then
+            echo 'SBE completion evaluation returned FAIL after the branch was sealed and deleted.' >&2
+            exit 2
+          fi
