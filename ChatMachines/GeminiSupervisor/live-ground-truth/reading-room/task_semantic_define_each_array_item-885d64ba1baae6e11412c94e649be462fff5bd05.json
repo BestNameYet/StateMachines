@@ -1,0 +1,42 @@
+{
+  "do_instructions_in_order_of_array_index": [
+    "verify_target_array",
+    "count_array_nonempty_items",
+    "doRecord_withReturnSchema",
+    "combine_and_send_batch_archives"
+  ],
+  "verify_target_array": {
+    "filename": "ChatMachines/ComprehensionTasks/ProjectionsForTasks/agentsmdbaseproejction.json",
+    "truthtable": {
+      "eval_type": "AND",
+      "table": [
+        "file_does_exist_$bool",
+        "file_is_json_$bool",
+        "file_is_minified_$bool",
+        "file_is_flattened_$bool"
+      ]
+    },
+    "$this_truthtable_result_gate": {
+      "$iftrue": "continue",
+      "else": "halt"
+    }
+  },
+  "count_array_nonempty_items": {
+    "filename": "$verify_target_array.filename",
+    "how_many": "not_yet_counted",
+    "definition_of_empty": "element signature whose terminal node is an empty object {} or an empty array []"
+  },
+  "doRecord_withReturnSchema": {
+    "original_array_filename": "$verify_target_array.filename",
+    "nonempty_items_counted": "$count_array_nonempty_items.how_many",
+    "returnSchemaArraySize": "$count_array_nonempty_items.how_many",
+    "returnSchemaArray": [],
+    "batch_archive_filenames": [],
+    "iterate_filename": "note: do not save any results to public variables, write batches to compression encryption type files and record each resulting archive filename in batch_archive_filenames. Do: for each element found in original_array_filename, if the terminal node of the element signature is an empty object {} or an empty array [], next on original_array_filename array, else, return k/v matching this example: {\"item\": \"result of Do: generate semantic definition in context of original_array_filename\"} to returnSchemaArray, next returnSchemaArray, next original_array_filename array, when iterator halts at end of original_array_filename array, verify: no empty indices on returnSchemaArray, each index contains kv item: definition"
+  },
+  "combine_and_send_batch_archives": {
+    "batch_archive_filenames": "$doRecord_withReturnSchema.batch_archive_filenames",
+    "complete_batch_archive_filename": "not_yet_combined",
+    "do": "combine all batch archives referenced by batch_archive_filenames in order into one complete batch archive, then send the complete batch archive with the next message to the same destination used by the reading room finale"
+  }
+}
