@@ -1,0 +1,134 @@
+SBE End-to-End Protocol and State Machine Specification
+
+1. Document Control
+   - Document title, version, status, authorship/ownership, revision history, approval state, and governing repository/branch.
+
+2. Purpose
+   - Why the SBE process exists and what problem it is intended to solve.
+
+3. Scope
+   - What is included in the specification, what is excluded, and the exact start and terminal boundaries of the process.
+
+4. Normative Language and Conventions
+   - Meaning of MUST, MUST NOT, SHOULD, MAY, PASS, FAIL, INVALID, PENDING, and other normative terms used by the specification.
+
+5. System Context
+   - Where SBE sits relative to GeminiSupervisor, GeminiEvaluation, GitHub Actions, processing branches, main, and connected runtime components.
+
+6. Actors, Roles, and Responsibility Boundaries
+   - Producer/agent, evaluator, deterministic workflow/controller, GitHub, Gemini, and any other participating component; authority and non-authority of each.
+
+7. Trust and Security Model
+   - Trusted and untrusted components, secrecy boundary, threat model, encryption boundary, branch lifecycle assumptions, and what information may or may not be exposed.
+
+8. Dependencies and Prerequisites
+   - Required repository files, workflows, scripts, secrets, variables, executables, APIs, branch permissions, and pre-existing configuration.
+
+9. Configuration and Secrets
+   - Required variables and secrets, their sources, consumers, allowed exposure, and validation requirements.
+
+10. Inputs
+    - Initial nextmessage/task input, authoritative request, request_id, completion criteria, submission artifact, PR metadata, source SHA, nonce, and all other process inputs.
+
+11. Outputs
+    - Sealed submission archive, delete marker, manifest fields, evaluator answer archive, final evaluation archive, workflow outputs, terminal status, and observable repository state.
+
+12. Persistent Artifacts and Storage Locations
+    - Canonical paths on main, temporary paths, processing-branch paths, encrypted artifacts, manifests, request files, and any lifecycle rules for each artifact.
+
+13. End-to-End Process Overview
+    - High-level ordered flow from initial nextmessage through request creation, processing branch, sealing, deletion, evaluation, validation, persistence, and terminal PASS/FAIL.
+
+14. Detailed Processing Stages
+    14.1 Initial nextmessage ingestion
+    14.2 Authoritative request construction and persistence
+    14.3 Processing branch creation
+    14.4 Submission creation and commit
+    14.5 Pull request creation
+    14.6 Seal Submission workflow
+    14.7 Encrypted artifact persistence on main
+    14.8 Processing branch cleanup marker creation
+    14.9 Delete Processing Branch workflow
+    14.10 PR closure and processing branch deletion
+    14.11 Evaluation nonce generation
+    14.12 Evaluator execution
+    14.13 Encrypted evaluator return
+    14.14 Workflow-side decryption and deterministic validation
+    14.15 Invalid-return repair loop
+    14.16 Final evaluation archive persistence
+    14.17 Terminal PASS/FAIL determination
+
+15. State Model
+    - Complete set of named process states, including initial, pending, sealed, branch-deleted, evaluating, invalid-return, repaired, PASS, FAIL, and infrastructure-error states where applicable.
+
+16. State Transition Specification
+    - For every state: triggering event, required preconditions, transition guard, action performed, outputs produced, next state, and forbidden transitions.
+
+17. Workflow, Job, Step, and Function Mapping
+    - Exact GitHub workflow files, jobs, workflow steps, JavaScript functions, shell blocks, and their role in the state machine.
+
+18. Data Contracts and Schemas
+    - Request JSON schema, marker schema, manifest schema, evaluator answer schema, validation-result schema, archive contents, and any exact-key/order requirements.
+
+19. Validation and Gate Conditions
+    - Deterministic checks performed at each stage, what constitutes a valid result, which checks are blocking, and how validation results control continuation.
+
+20. PASS/FAIL Semantics
+    - Exact definition of SBE PASS, exact definition of SBE FAIL, distinction between schema failure and substantive evaluation failure, and terminal-state authority.
+
+21. Error Handling
+    - Behavior for missing files, malformed JSON, invalid nonce, missing archive members, failed decryption, API errors, git errors, workflow failures, and other exceptional states.
+
+22. Retry and Repair Behavior
+    - Which operations may retry, maximum attempt counts, sequencing, repair payload requirements, and conditions that terminate retries.
+
+23. Idempotency and Re-entrancy
+    - Expected behavior when workflows or stages are repeated, resumed, re-triggered, or partially completed.
+
+24. Invariants
+    - Conditions that must remain true throughout the process, such as no plaintext merge to main, no evaluation before branch deletion, nonce consistency, exact artifact location, and controller ownership of privileged writes.
+
+25. Ordering Constraints
+    - Required temporal sequence and explicitly prohibited reorderings between sealing, persistence, branch deletion, nonce generation, evaluation, validation, and final persistence.
+
+26. Interface Boundaries
+    - Inputs and outputs between agent, workflow, evaluator, Gemini API, git/GitHub, archive tooling, and persistent storage.
+
+27. Evidence and Observability
+    - Which repository objects, workflow results, manifests, artifacts, logs, and API results constitute authoritative evidence for each material state claim.
+
+28. Completion Criteria
+    - Complete set of conditions that must all be verified before the process may be represented as complete.
+
+29. Verification Procedure
+    - Deterministic method for independently confirming folders, branches, PR state, artifacts, manifest fields, workflow conclusions, nonce association, and final PASS/FAIL.
+
+30. Test Plan
+    - Unit, integration, negative, malformed-return, nonce-mismatch, archive-integrity, branch-lifecycle, retry, and full end-to-end smoke tests.
+
+31. Failure Scenarios and Expected Outcomes
+    - Representative failure cases and the required resulting state, exit code, workflow conclusion, persisted evidence, and allowed next action.
+
+32. Traceability Matrix
+    - Mapping from requirements and invariants to workflows, functions, validation checks, artifacts, tests, and evidence sources.
+
+33. Operational Procedures
+    - How to initiate an SBE run, observe progress, diagnose failure, recover safely, and determine whether manual intervention is permitted.
+
+34. Change-Control Requirements
+    - Rules for changing schemas, workflows, scripts, ordering, secrets, state transitions, or completion semantics without silently breaking the protocol.
+
+35. Known Limitations and Non-Goals
+    - Explicitly documented implementation limits, unsupported behaviors, assumptions, and concerns intentionally outside SBE scope.
+
+36. Glossary
+    - Definitions of SBE-specific terms, state names, artifact names, role names, and status vocabulary.
+
+37. Appendices
+    37.1 Canonical repository paths
+    37.2 Exact schemas and examples
+    37.3 State-transition table
+    37.4 Sequence diagram or textual sequence representation
+    37.5 Workflow/function index
+    37.6 Validation/exit-code table
+    37.7 Reference evidence locations
