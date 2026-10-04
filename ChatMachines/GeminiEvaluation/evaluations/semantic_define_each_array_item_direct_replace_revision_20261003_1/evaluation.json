@@ -1,0 +1,306 @@
+{
+  "task_id": "task_semantic_define_each_array_item",
+  "task_name": "Semantic Definition of Each Array Item",
+  "version": "2.0.0",
+  "description": "Iterates sequentially through an input array to semantically define each item. Enforces strict private-scope variable isolation (no public or global variables), filters and counts non-empty items to size the return schema precisely, applies a deterministic verification gate to each generated definition, archives intermediate results in batches, and performs comprehensive final verification.",
+  "execution_scope": {
+    "no_public_variables_constraint": {
+      "enforced": true,
+      "rule": "All variables, state accumulators, pointers, and iterators must reside exclusively within the local function or block execution scope. No state or variable may be bound to global, module-level, or public scope namespaces."
+    },
+    "iterator_behavior": {
+      "mode": "sequential",
+      "start_index": 0,
+      "progression": "monotonic_increment",
+      "skipping_allowed": false,
+      "reordering_allowed": false,
+      "termination_condition": "iterator_index >= input_array.length"
+    },
+    "nonempty_item_count": {
+      "definition": "Count of elements in input_array that are non-null, non-undefined, and contain at least one non-whitespace character after trimming.",
+      "formula": "input_array.filter(item => typeof item === 'string' ? item.trim().length > 0 : (item !== null && item !== undefined)).length",
+      "exclusion_policy": "Empty strings, null, undefined, or whitespace-only elements are skipped during semantic definition generation and excluded from the count."
+    },
+    "return_schema_sizing": {
+      "strict_sizing": true,
+      "exact_item_count_key": "nonempty_item_count",
+      "target_collection": "definitions",
+      "rule": "The length of the returned definitions array must exactly match nonempty_item_count. Under-allocation, truncation, or excess padding is prohibited."
+    },
+    "batch_archive_requirement": {
+      "enabled": true,
+      "batch_size": 5,
+      "archive_trigger": "batch_boundary_or_iteration_end",
+      "destination": "batch_archives",
+      "rule": "When the accumulator reaches the specified batch_size or when the final element is processed, the current batch of verified definitions must be committed and appended to the persistent batch_archives array before continuing."
+    }
+  },
+  "verification_gate": {
+    "enabled": true,
+    "invocation_point": "per_item_definition",
+    "blocking": true,
+    "criteria": [
+      {
+        "check_id": "check_item_non_empty",
+        "description": "Source item must be verified as non-null and non-empty."
+      },
+      {
+        "check_id": "check_definition_completeness",
+        "description": "Definition object must include non-empty source_item, item_index, semantic_definition, category, and confidence_score."
+      },
+      {
+        "check_id": "check_semantic_substance",
+        "description": "semantic_definition must be substantive (minimum 10 characters) and provide contextual meaning rather than tautological repetition."
+      },
+      {
+        "check_id": "check_isolation_integrity",
+        "description": "Verify no variables were leaked into global or outer public scopes during definition synthesis."
+      }
+    ],
+    "on_failure": {
+      "action": "halt_or_retry",
+      "max_retries": 2,
+      "record_error": true
+    }
+  },
+  "ordered_instructions": [
+    {
+      "step_number": 1,
+      "instruction_id": "initialize_private_scope",
+      "description": "Initialize the execution context in strict private local scope. Verify that no global or public variables are created or referenced."
+    },
+    {
+      "step_number": 2,
+      "instruction_id": "evaluate_nonempty_item_count",
+      "description": "Scan the input array to determine the total item count and calculate the exact nonempty_item_count by filtering out null, undefined, and whitespace-only entries."
+    },
+    {
+      "step_number": 3,
+      "instruction_id": "initialize_return_schema",
+      "description": "Construct and allocate the return schema containers, setting the capacity of the definitions collection to match nonempty_item_count exactly."
+    },
+    {
+      "step_number": 4,
+      "instruction_id": "initialize_iterator_and_batch",
+      "description": "Initialize the sequential iterator at index 0 and allocate a local private batch accumulator array with a maximum capacity of batch_size."
+    },
+    {
+      "step_number": 5,
+      "instruction_id": "fetch_and_evaluate_current_item",
+      "description": "Read the element at current iterator index. If the element is empty or null, log omission in skipped_indices and proceed to step 9."
+    },
+    {
+      "step_number": 6,
+      "instruction_id": "synthesize_semantic_definition",
+      "description": "Generate a rigorous semantic definition for the current non-empty item, capturing semantic meaning, domain context, taxonomy category, and confidence score."
+    },
+    {
+      "step_number": 7,
+      "instruction_id": "execute_verification_gate",
+      "description": "Pass the newly generated definition through the verification gate. Ensure all gate criteria pass before appending the definition to the active batch accumulator."
+    },
+    {
+      "step_number": 8,
+      "instruction_id": "check_batch_boundary_and_archive",
+      "description": "If the batch accumulator size equals batch_size or if the current item is the last non-empty item, commit the batch to batch_archives, append definitions to the main return array, and reset the batch accumulator."
+    },
+    {
+      "step_number": 9,
+      "instruction_id": "advance_iterator",
+      "description": "Increment the iterator index by exactly 1. If iterator index is less than input array length, return to step 5."
+    },
+    {
+      "step_number": 10,
+      "instruction_id": "execute_final_verification",
+      "description": "Execute comprehensive final verification checks against all outputs, validating count equality, gate passes, archive integrity, and private-variable isolation."
+    }
+  ],
+  "final_verification_requirements": {
+    "mandatory_checks": [
+      {
+        "check_id": "verify_sizing_equality",
+        "description": "Verify definitions.length === nonempty_item_count.",
+        "pass_condition": "definitions.length === nonempty_item_count"
+      },
+      {
+        "check_id": "verify_no_public_variables",
+        "description": "Confirm that global and public scope remained pristine with zero variable leakage during execution.",
+        "pass_condition": "global_leakage_detected === false"
+      },
+      {
+        "check_id": "verify_sequential_order",
+        "description": "Confirm that definitions appear in strictly ascending order corresponding to their original input array indices.",
+        "pass_condition": "is_monotonically_increasing(definitions.map(d => d.source_index))"
+      },
+      {
+        "check_id": "verify_batch_archive_completeness",
+        "description": "Verify that all definitions are accounted for in batch_archives and total archived items equal nonempty_item_count.",
+        "pass_condition": "batch_archives.reduce((sum, b) => sum + b.items.length, 0) === nonempty_item_count"
+      },
+      {
+        "check_id": "verify_all_gates_passed",
+        "description": "Verify that every processed item has an associated verification_gate PASS record.",
+        "pass_condition": "definitions.every(d => d.gate_result === 'PASS')"
+      }
+    ],
+    "final_status_values": [
+      "VERIFIED_PASS",
+      "VERIFICATION_FAILED"
+    ]
+  },
+  "return_schema": {
+    "type": "object",
+    "required": [
+      "task_id",
+      "execution_timestamp",
+      "total_input_items",
+      "nonempty_item_count",
+      "definitions",
+      "batch_archives",
+      "verification_summary",
+      "final_verification_result"
+    ],
+    "properties": {
+      "task_id": {
+        "type": "string",
+        "const": "task_semantic_define_each_array_item"
+      },
+      "execution_timestamp": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "total_input_items": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "nonempty_item_count": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "skipped_indices": {
+        "type": "array",
+        "items": {
+          "type": "integer"
+        }
+      },
+      "definitions": {
+        "type": "array",
+        "description": "Strictly sized collection containing definitions for each non-empty input array item.",
+        "items": {
+          "type": "object",
+          "required": [
+            "source_index",
+            "source_item",
+            "semantic_definition",
+            "category",
+            "confidence_score",
+            "gate_result"
+          ],
+          "properties": {
+            "source_index": {
+              "type": "integer"
+            },
+            "source_item": {
+              "type": "string"
+            },
+            "semantic_definition": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "confidence_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "gate_result": {
+              "type": "string",
+              "enum": [
+                "PASS",
+                "FAIL"
+              ]
+            }
+          }
+        }
+      },
+      "batch_archives": {
+        "type": "array",
+        "description": "Archived batches committed at designated batch intervals or iteration end.",
+        "items": {
+          "type": "object",
+          "required": [
+            "batch_number",
+            "batch_size",
+            "archived_at",
+            "items"
+          ],
+          "properties": {
+            "batch_number": {
+              "type": "integer"
+            },
+            "batch_size": {
+              "type": "integer"
+            },
+            "archived_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "items": {
+              "type": "array"
+            }
+          }
+        }
+      },
+      "verification_summary": {
+        "type": "object",
+        "required": [
+          "total_gates_evaluated",
+          "gates_passed",
+          "gates_failed"
+        ],
+        "properties": {
+          "total_gates_evaluated": {
+            "type": "integer"
+          },
+          "gates_passed": {
+            "type": "integer"
+          },
+          "gates_failed": {
+            "type": "integer"
+          }
+        }
+      },
+      "final_verification_result": {
+        "type": "object",
+        "required": [
+          "status",
+          "checks_executed",
+          "all_checks_passed",
+          "notes"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "VERIFIED_PASS",
+              "VERIFICATION_FAILED"
+            ]
+          },
+          "checks_executed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "all_checks_passed": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
