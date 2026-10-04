@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 
 const [
@@ -34,11 +35,18 @@ function configure(cwd) {
   run(cwd, ['git', 'config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com']);
 }
 
+function sha256File(file) {
+  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+}
+
+const evaluation = JSON.parse(fs.readFileSync(evaluationFile, 'utf8'));
+if (evaluation.result !== 'PASS') throw new Error('Refusing to finalize an SBE result that is not PASS.');
+
 const destination = path.join('SBE', 'sealed', requestId, headSha);
 const absoluteDestination = path.join(trustedDir, destination);
 fs.mkdirSync(absoluteDestination, { recursive: true });
-fs.copyFileSync(sealedArchive, path.join(absoluteDestination, 'submission.7z'));
-fs.copyFileSync(evaluationFile, path.join(absoluteDestination, 'evaluation.json'));
+const archiveDestination = path.join(absoluteDestination, 'submission.7z');
+fs.copyFileSync(sealedArchive, archiveDestination);
 fs.writeFileSync(path.join(absoluteDestination, 'manifest.json'), JSON.stringify({
   sbe_version: 1,
   request_id: requestId,
@@ -46,7 +54,11 @@ fs.writeFileSync(path.join(absoluteDestination, 'manifest.json'), JSON.stringify
   source_head_sha: headSha,
   source_file: submissionFile,
   sealed_archive: `${destination}/submission.7z`,
-  evaluation: `${destination}/evaluation.json`,
+  archive_sha256: sha256File(archiveDestination),
+  evaluation_result: 'PASS',
+  evaluator_model: evaluation.model || null,
+  evaluated_at: evaluation.evaluated_at || null,
+  evaluation_sha256: sha256File(evaluationFile),
   sealed_at: new Date().toISOString()
 }, null, 2) + '\n');
 
