@@ -1,0 +1,54 @@
+name: Delete Processing Branch
+
+on:
+  push:
+    branches:
+      - 'processing/**'
+
+permissions:
+  contents: write
+
+jobs:
+  delete-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Check delete marker
+        id: marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f '.delete-processing-branch' ]; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Delete processing branch
+        if: steps.marker.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BRANCH='${{ github.ref_name }}'
+
+          case "$BRANCH" in
+            processing/*) ;;
+            *)
+              echo "Refusing to delete non-processing branch: $BRANCH" >&2
+              exit 1
+              ;;
+          esac
+
+          gh api \
+            --method DELETE \
+            "repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH}"
+
+          echo "Deleted branch: $BRANCH"
