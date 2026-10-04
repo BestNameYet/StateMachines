@@ -123,6 +123,13 @@ function expectedNonemptyCount(array) {
   return array.reduce((count, item) => count + (terminalIsEmptyContainer(item) ? 0 : 1), 0);
 }
 
+function expectedNonemptySignatures(array) {
+  if (!Array.isArray(array)) throw new Error('Target JSON must be an array.');
+  return array
+    .filter(item => !terminalIsEmptyContainer(item))
+    .map(item => JSON.stringify(item));
+}
+
 function parseJsonArchive(archiveRelativePath) {
   const absolute = resolveRepoFile(archiveRelativePath);
   if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) {
@@ -155,16 +162,17 @@ function parseJsonArchive(archiveRelativePath) {
   return JSON.parse(text);
 }
 
-function validateDefinitionOnlyArray(records, expectedCount) {
+function validateSignatureDefinitionArray(records, expectedSignatures) {
   if (!Array.isArray(records)) return false;
-  if (records.length !== expectedCount) return false;
+  if (!Array.isArray(expectedSignatures)) return false;
+  if (records.length !== expectedSignatures.length) return false;
   for (let i = 0; i < records.length; i++) {
     if (!(i in records)) return false;
     const record = records[i];
     if (record === null || typeof record !== 'object' || Array.isArray(record)) return false;
     const keys = Object.keys(record);
-    if (keys.length !== 1 || keys[0] !== 'item') return false;
-    if (typeof record.item !== 'string' || record.item.trim() === '') return false;
+    if (keys.length !== 1 || keys[0] !== expectedSignatures[i]) return false;
+    if (typeof record[keys[0]] !== 'string' || record[keys[0]].trim() === '') return false;
   }
   return true;
 }
@@ -211,12 +219,14 @@ async function verify(instanceRelativePath, evaluationCommitSha) {
   const ready = predicates.file_does_exist_$bool && predicates.file_is_json_$bool && predicates.file_is_minified_$bool && predicates.file_is_flattened_$bool;
   let pass = ready;
   let expectedCount = null;
+  let expectedSignatures = null;
   let archiveFilename = null;
   let failure = null;
 
   try {
     if (!ready) throw new Error('Target-array readiness truth table did not evaluate to AND=true.');
     expectedCount = expectedNonemptyCount(predicates.parsed);
+    expectedSignatures = expectedNonemptySignatures(predicates.parsed);
 
     if (instance?.count_array_nonempty_items?.filename !== '$verify_target_array.filename') {
       throw new Error('count_array_nonempty_items.filename no longer points to verify_target_array.filename.');
@@ -245,8 +255,8 @@ async function verify(instanceRelativePath, evaluationCommitSha) {
     }
 
     const records = parseJsonArchive(archiveFilename);
-    if (!validateDefinitionOnlyArray(records, expectedCount)) {
-      throw new Error('Complete archive does not contain exactly one non-empty {"item":"definition"} record per non-empty source signature.');
+    if (!validateSignatureDefinitionArray(records, expectedSignatures)) {
+      throw new Error('Complete archive does not contain exactly one {"<literal source signature>":"semantic definition"} record, in source order, for every non-empty source signature.');
     }
   } catch (error) {
     pass = false;
