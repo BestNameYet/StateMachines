@@ -1,4 +1,12 @@
 {
+  "glossary": [
+    {"definition":{"definition":"State what the complete source signature means in context.","example":{"source":"ground_truth_status.value = VERIFIED|CONTRADICTED|PARTIAL|UNKNOWN|NOT_EXECUTED","result":"The closed vocabulary of allowed ground-truth verification states."}}},
+    {"semantic_role":{"definition":"Identify the function the source value performs in its enclosing semantic structure.","example":{"source":"ground_truth_status.value","result":"Provides the permitted status vocabulary for ground_truth_status."}}},
+    {"referent":{"definition":"Identify the concept, object, state, rule, artifact, actor, field, or construct denoted by the source value in context.","example":{"source":"user_words.key = user_words","result":"Refers to the canonical user_words evaluation-definition record."}}},
+    {"relationship_to_parent":{"definition":"Explain how the source value semantically relates to its immediate enclosing key.","example":{"source":"ground_truth_status.value","result":"Supplies the value set for the parent field ground_truth_status.value."}}},
+    {"semantic_contribution":{"definition":"State the distinct meaning, constraint, distinction, or information this source value contributes to its complete signature and surrounding document.","example":{"source":"ground_truth_status.value","result":"Constrains ground-truth results to five explicitly distinguished states."}}},
+    {"semantic_class":{"definition":"Classify the kind of semantic object represented by the source value in context using the most specific meaningful class supported by the signature.","example":{"source":"ground_truth_status.value","result":"Closed five-state status enumeration."},"ground_truth_status_explainer":{"classification":"ground_truth_status is a closed five-state semantic enumeration.","states":{"VERIFIED":"Direct authoritative evidence supports the complete claim.","CONTRADICTED":"Authoritative evidence directly conflicts with the complete claim.","PARTIAL":"Only part of the complete claim is supported by authoritative evidence.","UNKNOWN":"The authoritative source is unavailable, ambiguous, or unresolved.","NOT_EXECUTED":"Live authoritative evidence establishes that the claimed action did not occur."},"instruction":"Preserve all five distinctions exactly; PARTIAL, UNKNOWN, and NOT_EXECUTED are not success states."}}}
+  ],
   "do_instructions_in_order_of_array_index": [
     "verify_target_array",
     "count_array_nonempty_items",
@@ -9,17 +17,9 @@
     "filename": "",
     "truthtable": {
       "eval_type": "AND",
-      "table": [
-        "file_does_exist_$bool",
-        "file_is_json_$bool",
-        "file_is_minified_$bool",
-        "file_is_flattened_$bool"
-      ]
+      "table": ["file_does_exist_$bool","file_is_json_$bool","file_is_minified_$bool","file_is_flattened_$bool"]
     },
-    "$this_truthtable_result_gate": {
-      "$iftrue": "continue",
-      "else": "halt"
-    }
+    "$this_truthtable_result_gate": {"$iftrue":"continue","else":"halt"}
   },
   "count_array_nonempty_items": {
     "filename": "$verify_target_array.filename",
@@ -32,7 +32,8 @@
     "returnSchemaArraySize": "$count_array_nonempty_items.how_many",
     "returnSchemaArray": [],
     "batch_archive_filenames": [],
-    "iterate_filename": "note: do not save any results to public variables, write batches to compression encryption type files and record each resulting archive filename in batch_archive_filenames. Do: for each element found in original_array_filename, if the terminal node of the element signature is an empty object {} or an empty array [], next on original_array_filename array, else, semantically evaluate that source element in context of original_array_filename and return exactly one k/v object to returnSchemaArray where the key is the literal signature of the source element being semantically evaluated, defined deterministically as JSON.stringify(the complete source element exactly as parsed from original_array_filename), and the value is the generated semantic definition. Example shape: {\"<JSON.stringify(source element)>\": \"semantic definition in context of original_array_filename\"}. Preserve the source order of nonempty elements. next returnSchemaArray, next original_array_filename array, when iterator halts at end of original_array_filename array, verify: no empty indices on returnSchemaArray, each index contains exactly one key, that key exactly equals JSON.stringify of the corresponding nonempty source element, and its value is a non-empty semantic definition"
+    "semantic_evaluations": ["definition","semantic_role","referent","relationship_to_parent","semantic_contribution","semantic_class"],
+    "iterate_filename": "note: do not save any results to public variables, write batches to compression encryption type files and record each resulting archive filename in batch_archive_filenames. Use glossary for the meaning of each evaluation type. Do: for each element found in original_array_filename, if the terminal node of the element signature is an empty object {} or an empty array [], next on original_array_filename array, else, evaluate the source element in context once for every type in semantic_evaluations. Return one object whose outer key is JSON.stringify(the complete source element exactly as parsed) and whose outer value contains exactly the semantic_evaluations keys in listed order, each mapped to a non-empty string. Example: {\"<JSON.stringify(source element)>\":{\"definition\":\"...\",\"semantic_role\":\"...\",\"referent\":\"...\",\"relationship_to_parent\":\"...\",\"semantic_contribution\":\"...\",\"semantic_class\":\"...\"}}. Preserve source order. At end verify no empty indices, each outer key exactly matches the corresponding source signature, every evaluation key is present exactly once in listed order, and every evaluation result is non-empty."
   },
   "combine_and_send_batch_archives": {
     "batch_archive_filenames": "$doRecord_withReturnSchema.batch_archive_filenames",
