@@ -3,9 +3,9 @@
     "role": "user",
     "parts": [
       {
-        "text": "Inspect ChatMachines/TokenizerCalibration/agents-by-header-flattened.json. Check the complete flattened projection for any occurrence where a JSON key is a parent whose value has more than one immediate child. For an object-valued key, immediate children are that object's properties; for an array-valued key, immediate children are that array's elements. Exclude the anonymous outermost projection array itself because it has no parent key. Evaluate every projection atom recursively. Return: (1) whether any keyed parent has more than one immediate child, (2) total number of violations, and (3) for every violation, the exact structural path and the offending projection element or a sufficient exact excerpt to identify it. This is a structural atomicity audit only; do not revise any source files."
+        "text": "Create a Node.js JavaScript script that determines whether any item in a JSON array contains any key whose value has more than one immediate child element. Treat an object value's own properties as its child elements and an array value's members as its child elements; primitive/null values have zero children. The check must recurse through every nested object and array inside every top-level array item. Report every violation with the top-level array index, structural path to the key, child count, and whether the value is an object or array. The script should accept the JSON file path as a command-line argument, print a clear machine-readable JSON result, and return a nonzero exit code when one or more violations exist. Produce the complete script, suitable for use against ChatMachines/TokenizerCalibration/agents-by-header-flattened.json."
       }
     ]
   },
-  "run_nonce": "flattened_projection_atomic_parent_audit_20261003_1"
+  "run_nonce": "json_array_multi_child_detector_20261003_1"
 }
