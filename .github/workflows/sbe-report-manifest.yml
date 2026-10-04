@@ -1,0 +1,44 @@
+name: Update SBE Report Manifest
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification/**'
+      - '!ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification/MANIFEST.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sbe-report-manifest-main
+  cancel-in-progress: false
+
+jobs:
+  update-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Rebuild manifest
+        run: node "ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification/update-manifest.js"
+
+      - name: Commit manifest when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST='ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification/MANIFEST.json'
+          if git diff --quiet -- "$MANIFEST"; then
+            echo 'Manifest already current.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$MANIFEST"
+          git commit -m 'Update SBE report manifest'
+          git push origin HEAD:main
