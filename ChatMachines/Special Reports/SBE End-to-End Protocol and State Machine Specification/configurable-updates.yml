@@ -1,18 +1,24 @@
 version: 1
 
-# Lists execute from top to bottom. Arguments inside each list execute from top to bottom.
-# The runner requires the mapped JavaScript module to export one function and invokes it as script(arg).
-lists: []
+# Lists execute from top to bottom. Each args element is a positional-argument list.
+# The runner invokes the mapped JavaScript module as script(...args).
+lists:
+  - name: append-to-metadata
+    script: update-functions/append-to-metadata.js
+    args: []
 
-# Example configuration:
-# lists:
-#   - name: listA
-#     script: update-functions/A.js
-#     args:
-#       - arg1
-#       - arg2
-#   - name: listB
-#     script: update-functions/B.js
-#     args:
-#       - arg1
-#       - arg2
+# append-to-metadata(fileArg, keyValueArg)
+#
+# fileArg:
+#   Report-root-relative path to the .txt document to modify.
+#
+# keyValueArg:
+#   Object containing exactly one key:value pair. If the key does not exist in
+#   metadata it is appended; if it already exists its value is replaced.
+#
+# Example invocations:
+#   args:
+#     - - 01 Document Control/01 Document Control.txt
+#       - status: draft
+#     - - 20 PASS-FAIL Semantics/20 PASS-FAIL Semantics.txt
+#       - reviewed: false
