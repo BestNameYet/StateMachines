@@ -1,0 +1,103 @@
+name: Repository Dispatch Logger
+
+on:
+  repository_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  log-dispatch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Save repository_dispatch event
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const payload = JSON.parse(
+            fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8')
+          );
+
+          const githubEnvironment = Object.fromEntries(
+            Object.entries(process.env)
+              .filter(([key]) => key.startsWith('GITHUB_'))
+              .filter(([key]) => !/(TOKEN|SECRET|PASSWORD|KEY)/i.test(key))
+              .sort(([a], [b]) => a.localeCompare(b))
+          );
+
+          const eventType = String(payload.action ?? 'unknown');
+          const safeEventType = eventType
+            .replace(/[^A-Za-z0-9._-]+/g, '_')
+            .slice(0, 120) || 'unknown';
+
+          const receivedAt = new Date().toISOString();
+          const logDirectory = path.join('logs', 'repository-dispatch');
+          fs.mkdirSync(logDirectory, { recursive: true });
+
+          const filename = [
+            receivedAt.replace(/[:.]/g, '-'),
+            safeEventType,
+            `run-${process.env.GITHUB_RUN_ID}`,
+            `attempt-${process.env.GITHUB_RUN_ATTEMPT}.json`
+          ].join('-');
+
+          const logPath = path.join(logDirectory, filename);
+
+          const record = {
+            received_at_utc: receivedAt,
+            event_name: process.env.GITHUB_EVENT_NAME,
+            event_type: payload.action ?? null,
+            repository: process.env.GITHUB_REPOSITORY,
+            actor: process.env.GITHUB_ACTOR,
+            triggering_actor: process.env.GITHUB_TRIGGERING_ACTOR,
+            ref: process.env.GITHUB_REF,
+            sha: process.env.GITHUB_SHA,
+            workflow: process.env.GITHUB_WORKFLOW,
+            workflow_ref: process.env.GITHUB_WORKFLOW_REF,
+            workflow_sha: process.env.GITHUB_WORKFLOW_SHA,
+            run_id: process.env.GITHUB_RUN_ID,
+            run_number: process.env.GITHUB_RUN_NUMBER,
+            run_attempt: process.env.GITHUB_RUN_ATTEMPT,
+            event_payload: payload,
+            github_environment: githubEnvironment
+          };
+
+          fs.writeFileSync(logPath, `${JSON.stringify(record, null, 2)}\n`);
+          fs.writeFileSync('/tmp/repository-dispatch-log-path', logPath);
+          console.log(`Saved repository_dispatch event to ${logPath}`);
+          NODE
+
+      - name: Commit dispatch log
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LOG_PATH=$(cat /tmp/repository-dispatch-log-path)
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$LOG_PATH"
+          git commit -m "Log repository_dispatch event ${GITHUB_RUN_ID}"
+
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+
+            git fetch origin main
+            git rebase origin/main
+          done
+
+          echo 'Unable to push repository_dispatch log after five attempts.' >&2
+          exit 1
