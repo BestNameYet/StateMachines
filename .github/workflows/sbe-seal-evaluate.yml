@@ -1,4 +1,4 @@
-name: SBE Seal and Evaluate
+name: SBE Seal Submission
 
 on:
   pull_request_target:
@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  seal-evaluate:
+  seal-submission:
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       startsWith(github.event.pull_request.head.ref, 'processing/')
@@ -81,43 +81,7 @@ jobs:
           test -f "$FILE"
           echo "file=$FILE" >> "$GITHUB_OUTPUT"
 
-      - name: Evaluate completion
-        id: evaluate
-        env:
-          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
-          SBE_REQUEST_ID: ${{ steps.request.outputs.id }}
-          REQUEST_ID: ${{ steps.request.outputs.id }}
-          SUBMISSION_FILE: ${{ steps.submission.outputs.file }}
-        shell: bash
-        run: |
-          set +e
-          node trusted/ChatMachines/SBE/sbe-evaluate.js \
-            "trusted/SBE/requests/${REQUEST_ID}.json" \
-            "submission/${SUBMISSION_FILE}" \
-            "$RUNNER_TEMP/sbe-evaluation.json"
-          CODE=$?
-          set -e
-          if [ "$CODE" -eq 0 ]; then
-            echo 'result=PASS' >> "$GITHUB_OUTPUT"
-          elif [ "$CODE" -eq 2 ]; then
-            echo 'result=FAIL' >> "$GITHUB_OUTPUT"
-          else
-            exit "$CODE"
-          fi
-
-      - name: Report failed evaluation
-        if: steps.evaluate.outputs.result == 'FAIL'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        shell: bash
-        run: |
-          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body 'SBE evaluation: FAIL. The processing branch was retained for correction.'
-          exit 1
-
-      - name: Seal submission and evaluation
-        if: steps.evaluate.outputs.result == 'PASS'
+      - name: Seal submission
         env:
           GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
           REQUEST_ID: ${{ steps.request.outputs.id }}
@@ -128,11 +92,9 @@ jobs:
           set -euo pipefail
           node trusted/ChatMachines/SBE/sbe-pack.js \
             "submission/${SUBMISSION_FILE}" \
-            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z" \
-            "$RUNNER_TEMP/sbe-evaluation.json"
+            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z"
 
-      - name: Persist sealed result and mark branch
-        if: steps.evaluate.outputs.result == 'PASS'
+      - name: Persist sealed artifact and mark branch for deletion
         env:
           REQUEST_ID: ${{ steps.request.outputs.id }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -150,5 +112,4 @@ jobs:
             "$HEAD_REF" \
             "$HEAD_SHA" \
             "$SUBMISSION_FILE" \
-            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z" \
-            "$RUNNER_TEMP/sbe-evaluation.json"
+            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z"
