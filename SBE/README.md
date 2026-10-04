@@ -1,6 +1,6 @@
 # SBE — Sealed Branch Eval
 
-SBE is the repository's end-of-task verification and containment method.
+SBE is the repository's end-of-task containment and verification method.
 
 ## Contract
 
@@ -8,14 +8,15 @@ SBE is the repository's end-of-task verification and containment method.
 2. The processing branch is named exactly `processing/<request-id>`.
 3. Relative to the PR base, the processing branch contains exactly one changed submission file and that file is an added or modified `.gz` file.
 4. A pull request targets `main` from the same repository.
-5. `SBE Seal and Evaluate` reads trusted SBE code and the authoritative request from `main`. It checks out the PR head only as untrusted data and never executes code from it.
-6. Gemini evaluates the decompressed submission against the authoritative request. A producer completion claim is not evidence. Missing, contradictory, unverifiable, or materially incomplete work is `FAIL`.
-7. On `FAIL`, the PR and processing branch remain for correction. Nothing is sealed or deleted.
-8. On `PASS`, the workflow wraps the `.gz` submission and the full Gemini evaluation in a header-encrypted 7z archive using the user-controlled `GZ_PASSWORD` repository secret. The producing model never receives that password.
-9. Only the encrypted archive plus a non-content manifest are persisted to `main` at `SBE/sealed/<request-id>/<evaluated-head-sha>/`.
-10. The workflow removes the submitted `.gz` from the processing branch and replaces it with `.delete-processing-branch`.
-11. `SBE Delete Processing Branch` runs only after a successful SBE workflow. It verifies the marker, verifies that the marker commit is directly descended from the evaluated commit and contains only the expected submission deletion plus marker addition, verifies that the sealed archive exists on `main`, and verifies that the manifest records `PASS`.
-12. Only after those checks does it close the pull request without merge and delete the processing branch.
+5. `SBE Seal Submission` reads trusted SBE code from `main`, treats the PR head only as untrusted data, and performs **no Gemini evaluation before sealing**.
+6. The workflow immediately wraps the submitted `.gz` in a header-encrypted 7z archive using the user-controlled `GZ_PASSWORD` repository secret. The producing model never receives that password.
+7. The encrypted artifact plus a non-content manifest are persisted to `main` at `SBE/sealed/<request-id>/<source-head-sha>/`.
+8. The workflow removes the submitted `.gz` from the processing branch and replaces it with `.delete-processing-branch`.
+9. `SBE Delete Processing Branch` runs after successful sealing. It verifies the marker, verifies that the marker commit is directly descended from the submitted commit and contains only the expected submission deletion plus marker addition, and verifies the sealed artifact exists on `main`.
+10. After those checks, it closes the pull request without merge and deletes the processing branch.
+11. **Only after the processing branch has been deleted** does the workflow decrypt the password-protected artifact in ephemeral runner storage and send the decompressed submission to Gemini for completion evaluation against the authoritative request.
+12. The full Gemini evaluation is itself encrypted with `GZ_PASSWORD` and stored as `evaluation.7z` beside the submission archive. The manifest records only non-content evaluation metadata and `evaluation_status: PASS|FAIL`.
+13. A successful SBE completion claim requires the sealed artifact to exist on `main`, the PR to be closed without merge, the processing branch to be deleted, and the post-delete Gemini evaluation to report `PASS`.
 
 ## Authoritative request schema
 
@@ -33,6 +34,4 @@ SBE is the repository's end-of-task verification and containment method.
 
 ## Security boundary
 
-The plaintext submission may exist in the temporary processing branch and ephemeral runner while evaluation is occurring. It is never merged into `main`. The durable result on `main` is password-encrypted. The full evaluator reasoning is stored inside that encrypted archive rather than as plaintext repository content.
-
-Branch deletion is lifecycle cleanup, not the cryptographic protection. The cryptographic protection is that the durable artifact on `main` is encrypted using the user-controlled password.
+The plaintext submission may exist in the temporary processing branch and ephemeral runner only until it is sealed. It is never merged into `main`. The durable submission artifact on `main` is password-encrypted. Branch deletion is lifecycle cleanup; the cryptographic protection comes from the user-controlled `GZ_PASSWORD` encryption. Gemini evaluation occurs only after sealing and branch deletion, and the full evaluation is also stored encrypted.
