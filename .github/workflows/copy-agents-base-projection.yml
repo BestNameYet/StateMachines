@@ -1,0 +1,38 @@
+name: Copy checked Agents base projection
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/copy-agents-base-projection.yml
+
+permissions:
+  contents: write
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Copy checked projection
+        run: |
+          mkdir -p ChatMachines/ComprehensionTasks/ProjectionForTests
+          cp ChatMachines/TokenizerCalibration/agents-by-header-flattened.json ChatMachines/ComprehensionTasks/ProjectionForTests/agentsmdbaseproejction.json
+          rm -f ChatMachines/ComprehensionTasks/ProjectionForTests/.gitkeep
+
+      - name: Commit projection
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ChatMachines/ComprehensionTasks/ProjectionForTests
+          if git diff --cached --quiet; then
+            echo "No projection change."
+            exit 0
+          fi
+          git commit -m "Add checked Agents base projection"
+          git pull --rebase origin main
+          git push origin HEAD:main
