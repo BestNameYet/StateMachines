@@ -81,7 +81,7 @@ jobs:
           test -f "$FILE"
           echo "file=$FILE" >> "$GITHUB_OUTPUT"
 
-      - name: Seal submission
+      - name: Seal submission and authoritative request
         env:
           GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
           REQUEST_ID: ${{ steps.request.outputs.id }}
@@ -92,7 +92,8 @@ jobs:
           set -euo pipefail
           node trusted/ChatMachines/SBE/sbe-pack.js \
             "submission/${SUBMISSION_FILE}" \
-            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z"
+            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z" \
+            "trusted/SBE/requests/${REQUEST_ID}.json"
 
       - name: Persist sealed artifact and mark branch for deletion
         env:
