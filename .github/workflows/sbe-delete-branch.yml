@@ -138,14 +138,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Decrypt sealed artifact and run Gemini completion evaluation
-        id: evaluate
+      - name: Decrypt sealed artifact
+        id: unseal
         env:
           GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
-          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
-          SBE_REQUEST_ID: ${{ steps.verify.outputs.request_id }}
-          SBE_EVAL_NONCE: ${{ steps.nonce.outputs.value }}
           SEALED_PATH: ${{ steps.verify.outputs.sealed_path }}
         shell: bash
         run: |
@@ -169,22 +165,74 @@ jobs:
             echo "Expected exactly one .gz in sealed submission; found ${#GZ_FILES[@]}." >&2
             exit 1
           }
+          echo "gz=${GZ_FILES[0]}" >> "$GITHUB_OUTPUT"
 
-          set +e
-          node trusted/ChatMachines/SBE/sbe-evaluate.js \
+      - name: Run evaluator and mechanically validate return
+        id: evaluate
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          SBE_REQUEST_ID: ${{ steps.verify.outputs.request_id }}
+          SBE_EVAL_NONCE: ${{ steps.nonce.outputs.value }}
+          SBE_EVAL_MAX_SCHEMA_ATTEMPTS: '3'
+          GZ_FILE: ${{ steps.unseal.outputs.gz }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EXCHANGE="$RUNNER_TEMP/sbe-evaluator-exchange.json"
+          VALIDATION="$RUNNER_TEMP/sbe-evaluator-validation.json"
+          EVALUATION="$RUNNER_TEMP/sbe-evaluation.json"
+          NEXT_EXCHANGE="$RUNNER_TEMP/sbe-evaluator-next-exchange.json"
+          MAX_ATTEMPTS="${SBE_EVAL_MAX_SCHEMA_ATTEMPTS}"
+
+          node trusted/ChatMachines/SBE/sbe-evaluate.js initial \
             "trusted/SBE/requests/${SBE_REQUEST_ID}.json" \
-            "${GZ_FILES[0]}" \
-            "$RUNNER_TEMP/sbe-evaluation.json"
-          CODE=$?
-          set -e
+            "$GZ_FILE" \
+            "$EXCHANGE"
 
-          if [ "$CODE" -eq 0 ]; then
-            echo 'result=PASS' >> "$GITHUB_OUTPUT"
-          elif [ "$CODE" -eq 2 ]; then
-            echo 'result=FAIL' >> "$GITHUB_OUTPUT"
-          else
-            exit "$CODE"
-          fi
+          for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+            set +e
+            node trusted/ChatMachines/SBE/sbe-validate-evaluator-return.js \
+              "$EXCHANGE" \
+              "$SBE_EVAL_NONCE" \
+              "$EVALUATION" \
+              "$VALIDATION"
+            CODE=$?
+            set -e
+
+            if [ "$CODE" -eq 0 ]; then
+              echo 'result=PASS' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            if [ "$CODE" -eq 2 ]; then
+              echo 'result=FAIL' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            if [ "$CODE" -ne 3 ]; then
+              exit "$CODE"
+            fi
+
+            if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
+              echo "Evaluator return failed deterministic schema validation after ${MAX_ATTEMPTS} attempts." >&2
+              exit 1
+            fi
+
+            # The validation file contains exactly the complete original payload,
+            # the invalid evaluator response, the mechanical validation failure,
+            # and an exact valid return example. Send that package back to the
+            # evaluator for correction; do not print it to workflow logs.
+            node trusted/ChatMachines/SBE/sbe-evaluate.js repair \
+              "$EXCHANGE" \
+              "$VALIDATION" \
+              "$NEXT_EXCHANGE"
+            mv "$NEXT_EXCHANGE" "$EXCHANGE"
+          done
+
+          echo 'Unreachable evaluator validation state.' >&2
+          exit 1
 
       - name: Encrypt and persist nonce-bound evaluation
         env:
