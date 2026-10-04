@@ -1,0 +1,33 @@
+{
+  "do_instructions_in_order_of_array_index": [
+    "verify_target_array",
+    "count_array_nonempty_items",
+    "doRecord_withReturnSchema"
+  ],
+  "verify_target_array": {
+    "filename": "",
+    "truthtable": {
+      "eval_type": "AND",
+      "table": [
+        "file_does_exist_$bool",
+        "file_is_json_$bool",
+        "file_is_minified_$bool",
+        "file_is_flattened_$bool"
+      ]
+    },
+    "$this_truthtable_result_gate": {
+      "$iftrue": "continue",
+      "else": "halt"
+    }
+  },
+  "count_array_nonempty_items": {
+    "how_many": "not_yet_counted",
+    "definition_of_empty": "element signature whose terminal node is an empty object {} or an empty array []"
+  },
+  "doRecord_withReturnSchema": {
+    "original_array_filename": "",
+    "nonempty_items_counted": "",
+    "returnSchemaArraySize": "$this_nonempty_items_counted",
+    "iterate_filemame": "note: do not save any results to public variables, write batches to compression encryption type files, give complete batch archive as solution only. Do: for each element found in filename, if terminal node of element signature is an empty object {} or an empty array [], next on filename array, else, return k/v matching this example: {\"item\": \"result of Do: generate semantic definition in context of filename\"} to returnSchemaArray, next returnSchemaArray, next filename array, when iterator halts at end of filename array, verify: no empty indices on returnSchemaArray, each index contains kv item: definition"
+  }
+}
