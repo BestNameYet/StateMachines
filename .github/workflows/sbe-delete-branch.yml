@@ -121,6 +121,15 @@ jobs:
           gh api --method PATCH "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" -f state=closed >/dev/null
           gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${HEAD_REF}"
 
+      - name: Create evaluation nonce
+        id: nonce
+        shell: bash
+        run: |
+          set -euo pipefail
+          NONCE=$(openssl rand -hex 32)
+          [[ "$NONCE" =~ ^[0-9a-f]{64}$ ]]
+          echo "value=$NONCE" >> "$GITHUB_OUTPUT"
+
       - name: Checkout trusted main after branch deletion
         uses: actions/checkout@v4
         with:
@@ -136,6 +145,7 @@ jobs:
           GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           SBE_REQUEST_ID: ${{ steps.verify.outputs.request_id }}
+          SBE_EVAL_NONCE: ${{ steps.nonce.outputs.value }}
           SEALED_PATH: ${{ steps.verify.outputs.sealed_path }}
         shell: bash
         run: |
@@ -176,13 +186,14 @@ jobs:
             exit "$CODE"
           fi
 
-      - name: Encrypt and persist post-delete evaluation
+      - name: Encrypt and persist nonce-bound evaluation
         env:
           GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
           REQUEST_ID: ${{ steps.verify.outputs.request_id }}
           SOURCE_SHA: ${{ steps.verify.outputs.source_sha }}
           SEALED_PATH: ${{ steps.verify.outputs.sealed_path }}
           EVAL_RESULT: ${{ steps.evaluate.outputs.result }}
+          EVAL_NONCE: ${{ steps.nonce.outputs.value }}
         shell: bash
         run: |
           set -euo pipefail
@@ -193,7 +204,7 @@ jobs:
 
           cp "$RUNNER_TEMP/evaluation.7z" "trusted/${SEALED_PATH}/evaluation.7z"
 
-          REQUEST_ID="$REQUEST_ID" SOURCE_SHA="$SOURCE_SHA" EVAL_RESULT="$EVAL_RESULT" SEALED_PATH="$SEALED_PATH" \
+          REQUEST_ID="$REQUEST_ID" SOURCE_SHA="$SOURCE_SHA" EVAL_RESULT="$EVAL_RESULT" EVAL_NONCE="$EVAL_NONCE" SEALED_PATH="$SEALED_PATH" \
           node - "$RUNNER_TEMP/sbe-evaluation.json" "trusted/${SEALED_PATH}/manifest.json" <<'NODE'
           const fs = require('fs');
           const evaluation = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
@@ -201,9 +212,9 @@ jobs:
           const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
           if (evaluation.request_id !== process.env.REQUEST_ID) throw new Error('Evaluation request mismatch.');
           if (evaluation.result !== process.env.EVAL_RESULT) throw new Error('Evaluation result mismatch.');
+          if (evaluation.nonce !== process.env.EVAL_NONCE) throw new Error('Evaluation nonce mismatch.');
           manifest.evaluation_status = evaluation.result;
-          manifest.evaluator_model = evaluation.model || null;
-          manifest.evaluated_at = evaluation.evaluated_at || null;
+          manifest.evaluation_nonce = evaluation.nonce;
           manifest.evaluation_archive = `${process.env.SEALED_PATH}/evaluation.7z`;
           fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
           NODE
