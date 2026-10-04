@@ -138,17 +138,26 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Decrypt sealed artifact
-        id: unseal
+      - name: Run evaluator and mechanically validate encrypted return
+        id: evaluate
         env:
           GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          SBE_REQUEST_ID: ${{ steps.verify.outputs.request_id }}
+          SBE_EVAL_NONCE: ${{ steps.nonce.outputs.value }}
+          SBE_EVAL_MAX_SCHEMA_ATTEMPTS: '3'
           SEALED_PATH: ${{ steps.verify.outputs.sealed_path }}
         shell: bash
         run: |
           set -euo pipefail
-          ARCHIVE="trusted/${SEALED_PATH}/submission.7z"
-          OUT="$RUNNER_TEMP/sbe-unsealed"
-          mkdir -p "$OUT"
+
+          INPUT_ARCHIVE="trusted/${SEALED_PATH}/submission.7z"
+          ANSWER_ARCHIVE="$RUNNER_TEMP/sbe-evaluator-return.7z"
+          NEXT_ARCHIVE="$RUNNER_TEMP/sbe-evaluator-next-return.7z"
+          VALIDATION="$RUNNER_TEMP/sbe-evaluator-validation.json"
+          ANSWER_DIR="$RUNNER_TEMP/sbe-evaluator-answer"
+          MAX_ATTEMPTS="${SBE_EVAL_MAX_SCHEMA_ATTEMPTS}"
 
           if command -v 7z >/dev/null 2>&1; then
             SEVEN=7z
@@ -159,47 +168,28 @@ jobs:
             exit 1
           fi
 
-          "$SEVEN" x "-p${GZ_PASSWORD}" "-o${OUT}" -y "$ARCHIVE" >/dev/null
-          mapfile -t GZ_FILES < <(find "$OUT" -type f -name '*.gz' -print)
-          [ "${#GZ_FILES[@]}" -eq 1 ] || {
-            echo "Expected exactly one .gz in sealed submission; found ${#GZ_FILES[@]}." >&2
-            exit 1
-          }
-          echo "gz=${GZ_FILES[0]}" >> "$GITHUB_OUTPUT"
-
-      - name: Run evaluator and mechanically validate return
-        id: evaluate
-        env:
-          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
-          SBE_REQUEST_ID: ${{ steps.verify.outputs.request_id }}
-          SBE_EVAL_NONCE: ${{ steps.nonce.outputs.value }}
-          SBE_EVAL_MAX_SCHEMA_ATTEMPTS: '3'
-          GZ_FILE: ${{ steps.unseal.outputs.gz }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          EXCHANGE="$RUNNER_TEMP/sbe-evaluator-exchange.json"
-          VALIDATION="$RUNNER_TEMP/sbe-evaluator-validation.json"
-          EVALUATION="$RUNNER_TEMP/sbe-evaluation.json"
-          NEXT_EXCHANGE="$RUNNER_TEMP/sbe-evaluator-next-exchange.json"
-          MAX_ATTEMPTS="${SBE_EVAL_MAX_SCHEMA_ATTEMPTS}"
-
           node trusted/ChatMachines/SBE/sbe-evaluate.js initial \
-            "trusted/SBE/requests/${SBE_REQUEST_ID}.json" \
-            "$GZ_FILE" \
-            "$EXCHANGE"
+            "$INPUT_ARCHIVE" \
+            "$ANSWER_ARCHIVE"
 
           for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
-            set +e
-            node trusted/ChatMachines/SBE/sbe-validate-evaluator-return.js \
-              "$EXCHANGE" \
-              "$SBE_EVAL_NONCE" \
-              "$EVALUATION" \
-              "$VALIDATION"
-            CODE=$?
-            set -e
+            rm -rf "$ANSWER_DIR"
+            mkdir -p "$ANSWER_DIR"
+            "$SEVEN" x "-p${GZ_PASSWORD}" "-o${ANSWER_DIR}" -y "$ANSWER_ARCHIVE" >/dev/null
+
+            mapfile -t ANSWER_FILES < <(find "$ANSWER_DIR" -type f -print)
+            if [ "${#ANSWER_FILES[@]}" -ne 1 ] || [ "$(basename "${ANSWER_FILES[0]:-}")" != 'answer.json' ]; then
+              printf '%s\n' '{"validation_status":"INVALID","validation_check_failure":"Encrypted evaluator return must contain exactly one file named answer.json.","exact_return_schema_example":{"result":"PASS","nonce":"'"$SBE_EVAL_NONCE"'"}}' > "$VALIDATION"
+              CODE=3
+            else
+              set +e
+              node trusted/ChatMachines/SBE/sbe-validate-evaluator-return.js \
+                "${ANSWER_FILES[0]}" \
+                "$SBE_EVAL_NONCE" \
+                "$VALIDATION"
+              CODE=$?
+              set -e
+            fi
 
             if [ "$CODE" -eq 0 ]; then
               echo 'result=PASS' >> "$GITHUB_OUTPUT"
@@ -216,27 +206,23 @@ jobs:
             fi
 
             if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
-              echo "Evaluator return failed deterministic schema validation after ${MAX_ATTEMPTS} attempts." >&2
+              echo "Evaluator return failed deterministic validation after ${MAX_ATTEMPTS} attempts." >&2
               exit 1
             fi
 
-            # The validation file contains exactly the complete original payload,
-            # the invalid evaluator response, the mechanical validation failure,
-            # and an exact valid return example. Send that package back to the
-            # evaluator for correction; do not print it to workflow logs.
             node trusted/ChatMachines/SBE/sbe-evaluate.js repair \
-              "$EXCHANGE" \
+              "$INPUT_ARCHIVE" \
+              "$ANSWER_ARCHIVE" \
               "$VALIDATION" \
-              "$NEXT_EXCHANGE"
-            mv "$NEXT_EXCHANGE" "$EXCHANGE"
+              "$NEXT_ARCHIVE"
+            mv "$NEXT_ARCHIVE" "$ANSWER_ARCHIVE"
           done
 
           echo 'Unreachable evaluator validation state.' >&2
           exit 1
 
-      - name: Encrypt and persist nonce-bound evaluation
+      - name: Persist evaluator-produced encrypted answer archive
         env:
-          GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
           REQUEST_ID: ${{ steps.verify.outputs.request_id }}
           SOURCE_SHA: ${{ steps.verify.outputs.source_sha }}
           SEALED_PATH: ${{ steps.verify.outputs.sealed_path }}
@@ -246,23 +232,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          node trusted/ChatMachines/SBE/sbe-pack.js \
-            "$RUNNER_TEMP/sbe-evaluation.json" \
-            "$RUNNER_TEMP/evaluation.7z"
-
-          cp "$RUNNER_TEMP/evaluation.7z" "trusted/${SEALED_PATH}/evaluation.7z"
+          cp "$RUNNER_TEMP/sbe-evaluator-return.7z" "trusted/${SEALED_PATH}/evaluation.7z"
 
           REQUEST_ID="$REQUEST_ID" SOURCE_SHA="$SOURCE_SHA" EVAL_RESULT="$EVAL_RESULT" EVAL_NONCE="$EVAL_NONCE" SEALED_PATH="$SEALED_PATH" \
-          node - "$RUNNER_TEMP/sbe-evaluation.json" "trusted/${SEALED_PATH}/manifest.json" <<'NODE'
+          node - "trusted/${SEALED_PATH}/manifest.json" <<'NODE'
           const fs = require('fs');
-          const evaluation = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-          const manifestPath = process.argv[3];
+          const manifestPath = process.argv[2];
           const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-          if (evaluation.request_id !== process.env.REQUEST_ID) throw new Error('Evaluation request mismatch.');
-          if (evaluation.result !== process.env.EVAL_RESULT) throw new Error('Evaluation result mismatch.');
-          if (evaluation.nonce !== process.env.EVAL_NONCE) throw new Error('Evaluation nonce mismatch.');
-          manifest.evaluation_status = evaluation.result;
-          manifest.evaluation_nonce = evaluation.nonce;
+          if (manifest.request_id !== process.env.REQUEST_ID) throw new Error('Manifest request mismatch.');
+          if (manifest.source_head_sha !== process.env.SOURCE_SHA) throw new Error('Manifest source SHA mismatch.');
+          manifest.evaluation_status = process.env.EVAL_RESULT;
+          manifest.evaluation_nonce = process.env.EVAL_NONCE;
           manifest.evaluation_archive = `${process.env.SEALED_PATH}/evaluation.7z`;
           fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
           NODE
