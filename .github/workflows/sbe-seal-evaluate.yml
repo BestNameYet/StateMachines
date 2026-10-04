@@ -60,9 +60,21 @@ jobs:
           test -f "trusted/SBE/requests/${REQUEST_ID}.json"
           test ! -e submission/.delete-processing-branch
           cd submission
+
+          mapfile -t ALL_CHANGED < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          [ "${#ALL_CHANGED[@]}" -eq 1 ] || {
+            echo "SBE requires exactly one changed submission file; found ${#ALL_CHANGED[@]}." >&2
+            exit 1
+          }
+
           mapfile -t FILES < <(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" -- '*.gz')
-          [ "${#FILES[@]}" -eq 1 ]
+          [ "${#FILES[@]}" -eq 1 ] || {
+            echo 'The single SBE submission must be an added or modified .gz file.' >&2
+            exit 1
+          }
+
           FILE="${FILES[0]}"
+          [ "$FILE" = "${ALL_CHANGED[0]}" ]
           [[ "$FILE" =~ ^[A-Za-z0-9._/-]+\.gz$ ]]
           [[ "$FILE" != /* ]]
           [[ "$FILE" != *'..'* ]]
@@ -100,11 +112,10 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         shell: bash
         run: |
-          SUMMARY=$(node -p "JSON.parse(require('fs').readFileSync(process.env.RUNNER_TEMP + '/sbe-evaluation.json','utf8')).summary")
-          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "SBE evaluation: FAIL - ${SUMMARY}"
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body 'SBE evaluation: FAIL. The processing branch was retained for correction.'
           exit 1
 
-      - name: Seal submission
+      - name: Seal submission and evaluation
         if: steps.evaluate.outputs.result == 'PASS'
         env:
           GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
@@ -116,7 +127,8 @@ jobs:
           set -euo pipefail
           node trusted/ChatMachines/SBE/sbe-pack.js \
             "submission/${SUBMISSION_FILE}" \
-            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z"
+            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z" \
+            "$RUNNER_TEMP/sbe-evaluation.json"
 
       - name: Persist sealed result and mark branch
         if: steps.evaluate.outputs.result == 'PASS'
