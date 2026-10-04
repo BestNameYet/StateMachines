@@ -78,6 +78,7 @@ fs.writeFileSync(path.join(submissionDir, '.delete-processing-branch'), JSON.str
   request_id: requestId,
   pr_number: Number(prNumber),
   evaluated_head_sha: headSha,
+  source_file: submissionFile,
   sealed_path: destination,
   created_at: new Date().toISOString()
 }, null, 2) + '\n');
