@@ -1028,11 +1028,46 @@ Stable readers live under `ChatMachines/GeminiSupervisor/stable-readers/`. They 
 
 In the flattened projection, every terminal object property is one fundamental projection element. Each such element is a minimal self-locating JSON fragment that retains the full nested ancestor route from the projection root to that terminal property, with each object predecessor exposing only the branch needed to reach that property. Every array member is likewise a fundamental projection element and is represented at its array boundary as an array containing exactly one member; nested arrays and arrays containing objects use the same rule recursively.
 
+Every keyed nested container layer also contributes its own empty-form projection element before descendant projection. For an object-valued layer, the empty form is `$key_object_literal:{}`; for an array-valued layer, the empty form is `$key_array_literal:[]`, where `$key` is replaced by the exact original key. These empty-form elements are additional projection elements, not replacements for descendant fragments. When the layer is nested, its empty form is wrapped in the same complete ancestor route required to reach that layer. This preserves the existence and container type of every nested layer independently of its descendants, including containers that are empty in the canonical source.
+
+For example, this nested object:
+
+```json
+{"procedure":{"step_contract":{"step_0":{"key":"start_of_turn"}}}}
+```
+
+contributes the empty object forms for each keyed container layer before the terminal property fragment:
+
+```json
+[
+  {"procedure_object_literal":{}},
+  {"procedure":{"step_contract_object_literal":{}}},
+  {"procedure":{"step_contract":{"step_0_object_literal":{}}}},
+  {"procedure":{"step_contract":{"step_0":{"key":"start_of_turn"}}}}
+]
+```
+
+Likewise, this nested array structure:
+
+```json
+{"outer":[{"inner":["A"]}]}
+```
+
+contributes the empty array form for each keyed array layer before the member fragment:
+
+```json
+[
+  {"outer_array_literal":[]},
+  {"outer":[{"inner_array_literal":[]}]},
+  {"outer":[{"inner":["A"]}]}
+]
+```
+
 Provenance is the retained nested JSON structure itself: do not add a separate provenance field, generic path array, index metadata, or normalized identifier. Original keys and values are preserved exactly, including apparently redundant keys such as a parent `user_words` object containing an internal `"key": "user_words"`; exact reconstruction takes precedence over deduplication or normalization.
 
-Reconstruction is executed by recursively summing and merging the lowest-level projection elements at matching nesting signatures to rebuild the original JSON structure. Extra metadata is not invented to resolve or redesign this specified representation.
+Reconstruction is executed by recursively summing and merging the lowest-level projection elements and the empty-form container elements at matching nesting signatures to rebuild the original JSON structure. Extra metadata is not invented to resolve or redesign this specified representation.
 
-Shuffle semantics operate as follows: construct the deterministic projection first, flatten it into the top-level array of minimal self-locating fragments, minify the JSON, and shuffle only the indices and elements of that outermost projection array. Shuffle semantics do not shuffle raw Markdown, characters, keys, values, or content inside an individual fragment. Pretty-printed JSON in README examples is explanatory only; the machine representation may be minified after construction.
+Shuffle semantics operate as follows: construct the deterministic projection first, flatten it into the top-level array of minimal self-locating fragments and empty-form container fragments, minify the JSON, and shuffle only the indices and elements of that outermost projection array. Shuffle semantics do not shuffle raw Markdown, characters, keys, values, or content inside an individual fragment. Pretty-printed JSON in README examples is explanatory only; the machine representation may be minified after construction.
 
 Concise examples demonstrating this architecture:
 
@@ -1050,10 +1085,11 @@ Source:
 }
 ```
 
-Projects to three fragments, one for key, one for value, and one for definition:
+Projects to the empty object form plus three terminal fragments, one for key, one for value, and one for definition:
 
 ```json
 [
+  {"user_words_object_literal":{}},
   {
     "user_words": {
       "key": "user_words"
@@ -1089,10 +1125,13 @@ Source:
 }
 ```
 
-Projects to two minimal self-locating fragments, each retaining its complete nested ancestor route:
+Projects to one empty object form for every keyed container layer, followed by the terminal fragments:
 
 ```json
 [
+  {"procedure_object_literal":{}},
+  {"procedure":{"step_contract_object_literal":{}}},
+  {"procedure":{"step_contract":{"step_0_object_literal":{}}}},
   {
     "procedure": {
       "step_contract": {
@@ -1128,10 +1167,11 @@ Source:
 }
 ```
 
-Projects to three one-member-array fragments:
+Projects to the empty array form plus three one-member-array fragments:
 
 ```json
 [
+  {"rule_following_array_literal":[]},
   {
     "rule_following": [
       "A"
@@ -1167,10 +1207,12 @@ Source:
 }
 ```
 
-Projects to two full-route fragments:
+Projects to the empty array forms for the keyed array layers plus two full-route member fragments:
 
 ```json
 [
+  {"outer_array_literal":[]},
+  {"outer":[{"inner_array_literal":[]}]},
   {
     "outer": [
       {
