@@ -2,25 +2,53 @@
 
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 
 const repoRoot = path.resolve(__dirname, '../../..');
-const supervisorRoot = path.join(repoRoot, 'ChatMachines/GeminiSupervisor');
-const readingRoom = path.join(supervisorRoot, 'live-ground-truth/reading-room');
-
-const ACTIVE_RE = /^Agents\.reader\.json-([0-9a-f]{40})$/i;
-const CARD_RE = /^[0-9a-f]{32}\.png$/;
+const readingRoom = path.join(repoRoot, 'ChatMachines/GeminiSupervisor/live-ground-truth/reading-room');
+const TASK_ID = 'task_semantic_define_each_array_item';
+const ACTIVE_RE = new RegExp(`^${TASK_ID}-([0-9a-f]{40})\\.json$`, 'i');
 const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL;
-const BATCH_SIZE = Number(process.env.PNG_AGENT_BATCH_SIZE || 6);
-const REQUEST_TIMEOUT_MS = Number(process.env.PNG_AGENT_TIMEOUT_MS || 300000);
+const BATCH_SIZE = Number(process.env.COMPREHENSION_BATCH_SIZE || 24);
+const REQUEST_TIMEOUT_MS = Number(process.env.COMPREHENSION_TIMEOUT_MS || 300000);
 
 if (!apiKey) throw new Error('GEMINI_API_KEY is missing');
 if (!model) throw new Error('GEMINI_MODEL is missing');
 
-function findActiveChallenge() {
+function findActiveTask() {
   const names = fs.readdirSync(readingRoom).filter(name => ACTIVE_RE.test(name));
-  if (names.length !== 1) throw new Error(`Expected exactly one active challenge; found ${names.length}`);
+  if (names.length !== 1) throw new Error(`Expected exactly one active comprehension task; found ${names.length}`);
   return path.join(readingRoom, names[0]);
+}
+
+function resolveRepoFile(relativePath) {
+  if (typeof relativePath !== 'string' || relativePath.trim() === '') throw new Error('Expected a non-empty repository-relative filename.');
+  const resolved = path.resolve(repoRoot, relativePath);
+  const prefix = `${repoRoot}${path.sep}`;
+  if (resolved !== repoRoot && !resolved.startsWith(prefix)) throw new Error(`Path escapes repository root: ${relativePath}`);
+  return resolved;
+}
+
+function terminalNode(value) {
+  let node = value;
+  while (node !== null && typeof node === 'object') {
+    if (Array.isArray(node)) {
+      if (node.length !== 1) return node;
+      node = node[0];
+      continue;
+    }
+    const keys = Object.keys(node);
+    if (keys.length !== 1) return node;
+    node = node[keys[0]];
+  }
+  return node;
+}
+
+function terminalIsEmptyContainer(value) {
+  const terminal = terminalNode(value);
+  if (Array.isArray(terminal)) return terminal.length === 0;
+  return terminal !== null && typeof terminal === 'object' && Object.keys(terminal).length === 0;
 }
 
 function extractJson(text) {
@@ -65,125 +93,102 @@ async function callGemini(parts, systemInstruction, maxOutputTokens = 32768) {
   return extractJson(reply);
 }
 
-function imagePart(fileName) {
-  const bytes = fs.readFileSync(path.join(readingRoom, fileName));
-  return {
-    inline_data: {
-      mime_type: 'image/png',
-      data: bytes.toString('base64')
-    }
-  };
+function validDefinitionArray(value, expectedLength) {
+  return Array.isArray(value) && value.length === expectedLength && value.every(record => {
+    if (record === null || typeof record !== 'object' || Array.isArray(record)) return false;
+    const keys = Object.keys(record);
+    return keys.length === 1 && keys[0] === 'item' && typeof record.item === 'string' && record.item.trim() !== '';
+  });
 }
 
-function validateTranscription(payload, expectedFiles, rowsPerCard) {
-  if (!payload || !Array.isArray(payload.cards) || payload.cards.length !== expectedFiles.length) return false;
-  const byName = new Map(payload.cards.map(card => [card.file, card]));
-  for (const file of expectedFiles) {
-    const card = byName.get(file);
-    if (!card || !Array.isArray(card.rows) || card.rows.length !== rowsPerCard) return false;
-    if (!card.rows.every((row, i) => row && row.position === i && typeof row.text === 'string')) return false;
-  }
-  return true;
-}
-
-async function transcribeBatch(files, rowsPerCard) {
-  const parts = [{
-    text:
-      `Read every supplied PNG card. Each card has exactly ${rowsPerCard} visible numbered rows, positions 0 through ${rowsPerCard - 1}. ` +
-      'Transcribe the visible row payloads exactly. Preserve punctuation, quotes, backslashes, spaces inside strings, and JSON escape sequences. ' +
-      'Do not infer hidden source files and do not reorder rows. Return JSON only as {"cards":[{"file":"...png","rows":[{"position":0,"text":"complete visible row text"}, ...]}]}. ' +
-      'The text field must contain the COMPLETE visible row including its leading [position] prefix.'
-  }];
-
-  for (const file of files) {
-    parts.push({ text: `FILE ${file}` });
-    parts.push(imagePart(file));
-  }
-
-  const system =
-    'You are the visual reading worker for a document-reading enforcement test. ' +
-    'Your only evidence is the PNG pixels supplied in this request. Perform careful visual/OCR reading; do not use repository source text, manifests, or guessed content.';
-
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    const result = await callGemini(parts, system, 32768);
-    if (validateTranscription(result, files, rowsPerCard)) return result.cards;
-    console.error(`[agent-test] transcription validation failed, attempt ${attempt}, files=${files.join(',')}`);
-  }
-  throw new Error(`Gemini could not return a complete ${rowsPerCard}-row transcription for batch ${files.join(',')}`);
-}
-
-function validateLocator(locator, challenge, cardNames) {
-  if (!Array.isArray(locator) || locator.length !== challenge.item_count) return false;
-  const known = new Set(cardNames);
-  return locator.every(loc =>
-    Array.isArray(loc) && loc.length === 2 &&
-    typeof loc[0] === 'string' && known.has(loc[0]) &&
-    Number.isInteger(loc[1]) && loc[1] >= 0 && loc[1] < challenge.viewport.rows
-  );
-}
-
-async function solveFromTranscriptions(challenge, cardRows, cardNames) {
-  const compact = {};
-  for (const file of cardNames) {
-    compact[file] = cardRows.get(file).map(row => row.text);
-  }
-
-  const instructions = [
-    'Solve the locator challenge using ONLY the supplied card transcriptions.',
-    `There are ${challenge.card_model.dense_ordered_reference_cards} ordered-reference cards and ${challenge.card_model.mixed_interleave_cards} mixed cards, randomly named and mixed together.`,
-    `The canonical ordered array has ${challenge.item_count} positions.`,
-    'Every card has the same number of visible rows.',
-    'An ordered-reference card contains only a contiguous segment of the canonical ordered array.',
-    'On each mixed card, one fixed visible-row parity is a contiguous segment of the canonical ordered array and the opposite parity is shuffled material. The ordered parity may differ from card to card.',
-    'Determine the global canonical order from the ordered material. Then, for every canonical position n, locate the matching SHUFFLED occurrence on a mixed card and return [filename, zero-based visible row position].',
-    'Do not use ordered-reference rows or ordered-parity rows as locator sources.',
-    'Each shuffled visible position may be used once. Duplicate values may be assigned to any otherwise-valid unused shuffled occurrence containing the identical value.',
-    `Return JSON only: {"locator":[...]} with exactly ${challenge.item_count} entries. No prose.`,
+async function defineBatch(batch, filename, batchNumber, batchCount) {
+  const prompt = [
+    `Target filename: ${filename}`,
+    `Batch ${batchNumber} of ${batchCount}.`,
+    'Each INPUT_SIGNATURE below is one non-empty flattened semantic signature from that JSON array.',
+    'For every signature, in the exact supplied order, generate its semantic definition in the context of the target filename.',
+    'Define what the signature means in the document/task contract, using its path, field name, and terminal value. Do not merely restate JSON syntax.',
+    'Return definition only. Each output record must have exactly one key named item and one non-empty string value.',
+    `Return JSON only as an array of exactly ${batch.length} records: [{"item":"semantic definition"}, ...].`,
+    'Do not add source indexes, source values, categories, confidence, gate fields, commentary, or any other keys.',
     '',
-    'CARD TRANSCRIPTIONS:',
-    JSON.stringify(compact)
+    'INPUT_SIGNATURES:',
+    JSON.stringify(batch)
   ].join('\n');
 
-  const system =
-    'You are the solving agent in a document-reading enforcement test. The transcriptions are the complete evidence produced from the PNG cards. ' +
-    'Reconstruct the ordered array and produce the requested shuffled locator. Do not assume filename order carries meaning.';
+  const system = [
+    'You are the semantic-definition worker for a comprehension-task test.',
+    'The supplied JSON signatures are authoritative input evidence.',
+    'A flattened signature encodes a document path and usually a terminal field/value. Explain the semantic role of that exact signature in context.',
+    'Output one definition-only record for every supplied signature, preserving order exactly.',
+    'Do not omit, merge, reorder, or add records.'
+  ].join(' ');
 
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const result = await callGemini([{ text: instructions }], system, 65536);
-    if (validateLocator(result.locator, challenge, cardNames)) return result.locator;
-    console.error(`[agent-test] locator shape validation failed, attempt ${attempt}`);
+    const result = await callGemini([{ text: prompt }], system, 32768);
+    if (validDefinitionArray(result, batch.length)) return result;
+    console.error(`[comprehension-agent] batch ${batchNumber} shape validation failed, attempt ${attempt}`);
   }
-  throw new Error('Gemini did not return a complete locator of the required shape');
+  throw new Error(`Gemini could not return a valid definition-only array for batch ${batchNumber}`);
+}
+
+function writeGzip(relativePath, value) {
+  const absolute = resolveRepoFile(relativePath);
+  fs.mkdirSync(path.dirname(absolute), { recursive: true });
+  const bytes = Buffer.from(JSON.stringify(value), 'utf8');
+  fs.writeFileSync(absolute, zlib.gzipSync(bytes, { level: 9 }));
 }
 
 async function main() {
-  const activePath = findActiveChallenge();
-  const challenge = JSON.parse(fs.readFileSync(activePath, 'utf8'));
-  if (challenge.challenge !== 'agents-png-locator-v2') throw new Error(`Unsupported challenge ${challenge.challenge}`);
+  const activePath = findActiveTask();
+  const task = JSON.parse(fs.readFileSync(activePath, 'utf8'));
+  const filename = task?.verify_target_array?.filename;
+  const targetPath = resolveRepoFile(filename);
+  const source = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
+  if (!Array.isArray(source)) throw new Error('Comprehension target must be a top-level JSON array');
 
-  const cardNames = fs.readdirSync(readingRoom).filter(name => CARD_RE.test(name)).sort();
-  if (cardNames.length !== challenge.card_model.total_cards) {
-    throw new Error(`Expected ${challenge.card_model.total_cards} PNGs, found ${cardNames.length}`);
+  const nonempty = source.filter(item => !terminalIsEmptyContainer(item));
+  const expectedCount = nonempty.length;
+  const batchCount = Math.ceil(expectedCount / BATCH_SIZE);
+  const activeName = path.basename(activePath);
+  const commitSha = (activeName.match(ACTIVE_RE) || [])[1];
+  if (!commitSha) throw new Error(`Could not derive task instance SHA from ${activeName}`);
+
+  const archiveRoot = `ChatMachines/GeminiSupervisor/live-ground-truth/reading-room/comprehension-task-batches/${commitSha}`;
+  const batchArchiveFilenames = [];
+  const allRecords = [];
+
+  console.log(`[comprehension-agent] source items=${source.length}; nonempty=${expectedCount}; batches=${batchCount}`);
+
+  for (let offset = 0; offset < expectedCount; offset += BATCH_SIZE) {
+    const batchNumber = Math.floor(offset / BATCH_SIZE) + 1;
+    const batch = nonempty.slice(offset, offset + BATCH_SIZE);
+    console.log(`[comprehension-agent] semantic batch ${batchNumber}/${batchCount} (${batch.length} signatures)`);
+    const records = await defineBatch(batch, filename, batchNumber, batchCount);
+    allRecords.push(...records);
+
+    const batchRelative = `${archiveRoot}/batch-${String(batchNumber).padStart(4, '0')}.json.gz`;
+    writeGzip(batchRelative, records);
+    batchArchiveFilenames.push(batchRelative);
   }
 
-  const cardRows = new Map();
-  for (let offset = 0; offset < cardNames.length; offset += BATCH_SIZE) {
-    const batch = cardNames.slice(offset, offset + BATCH_SIZE);
-    console.log(`[agent-test] visual read batch ${offset / BATCH_SIZE + 1}/${Math.ceil(cardNames.length / BATCH_SIZE)} (${batch.length} cards)`);
-    const cards = await transcribeBatch(batch, challenge.viewport.rows);
-    for (const card of cards) cardRows.set(card.file, card.rows);
-  }
+  if (!validDefinitionArray(allRecords, expectedCount)) throw new Error('Combined semantic output failed definition-only validation');
 
-  if (cardRows.size !== cardNames.length) throw new Error(`Transcribed ${cardRows.size}/${cardNames.length} cards`);
-  console.log(`[agent-test] all ${cardRows.size} cards read; asking model to reconstruct locator`);
+  const completeRelative = `${archiveRoot}/complete.json.gz`;
+  writeGzip(completeRelative, allRecords);
 
-  const locator = await solveFromTranscriptions(challenge, cardRows, cardNames);
-  challenge.locator = locator;
-  fs.writeFileSync(activePath, JSON.stringify(challenge) + '\n', 'utf8');
-  console.log(`[agent-test] wrote model-produced locator with ${locator.length} entries to ${path.basename(activePath)}`);
+  task.count_array_nonempty_items.how_many = expectedCount;
+  task.doRecord_withReturnSchema.nonempty_items_counted = expectedCount;
+  task.doRecord_withReturnSchema.returnSchemaArraySize = expectedCount;
+  task.doRecord_withReturnSchema.returnSchemaArray = allRecords;
+  task.doRecord_withReturnSchema.batch_archive_filenames = batchArchiveFilenames;
+  task.combine_and_send_batch_archives.complete_batch_archive_filename = completeRelative;
+
+  fs.writeFileSync(activePath, `${JSON.stringify(task, null, 2)}\n`, 'utf8');
+  console.log(`[comprehension-agent] completed ${expectedCount} definitions; archive=${completeRelative}`);
 }
 
 main().catch(error => {
-  console.error(`[agent-test] ${error.stack || error.message}`);
+  console.error(`[comprehension-agent] ${error.stack || error.message}`);
   process.exitCode = 1;
 });
