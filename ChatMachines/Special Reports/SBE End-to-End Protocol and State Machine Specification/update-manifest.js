@@ -7,7 +7,6 @@ const { execFileSync } = require('node:child_process');
 
 const reportRoot = __dirname;
 const repoRoot = path.resolve(reportRoot, '../../..');
-const metadataPath = path.join(reportRoot, 'metadata.json');
 const manifestPath = path.join(reportRoot, 'MANIFEST.json');
 
 function walk(dir) {
@@ -24,15 +23,38 @@ function toPosix(value) {
   return value.split(path.sep).join('/');
 }
 
-function readMetadata() {
-  const parsed = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('metadata.json must contain one JSON object.');
+function readEmbeddedMetadata(file) {
+  const text = fs.readFileSync(file, 'utf8');
+  const firstNonEmptyLine = text.split(/\r?\n/).find(line => line.trim() !== '');
+  const relative = toPosix(path.relative(reportRoot, file));
+
+  if (!firstNonEmptyLine) {
+    throw new Error(`Missing embedded metadata JSON in ${relative}.`);
   }
-  if (!parsed.metadata || typeof parsed.metadata !== 'object' || Array.isArray(parsed.metadata)) {
-    throw new Error('metadata.json must contain a metadata object.');
+
+  let envelope;
+  try {
+    envelope = JSON.parse(firstNonEmptyLine);
+  } catch (error) {
+    throw new Error(`First non-empty line of ${relative} must be the embedded metadata JSON object: ${error.message}`);
   }
-  return parsed.metadata;
+
+  if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) {
+    throw new Error(`Embedded metadata envelope in ${relative} must be a JSON object.`);
+  }
+
+  const metadata = envelope.metadata;
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    throw new Error(`Embedded metadata envelope in ${relative} must contain a metadata object.`);
+  }
+  if (metadata.this !== 'metadata') {
+    throw new Error(`Embedded metadata in ${relative} must contain metadata.this = "metadata".`);
+  }
+  if (typeof metadata.file_description !== 'string' || metadata.file_description.trim() === '') {
+    throw new Error(`Embedded metadata in ${relative} must contain a non-empty metadata.file_description.`);
+  }
+
+  return metadata;
 }
 
 function lastCommitFor(absolutePath) {
@@ -47,35 +69,30 @@ function lastCommitFor(absolutePath) {
 }
 
 function main() {
-  const metadata = readMetadata();
   const textFiles = walk(reportRoot)
     .filter(file => file.toLowerCase().endsWith('.txt'))
     .sort((a, b) => toPosix(path.relative(reportRoot, a)).localeCompare(toPosix(path.relative(reportRoot, b))));
 
   const documents = textFiles.map(file => {
     const relative = toPosix(path.relative(reportRoot, file));
-    const record = metadata[relative];
-    if (!record || typeof record !== 'object' || Array.isArray(record)) {
-      throw new Error(`Missing metadata object for ${relative}.`);
-    }
-    if (typeof record.file_description !== 'string' || record.file_description.trim() === '') {
-      throw new Error(`metadata[${JSON.stringify(relative)}].file_description must be a non-empty string.`);
-    }
-
+    const metadata = readEmbeddedMetadata(file);
     const dirname = path.posix.dirname(relative);
+
     return {
       filename: path.posix.basename(relative),
       folder_structure: dirname === '.' ? [] : dirname.split('/'),
-      file_description: record.file_description.trim(),
+      file_description: metadata.file_description.trim(),
       last_commit: lastCommitFor(file)
     };
   });
 
   const manifest = {
     metadata: {
+      this: 'metadata',
       manifest_description: 'Generated manifest of text documents in the SBE report root and its subdirectories.',
       report_root: toPosix(path.relative(repoRoot, reportRoot)),
-      file_description_source: 'metadata.json -> metadata[relative_document_path].file_description'
+      file_description_source: 'embedded text-file JSON -> metadata.file_description',
+      embedded_metadata_contract: '{"metadata":{"this":"metadata","file_description":"..."}}'
     },
     documents
   };
