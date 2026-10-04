@@ -18,17 +18,6 @@ function writeJson(filePath, value) {
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2) + '\n');
 }
 
-function extractJson(text) {
-  const trimmed = String(text || '').trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch (directError) {
-    const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-    if (!fenced) throw directError;
-    return JSON.parse(fenced[1].trim());
-  }
-}
-
 function loadSubmission(gzPath) {
   const compressed = fs.readFileSync(gzPath);
   const uncompressed = zlib.gunzipSync(compressed);
@@ -38,7 +27,7 @@ function loadSubmission(gzPath) {
   return uncompressed.toString('utf8');
 }
 
-async function callGemini(system, user) {
+async function callGemini(payload) {
   if (!apiKey) throw new Error('GEMINI_API_KEY is missing.');
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
@@ -48,18 +37,15 @@ async function callGemini(system, user) {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey
       },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: system }] },
-        contents: [{ role: 'user', parts: [{ text: user }] }]
-      }),
+      body: JSON.stringify(payload),
       signal: AbortSignal.timeout(requestTimeoutMs)
     }
   );
 
-  const raw = await response.text();
+  const rawHttpBody = await response.text();
   let body;
   try {
-    body = JSON.parse(raw);
+    body = JSON.parse(rawHttpBody);
   } catch (_) {
     throw new Error(`Gemini returned non-JSON HTTP ${response.status}.`);
   }
@@ -70,38 +56,10 @@ async function callGemini(system, user) {
   if (!Array.isArray(parts) || parts.length === 0) {
     throw new Error('Gemini returned no evaluator content.');
   }
-  return extractJson(parts.map(part => part.text || '').join('\n'));
+  return parts.map(part => part.text || '').join('\n');
 }
 
-async function main() {
-  const requestPath = process.argv[2];
-  const gzPath = process.argv[3];
-  const outputPath = process.argv[4];
-  if (!requestPath || !gzPath || !outputPath) {
-    throw new Error('Usage: node sbe-evaluate.js <request.json> <submission.gz> <evaluation.json>');
-  }
-  if (!expectedNonce || !/^[0-9a-f]{64}$/i.test(expectedNonce)) {
-    throw new Error('SBE_EVAL_NONCE must be a 64-character hexadecimal nonce.');
-  }
-
-  const request = readJson(requestPath);
-  if (!request || typeof request !== 'object') throw new Error('SBE request must be an object.');
-  if (typeof request.request_id !== 'string' || !request.request_id.trim()) {
-    throw new Error('SBE request requires non-empty string field "request_id".');
-  }
-  if (expectedRequestId && request.request_id !== expectedRequestId) {
-    throw new Error(`SBE request id mismatch: expected ${expectedRequestId}, found ${request.request_id}.`);
-  }
-  if (typeof request.request !== 'string' || !request.request.trim()) {
-    throw new Error('SBE request requires non-empty string field "request".');
-  }
-  const criteria = request.completion_criteria === undefined ? [] : request.completion_criteria;
-  if (!Array.isArray(criteria) || criteria.some(item => typeof item !== 'string' || !item.trim())) {
-    throw new Error('completion_criteria must be an array of non-empty strings.');
-  }
-
-  const submission = loadSubmission(gzPath);
-
+function initialPayload(request, criteria, submission) {
   const system = [
     'You are the independent completion evaluator for SBE (Sealed Branch Eval).',
     'Determine whether the submitted result completes the authoritative request.',
@@ -129,31 +87,117 @@ async function main() {
     '===== END SUBMISSION ====='
   ].join('\n');
 
-  const evaluation = await callGemini(system, user);
-  if (!evaluation || typeof evaluation !== 'object' || Array.isArray(evaluation)) {
-    throw new Error('Invalid evaluator response object.');
+  return {
+    system_instruction: { parts: [{ text: system }] },
+    contents: [{ role: 'user', parts: [{ text: user }] }]
+  };
+}
+
+function repairPayload(exchange, validation) {
+  const exactExample = validation.exact_return_schema_example;
+  const repair = {
+    original_payload: exchange.original_payload,
+    response: exchange.response,
+    validation_check_failure: validation.validation_check_failure,
+    exact_return_schema_example: exactExample
+  };
+
+  return {
+    system_instruction: {
+      parts: [{
+        text: [
+          'Your previous SBE evaluator return failed deterministic validation.',
+          'Return only a corrected response matching the exact schema example supplied below.',
+          'Do not add markdown, prose, explanation, or additional fields.'
+        ].join('\n')
+      }]
+    },
+    contents: [{
+      role: 'user',
+      parts: [{ text: JSON.stringify(repair, null, 2) }]
+    }]
+  };
+}
+
+async function initial(requestPath, gzPath, outputPath) {
+  if (!expectedNonce || !/^[0-9a-f]{64}$/i.test(expectedNonce)) {
+    throw new Error('SBE_EVAL_NONCE must be a 64-character hexadecimal nonce.');
   }
-  const keys = Object.keys(evaluation).sort();
-  if (keys.length !== 2 || keys[0] !== 'nonce' || keys[1] !== 'result') {
-    throw new Error(`Evaluator returned forbidden fields: ${JSON.stringify(keys)}`);
+
+  const request = readJson(requestPath);
+  if (!request || typeof request !== 'object') throw new Error('SBE request must be an object.');
+  if (typeof request.request_id !== 'string' || !request.request_id.trim()) {
+    throw new Error('SBE request requires non-empty string field "request_id".');
   }
-  if (evaluation.result !== 'PASS' && evaluation.result !== 'FAIL') {
-    throw new Error('Evaluator result must be PASS or FAIL.');
+  if (expectedRequestId && request.request_id !== expectedRequestId) {
+    throw new Error(`SBE request id mismatch: expected ${expectedRequestId}, found ${request.request_id}.`);
   }
-  if (evaluation.nonce !== expectedNonce) {
-    throw new Error('Evaluator nonce does not match this evaluation run.');
+  if (typeof request.request !== 'string' || !request.request.trim()) {
+    throw new Error('SBE request requires non-empty string field "request".');
   }
+  const criteria = request.completion_criteria === undefined ? [] : request.completion_criteria;
+  if (!Array.isArray(criteria) || criteria.some(item => typeof item !== 'string' || !item.trim())) {
+    throw new Error('completion_criteria must be an array of non-empty strings.');
+  }
+
+  const submission = loadSubmission(gzPath);
+  const payload = initialPayload(request, criteria, submission);
+  const response = await callGemini(payload);
 
   writeJson(outputPath, {
     sbe_version: 1,
     request_id: request.request_id,
     submission_file: path.basename(gzPath),
     model,
-    result: evaluation.result,
-    nonce: evaluation.nonce
+    original_payload: payload,
+    response
   });
+}
 
-  process.exitCode = evaluation.result === 'PASS' ? 0 : 2;
+async function repair(exchangePath, validationPath, outputPath) {
+  const exchange = readJson(exchangePath);
+  const validation = readJson(validationPath);
+  if (!exchange || typeof exchange !== 'object' || !exchange.original_payload) {
+    throw new Error('Repair requires an evaluator exchange with original_payload.');
+  }
+  if (!validation || validation.validation_status !== 'INVALID') {
+    throw new Error('Repair requires an INVALID deterministic validation result.');
+  }
+
+  const payload = repairPayload(exchange, validation);
+  const response = await callGemini(payload);
+
+  writeJson(outputPath, {
+    sbe_version: 1,
+    request_id: exchange.request_id,
+    submission_file: exchange.submission_file,
+    model,
+    original_payload: exchange.original_payload,
+    response
+  });
+}
+
+async function main() {
+  const mode = process.argv[2];
+  if (mode === 'initial') {
+    const [requestPath, gzPath, outputPath] = process.argv.slice(3);
+    if (!requestPath || !gzPath || !outputPath) {
+      throw new Error('Usage: node sbe-evaluate.js initial <request.json> <submission.gz> <exchange.json>');
+    }
+    await initial(requestPath, gzPath, outputPath);
+    return;
+  }
+
+  if (mode === 'repair') {
+    const [exchangePath, validationPath, outputPath] = process.argv.slice(3);
+    if (!exchangePath || !validationPath || !outputPath) {
+      throw new Error('Usage: node sbe-evaluate.js repair <exchange.json> <validation.json> <next-exchange.json>');
+    }
+    await repair(exchangePath, validationPath, outputPath);
+    return;
+  }
+
+  throw new Error('First argument must be initial or repair.');
 }
 
 main().catch(error => {
