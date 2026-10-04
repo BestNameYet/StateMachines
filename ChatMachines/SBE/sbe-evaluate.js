@@ -4,6 +4,7 @@ const zlib = require('node:zlib');
 
 const apiKey = process.env.GEMINI_API_KEY;
 const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+const expectedRequestId = process.env.SBE_REQUEST_ID || '';
 const requestTimeoutMs = Number(process.env.GEMINI_REQUEST_TIMEOUT_MS || 180000);
 const maxBytes = Number(process.env.SBE_MAX_UNCOMPRESSED_BYTES || 5000000);
 
@@ -34,6 +35,13 @@ function loadSubmission(gzPath) {
     throw new Error(`Submission expands to ${uncompressed.length} bytes, exceeding SBE limit ${maxBytes}.`);
   }
   return uncompressed.toString('utf8');
+}
+
+function stringArray(value, field) {
+  if (!Array.isArray(value) || value.some(item => typeof item !== 'string' || !item.trim())) {
+    throw new Error(`Invalid evaluator field ${field}.`);
+  }
+  return value;
 }
 
 async function callGemini(system, user) {
@@ -81,12 +89,18 @@ async function main() {
 
   const request = readJson(requestPath);
   if (!request || typeof request !== 'object') throw new Error('SBE request must be an object.');
+  if (typeof request.request_id !== 'string' || !request.request_id.trim()) {
+    throw new Error('SBE request requires non-empty string field "request_id".');
+  }
+  if (expectedRequestId && request.request_id !== expectedRequestId) {
+    throw new Error(`SBE request id mismatch: expected ${expectedRequestId}, found ${request.request_id}.`);
+  }
   if (typeof request.request !== 'string' || !request.request.trim()) {
     throw new Error('SBE request requires non-empty string field "request".');
   }
+  const criteria = request.completion_criteria === undefined ? [] : stringArray(request.completion_criteria, 'completion_criteria');
 
   const submission = loadSubmission(gzPath);
-  const criteria = Array.isArray(request.completion_criteria) ? request.completion_criteria : [];
 
   const system = [
     'You are the independent completion evaluator for SBE (Sealed Branch Eval).',
@@ -96,7 +110,9 @@ async function main() {
     'Missing, contradictory, unverifiable, or materially incomplete work is FAIL.',
     'Return JSON only with exactly these top-level keys:',
     '{"result":"PASS|FAIL","summary":"string","unmet_requirements":["string"],"evidence":["string"]}',
-    'PASS is permitted only when the supplied result itself demonstrates that every material requirement is satisfied.'
+    'PASS is permitted only when the supplied result itself demonstrates that every material requirement is satisfied.',
+    'For PASS: unmet_requirements must be empty and evidence must contain at least one concrete item from the submission.',
+    'For FAIL: unmet_requirements must contain at least one concrete unmet, contradictory, missing, or unverifiable requirement.'
   ].join('\n');
 
   const user = [
@@ -115,17 +131,28 @@ async function main() {
   if (!evaluation || (evaluation.result !== 'PASS' && evaluation.result !== 'FAIL')) {
     throw new Error(`Invalid evaluator result: ${JSON.stringify(evaluation)}`);
   }
-  if (!Array.isArray(evaluation.unmet_requirements) || !Array.isArray(evaluation.evidence)) {
-    throw new Error(`Invalid evaluator schema: ${JSON.stringify(evaluation)}`);
+  if (typeof evaluation.summary !== 'string' || !evaluation.summary.trim()) {
+    throw new Error(`Invalid evaluator summary: ${JSON.stringify(evaluation)}`);
+  }
+  const unmet = stringArray(evaluation.unmet_requirements, 'unmet_requirements');
+  const evidence = stringArray(evaluation.evidence, 'evidence');
+  if (evaluation.result === 'PASS' && (unmet.length !== 0 || evidence.length === 0)) {
+    throw new Error(`PASS does not satisfy SBE evidence schema: ${JSON.stringify(evaluation)}`);
+  }
+  if (evaluation.result === 'FAIL' && unmet.length === 0) {
+    throw new Error(`FAIL does not identify an unmet requirement: ${JSON.stringify(evaluation)}`);
   }
 
   writeJson(outputPath, {
     sbe_version: 1,
     evaluated_at: new Date().toISOString(),
-    request_id: request.request_id || null,
+    request_id: request.request_id,
     submission_file: path.basename(gzPath),
     model,
-    ...evaluation
+    result: evaluation.result,
+    summary: evaluation.summary,
+    unmet_requirements: unmet,
+    evidence
   });
 
   process.exitCode = evaluation.result === 'PASS' ? 0 : 2;
