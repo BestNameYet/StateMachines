@@ -1,4 +1,4 @@
-name: Test PNG Reader Agent
+name: Test Comprehension Task Agent
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: test-png-reader-agent
+  group: test-comprehension-task-agent
   cancel-in-progress: false
 
 jobs:
@@ -26,28 +26,29 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Read PNG cards and solve locator with Gemini
+      - name: Execute instantiated comprehension task with Gemini
         env:
           GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-3.8-flash
-          PNG_AGENT_BATCH_SIZE: '6'
-          PNG_AGENT_TIMEOUT_MS: '300000'
+          COMPREHENSION_BATCH_SIZE: '24'
+          COMPREHENSION_TIMEOUT_MS: '300000'
         run: node ChatMachines/GeminiSupervisor/scripts/agent-png-reader-test.js
 
-      - name: Commit model-produced locator only
+      - name: Commit model-produced task result and batch archives
         shell: bash
         run: |
           set -euo pipefail
           ROOT='ChatMachines/GeminiSupervisor/live-ground-truth/reading-room'
-          mapfile -t ACTIVE < <(find "$ROOT" -maxdepth 1 -type f -name 'Agents.reader.json-*' ! -name '*-PASS' ! -name '*-FAILED' | sort)
+          mapfile -t ACTIVE < <(find "$ROOT" -maxdepth 1 -type f -name 'task_semantic_define_each_array_item-*.json' ! -name '*-PASS.json' ! -name '*-FAILED.json' | sort)
           if [ "${#ACTIVE[@]}" -ne 1 ]; then
-            echo "Expected exactly one active challenge; found ${#ACTIVE[@]}." >&2
+            echo "Expected exactly one active comprehension task; found ${#ACTIVE[@]}." >&2
             exit 1
           fi
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "${ACTIVE[0]}"
-          git diff --cached --quiet && { echo 'Agent produced no locator change.' >&2; exit 1; }
-          git commit -m 'Submit Gemini visual-agent PNG locator challenge'
+          git add -A "$ROOT/comprehension-task-batches"
+          git diff --cached --quiet && { echo 'Agent produced no comprehension-task changes.' >&2; exit 1; }
+          git commit -m 'Submit Gemini comprehension task result'
           git push origin HEAD:main
