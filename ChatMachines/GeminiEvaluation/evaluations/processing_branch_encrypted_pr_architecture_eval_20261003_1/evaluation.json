@@ -1,0 +1,154 @@
+{
+  "response_type": "evaluation",
+  "evaluation_basis": {
+    "agents_md": "authoritative",
+    "program": "implementation_under_test",
+    "step3_evaluation": "merged_heuristic_and_question_corpus"
+  },
+  "overall_result": "FAIL",
+  "executive_summary": "FINAL VERDICT: FAIL AS STATED (PASS WITH REQUIRED CORRECTIONS). The core cryptographic premise—preventing plaintext producer data from entering Git history by ensuring only encrypted ciphertext blobs are ever committed—is sound in principle. However, the architecture as stated contains three critical security defects and workflow vulnerabilities in GitHub Actions: (1) Symmetric Key Anti-Pattern: Storing a single static shared symmetric password in both the producer and verifier violates least privilege; a compromised producer runner possesses the decryption key and can decrypt all historical batches. (2) GitHub Actions PR Execution/Secret Vulnerability: Using a pull request trigger from a repository branch without strictly specifying 'pull_request_target' with isolated detached-ref data retrieval creates a high-severity risk of arbitrary code execution with secret access or missing secret context. (3) Secret & Plaintext Leakage Vectors: Passing passwords via CLI arguments exposes secrets in the process table (/proc), and runner logging (SDK debugging, step summaries, core dumps) can silently leak decrypted plaintext. To achieve production readiness, the architecture must transition to asymmetric encryption (e.g., 'age' with X25519/Ed25519), enforce 'pull_request_target' with strict data-only checkout from main, pass credentials via stdin/file, and implement hard log-redaction guards.",
+  "requirement_evaluations": [
+    {
+      "requirement_id": "QUESTION_A_GIT_PLAINTEXT_RETRIEVABILITY",
+      "agents_md_reference": {
+        "lines": "Section 1, 7, 10",
+        "requirement": "Verify whether plaintext producer batches are prevented from becoming retrievable through Git history or PR contents if rules are strictly followed."
+      },
+      "program_reference": {
+        "lines": "PROPOSED ARCHITECTURE items 1-5, 10",
+        "behavior": "Producer generates plaintext in ephemeral runner filesystem, encrypts to 7z AES-256 before any git staging, and commits only ciphertext."
+      },
+      "result": "PASS",
+      "explanation": "If git add, git commit, and git push touch only the encrypted .7z archives, Git object storage receives only encrypted binary blobs. Because 7z archives are recognized as binary files, git diff will not generate plaintext diffs in PR review screens or commit metadata. Provided commit messages, branch names, and PR descriptions contain zero payload text, no plaintext enters Git object storage.",
+      "required_change": null
+    },
+    {
+      "requirement_id": "QUESTION_B_SHARED_FIXED_SECRET",
+      "agents_md_reference": {
+        "lines": "Section 3",
+        "requirement": "Assess validity of using a fixed GitHub Actions secret as a shared symmetric archive password across producer and verifier."
+      },
+      "program_reference": {
+        "lines": "PROPOSED ARCHITECTURE items 4, 5, 7",
+        "behavior": "A single fixed user-defined password in GitHub Actions secrets is provided to both producer (for encryption) and verifier (for decryption)."
+      },
+      "result": "FAIL",
+      "explanation": "While technically functional within GitHub Actions, using a shared fixed symmetric password violates fundamental cryptographic least privilege. The producer needs only WRITE (encryption) capability; giving it the symmetric password grants it READ (decryption) capability over all past and future batches. If the producer runner is compromised via prompt injection or malicious dependencies, the adversary extracts the static key and can retroactively decrypt all historical archives.",
+      "required_change": "Replace the symmetric password with asymmetric encryption (public-key cryptography, such as 'age' or libsodium crypto_box). The producer workflow needs only the verifier's PUBLIC key (a non-sensitive repository variable). Only the verifier runner holds the private key as a GitHub Actions secret."
+    },
+    {
+      "requirement_id": "QUESTION_C_WORKFLOW_TRIGGER_AND_CHECKOUT",
+      "agents_md_reference": {
+        "lines": "Section 6, 12",
+        "requirement": "Determine exact GitHub Actions trigger and checkout pattern to allow verifier secret access without executing PR branch code."
+      },
+      "program_reference": {
+        "lines": "PROPOSED ARCHITECTURE items 6, 7, 12",
+        "behavior": "PR triggers verifier workflow; verifier accesses secret and treats PR content as data only."
+      },
+      "result": "FAIL",
+      "explanation": "If triggered on standard 'pull_request', workflows from repository branches run the PR branch's workflow YAML and code by default. If triggered on 'pull_request_target', the workflow runs base-branch YAML and has secret access, but naive checkouts (e.g., checking out head ref with actions/checkout) risk running malicious scripts, npm postinstall hooks, or poisoned git hooks present on the PR branch.",
+      "required_change": "Use 'on: pull_request_target' restricted to internal branches. Checkout step 1: Check out the default protected branch ('ref: refs/heads/main') where all trusted verifier code resides. Checkout step 2: Extract ONLY the encrypted archive file from the PR branch into an isolated data directory using 'git fetch origin <head_sha> --depth=1' followed by 'git show <head_sha>:<archive_path> > /tmp/data/archive.7z'. Never execute checkout actions with full PR trees, submodules, or build tools against the untrusted branch."
+    },
+    {
+      "requirement_id": "QUESTION_D_BRANCH_DELETION_SECURITY_ASSUMPTIONS",
+      "agents_md_reference": {
+        "lines": "Section 9, 10",
+        "requirement": "Evaluate whether deleting the processing branch and closing the PR creates false security assumptions."
+      },
+      "program_reference": {
+        "lines": "PROPOSED ARCHITECTURE items 9, 10",
+        "behavior": "After verification, PR is closed and processing branch is deleted; architecture notes deletion is cleanup rather than security guarantee."
+      },
+      "result": "PASS",
+      "explanation": "Item 10 correctly acknowledges that branch deletion is operational cleanup rather than confidentiality assurance. In GitHub, closed PR commits remain accessible in the repository object database via permanent hidden refs ('refs/pull/<pr_id>/head' and commit SHAs). Because the stored commits contain only ciphertext, their permanent existence in Git is acceptable ONLY IF the encryption cipher and key secrecy remain unbroken across time.",
+      "required_change": "Explicitly document that committed ciphertext is immutable and permanently retrievable from GitHub reflogs/pull refs. Reiterate that asymmetric key rotation and forward secrecy are mandatory."
+    },
+    {
+      "requirement_id": "QUESTION_E_LEAKAGE_CHANNELS",
+      "agents_md_reference": {
+        "lines": "Section 11, 13",
+        "requirement": "Identify specific leakage channels across logs, CLI args, process table, summaries, caches, and API calls."
+      },
+      "program_reference": {
+        "lines": "PROPOSED ARCHITECTURE items 2, 8, 11",
+        "behavior": "Workflow masks password and prohibits printing plaintext or command traces."
+      },
+      "result": "FAIL",
+      "explanation": "The proposed architecture omits six concrete leakage vectors: (1) CLI argument exposure: '7z a -p$PASSWORD' exposes the secret in '/proc/<pid>/cmdline' and 'ps' to any runner process. (2) GitHub Actions secret masking limitations: Masking only catches exact string matches; if the password or plaintext is URL-encoded, base64-encoded, or split across chunk boundaries, masking fails. (3) Process crash dumps & unhandled exceptions: Node/Python stack traces or core dumps on corrupted batches can dump decrypted memory buffers to stderr. (4) HTTP client debug logging: LLM client SDKs (Axios, Fetch, Google GenAI) with debug flags log full request bodies (containing decrypted plaintext) to runner stdout. (5) GitHub Actions Step Summaries ($GITHUB_STEP_SUMMARY) and annotations: Automated test reporters often dump failing output to summary markdown. (6) Runner disk caching: 'actions/cache' or shared runner directories can persist temp plaintext across jobs on self-hosted runners.",
+      "required_change": "Enforce: (a) Pass passwords/keys exclusively via stdin or temporary descriptor pipes (e.g., 7z '-p' with prompt or 'age' identity files), never command-line flags. (b) Explicitly disable HTTP request/response payload logging in LLM client SDKs. (c) Prohibit 'actions/cache' and use Linux ramfs/tmpfs (e.g. '/dev/shm') for ephemeral decryption so plaintext never touches physical runner disk. (d) Ensure runner is GitHub-hosted (isolated VM), never persistent self-hosted."
+    },
+    {
+      "requirement_id": "QUESTION_F_CIPHER_AND_TOOLING_SELECTION",
+      "agents_md_reference": {
+        "lines": "Section 2, 4",
+        "requirement": "Evaluate whether password-encrypted 7z AES-256 is appropriate or if a materially better GitHub-native tool exists."
+      },
+      "program_reference": {
+        "lines": "PROPOSED ARCHITECTURE item 3",
+        "behavior": "Batches are placed inside 7z archives using AES-256 with header/filename encryption."
+      },
+      "result": "FAIL",
+      "explanation": "While 7z AES-256 with '-mhe=on' provides strong symmetric encryption and hides filenames, 7z is not designed for secret management in CI/CD pipelines: it requires password entry via flags or stdin, lacks native public-key cryptography, and is susceptible to CLI argument inspection. A modern asymmetric tool like 'age' (Actually Good Encryption) or 'signify/minisign' is materially superior: it uses X25519 public-key encryption, requires no password management on the producer, has native small single-binary CLI support, and completely prevents producer-side decryption capability.",
+      "required_change": "Replace 7z password encryption with 'age'. The producer encrypts using the verifier's public key ('age -r age1... -o batch.age payload.tar.gz'). The verifier decrypts using its private key ('age -d -i key.txt batch.age')."
+    }
+  ],
+  "transition_evaluation": {
+    "exact_transition_key": "supervisory_gate.gate_result",
+    "expected_values": [
+      "PASS",
+      "FAIL"
+    ],
+    "execution_to_supervisor_handoff": "PASS",
+    "missing_key_repair_branch": "PASS",
+    "fail_restarts_same_execution_step": "PASS",
+    "pass_advances_procedure": "PASS",
+    "explanation": "The workflow handoff model cleanly separates the producer execution from the verifier gate, but the security mechanism governing the handoff requires the structural corrections detailed above."
+  },
+  "unauthorized_or_invented_control_logic": [
+    {
+      "program_lines": "Item 4, 5, 7",
+      "behavior": "Shared symmetric password architecture for producer and verifier.",
+      "conflict_with_agents_md": "Violates principle of least privilege; producer is granted unnecessary decryption authority."
+    },
+    {
+      "program_lines": "Item 6, 7",
+      "behavior": "Unconstrained PR trigger execution.",
+      "conflict_with_agents_md": "Standard pull_request triggers either lack secrets (forks) or execute untrusted PR branch workflows with secret access (branch PRs)."
+    }
+  ],
+  "omissions": [
+    {
+      "agents_md_lines": "Item 7, 11",
+      "missing_behavior": "Missing specification of ramfs/tmpfs memory-backed storage and stdin key injection.",
+      "consequence": "Plaintext batch fragments and archive passwords risk persistence in swap/temp disk sectors or exposure in /proc process listings."
+    }
+  ],
+  "recommended_changes": [
+    {
+      "priority": "REQUIRED",
+      "change": "Switch from symmetric 7z password to asymmetric public-key encryption ('age' with X25519).",
+      "reason": "Eliminates the producer's ability to decrypt batches, preventing complete credential compromise if the producer runner is breached."
+    },
+    {
+      "priority": "REQUIRED",
+      "change": "Use 'pull_request_target' with strict main-branch code execution and isolated git-show data retrieval.",
+      "reason": "Prevents PR branches from executing malicious workflow code or dependency hooks while holding the verifier decryption secret."
+    },
+    {
+      "priority": "REQUIRED",
+      "change": "Perform all decryption and verifier staging inside memory-backed '/dev/shm' and pass keys via stdin or descriptor pipes.",
+      "reason": "Prevents secrets from appearing in the Linux process table (/proc) and prevents decrypted plaintext from touching physical runner disk blocks."
+    },
+    {
+      "priority": "REQUIRED",
+      "change": "Explicitly disable debug and verbose HTTP body logging in the verifier's LLM API client.",
+      "reason": "Standard SDK debug loggers automatically print outgoing request payloads, which would dump decrypted plaintext directly into Actions workflow logs."
+    },
+    {
+      "priority": "OPTIONAL",
+      "change": "Use a repository dispatch or 'workflow_run' event instead of opening a Pull Request.",
+      "reason": "A temporary processing branch can trigger a verifier run without leaving permanent pull request record refs in GitHub."
+    }
+  ]
+}
