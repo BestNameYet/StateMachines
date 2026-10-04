@@ -54,7 +54,7 @@ async function main() {
       throw new Error(`lists[${listIndex}].script must be a non-empty string.`);
     }
     if (!Array.isArray(list.args)) {
-      throw new Error(`lists[${listIndex}].args must be an array.`);
+      throw new Error(`lists[${listIndex}].args must be an array of positional-argument arrays.`);
     }
 
     const scriptPath = path.resolve(reportRoot, list.script);
@@ -75,9 +75,12 @@ async function main() {
     }
 
     for (let argIndex = 0; argIndex < list.args.length; argIndex++) {
-      const arg = list.args[argIndex];
-      console.log(`${list.name}[${argIndex}] -> ${list.script}`);
-      await handler(arg);
+      const args = list.args[argIndex];
+      if (!Array.isArray(args)) {
+        throw new Error(`${list.name}.args[${argIndex}] must be an array of positional arguments.`);
+      }
+      console.log(`${list.name}[${argIndex}] -> ${list.script}(${args.length} arg(s))`);
+      await handler(...args);
     }
   }
 
