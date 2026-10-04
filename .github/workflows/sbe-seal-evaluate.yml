@@ -1,0 +1,141 @@
+name: SBE Seal and Evaluate
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sbe-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  seal-evaluate:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'processing/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve request id
+        id: request
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REQUEST_ID="${HEAD_REF#processing/}"
+          [[ "$REQUEST_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
+          echo "id=$REQUEST_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout trusted main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: trusted
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Checkout submission as data
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: submission
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Validate submission
+        id: submission
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REQUEST_ID: ${{ steps.request.outputs.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "trusted/SBE/requests/${REQUEST_ID}.json"
+          test ! -e submission/.delete-processing-branch
+          cd submission
+          mapfile -t FILES < <(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" -- '*.gz')
+          [ "${#FILES[@]}" -eq 1 ]
+          FILE="${FILES[0]}"
+          [[ "$FILE" =~ ^[A-Za-z0-9._/-]+\.gz$ ]]
+          [[ "$FILE" != /* ]]
+          [[ "$FILE" != *'..'* ]]
+          test -f "$FILE"
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Evaluate completion
+        id: evaluate
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          REQUEST_ID: ${{ steps.request.outputs.id }}
+          SUBMISSION_FILE: ${{ steps.submission.outputs.file }}
+        shell: bash
+        run: |
+          set +e
+          node trusted/ChatMachines/SBE/sbe-evaluate.js \
+            "trusted/SBE/requests/${REQUEST_ID}.json" \
+            "submission/${SUBMISSION_FILE}" \
+            "$RUNNER_TEMP/sbe-evaluation.json"
+          CODE=$?
+          set -e
+          if [ "$CODE" -eq 0 ]; then
+            echo 'result=PASS' >> "$GITHUB_OUTPUT"
+          elif [ "$CODE" -eq 2 ]; then
+            echo 'result=FAIL' >> "$GITHUB_OUTPUT"
+          else
+            exit "$CODE"
+          fi
+
+      - name: Report failed evaluation
+        if: steps.evaluate.outputs.result == 'FAIL'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          SUMMARY=$(node -p "JSON.parse(require('fs').readFileSync(process.env.RUNNER_TEMP + '/sbe-evaluation.json','utf8')).summary")
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "SBE evaluation: FAIL - ${SUMMARY}"
+          exit 1
+
+      - name: Seal submission
+        if: steps.evaluate.outputs.result == 'PASS'
+        env:
+          GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
+          REQUEST_ID: ${{ steps.request.outputs.id }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SUBMISSION_FILE: ${{ steps.submission.outputs.file }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node trusted/ChatMachines/SBE/sbe-pack.js \
+            "submission/${SUBMISSION_FILE}" \
+            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z"
+
+      - name: Persist sealed result and mark branch
+        if: steps.evaluate.outputs.result == 'PASS'
+        env:
+          REQUEST_ID: ${{ steps.request.outputs.id }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SUBMISSION_FILE: ${{ steps.submission.outputs.file }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node trusted/ChatMachines/SBE/sbe-finalize.js \
+            trusted \
+            submission \
+            "$REQUEST_ID" \
+            "$PR_NUMBER" \
+            "$HEAD_REF" \
+            "$HEAD_SHA" \
+            "$SUBMISSION_FILE" \
+            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z" \
+            "$RUNNER_TEMP/sbe-evaluation.json"
