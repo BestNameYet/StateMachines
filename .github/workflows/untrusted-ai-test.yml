@@ -1,4 +1,4 @@
-name: Retrieve shared ChatGPT conversation
+name: Retrieve shared ChatGPT page
 
 on:
   push:
@@ -16,28 +16,34 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Retrieve shared chat into untrusted AI
+      - name: Download shared page exactly as returned
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p 'untrusted AI'
-          curl --fail --location --retry 3 --retry-all-errors \
+          URL='https://chatgpt.com/share/6ac30b84-df3c-83e8-8f04-9225059a7a53?ogimg=plain'
+          curl --location \
             --user-agent 'Mozilla/5.0' \
-            'https://chatgpt.com/backend-api/share/6ac30b84-df3c-83e8-8f04-9225059a7a53' \
-            --output 'untrusted AI/shared-chat.json'
-          python -m json.tool 'untrusted AI/shared-chat.json' >/dev/null
-          wc -c 'untrusted AI/shared-chat.json'
+            --dump-header 'untrusted AI/shared-chat-headers.txt' \
+            --output 'untrusted AI/shared-chat-page.html' \
+            --write-out '%{http_code}\n' \
+            "$URL" \
+            > 'untrusted AI/shared-chat-status.txt'
+          wc -c 'untrusted AI/shared-chat-page.html'
+          cat 'untrusted AI/shared-chat-status.txt'
 
-      - name: Commit retrieved chat into untrusted AI
+      - name: Commit raw response into untrusted AI
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add 'untrusted AI/shared-chat.json'
+          git add 'untrusted AI/shared-chat-page.html' \
+                  'untrusted AI/shared-chat-headers.txt' \
+                  'untrusted AI/shared-chat-status.txt'
           if git diff --cached --quiet; then
             echo 'No changes to commit.'
             exit 0
           fi
-          git commit -m 'Retrieve shared ChatGPT conversation'
+          git commit -m 'Capture raw shared ChatGPT page response'
           git push
