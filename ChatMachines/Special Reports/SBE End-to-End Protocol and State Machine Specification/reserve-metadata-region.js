@@ -22,28 +22,33 @@ function parseMetadataLine(text, relativePath) {
   const newlineIndex = text.indexOf('\n');
   const firstLine = (newlineIndex < 0 ? text : text.slice(0, newlineIndex)).replace(/\r$/, '');
 
-  let envelope;
+  let parsed;
   try {
-    envelope = JSON.parse(firstLine);
+    parsed = JSON.parse(firstLine);
   } catch (error) {
     throw new Error(`First line of ${relativePath} must be metadata JSON: ${error.message}`);
   }
 
-  if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) {
-    throw new Error(`Metadata envelope in ${relativePath} must be a JSON object.`);
-  }
-  if (!envelope.metadata || typeof envelope.metadata !== 'object' || Array.isArray(envelope.metadata)) {
-    throw new Error(`Metadata envelope in ${relativePath} must contain metadata.`);
-  }
-  if (envelope.metadata.this !== 'metadata') {
-    throw new Error(`metadata.this must equal "metadata" in ${relativePath}.`);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`Metadata in ${relativePath} must be a JSON object.`);
   }
 
-  return { envelope, newlineIndex };
+  const metadata = (
+    parsed.metadata &&
+    typeof parsed.metadata === 'object' &&
+    !Array.isArray(parsed.metadata) &&
+    parsed.this === undefined
+  ) ? parsed.metadata : parsed;
+
+  if (metadata.this !== 'metadata') {
+    throw new Error(`this must equal "metadata" in ${relativePath}.`);
+  }
+
+  return { metadata, newlineIndex };
 }
 
-function extractBody(text, envelope, newlineIndex) {
-  const region = envelope.metadata.metadata_region;
+function extractBody(text, metadata, newlineIndex) {
+  const region = metadata.metadata_region;
   if (
     region &&
     typeof region === 'object' &&
@@ -63,15 +68,15 @@ function extractBody(text, envelope, newlineIndex) {
   return body;
 }
 
-function buildReservedDocument(envelope, body, relativePath) {
-  envelope.metadata.metadata_region = {
+function buildReservedDocument(metadata, body, relativePath) {
+  metadata.metadata_region = {
     length: RESERVED_CHARS,
     padding_character: PADDING_CHARACTER,
     body_start: RESERVED_CHARS,
     coordinate_unit: 'UTF-16_code_unit'
   };
 
-  const metadataLine = JSON.stringify(envelope);
+  const metadataLine = JSON.stringify(metadata);
   const paddingCount = RESERVED_CHARS - metadataLine.length - 2;
   if (paddingCount < 0) {
     throw new Error(`Metadata in ${relativePath} exceeds the ${RESERVED_CHARS}-character reserved region.`);
@@ -94,9 +99,9 @@ function main() {
   for (const file of textFiles) {
     const relativePath = path.relative(reportRoot, file).split(path.sep).join('/');
     const text = fs.readFileSync(file, 'utf8');
-    const { envelope, newlineIndex } = parseMetadataLine(text, relativePath);
-    const body = extractBody(text, envelope, newlineIndex);
-    const next = buildReservedDocument(envelope, body, relativePath);
+    const { metadata, newlineIndex } = parseMetadataLine(text, relativePath);
+    const body = extractBody(text, metadata, newlineIndex);
+    const next = buildReservedDocument(metadata, body, relativePath);
 
     if (next !== text) {
       fs.writeFileSync(file, next, 'utf8');
