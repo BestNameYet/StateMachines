@@ -25,18 +25,18 @@ function toPosix(value) {
 
 function readEmbeddedMetadata(file) {
   const text = fs.readFileSync(file, 'utf8');
-  const firstNonEmptyLine = text.split(/\r?\n/).find(line => line.trim() !== '');
   const relative = toPosix(path.relative(reportRoot, file));
+  const firstNewline = text.indexOf('\n');
 
-  if (!firstNonEmptyLine) {
-    throw new Error(`Missing embedded metadata JSON in ${relative}.`);
+  if (firstNewline < 0) {
+    throw new Error(`Missing embedded metadata JSON line in ${relative}.`);
   }
 
   let envelope;
   try {
-    envelope = JSON.parse(firstNonEmptyLine);
+    envelope = JSON.parse(text.slice(0, firstNewline).replace(/\r$/, ''));
   } catch (error) {
-    throw new Error(`First non-empty line of ${relative} must be the embedded metadata JSON object: ${error.message}`);
+    throw new Error(`First line of ${relative} must be the embedded metadata JSON object: ${error.message}`);
   }
 
   if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) {
@@ -52,6 +52,36 @@ function readEmbeddedMetadata(file) {
   }
   if (typeof metadata.file_description !== 'string' || metadata.file_description.trim() === '') {
     throw new Error(`Embedded metadata in ${relative} must contain a non-empty metadata.file_description.`);
+  }
+
+  const region = metadata.metadata_region;
+  if (!region || typeof region !== 'object' || Array.isArray(region)) {
+    throw new Error(`Embedded metadata in ${relative} must contain metadata.metadata_region.`);
+  }
+  if (!Number.isInteger(region.length) || region.length <= 2) {
+    throw new Error(`metadata.metadata_region.length must be an integer greater than 2 in ${relative}.`);
+  }
+  if (region.body_start !== region.length) {
+    throw new Error(`metadata.metadata_region.body_start must equal metadata.metadata_region.length in ${relative}.`);
+  }
+  if (typeof region.padding_character !== 'string' || region.padding_character.length !== 1 || /\s/.test(region.padding_character)) {
+    throw new Error(`metadata.metadata_region.padding_character must be one non-whitespace character in ${relative}.`);
+  }
+  if (region.coordinate_unit !== 'UTF-16_code_unit') {
+    throw new Error(`metadata.metadata_region.coordinate_unit must equal "UTF-16_code_unit" in ${relative}.`);
+  }
+  if (text.length < region.body_start) {
+    throw new Error(`${relative} is shorter than metadata.metadata_region.body_start.`);
+  }
+
+  const paddingStart = firstNewline + 1;
+  const paddingEnd = region.body_start - 1;
+  if (paddingEnd < paddingStart || text[paddingEnd] !== '\n') {
+    throw new Error(`Reserved metadata region terminator is invalid in ${relative}.`);
+  }
+  const padding = text.slice(paddingStart, paddingEnd);
+  if (padding !== region.padding_character.repeat(padding.length)) {
+    throw new Error(`Reserved metadata padding is invalid in ${relative}.`);
   }
 
   return metadata;
@@ -92,7 +122,7 @@ function main() {
       manifest_description: 'Generated manifest of text documents in the SBE report root and its subdirectories.',
       report_root: toPosix(path.relative(repoRoot, reportRoot)),
       file_description_source: 'embedded text-file JSON -> metadata.file_description',
-      embedded_metadata_contract: '{"metadata":{"this":"metadata","file_description":"..."}}'
+      embedded_metadata_contract: '{"metadata":{"this":"metadata","file_description":"...","metadata_region":{"length":N,"padding_character":"<one non-whitespace character>","body_start":N,"coordinate_unit":"UTF-16_code_unit"}}}'
     },
     documents
   };
