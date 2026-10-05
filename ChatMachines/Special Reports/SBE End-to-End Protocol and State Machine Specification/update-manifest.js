@@ -32,46 +32,51 @@ function readEmbeddedMetadata(file) {
     throw new Error(`Missing embedded metadata JSON line in ${relative}.`);
   }
 
-  let envelope;
+  let parsed;
   try {
-    envelope = JSON.parse(text.slice(0, firstNewline).replace(/\r$/, ''));
+    parsed = JSON.parse(text.slice(0, firstNewline).replace(/\r$/, ''));
   } catch (error) {
     throw new Error(`First line of ${relative} must be the embedded metadata JSON object: ${error.message}`);
   }
 
-  if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) {
-    throw new Error(`Embedded metadata envelope in ${relative} must be a JSON object.`);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`Embedded metadata in ${relative} must be a JSON object.`);
   }
 
-  const metadata = envelope.metadata;
-  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
-    throw new Error(`Embedded metadata envelope in ${relative} must contain a metadata object.`);
-  }
+  // Transitional compatibility: accept the former {"metadata": {...}} envelope,
+  // but the canonical on-disk format is now the metadata object itself.
+  const metadata = (
+    parsed.metadata &&
+    typeof parsed.metadata === 'object' &&
+    !Array.isArray(parsed.metadata) &&
+    parsed.this === undefined
+  ) ? parsed.metadata : parsed;
+
   if (metadata.this !== 'metadata') {
-    throw new Error(`Embedded metadata in ${relative} must contain metadata.this = "metadata".`);
+    throw new Error(`Embedded metadata in ${relative} must contain this = "metadata".`);
   }
   if (typeof metadata.file_description !== 'string' || metadata.file_description.trim() === '') {
-    throw new Error(`Embedded metadata in ${relative} must contain a non-empty metadata.file_description.`);
+    throw new Error(`Embedded metadata in ${relative} must contain a non-empty file_description.`);
   }
 
   const region = metadata.metadata_region;
   if (!region || typeof region !== 'object' || Array.isArray(region)) {
-    throw new Error(`Embedded metadata in ${relative} must contain metadata.metadata_region.`);
+    throw new Error(`Embedded metadata in ${relative} must contain metadata_region.`);
   }
   if (!Number.isInteger(region.length) || region.length <= 2) {
-    throw new Error(`metadata.metadata_region.length must be an integer greater than 2 in ${relative}.`);
+    throw new Error(`metadata_region.length must be an integer greater than 2 in ${relative}.`);
   }
   if (region.body_start !== region.length) {
-    throw new Error(`metadata.metadata_region.body_start must equal metadata.metadata_region.length in ${relative}.`);
+    throw new Error(`metadata_region.body_start must equal metadata_region.length in ${relative}.`);
   }
   if (typeof region.padding_character !== 'string' || region.padding_character.length !== 1 || /\s/.test(region.padding_character)) {
-    throw new Error(`metadata.metadata_region.padding_character must be one non-whitespace character in ${relative}.`);
+    throw new Error(`metadata_region.padding_character must be one non-whitespace character in ${relative}.`);
   }
   if (region.coordinate_unit !== 'UTF-16_code_unit') {
-    throw new Error(`metadata.metadata_region.coordinate_unit must equal "UTF-16_code_unit" in ${relative}.`);
+    throw new Error(`metadata_region.coordinate_unit must equal "UTF-16_code_unit" in ${relative}.`);
   }
   if (text.length < region.body_start) {
-    throw new Error(`${relative} is shorter than metadata.metadata_region.body_start.`);
+    throw new Error(`${relative} is shorter than metadata_region.body_start.`);
   }
 
   const paddingStart = firstNewline + 1;
@@ -121,8 +126,8 @@ function main() {
       this: 'metadata',
       manifest_description: 'Generated manifest of text documents in the SBE report root and its subdirectories.',
       report_root: toPosix(path.relative(repoRoot, reportRoot)),
-      file_description_source: 'embedded text-file JSON -> metadata.file_description',
-      embedded_metadata_contract: '{"metadata":{"this":"metadata","file_description":"...","metadata_region":{"length":N,"padding_character":"<one non-whitespace character>","body_start":N,"coordinate_unit":"UTF-16_code_unit"}}}'
+      file_description_source: 'embedded text-file JSON -> file_description',
+      embedded_metadata_contract: '{"this":"metadata","file_description":"...","metadata_region":{"length":N,"padding_character":"<one non-whitespace character>","body_start":N,"coordinate_unit":"UTF-16_code_unit"}}'
     },
     documents
   };
