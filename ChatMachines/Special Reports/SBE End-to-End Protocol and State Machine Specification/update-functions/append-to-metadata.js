@@ -13,26 +13,45 @@ function isInside(parent, child) {
 function validateRegion(metadata, fileArg) {
   const region = metadata.metadata_region;
   if (!region || typeof region !== 'object' || Array.isArray(region)) {
-    throw new Error(`metadata.metadata_region must be an object in ${fileArg}.`);
+    throw new Error(`metadata_region must be an object in ${fileArg}.`);
   }
   if (!Number.isInteger(region.length) || region.length <= 2) {
-    throw new Error(`metadata.metadata_region.length must be an integer greater than 2 in ${fileArg}.`);
+    throw new Error(`metadata_region.length must be an integer greater than 2 in ${fileArg}.`);
   }
   if (!Number.isInteger(region.body_start) || region.body_start !== region.length) {
-    throw new Error(`metadata.metadata_region.body_start must equal metadata.metadata_region.length in ${fileArg}.`);
+    throw new Error(`metadata_region.body_start must equal metadata_region.length in ${fileArg}.`);
   }
   if (typeof region.padding_character !== 'string' || region.padding_character.length !== 1 || /\s/.test(region.padding_character)) {
-    throw new Error(`metadata.metadata_region.padding_character must be exactly one non-whitespace character in ${fileArg}.`);
+    throw new Error(`metadata_region.padding_character must be exactly one non-whitespace character in ${fileArg}.`);
   }
   if (region.coordinate_unit !== 'UTF-16_code_unit') {
-    throw new Error(`metadata.metadata_region.coordinate_unit must equal "UTF-16_code_unit" in ${fileArg}.`);
+    throw new Error(`metadata_region.coordinate_unit must equal "UTF-16_code_unit" in ${fileArg}.`);
   }
   return region;
 }
 
-function buildDocument(envelope, body, fileArg) {
-  const region = validateRegion(envelope.metadata, fileArg);
-  const metadataLine = JSON.stringify(envelope);
+function normalizeMetadata(parsed, fileArg) {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`Metadata object must be a JSON object in ${fileArg}.`);
+  }
+
+  if (parsed.this === 'metadata') return parsed;
+
+  if (
+    parsed.metadata &&
+    typeof parsed.metadata === 'object' &&
+    !Array.isArray(parsed.metadata) &&
+    parsed.metadata.this === 'metadata'
+  ) {
+    return parsed.metadata;
+  }
+
+  throw new Error(`Embedded metadata in ${fileArg} must contain this = "metadata".`);
+}
+
+function buildDocument(metadata, body, fileArg) {
+  const region = validateRegion(metadata, fileArg);
+  const metadataLine = JSON.stringify(metadata);
   const paddingCount = region.length - metadataLine.length - 2;
   if (paddingCount < 0) {
     throw new Error(`Updated metadata exceeds the ${region.length}-character reserved region in ${fileArg}.`);
@@ -78,26 +97,17 @@ function appendToMetadata(fileArg, keyValueArg) {
     throw new Error(`Target file has no embedded metadata JSON line: ${fileArg}`);
   }
 
-  let envelope;
+  let parsed;
   try {
-    envelope = JSON.parse(text.slice(0, newlineIndex).replace(/\r$/, ''));
+    parsed = JSON.parse(text.slice(0, newlineIndex).replace(/\r$/, ''));
   } catch (error) {
     throw new Error(`First line is not valid metadata JSON in ${fileArg}: ${error.message}`);
   }
 
-  if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) {
-    throw new Error(`Metadata envelope must be an object in ${fileArg}.`);
-  }
-  if (!envelope.metadata || typeof envelope.metadata !== 'object' || Array.isArray(envelope.metadata)) {
-    throw new Error(`Metadata envelope must contain a metadata object in ${fileArg}.`);
-  }
-  if (envelope.metadata.this !== 'metadata') {
-    throw new Error(`metadata.this must equal "metadata" in ${fileArg}.`);
-  }
-
-  const originalRegion = validateRegion(envelope.metadata, fileArg);
+  const metadata = normalizeMetadata(parsed, fileArg);
+  const originalRegion = validateRegion(metadata, fileArg);
   if (text.length < originalRegion.body_start) {
-    throw new Error(`Target file is shorter than metadata.metadata_region.body_start in ${fileArg}.`);
+    throw new Error(`Target file is shorter than metadata_region.body_start in ${fileArg}.`);
   }
   const body = text.slice(originalRegion.body_start);
 
@@ -105,8 +115,8 @@ function appendToMetadata(fileArg, keyValueArg) {
     throw new Error('metadata.this is invariant and may only be set to "metadata".');
   }
 
-  envelope.metadata[key] = value;
-  const nextText = buildDocument(envelope, body, fileArg);
+  metadata[key] = value;
+  const nextText = buildDocument(metadata, body, fileArg);
   fs.writeFileSync(targetPath, nextText, 'utf8');
 
   return {
