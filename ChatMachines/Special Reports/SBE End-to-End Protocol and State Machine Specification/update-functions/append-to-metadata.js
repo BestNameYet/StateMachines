@@ -10,6 +10,41 @@ function isInside(parent, child) {
   return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
 }
 
+function validateRegion(metadata, fileArg) {
+  const region = metadata.metadata_region;
+  if (!region || typeof region !== 'object' || Array.isArray(region)) {
+    throw new Error(`metadata.metadata_region must be an object in ${fileArg}.`);
+  }
+  if (!Number.isInteger(region.length) || region.length <= 2) {
+    throw new Error(`metadata.metadata_region.length must be an integer greater than 2 in ${fileArg}.`);
+  }
+  if (!Number.isInteger(region.body_start) || region.body_start !== region.length) {
+    throw new Error(`metadata.metadata_region.body_start must equal metadata.metadata_region.length in ${fileArg}.`);
+  }
+  if (typeof region.padding_character !== 'string' || region.padding_character.length !== 1 || /\s/.test(region.padding_character)) {
+    throw new Error(`metadata.metadata_region.padding_character must be exactly one non-whitespace character in ${fileArg}.`);
+  }
+  if (region.coordinate_unit !== 'UTF-16_code_unit') {
+    throw new Error(`metadata.metadata_region.coordinate_unit must equal "UTF-16_code_unit" in ${fileArg}.`);
+  }
+  return region;
+}
+
+function buildDocument(envelope, body, fileArg) {
+  const region = validateRegion(envelope.metadata, fileArg);
+  const metadataLine = JSON.stringify(envelope);
+  const paddingCount = region.length - metadataLine.length - 2;
+  if (paddingCount < 0) {
+    throw new Error(`Updated metadata exceeds the ${region.length}-character reserved region in ${fileArg}.`);
+  }
+
+  const reserved = `${metadataLine}\n${region.padding_character.repeat(paddingCount)}\n`;
+  if (reserved.length !== region.length) {
+    throw new Error(`Reserved metadata region length mismatch in ${fileArg}.`);
+  }
+  return reserved + body;
+}
+
 function appendToMetadata(fileArg, keyValueArg) {
   if (typeof fileArg !== 'string' || fileArg.trim() === '') {
     throw new Error('fileArg must be a non-empty report-root-relative file path.');
@@ -38,17 +73,16 @@ function appendToMetadata(fileArg, keyValueArg) {
   }
 
   const text = fs.readFileSync(targetPath, 'utf8');
-  const lines = text.split(/\r?\n/);
-  const metadataLineIndex = lines.findIndex(line => line.trim() !== '');
-  if (metadataLineIndex < 0) {
-    throw new Error(`Target file has no embedded metadata JSON: ${fileArg}`);
+  const newlineIndex = text.indexOf('\n');
+  if (newlineIndex < 0) {
+    throw new Error(`Target file has no embedded metadata JSON line: ${fileArg}`);
   }
 
   let envelope;
   try {
-    envelope = JSON.parse(lines[metadataLineIndex]);
+    envelope = JSON.parse(text.slice(0, newlineIndex).replace(/\r$/, ''));
   } catch (error) {
-    throw new Error(`First non-empty line is not valid metadata JSON in ${fileArg}: ${error.message}`);
+    throw new Error(`First line is not valid metadata JSON in ${fileArg}: ${error.message}`);
   }
 
   if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) {
@@ -60,13 +94,20 @@ function appendToMetadata(fileArg, keyValueArg) {
   if (envelope.metadata.this !== 'metadata') {
     throw new Error(`metadata.this must equal "metadata" in ${fileArg}.`);
   }
+
+  const originalRegion = validateRegion(envelope.metadata, fileArg);
+  if (text.length < originalRegion.body_start) {
+    throw new Error(`Target file is shorter than metadata.metadata_region.body_start in ${fileArg}.`);
+  }
+  const body = text.slice(originalRegion.body_start);
+
   if (key === 'this' && value !== 'metadata') {
     throw new Error('metadata.this is invariant and may only be set to "metadata".');
   }
 
   envelope.metadata[key] = value;
-  lines[metadataLineIndex] = JSON.stringify(envelope);
-  fs.writeFileSync(targetPath, lines.join('\n'), 'utf8');
+  const nextText = buildDocument(envelope, body, fileArg);
+  fs.writeFileSync(targetPath, nextText, 'utf8');
 
   return {
     file: path.relative(reportRoot, targetPath).split(path.sep).join('/'),
