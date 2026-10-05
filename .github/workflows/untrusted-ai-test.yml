@@ -1,11 +1,43 @@
-name: Untrusted AI test
+name: Retrieve shared ChatGPT conversation
 
 on:
   push:
     branches: [main]
+    paths:
+      - '.github/workflows/untrusted-ai-test.yml'
+
+permissions:
+  contents: write
 
 jobs:
-  test:
+  retrieve:
     runs-on: ubuntu-latest
     steps:
-      - run: echo ok
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Retrieve shared chat into untrusted AI
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p 'untrusted AI'
+          curl --fail --location --retry 3 --retry-all-errors \
+            --user-agent 'Mozilla/5.0' \
+            'https://chatgpt.com/backend-api/share/6ac30b84-df3c-83e8-8f04-9225059a7a53' \
+            --output 'untrusted AI/shared-chat.json'
+          python -m json.tool 'untrusted AI/shared-chat.json' >/dev/null
+          wc -c 'untrusted AI/shared-chat.json'
+
+      - name: Commit retrieved chat into untrusted AI
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'untrusted AI/shared-chat.json'
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Retrieve shared ChatGPT conversation'
+          git push
