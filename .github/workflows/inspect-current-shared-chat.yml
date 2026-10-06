@@ -1,0 +1,123 @@
+name: Inspect current shared-chat extraction
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/inspect-current-shared-chat.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Project exact extraction into inspectable chunks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+
+          const sourcePath = 'untrusted AI/Custom-Instruction-Request__2026-10-06T20-39-31.628Z.json';
+          const sourceCommit = 'b64935b6d1c0d887168b6dff7bd3620cd7b25e80';
+          const outDir = 'untrusted AI/inspection-b64935b6';
+          const convo = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+          const nodes = Array.isArray(convo.linear_conversation) ? convo.linear_conversation : [];
+          fs.rmSync(outDir, {recursive:true, force:true});
+          fs.mkdirSync(outDir, {recursive:true});
+
+          const records = [];
+          for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i] || {};
+            const m = node.message || null;
+            if (!m) continue;
+            const author = m.author || {};
+            const content = m.content || {};
+            let text;
+            if (Array.isArray(content.parts)) {
+              text = content.parts.map(p => typeof p === 'string' ? p : JSON.stringify(p)).join('\n');
+            } else if (typeof content.text === 'string') {
+              text = content.text;
+            } else {
+              text = JSON.stringify(content);
+            }
+            const meta = m.metadata || {};
+            const base = {
+              index: i,
+              node_id: node.id || null,
+              parent: node.parent || null,
+              role: author.role || null,
+              author_name: author.name || null,
+              create_time: m.create_time ?? null,
+              update_time: m.update_time ?? null,
+              content_type: content.content_type || null,
+              status: m.status || null,
+              end_turn: m.end_turn ?? null,
+              recipient: m.recipient ?? null,
+              model_slug: meta.model_slug || null,
+              default_model_slug: meta.default_model_slug || null
+            };
+            const maxText = 12000;
+            if (text.length <= maxText) {
+              records.push({...base, part:1, parts_total:1, text});
+            } else {
+              const n = Math.ceil(text.length / maxText);
+              for (let p = 0; p < n; p++) {
+                records.push({...base, part:p+1, parts_total:n, text:text.slice(p*maxText,(p+1)*maxText)});
+              }
+            }
+          }
+
+          const targetChars = 32000;
+          const files = [];
+          let buf = '';
+          let chunk = 1;
+          let firstRecord = 0;
+          let recCount = 0;
+          for (let i = 0; i < records.length; i++) {
+            const line = JSON.stringify(records[i]) + '\n';
+            if (buf && buf.length + line.length > targetChars) {
+              const name = `chunk-${String(chunk).padStart(3,'0')}.jsonl`;
+              fs.writeFileSync(path.join(outDir,name),buf);
+              files.push({name, records:recCount, first_record:firstRecord, last_record:i-1, characters:buf.length});
+              chunk++;
+              buf = '';
+              firstRecord = i;
+              recCount = 0;
+            }
+            buf += line;
+            recCount++;
+          }
+          if (buf) {
+            const name = `chunk-${String(chunk).padStart(3,'0')}.jsonl`;
+            fs.writeFileSync(path.join(outDir,name),buf);
+            files.push({name, records:recCount, first_record:firstRecord, last_record:records.length-1, characters:buf.length});
+          }
+
+          const manifest = {
+            source_path: sourcePath,
+            source_commit: sourceCommit,
+            conversation_title: convo.title || null,
+            conversation_id: convo.conversation_id || null,
+            default_model_slug: convo.default_model_slug || null,
+            mapping_nodes: convo.mapping ? Object.keys(convo.mapping).length : 0,
+            linear_nodes: nodes.length,
+            projected_records: records.length,
+            chunks: files
+          };
+          fs.writeFileSync(path.join(outDir,'manifest.json'), JSON.stringify(manifest,null,2)+'\n');
+          console.log(JSON.stringify(manifest,null,2));
+          NODE
+      - name: Commit inspection projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'untrusted AI/inspection-b64935b6'
+          git commit -m 'Project current shared-chat extraction for inspection'
+          git push
