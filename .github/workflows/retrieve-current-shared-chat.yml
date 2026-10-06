@@ -1,0 +1,56 @@
+name: Retrieve current shared ChatGPT conversation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/retrieve-current-shared-chat.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  retrieve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download current shared conversation JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p 'untrusted AI'
+          URL='https://chatgpt.com/backend-api/share/6ac54131-7df0-83e8-ac12-a5aee1f63eab'
+          curl --fail --location \
+            --user-agent 'Mozilla/5.0' \
+            --header 'Accept: application/json' \
+            "$URL" \
+            | jq . > 'untrusted AI/current-shared-chat.json'
+
+          jq -e '
+            (.title | type == "string" and length > 0) and
+            (.conversation_id | type == "string" and length > 0) and
+            (.mapping | type == "object" and length > 0) and
+            (.linear_conversation | type == "array" and length > 0)
+          ' 'untrusted AI/current-shared-chat.json' >/dev/null
+
+          echo "title=$(jq -r '.title' 'untrusted AI/current-shared-chat.json')"
+          echo "conversation_id=$(jq -r '.conversation_id' 'untrusted AI/current-shared-chat.json')"
+          echo "mapping_nodes=$(jq '.mapping | length' 'untrusted AI/current-shared-chat.json')"
+          echo "linear_nodes=$(jq '.linear_conversation | length' 'untrusted AI/current-shared-chat.json')"
+          wc -c 'untrusted AI/current-shared-chat.json'
+
+      - name: Commit retrieved JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'untrusted AI/current-shared-chat.json'
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Retrieve current shared ChatGPT conversation'
+          git push
