@@ -53,6 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           node <<'NODE'
+          (async () => {
           const fs = require('node:fs');
           const path = require('node:path');
           const crypto = require('node:crypto');
@@ -170,6 +171,7 @@ jobs:
           fs.writeFileSync(path.join(outDir, 'extraction-report.json'), JSON.stringify(report, null, 2) + '\n');
           await browser.close();
           console.log(JSON.stringify(report, null, 2));
+          })().catch(err => { console.error(err); process.exit(1); });
           NODE
 
       - name: Decode embedded React Router stream when present
