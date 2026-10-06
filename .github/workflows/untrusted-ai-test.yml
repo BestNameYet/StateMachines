@@ -32,7 +32,58 @@ jobs:
           wc -c 'untrusted AI/shared-chat-page.html'
           cat 'untrusted AI/shared-chat-status.txt'
 
-      - name: Commit raw response into untrusted AI
+      - name: Build compact structural diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = 'untrusted AI/shared-chat-page.html';
+          const html = fs.readFileSync(path, 'utf8');
+          const markers = [
+            'linear_conversation',
+            '__NEXT_DATA__',
+            'streamController',
+            'reactRouterContext',
+            'enqueue(',
+            'conversation_id',
+            '"mapping"',
+            '"messages"',
+            'data-message-author-role'
+          ];
+
+          function markerInfo(marker) {
+            let count = 0;
+            let cursor = 0;
+            const samples = [];
+            while (true) {
+              const at = html.indexOf(marker, cursor);
+              if (at === -1) break;
+              count++;
+              if (samples.length < 3) {
+                samples.push(html.slice(Math.max(0, at - 1200), Math.min(html.length, at + marker.length + 2400)));
+              }
+              cursor = at + marker.length;
+            }
+            return { count, samples };
+          }
+
+          const diagnostics = {
+            bytes_utf8: Buffer.byteLength(html, 'utf8'),
+            characters: html.length,
+            prefix: html.slice(0, 16000),
+            suffix: html.slice(-16000),
+            markers: Object.fromEntries(markers.map(marker => [marker, markerInfo(marker)]))
+          };
+
+          fs.writeFileSync(
+            'untrusted AI/shared-chat-diagnostics.json',
+            JSON.stringify(diagnostics, null, 2) + '\n'
+          );
+          NODE
+          wc -c 'untrusted AI/shared-chat-diagnostics.json'
+
+      - name: Commit raw response and diagnostics into untrusted AI
         shell: bash
         run: |
           set -euo pipefail
@@ -40,10 +91,11 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add 'untrusted AI/shared-chat-page.html' \
                   'untrusted AI/shared-chat-headers.txt' \
-                  'untrusted AI/shared-chat-status.txt'
+                  'untrusted AI/shared-chat-status.txt' \
+                  'untrusted AI/shared-chat-diagnostics.json'
           if git diff --cached --quiet; then
             echo 'No changes to commit.'
             exit 0
           fi
-          git commit -m 'Capture raw shared ChatGPT page response'
+          git commit -m 'Capture shared ChatGPT page diagnostics'
           git push
