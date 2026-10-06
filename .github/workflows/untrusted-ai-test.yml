@@ -89,7 +89,8 @@ jobs:
         run: |
           set -euo pipefail
           node 'untrusted AI/extract-shared-chat.js'
-          OUTPUT_JSON="${{ steps.extract.outputs.json_path }}"
+          OUTPUT_JSON="$(sed -n 's/^json_path=//p' "$GITHUB_OUTPUT" | tail -n 1)"
+          test -n "$OUTPUT_JSON"
           node -e "JSON.parse(require('node:fs').readFileSync(process.argv[1],'utf8')); console.log(process.argv[1] + ' parses as JSON')" "$OUTPUT_JSON"
           wc -c "$OUTPUT_JSON"
 
