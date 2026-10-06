@@ -2,7 +2,23 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function extractSharedChat(htmlPath, outJsonPath) {
+function safeFilenamePart(value) {
+  return value
+    .normalize('NFKD')
+    .replace(/[\\/:*?"<>|]+/g, '-')
+    .replace(/[^a-zA-Z0-9._ -]+/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^[-_.]+|[-_.]+$/g, '')
+    .slice(0, 120) || 'shared-chat';
+}
+
+function extractionTimestamp(now = new Date()) {
+  return now.toISOString().replace(/:/g, '-');
+}
+
+function extractSharedChat(htmlPath, outputDir) {
   if (!fs.existsSync(htmlPath)) {
     throw new Error(`Input HTML file not found: ${htmlPath}`);
   }
@@ -178,7 +194,10 @@ function extractSharedChat(htmlPath, outJsonPath) {
     throw new Error('Validation failed: no message nodes with author.role found');
   }
 
-  fs.mkdirSync(path.dirname(outJsonPath), { recursive: true });
+  const filename = `${safeFilenamePart(conversation.title)}__${extractionTimestamp()}.json`;
+  const outJsonPath = path.resolve(outputDir, filename);
+
+  fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(outJsonPath, JSON.stringify(conversation, null, 2) + '\n', 'utf8');
 
   console.log('Successfully extracted shared conversation:');
@@ -188,8 +207,15 @@ function extractSharedChat(htmlPath, outJsonPath) {
   console.log(`- Linear conversation turns: ${conversation.linear_conversation.length}`);
   console.log(`- Model: ${conversation.default_model_slug || 'N/A'}`);
   console.log(`- Written to: ${outJsonPath}`);
+
+  return outJsonPath;
 }
 
 const inputHtml = path.resolve('untrusted AI/shared-chat-page.html');
-const outputJson = path.resolve('untrusted AI/shared-chat.json');
-extractSharedChat(inputHtml, outputJson);
+const outputDir = path.resolve('untrusted AI');
+const outputJson = extractSharedChat(inputHtml, outputDir);
+
+if (process.env.GITHUB_OUTPUT) {
+  const relativeOutput = path.relative(process.cwd(), outputJson);
+  fs.appendFileSync(process.env.GITHUB_OUTPUT, `json_path=${relativeOutput}\n`, 'utf8');
+}
