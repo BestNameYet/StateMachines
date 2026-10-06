@@ -1,0 +1,76 @@
+name: Probe ChatGPT project share
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/probe-chatgpt-project-share.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Capture project page
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p 'untrusted AI'
+          URL='https://chatgpt.com/g/g-p-6abcb238be2081919895eea1a8d523cc-gemini-supervisor/project'
+          curl --location             --user-agent 'Mozilla/5.0'             --dump-header 'untrusted AI/project-share-headers.txt'             --output 'untrusted AI/project-share-page.html'             --write-out '%{http_code}\n'             "$URL"             > 'untrusted AI/project-share-status.txt'
+          wc -c 'untrusted AI/project-share-page.html'
+          cat 'untrusted AI/project-share-status.txt'
+
+      - name: Build project diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('untrusted AI/project-share-page.html', 'utf8');
+          const markers = [
+            'gemini-supervisor',
+            'g-p-6abcb238be2081919895eea1a8d523cc',
+            'streamController',
+            'reactRouterContext',
+            'conversation_id',
+            'project',
+            'login',
+            'auth.openai.com'
+          ];
+          const diagnostics = {
+            bytes_utf8: Buffer.byteLength(html, 'utf8'),
+            characters: html.length,
+            title: (html.match(/<title>([^<]*)<\/title>/i) || [])[1] || null,
+            canonical: (html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)/i) || [])[1] || null,
+            markers: Object.fromEntries(markers.map(m => [m, {
+              count: html.split(m).length - 1,
+              first_index: html.indexOf(m)
+            }])),
+            prefix: html.slice(0, 20000),
+            suffix: html.slice(-20000)
+          };
+          fs.writeFileSync(
+            'untrusted AI/project-share-diagnostics.json',
+            JSON.stringify(diagnostics, null, 2) + '\n'
+          );
+          NODE
+
+      - name: Commit captured project response
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'untrusted AI/project-share-page.html'                   'untrusted AI/project-share-headers.txt'                   'untrusted AI/project-share-status.txt'                   'untrusted AI/project-share-diagnostics.json'
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Capture ChatGPT project share response'
+          git push
