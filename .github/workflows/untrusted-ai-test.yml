@@ -83,7 +83,15 @@ jobs:
           NODE
           wc -c 'untrusted AI/shared-chat-diagnostics.json'
 
-      - name: Commit raw response and diagnostics into untrusted AI
+      - name: Extract shared ChatGPT conversation to JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          node 'untrusted AI/extract-shared-chat.js'
+          node -e "JSON.parse(require('node:fs').readFileSync('untrusted AI/shared-chat.json','utf8')); console.log('shared-chat.json parses as JSON')"
+          wc -c 'untrusted AI/shared-chat.json'
+
+      - name: Commit raw response, diagnostics, and extracted JSON
         shell: bash
         run: |
           set -euo pipefail
@@ -92,10 +100,11 @@ jobs:
           git add 'untrusted AI/shared-chat-page.html' \
                   'untrusted AI/shared-chat-headers.txt' \
                   'untrusted AI/shared-chat-status.txt' \
-                  'untrusted AI/shared-chat-diagnostics.json'
+                  'untrusted AI/shared-chat-diagnostics.json' \
+                  'untrusted AI/shared-chat.json'
           if git diff --cached --quiet; then
             echo 'No changes to commit.'
             exit 0
           fi
-          git commit -m 'Capture shared ChatGPT page diagnostics'
+          git commit -m 'Extract shared ChatGPT conversation into JSON'
           git push
