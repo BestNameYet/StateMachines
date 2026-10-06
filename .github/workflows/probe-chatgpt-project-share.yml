@@ -1,4 +1,4 @@
-name: Probe ChatGPT project share
+name: Extract ChatGPT project share
 
 on:
   push:
@@ -10,67 +10,262 @@ permissions:
   contents: write
 
 jobs:
-  probe:
+  extract:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Capture project page
+      - name: Initialize isolated project extraction directory
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p 'untrusted AI'
-          URL='https://chatgpt.com/g/g-p-6abcb238be2081919895eea1a8d523cc-gemini-supervisor/project'
-          curl --location             --user-agent 'Mozilla/5.0'             --dump-header 'untrusted AI/project-share-headers.txt'             --output 'untrusted AI/project-share-page.html'             --write-out '%{http_code}\n'             "$URL"             > 'untrusted AI/project-share-status.txt'
-          wc -c 'untrusted AI/project-share-page.html'
-          cat 'untrusted AI/project-share-status.txt'
+          rm -rf 'untrusted AI/Gemini-Supervisor-project'
+          mkdir -p 'untrusted AI/Gemini-Supervisor-project/network'
 
-      - name: Build project diagnostics
+      - name: Capture project URL with direct HTTP
         shell: bash
+        run: |
+          set -euo pipefail
+          OUT='untrusted AI/Gemini-Supervisor-project'
+          URL='https://chatgpt.com/g/g-p-6abcb238be2081919895eea1a8d523cc-gemini-supervisor/project'
+          curl --location \
+            --user-agent 'Mozilla/5.0' \
+            --dump-header "$OUT/direct-headers.txt" \
+            --output "$OUT/direct-page.html" \
+            --write-out '%{http_code}\n' \
+            "$URL" > "$OUT/direct-status.txt"
+          wc -c "$OUT/direct-page.html"
+          cat "$OUT/direct-status.txt"
+
+      - name: Install browser driver library
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save playwright-core
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser
+
+      - name: Capture project page and same-origin data responses in Chromium
+        shell: bash
+        env:
+          PROJECT_URL: https://chatgpt.com/g/g-p-6abcb238be2081919895eea1a8d523cc-gemini-supervisor/project
+          OUT_DIR: untrusted AI/Gemini-Supervisor-project
         run: |
           set -euo pipefail
           node <<'NODE'
           const fs = require('node:fs');
-          const html = fs.readFileSync('untrusted AI/project-share-page.html', 'utf8');
-          const markers = [
-            'gemini-supervisor',
-            'g-p-6abcb238be2081919895eea1a8d523cc',
-            'streamController',
-            'reactRouterContext',
-            'conversation_id',
-            'project',
-            'login',
-            'auth.openai.com'
+          const path = require('node:path');
+          const crypto = require('node:crypto');
+          const { chromium } = require('playwright-core');
+
+          const outDir = process.env.OUT_DIR;
+          const networkDir = path.join(outDir, 'network');
+          fs.mkdirSync(networkDir, { recursive: true });
+
+          const candidates = [
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-stable',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser'
           ];
-          const diagnostics = {
-            bytes_utf8: Buffer.byteLength(html, 'utf8'),
-            characters: html.length,
-            title: (html.match(/<title>([^<]*)<\/title>/i) || [])[1] || null,
-            canonical: (html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)/i) || [])[1] || null,
-            markers: Object.fromEntries(markers.map(m => [m, {
-              count: html.split(m).length - 1,
-              first_index: html.indexOf(m)
-            }])),
-            prefix: html.slice(0, 20000),
-            suffix: html.slice(-20000)
+          const executablePath = candidates.find(p => fs.existsSync(p));
+          if (!executablePath) throw new Error('No Chromium/Chrome executable found on runner');
+
+          const manifest = [];
+          const seen = new Set();
+          const browser = await chromium.launch({
+            executablePath,
+            headless: true,
+            args: ['--no-sandbox', '--disable-dev-shm-usage']
+          });
+          const context = await browser.newContext({
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36',
+            viewport: { width: 1440, height: 1200 }
+          });
+          const page = await context.newPage();
+
+          page.on('response', async response => {
+            try {
+              const request = response.request();
+              const type = request.resourceType();
+              const url = response.url();
+              if (!url.startsWith('https://chatgpt.com/')) return;
+              if (!['document', 'xhr', 'fetch'].includes(type)) return;
+
+              const headers = await response.allHeaders();
+              const contentType = headers['content-type'] || '';
+              if (!/(json|text|html|javascript)/i.test(contentType)) return;
+
+              const key = type + '|' + response.status() + '|' + url;
+              if (seen.has(key)) return;
+              seen.add(key);
+
+              let body;
+              try {
+                body = await response.body();
+              } catch {
+                body = Buffer.alloc(0);
+              }
+
+              const sha256 = crypto.createHash('sha256').update(body).digest('hex');
+              const index = String(manifest.length + 1).padStart(4, '0');
+              let ext = '.bin';
+              if (/json/i.test(contentType)) ext = '.json';
+              else if (/html/i.test(contentType)) ext = '.html';
+              else if (/text|javascript/i.test(contentType)) ext = '.txt';
+              const filename = `${index}-${sha256.slice(0,16)}${ext}`;
+              if (body.length > 0 && body.length <= 25 * 1024 * 1024) {
+                fs.writeFileSync(path.join(networkDir, filename), body);
+              }
+
+              manifest.push({
+                index: manifest.length + 1,
+                resource_type: type,
+                status: response.status(),
+                url,
+                content_type: contentType,
+                bytes: body.length,
+                sha256,
+                saved_file: body.length > 0 && body.length <= 25 * 1024 * 1024 ? `network/${filename}` : null
+              });
+            } catch (err) {
+              manifest.push({
+                capture_error: String(err && err.message ? err.message : err)
+              });
+            }
+          });
+
+          let navigationError = null;
+          try {
+            await page.goto(process.env.PROJECT_URL, {
+              waitUntil: 'domcontentloaded',
+              timeout: 60000
+            });
+            await page.waitForTimeout(15000);
+          } catch (err) {
+            navigationError = String(err && err.message ? err.message : err);
+          }
+
+          const html = await page.content();
+          const title = await page.title().catch(() => '');
+          const finalUrl = page.url();
+          fs.writeFileSync(path.join(outDir, 'browser-page.html'), html, 'utf8');
+          fs.writeFileSync(path.join(outDir, 'network-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+
+          const report = {
+            source_url: process.env.PROJECT_URL,
+            final_url: finalUrl,
+            title,
+            navigation_error: navigationError,
+            browser_html_bytes: Buffer.byteLength(html, 'utf8'),
+            network_response_count: manifest.length,
+            project_id_occurrences_in_html: (html.match(/g-p-6abcb238be2081919895eea1a8d523cc/g) || []).length,
+            react_router_stream_occurrences: (html.match(/streamController\.enqueue/g) || []).length,
+            cloudflare_challenge_detected: /challenge-error-text|_cf_chl_opt|cf-mitigated/i.test(html),
+            login_surface_detected: /log in|sign in|auth\.openai\.com/i.test(html),
+            project_data_response_files: manifest
+              .filter(x => x.saved_file && /g-p-6abcb238be2081919895eea1a8d523cc|project|conversation/i.test(x.url || ''))
+              .map(x => x.saved_file)
           };
-          fs.writeFileSync(
-            'untrusted AI/project-share-diagnostics.json',
-            JSON.stringify(diagnostics, null, 2) + '\n'
-          );
+          fs.writeFileSync(path.join(outDir, 'extraction-report.json'), JSON.stringify(report, null, 2) + '\n');
+          await browser.close();
+          console.log(JSON.stringify(report, null, 2));
           NODE
 
-      - name: Commit captured project response
+      - name: Decode embedded React Router stream when present
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT='untrusted AI/Gemini-Supervisor-project'
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const path = require('node:path');
+          const outDir = 'untrusted AI/Gemini-Supervisor-project';
+          const htmlPath = path.join(outDir, 'browser-page.html');
+          const html = fs.readFileSync(htmlPath, 'utf8');
+          const chunks = [];
+          const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+          const context = {
+            window: {
+              __reactRouterContext: {
+                streamController: {
+                  enqueue(chunk) { chunks.push(chunk); },
+                  close() {}
+                }
+              }
+            }
+          };
+          vm.createContext(context);
+          let match;
+          while ((match = scriptRegex.exec(html)) !== null) {
+            if (!match[1].includes('streamController.enqueue')) continue;
+            try { vm.runInContext(match[1], context); } catch {}
+          }
+          const payload = chunks.find(c => typeof c === 'string' && c.trim().startsWith('['));
+          const result = {
+            payload_found: Boolean(payload),
+            captured_chunks: chunks.length,
+            decoded_root_written: false
+          };
+          if (payload) {
+            const raw = JSON.parse(payload.trim());
+            const cache = new Map();
+            function decode(slot) {
+              if (slot === -5 || slot === -1) return undefined;
+              if (slot === -2) return NaN;
+              if (slot === -3) return Infinity;
+              if (slot === -4) return -Infinity;
+              if (typeof slot !== 'number' || slot < 0 || slot >= raw.length) return slot;
+              if (cache.has(slot)) return cache.get(slot);
+              const item = raw[slot];
+              if (item === null || typeof item !== 'object') {
+                cache.set(slot, item);
+                return item;
+              }
+              if (Array.isArray(item)) {
+                if (item.length === 2 && item[0] === 'P') {
+                  const v = { __promise: item[1] };
+                  cache.set(slot, v);
+                  return v;
+                }
+                if (item.length === 2 && item[0] === 'D') {
+                  const v = { __date: item[1] };
+                  cache.set(slot, v);
+                  return v;
+                }
+                const arr = [];
+                cache.set(slot, arr);
+                for (const v of item) arr.push(decode(v));
+                return arr;
+              }
+              const obj = {};
+              cache.set(slot, obj);
+              for (const [k, v] of Object.entries(item)) {
+                const propName = k.startsWith('_') ? raw[parseInt(k.slice(1), 10)] : k;
+                const propVal = decode(v);
+                if (propName !== undefined && propVal !== undefined) obj[propName] = propVal;
+              }
+              return obj;
+            }
+            const root = decode(0);
+            fs.writeFileSync(path.join(outDir, 'decoded-react-router-root.json'), JSON.stringify(root, null, 2) + '\n');
+            result.decoded_root_written = true;
+          }
+          fs.writeFileSync(path.join(outDir, 'decode-report.json'), JSON.stringify(result, null, 2) + '\n');
+          console.log(JSON.stringify(result));
+          NODE
+
+      - name: Commit isolated extraction result
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add 'untrusted AI/project-share-page.html'                   'untrusted AI/project-share-headers.txt'                   'untrusted AI/project-share-status.txt'                   'untrusted AI/project-share-diagnostics.json'
+          git add 'untrusted AI/Gemini-Supervisor-project'
           if git diff --cached --quiet; then
-            echo 'No changes to commit.'
+            echo 'No extraction changes to commit.'
             exit 0
           fi
-          git commit -m 'Capture ChatGPT project share response'
+          git commit -m 'Extract Gemini Supervisor project share'
           git push
