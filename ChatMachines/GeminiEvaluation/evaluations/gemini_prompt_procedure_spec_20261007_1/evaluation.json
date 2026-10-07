@@ -1,0 +1,240 @@
+{
+  "response_type": "jwrs_execution_result",
+  "jwrs_projection": {
+    "response_type": "jwrs_projection",
+    "request": {
+      "task": "Construct and execute a specification for communicating a prompt to Gemini using the supplied MetaProcedure, JavaScript source archive, and Agents.md JSON projection as authoritative evidence.",
+      "output_artifacts": [
+        "specification",
+        "gemini-prompt-communicator.js",
+        "gemini-prompt-workflow.yaml",
+        "gemini-prompt-message-config.json"
+      ]
+    },
+    "return_schema": {
+      "type": "object",
+      "required": [
+        "response_type",
+        "jwrs_projection",
+        "projection_printed_before_execution",
+        "specification",
+        "gemini-prompt-communicator.js",
+        "gemini-prompt-workflow.yaml",
+        "gemini-prompt-message-config.json",
+        "same_turn_execution",
+        "status"
+      ],
+      "properties": {
+        "response_type": {
+          "type": "string",
+          "enum": [
+            "jwrs_execution_result"
+          ]
+        },
+        "jwrs_projection": {
+          "type": "object"
+        },
+        "projection_printed_before_execution": {
+          "type": "boolean"
+        },
+        "specification": {
+          "type": "object",
+          "required": [
+            "purpose",
+            "authorities",
+            "procedure",
+            "configuration_categories",
+            "invariants",
+            "failure_handling"
+          ]
+        },
+        "gemini-prompt-communicator.js": {
+          "type": "string"
+        },
+        "gemini-prompt-workflow.yaml": {
+          "type": "string"
+        },
+        "gemini-prompt-message-config.json": {
+          "type": "object"
+        },
+        "same_turn_execution": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "COMPLETE",
+            "INCOMPLETE",
+            "BLOCKED",
+            "FAILED"
+          ]
+        }
+      }
+    }
+  },
+  "projection_printed_before_execution": true,
+  "specification": {
+    "purpose": "Define and govern the deterministic procedure for preparing, validating, and dispatching prompt payloads to the Google Gemini API, parsing structured outputs, and persisting message transcripts and execution receipts within an automated CI/CD environment.",
+    "authorities": [
+      {
+        "authority_id": "AUTH-1",
+        "subject": "AI-NLEP construction and execution invariants",
+        "source": "731942_ai_nlep_meta_procedure.json",
+        "precedence": 1
+      },
+      {
+        "authority_id": "AUTH-2",
+        "subject": "Supervisor role boundaries, state tracking, and live ground truth verification",
+        "source": "agentsmdbaseproejction.json",
+        "precedence": 2
+      },
+      {
+        "authority_id": "AUTH-3",
+        "subject": "Runtime interface bindings, fetch semantics, and configuration conventions",
+        "source": "temp-js-files.archive.json (evaluate-supervisor.js, send-to-gemini.js, sbe-evaluate.js)",
+        "precedence": 3
+      }
+    ],
+    "procedure": [
+      {
+        "step_id": "STEP-1",
+        "name": "load_and_validate_configuration",
+        "operation": "Read runtime configuration file and environment variables; resolve repo-relative paths, active model identifier, API keys, and timeout boundaries.",
+        "preconditions": [
+          "Configuration file exists and environment provides GEMINI_API_KEY."
+        ],
+        "postconditions": [
+          "Validated configuration object loaded in memory."
+        ]
+      },
+      {
+        "step_id": "STEP-2",
+        "name": "assemble_prompt_payload",
+        "operation": "Construct request envelope including system_instruction, contents array (roles 'user' and 'model'), and generationConfig with MIME type 'application/json'.",
+        "preconditions": [
+          "Valid run nonce, user message parts, and optional system instructions."
+        ],
+        "postconditions": [
+          "Serialized request body conforms to Google Generative Language API v1beta specification."
+        ]
+      },
+      {
+        "step_id": "STEP-3",
+        "name": "dispatch_api_request",
+        "operation": "Execute HTTPS POST request to https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent with abort timeout signal and x-goog-api-key header.",
+        "preconditions": [
+          "Network egress available and request body serialized."
+        ],
+        "postconditions": [
+          "HTTP response received or deterministic timeout/network error captured."
+        ]
+      },
+      {
+        "step_id": "STEP-4",
+        "name": "parse_and_extract_response",
+        "operation": "Validate HTTP status; extract candidate part texts; parse JSON payload handling optional markdown code fences (```json ... ```).",
+        "preconditions": [
+          "HTTP status 200 with model candidate parts present."
+        ],
+        "postconditions": [
+          "Parsed JSON object extracted from model response."
+        ]
+      },
+      {
+        "step_id": "STEP-5",
+        "name": "persist_transcripts_and_receipts",
+        "operation": "Append candidate reply to messages history; write updated transcript, run evaluation artifact, and process execution summary to disk.",
+        "preconditions": [
+          "Successful JSON extraction and write permissions to run output directory."
+        ],
+        "postconditions": [
+          "File records written atomically without data loss."
+        ]
+      }
+    ],
+    "configuration_categories": [
+      {
+        "category": "api_connection",
+        "description": "API key environment variable name, target model name, base endpoint URL, and HTTP timeout in milliseconds.",
+        "grounding": "send-to-gemini.js, evaluate-supervisor.js, sbe-evaluate.js"
+      },
+      {
+        "category": "generation_parameters",
+        "description": "Temperature, response MIME type, max output tokens, and safety parameters.",
+        "grounding": "agent-png-reader-test.js, evaluate-supervisor.js"
+      },
+      {
+        "category": "path_resolution",
+        "description": "Root paths, trigger message file path, transcript history file, and run output directories.",
+        "grounding": "config.json references in evaluate-supervisor.js and send-to-gemini.js"
+      },
+      {
+        "category": "run_identification",
+        "description": "Run nonce formatting, timestamping, and execution isolation namespaces.",
+        "grounding": "generate-step-0-form.js, truth-challenge-engine.js"
+      },
+      {
+        "category": "error_and_retry",
+        "description": "Maximum retry attempts, exponential backoff timing, and repair envelope schemas.",
+        "grounding": "sbe-evaluate.js, send-to-gemini.js"
+      }
+    ],
+    "invariants": [
+      {
+        "id": "INV-1",
+        "statement": "Action occurrence is never inferred from prior existing artifacts; each run must initiate an active dispatch."
+      },
+      {
+        "id": "INV-2",
+        "statement": "Model responses must strictly parse as valid JSON; markdown fences must be stripped safely if present."
+      },
+      {
+        "id": "INV-3",
+        "statement": "Run nonces must be alphanumeric, path-safe, and match across all persisted session files."
+      },
+      {
+        "id": "INV-4",
+        "statement": "Missing or invalid GEMINI_API_KEY must abort execution deterministically with exit code 1."
+      }
+    ],
+    "failure_handling": {
+      "missing_api_key": "Throw descriptive error immediately without attempting network connection.",
+      "http_error": "Extract error body from response, log formatted HTTP status and error details, terminate with exit code 1.",
+      "timeout": "Abort fetch signal on expiration of request_timeout_ms; log timeout error and fail gracefully.",
+      "malformed_json_response": "Attempt code-fence extraction; if unparseable, record raw text in error report and fail step."
+    }
+  },
+  "gemini-prompt-communicator.js": "'use strict';\n\nconst fs = require('node:fs');\nconst path = require('node:path');\n\nfunction readJson(filePath) {\n  return JSON.parse(fs.readFileSync(filePath, 'utf8'));\n}\n\nfunction writeJson(filePath, data) {\n  fs.mkdirSync(path.dirname(filePath), { recursive: true });\n  fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\\n', 'utf8');\n}\n\nfunction extractJson(text) {\n  const trimmed = String(text || '').trim();\n  try {\n    return JSON.parse(trimmed);\n  } catch (err) {\n    const match = trimmed.match(/^```(?:json)?\\s*([\\s\\S]*?)\\s*```$/i);\n    if (match) {\n      return JSON.parse(match[1].trim());\n    }\n    const firstBrace = trimmed.indexOf('{');\n    const lastBrace = trimmed.lastIndexOf('}');\n    if (firstBrace !== -1 && lastBrace > firstBrace) {\n      return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));\n    }\n    throw err;\n  }\n}\n\nasync function callGemini(config, contents, systemInstruction) {\n  const apiKey = process.env[config.api.key_env || 'GEMINI_API_KEY'];\n  if (!apiKey) {\n    throw new Error(`API key missing from environment variable: ${config.api.key_env || 'GEMINI_API_KEY'}`);\n  }\n\n  const model = process.env.GEMINI_MODEL || config.api.model || 'gemini-2.5-flash';\n  const timeoutMs = Number(config.api.timeout_ms || 180000);\n  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;\n\n  const payload = {\n    contents,\n    generationConfig: {\n      temperature: config.generation?.temperature ?? 0,\n      responseMimeType: config.generation?.response_mime_type || 'application/json',\n      maxOutputTokens: config.generation?.max_output_tokens || 8192\n    }\n  };\n\n  if (systemInstruction) {\n    payload.system_instruction = {\n      parts: [{ text: systemInstruction }]\n    };\n  }\n\n  const response = await fetch(endpoint, {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'x-goog-api-key': apiKey\n    },\n    body: JSON.stringify(payload),\n    signal: AbortSignal.timeout(timeoutMs)\n  });\n\n  const text = await response.text();\n  let body;\n  try {\n    body = JSON.parse(text);\n  } catch (_) {\n    throw new Error(`Gemini returned non-JSON HTTP ${response.status}: ${text}`);\n  }\n\n  if (!response.ok) {\n    throw new Error(`Gemini HTTP ${response.status}: ${JSON.stringify(body.error || body)}`);\n  }\n\n  const candidate = body.candidates?.[0]?.content;\n  if (!candidate || !Array.isArray(candidate.parts) || candidate.parts.length === 0) {\n    throw new Error(`Gemini returned no content candidate: ${JSON.stringify(body)}`);\n  }\n\n  const replyText = candidate.parts.map(p => p.text || '').join('\\n').trim();\n  return {\n    candidate,\n    parsed: extractJson(replyText)\n  };\n}\n\nasync function main() {\n  const configArg = process.argv[2] || 'gemini-prompt-message-config.json';\n  const configPath = path.resolve(process.cwd(), configArg);\n  if (!fs.existsSync(configPath)) {\n    throw new Error(`Config file not found: ${configPath}`);\n  }\n\n  const config = readJson(configPath);\n  const triggerPath = path.resolve(process.cwd(), config.paths?.trigger_file || 'trigger.json');\n  let trigger = {};\n  if (fs.existsSync(triggerPath)) {\n    trigger = readJson(triggerPath);\n  }\n\n  const runNonce = String(trigger.run_nonce || config.run?.nonce || `run_${Date.now()}`).trim();\n  if (!/^[A-Za-z0-9._-]+$/.test(runNonce)) {\n    throw new Error(`Invalid run nonce: ${runNonce}`);\n  }\n\n  const systemInstruction = trigger.system_instruction || config.prompt?.system_instruction || '';\n  const userText = trigger.user_prompt || config.prompt?.user_prompt || 'Hello Gemini';\n  const contents = [\n    {\n      role: 'user',\n      parts: [{ text: userText }]\n    }\n  ];\n\n  const result = await callGemini(config, contents, systemInstruction);\n\n  const outDir = path.resolve(process.cwd(), config.paths?.runs_dir || 'runs', runNonce);\n  fs.mkdirSync(outDir, { recursive: true });\n\n  const responseFile = path.join(outDir, config.paths?.response_file || 'response.json');\n  const messagesFile = path.join(outDir, config.paths?.messages_file || 'messages.json');\n\n  const sessionMessages = {\n    run_nonce: runNonce,\n    contents: [\n      ...contents,\n      result.candidate\n    ]\n  };\n\n  writeJson(responseFile, result.parsed);\n  writeJson(messagesFile, sessionMessages);\n\n  console.log(JSON.stringify({\n    status: 'SUCCESS',\n    run_nonce: runNonce,\n    response_file: responseFile,\n    messages_file: messagesFile,\n    parsed_output: result.parsed\n  }, null, 2));\n}\n\nif (require.main === module) {\n  main().catch(err => {\n    console.error(err.stack || err.message || String(err));\n    process.exit(1);\n  });\n}\n\nmodule.exports = { callGemini, extractJson };\n",
+  "gemini-prompt-workflow.yaml": "name: Communicate Prompt to Gemini\non:\n  workflow_dispatch:\n    inputs:\n      config_file:\n        description: 'Path to communicator configuration JSON'\n        required: false\n        default: 'gemini-prompt-message-config.json'\n      model:\n        description: 'Gemini model override'\n        required: false\n        default: 'gemini-2.5-flash'\n\njobs:\n  communicate:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n\n      - name: Setup Node.js runtime\n        uses: actions/setup-node@v4\n        with:\n          node-version: '20'\n\n      - name: Execute Gemini Communicator\n        env:\n          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}\n          GEMINI_MODEL: ${{ github.event.inputs.model || 'gemini-2.5-flash' }}\n        run: |\n          node gemini-prompt-communicator.js \"${{ github.event.inputs.config_file || 'gemini-prompt-message-config.json' }}\"\n\n      - name: Upload Run Outputs\n        uses: actions/upload-artifact@v4\n        if: always()\n        with:\n          name: gemini-communicator-run-artifacts\n          path: runs/\n          if-no-files-found: ignore\n",
+  "gemini-prompt-message-config.json": {
+    "api": {
+      "key_env": "GEMINI_API_KEY",
+      "model": "gemini-2.5-flash",
+      "timeout_ms": 180000
+    },
+    "generation": {
+      "temperature": 0,
+      "response_mime_type": "application/json",
+      "max_output_tokens": 8192
+    },
+    "paths": {
+      "trigger_file": "trigger.json",
+      "runs_dir": "runs",
+      "response_file": "response.json",
+      "messages_file": "messages.json"
+    },
+    "prompt": {
+      "system_instruction": "You are a precise, deterministic system communicator. Always respond with valid JSON matching the requested structure.",
+      "user_prompt": "{\"task\":\"health_check\",\"timestamp\":\"2026-10-02T00:00:00.000Z\"}"
+    },
+    "run": {
+      "nonce": "default_run_init"
+    },
+    "retry": {
+      "max_attempts": 3,
+      "backoff_ms": 1000
+    }
+  },
+  "same_turn_execution": true,
+  "status": "COMPLETE"
+}
