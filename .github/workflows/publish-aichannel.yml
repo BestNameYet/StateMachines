@@ -124,7 +124,7 @@ jobs:
           if [t["name"] for t in tools] != ["ai_channel"]:
               raise SystemExit(f"Unexpected tool list: {tools}")
           result = lines[1]["result"]["structuredContent"]
-          if result.get("message") != "hello":
+          if result.get("output", {}).get("message") != "hello":
               raise SystemExit(f"Unexpected echo result: {result}")
           print("MCP smoke PASS")
           PY
