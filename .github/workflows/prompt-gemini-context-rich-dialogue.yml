@@ -1,0 +1,43 @@
+name: PromptGemini context-rich dialogue procedure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/trigger.json'
+
+permissions:
+  contents: write
+
+jobs:
+  prompt-gemini:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Execute PromptGemini procedure
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: node 'untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/gemini-message-executor.js' 'untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/config.json'
+
+      - name: Commit Gemini result
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/latest-output.json' 'untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/runs'
+          if git diff --cached --quiet; then
+            echo "No PromptGemini output changes."
+            exit 0
+          fi
+          git commit -m "PromptGemini context-rich dialogue procedure result"
+          git push origin HEAD:main

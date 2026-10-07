@@ -1,0 +1,38 @@
+{
+  "response_type": "requirements_specification",
+  "task_id": "chatgpt_gemini_context_rich_dialogue",
+  "user_request": "Using MetaProcedure and its definitions, create a procedure for a context-rich dialogue between ChatGPT assistant and Gemini, where Gemini is kept context aware by reconsuming its former message being included in the reply package and a handshake contract prevents ChatGPT from prematurely turn ending.",
+  "required_outcome": "A complete, self-executing, MetaProcedure-compliant AI-NLE procedure governing a multi-exchange ChatGPT↔Gemini dialogue.",
+  "mandatory_requirements": [
+    "Gemini's immediately preceding message must be re-included in every subsequent ChatGPT-to-Gemini reply package after Gemini has responded once.",
+    "The prior Gemini message must come from the authoritative recorded prior response, not from reconstruction when the authoritative copy is available.",
+    "The procedure must preserve enough current user request, governing context, dialogue state, and unresolved obligations for Gemini to remain context-aware.",
+    "The procedure must define a handshake contract that prevents ChatGPT from ending its user-facing turn while a required Gemini response, acknowledgement, evaluation, continuation, repair, or ChatGPT follow-up remains outstanding.",
+    "The procedure must define explicit initialization, message-package construction, dispatch, receipt, validation, state update, continuation, repair, closure, blocking, failure, and termination operations.",
+    "The procedure must concretely specify how ChatGPT accesses Gemini. An abstract phrase such as 'use the available Gemini interface' is insufficient.",
+    "For Gemini access, use the supplied PromptGemini procedure, executor, and workflow evidence as the authoritative concrete interface pattern unless a supplied higher-precedence source explicitly supersedes it.",
+    "The procedure must state the exact artifacts or interface operations used to dispatch to Gemini, what action triggers execution, where Gemini output is persisted, how that output is retrieved, and what current-execution evidence establishes send and receive occurrence.",
+    "The procedure must distinguish action evidence from effect evidence and current-execution evidence from preexisting state.",
+    "The procedure must not treat a preexisting Gemini response, similar artifact, prior run, matching file, or expected final state as evidence that a required current exchange occurred.",
+    "The procedure must define exchange identity and bind each Gemini response to the current exchange.",
+    "A terminal handshake must be explicit. Apparent semantic completion or a final-sounding Gemini response alone must not permit ChatGPT to stop.",
+    "If required Gemini access is unavailable, the procedure must use an explicit BLOCKED path rather than fabricate a response.",
+    "The procedure must contain a return contract and explicit COMPLETE, INCOMPLETE/continuation, BLOCKED, and FAILED semantics as appropriate.",
+    "The procedure must self-evaluate against all applicable MetaProcedure properties and may not mark a property PASS when a material specification defect remains."
+  ],
+  "authority_order": [
+    "Current user request and explicit requirements in this specification.",
+    "Canonical MetaProcedure.",
+    "Canonical MetaProcedure companion definitions.",
+    "PromptGemini procedure and current executable PromptGemini implementation/workflow evidence for Gemini-access mechanics.",
+    "Prior failure analysis as negative evidence about what must be repaired.",
+    "Bounded inference only where authorized by the MetaProcedure."
+  ],
+  "prohibited_shortcuts": [
+    "Do not leave Gemini dispatch or response retrieval as an unnamed or abstract interface.",
+    "Do not claim MetaProcedure compliance solely because the dialogue state machine is detailed.",
+    "Do not silently invent Gemini-access behavior not supported by the supplied PromptGemini artifacts.",
+    "Do not end construction with a known repairable material defect."
+  ],
+  "required_return": "Return one complete JSON procedure, not commentary, outline, pseudocode, or implementation code."
+}

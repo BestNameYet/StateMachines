@@ -1,0 +1,121 @@
+{
+  "api": {
+    "key_env": "GEMINI_API_KEY",
+    "model": "gemini-3.8-flash",
+    "default_model": "gemini-3.8-flash",
+    "endpoint": "https://generativelanguage.googleapis.com/v1beta",
+    "timeout_ms": 600000,
+    "max_retries": 2,
+    "retry_delay_ms": 1000
+  },
+  "generation": {
+    "temperature": 0,
+    "top_p": 0.95,
+    "top_k": 40,
+    "response_mime_type": "application/json",
+    "max_output_tokens": 32768
+  },
+  "paths": {
+    "runtime_root": "../../../../",
+    "runs_root": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/runs",
+    "trigger_file": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/trigger.json",
+    "messages_file": "messages.json",
+    "output_file": "output.json",
+    "latest_output_file": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/latest-output.json",
+    "write_latest_outputs": true
+  },
+  "run": {
+    "nonce_param": "run_nonce",
+    "nonce_regex": "^[A-Za-z0-9._-]+$",
+    "default_nonce_prefix": "context_rich_dialogue",
+    "default_nonce": "context_rich_dialogue_20261007_1",
+    "reuse_history": false
+  },
+  "prompt": {
+    "system_instruction": "You are constructing an AI natural-language-executable procedure. The supplied canonical MetaProcedure and companion definitions govern construction. Execute that construction process, repair every known repairable material defect, and return one complete valid JSON procedure only. Do not return an outline, commentary, markdown, pseudocode, or implementation code.",
+    "heuristic": "Construct the requested ChatGPT↔Gemini context-rich dialogue procedure from the supplied requirements. Apply the canonical MetaProcedure as the construction authority. In particular, do not repeat the prior failure: Gemini access must be concretely executable and observable. Bind the dialogue procedure's Gemini send/receive mechanics to the supplied PromptGemini procedure and its actual executor/workflow evidence. The resulting procedure must preserve Gemini's immediately preceding response in every later package, maintain explicit exchange and handshake state, prevent premature ChatGPT turn termination, and self-evaluate all applicable MetaProcedure properties. If any required interface or transition remains abstract, repair it before returning COMPLETE.",
+    "output_schema": {
+      "response_type": "chatgpt_gemini_context_rich_dialogue_procedure",
+      "procedure_metadata": {},
+      "definitions": [],
+      "instructions": {},
+      "constraints": [],
+      "invariants": [],
+      "authorities": {},
+      "inference_and_discretion_policy": {},
+      "state_model": {},
+      "transition_model": {},
+      "verification_model": {},
+      "error_model": {},
+      "examples_policy": {},
+      "context_policy": {},
+      "return_contract": {},
+      "procedure_execution_semantics": {},
+      "termination": {},
+      "self_evaluation": {}
+    },
+    "template_prefix": "Construct the final procedure from the authoritative inputs below.",
+    "template_suffix": "Return exactly one JSON object. The procedure itself is the result. Do not claim MetaProcedure compliance if a material specification gap remains."
+  },
+  "inputs": [
+    {
+      "key": "meta_procedure",
+      "type": "file",
+      "path": "untrusted AI/meta-procedure/731942_ai_nlep_meta_procedure.json",
+      "numbered": false,
+      "required": true
+    },
+    {
+      "key": "meta_procedure_definitions",
+      "type": "file",
+      "path": "untrusted AI/meta-procedure/731942_meta_procedure_flat_array_definitions.json",
+      "numbered": false,
+      "required": true
+    },
+    {
+      "key": "requirements_specification",
+      "type": "file",
+      "path": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/requirements-spec.json",
+      "numbered": false,
+      "required": true
+    },
+    {
+      "key": "prior_failure_analysis",
+      "type": "file",
+      "path": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/prior-failure-analysis.json",
+      "numbered": false,
+      "required": true
+    },
+    {
+      "key": "prompt_gemini_procedure",
+      "type": "file",
+      "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/PromptGemini.json",
+      "numbered": false,
+      "required": true
+    },
+    {
+      "key": "prompt_gemini_executor",
+      "type": "file",
+      "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/gemini-message-executor.js",
+      "numbered": true,
+      "required": true
+    },
+    {
+      "key": "prompt_gemini_workflow",
+      "type": "file",
+      "path": ".github/workflows/prompt-gemini-hidden-page-authoring.yml",
+      "numbered": true,
+      "required": true
+    }
+  ],
+  "validation": {
+    "expected_response_type": "chatgpt_gemini_context_rich_dialogue_procedure",
+    "require_json": true,
+    "strip_markdown_fence": true,
+    "allow_repair": true
+  },
+  "execution": {
+    "same_turn": true,
+    "verbose": true
+  }
+}
