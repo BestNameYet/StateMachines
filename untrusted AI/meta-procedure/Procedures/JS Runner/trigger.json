@@ -1,4 +1,4 @@
 {
-  "run_nonce": "js_runner_20261007_3",
+  "run_nonce": "js_runner_20261007_4",
   "user_prompt": "Revise the existing MetaProcedure JS Runner using the two configured input files.\n\nObserved execution error:\nReferenceError: module is not defined\n\nConflict summary:\nThe current JS Runner executes each JSON `script` string inside a `vm` context that exposes `require` and `process` but does not expose CommonJS globals such as `module`. The HTMLHiddenVarEditor script contains `if (require.main === module)`, so execution fails before its `main()` function can run. The revised JS Runner must continue to consume JSON `script` keys and execute the JavaScript found within them, but it must support this Node/CommonJS-oriented script without requiring any modification to the embedded HTMLHiddenVarEditor script.\n\nReturn the complete revised js-runner.js source in the configured `script` field. Return exactly one valid JSON object matching the configured schema."
 }
