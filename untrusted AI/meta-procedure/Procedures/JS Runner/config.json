@@ -1,0 +1,57 @@
+{
+  "api": {
+    "key_env": "GEMINI_API_KEY",
+    "model": "gemini-3.8-flash",
+    "default_model": "gemini-3.8-flash",
+    "endpoint": "https://generativelanguage.googleapis.com/v1beta",
+    "timeout_ms": 600000,
+    "max_retries": 2,
+    "retry_delay_ms": 1000
+  },
+  "generation": {
+    "temperature": 0,
+    "top_p": 0.95,
+    "top_k": 40,
+    "response_mime_type": "application/json",
+    "max_output_tokens": 16384
+  },
+  "paths": {
+    "runtime_root": "../../../..",
+    "runs_root": "untrusted AI/meta-procedure/Procedures/JS Runner/runs",
+    "trigger_file": "untrusted AI/meta-procedure/Procedures/JS Runner/trigger.json",
+    "messages_file": "messages.json",
+    "output_file": "output.json",
+    "latest_output_file": "untrusted AI/meta-procedure/Procedures/JS Runner/latest-output.json",
+    "write_latest_outputs": true
+  },
+  "run": {
+    "nonce_param": "run_nonce",
+    "nonce_regex": "^[A-Za-z0-9._-]+$",
+    "default_nonce_prefix": "js_runner",
+    "default_nonce": "js_runner_20261007_1",
+    "reuse_history": false
+  },
+  "prompt": {
+    "system_instruction": "You are a deterministic JavaScript implementation author. Return one JSON object only. Produce complete executable Node.js source, not pseudocode or a patch.",
+    "heuristic": "Create a JavaScript runner that consumes a JSON file, finds string values whose key is exactly `script`, and executes the JavaScript program found in those `script` keys. The runner itself must be complete executable Node.js source. Do not include prose or markdown fences in the script field.",
+    "output_schema": {
+      "response_type": "js_runner_authoring",
+      "status": "COMPLETE | INCOMPLETE | BLOCKED | FAILED",
+      "script": "complete executable JavaScript source",
+      "implementation_summary": "string"
+    },
+    "template_prefix": "Create the requested MetaProcedure JS Runner.",
+    "template_suffix": "Return exactly one valid JSON object matching the schema. The complete runner source must be in the `script` field."
+  },
+  "inputs": [],
+  "validation": {
+    "expected_response_type": "js_runner_authoring",
+    "require_json": true,
+    "strip_markdown_fence": true,
+    "allow_repair": true
+  },
+  "execution": {
+    "same_turn": true,
+    "verbose": true
+  }
+}
