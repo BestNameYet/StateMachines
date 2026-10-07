@@ -222,7 +222,16 @@ async function main() {
   const candidate = await dispatchWithRetry(endpoint, apiKey, requestPayload, timeoutMs, maxRetries, retryDelayMs);
 
   const replyText = candidate.parts.map(p => p.text || '').join('\n').trim();
-  const parsed = extractJson(replyText, config.validation?.strip_markdown_fence !== false);
+
+  console.log(`[executor] Raw API response (first 500 chars): ${replyText.substring(0, 500)}`);
+
+  let parsed;
+  try {
+    parsed = extractJson(replyText, config.validation?.strip_markdown_fence !== false);
+  } catch (parseErr) {
+    console.error(`[executor] JSON parsing failed. Full response:\n${replyText}`);
+    throw new Error(`Failed to parse Gemini response as JSON: ${parseErr.message}`);
+  }
 
   if (config.validation?.expected_response_type) {
     if (parsed.response_type !== config.validation.expected_response_type) {
