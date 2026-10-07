@@ -11,52 +11,35 @@
   "generic_reuse_message_history": false,
   "generic_inputs": [
     {
-      "key": "meta_procedure",
+      "key": "parsing_procedure",
       "type": "file",
-      "path": "../../untrusted AI/meta-procedure/731942_ai_nlep_meta_procedure.json"
+      "path": "evaluations/shared_chat_html_extraction_20261005_1/evaluation.json"
     },
     {
-      "key": "javascript_archive",
+      "key": "raw_share_page_response",
       "type": "file",
-      "path": "../../untrusted AI/meta-procedure/TEMP/temp-js-files.archive.json"
-    },
-    {
-      "key": "agents_md_json_projection",
-      "type": "file",
-      "path": "../ComprehensionTasks/ProjectionsForTasks/agentsmdbaseproejction.json"
-    },
-    {
-      "key": "prior_specification",
-      "type": "file",
-      "path": "evaluations/gemini_prompt_procedure_spec_20261007_1/evaluation.json"
+      "path": "../../untrusted AI/shared-chat-page.html"
     }
   ],
-  "evaluation_heuristic": "Write a complete JWRS AI-NLE procedure for sending a message to Gemini. Use all configured inputs, including the prior specification. The procedure must make response type, input files, heuristic/instructions, and every other previously used information/instruction/configuration category evidenced by the inputs configurable. Return exact executable JavaScript under gemini-message-executor.js. Return exact complete GitHub Actions YAML under gemini-message-workflow.yaml. Return a verbose config.json template whose concise keys cover the full evidenced configuration surface. The JavaScript, YAML, and config.json must agree exactly on field names and behavior. Cover message construction, model/API request settings, generation/output settings, timeouts/retries, paths, run identity, history where supported, input loading, persistence, validation, and failure reporting when evidenced. Do not return pseudocode or a discovery-only pass.",
+  "evaluation_heuristic": "Apply the supplied parsing procedure to the supplied raw ChatGPT share-page response. Do not use any repository artifact or prior extracted result other than the two configured inputs. Independently parse the raw response according to the procedure under test. Return facts obtained from the parsed conversation that are sufficient to show whether the procedure succeeded: conversation_id, title, mapping node count, linear conversation count, detected author roles, and any parse or validation errors. Do not copy old conversation-specific facts from the procedure unless they are independently present in the supplied raw response.",
   "evaluation_output_schema": {
-    "response_type": "jwrs_execution_result",
-    "jwrs_projection": {
-      "response_type": "jwrs_projection",
-      "request": {},
-      "return_schema": {}
+    "response_type": "shared_chat_parse_verification",
+    "procedure_applied": false,
+    "parsed_result": {
+      "conversation_id": "",
+      "title": "",
+      "mapping_node_count": 0,
+      "linear_conversation_count": 0,
+      "author_roles": []
     },
-    "projection_printed_before_execution": true,
-    "ai_nle_procedure": {
-      "response_type": "ai_nle_procedure",
-      "purpose": "",
-      "definitions": {},
-      "inputs": {},
-      "configuration_contract": {},
-      "procedure": [],
-      "validation": {},
-      "failure_handling": {},
-      "invariants": [],
-      "return_schema": {}
+    "validation": {
+      "react_router_payload_found": false,
+      "payload_decoded": false,
+      "conversation_object_found": false,
+      "required_fields_valid": false
     },
-    "gemini-message-executor.js": "",
-    "gemini-message-workflow.yaml": "",
-    "config.json": {},
-    "same_turn_execution": true,
-    "status": "COMPLETE | INCOMPLETE | BLOCKED | FAILED"
+    "errors": [],
+    "result": "PASS | FAIL"
   },
   "evaluations_root": "evaluations",
   "run_evaluation_file": "evaluation.json",
