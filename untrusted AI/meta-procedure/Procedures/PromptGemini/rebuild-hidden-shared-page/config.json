@@ -1,0 +1,78 @@
+{
+  "api": {
+    "key_env": "GEMINI_API_KEY",
+    "model": "gemini-3.8-flash",
+    "default_model": "gemini-3.8-flash",
+    "endpoint": "https://generativelanguage.googleapis.com/v1beta",
+    "timeout_ms": 600000,
+    "max_retries": 2,
+    "retry_delay_ms": 1000
+  },
+  "generation": {
+    "temperature": 0,
+    "top_p": 0.95,
+    "top_k": 40,
+    "response_mime_type": "application/json",
+    "max_output_tokens": 16384
+  },
+  "paths": {
+    "runtime_root": "../../../../..",
+    "runs_root": "untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/runs",
+    "trigger_file": "untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/trigger.json",
+    "messages_file": "messages.json",
+    "output_file": "output.json",
+    "latest_output_file": "untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/latest-output.json",
+    "write_latest_outputs": true
+  },
+  "run": {
+    "nonce_param": "run_nonce",
+    "nonce_regex": "^[A-Za-z0-9._-]+$",
+    "default_nonce_prefix": "rebuild_hidden_shared_page",
+    "default_nonce": "rebuild_hidden_shared_page_20261007_1",
+    "reuse_history": false
+  },
+  "prompt": {
+    "system_instruction": "You are a deterministic JavaScript implementation author. Return one JSON object only. Produce complete executable Node.js source, not pseudocode or a patch.",
+    "heuristic": "Using only the supplied task specification and existing extractor as authoritative implementation context, write the smallest robust Node.js script that performs the requested targeted transformation on the flattened React Router share-page payload. Preserve unrelated HTML and serialized semantics. The script field must contain the complete JavaScript source. Do not alter reasoning_recap_type='hide_all'. Do not use a blind global replacement.",
+    "output_schema": {
+      "response_type": "shared_page_hide_key_rebuilder",
+      "status": "COMPLETE | INCOMPLETE | BLOCKED | FAILED",
+      "script": "complete executable JavaScript source",
+      "implementation_summary": "string",
+      "assumptions": [
+        "string"
+      ],
+      "validation_notes": [
+        "string"
+      ]
+    },
+    "template_prefix": "Implement the requested shared-page HTML transformation.",
+    "template_suffix": "Return exactly one JSON object matching the schema. The script must support: node rebuild-shared-chat-html.js <input.html> <output.html>."
+  },
+  "inputs": [
+    {
+      "key": "task_spec",
+      "type": "file",
+      "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/task-spec.json",
+      "numbered": false,
+      "required": true
+    },
+    {
+      "key": "existing_extractor",
+      "type": "file",
+      "path": "untrusted AI/extract-shared-chat.js",
+      "numbered": true,
+      "required": true
+    }
+  ],
+  "validation": {
+    "expected_response_type": "shared_page_hide_key_rebuilder",
+    "require_json": true,
+    "strip_markdown_fence": true,
+    "allow_repair": true
+  },
+  "execution": {
+    "same_turn": true,
+    "verbose": true
+  }
+}
