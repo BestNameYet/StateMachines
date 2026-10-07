@@ -1,0 +1,17 @@
+name: Expose rebuilt HTML
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/expose-rebuilt-html.yml'
+
+jobs:
+  expose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shared-chat-page-rebuilt
+          path: untrusted AI/meta-procedure/Procedures/HTMLHiddenVarEditor/shared-chat-page.rebuilt.html
