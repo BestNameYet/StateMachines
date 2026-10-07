@@ -25,7 +25,7 @@ function findScriptNodes(target, collected = []) {
   return collected;
 }
 
-async function executeScript(scriptSource, index) {
+async function executeScript(scriptSource, index, childArgs) {
   process.stdout.write(`[MetaProcedure Runner] Executing script [${index + 1}]...\n`);
 
   const scriptFilename = path.resolve(process.cwd(), `metaprocedure_script_${index + 1}.js`);
@@ -40,7 +40,25 @@ async function executeScript(scriptSource, index) {
     children: []
   };
 
+  const simulatedArgv = [process.argv[0], scriptFilename, ...childArgs];
+
+  const scopedProcess = new Proxy(process, {
+    get(target, prop, receiver) {
+      if (prop === 'argv') {
+        return simulatedArgv;
+      }
+      const val = Reflect.get(target, prop);
+      if (typeof val === 'function') {
+        return val.bind(target);
+      }
+      return val;
+    }
+  });
+
   const scopedRequire = function (id) {
+    if (id === 'process' || id === 'node:process') {
+      return scopedProcess;
+    }
     return require(id);
   };
   for (const prop of Object.getOwnPropertyNames(require)) {
@@ -52,7 +70,7 @@ async function executeScript(scriptSource, index) {
 
   const contextObject = {
     console,
-    process,
+    process: scopedProcess,
     require: scopedRequire,
     module: moduleObject,
     exports: moduleObject.exports,
@@ -75,16 +93,25 @@ async function executeScript(scriptSource, index) {
     displayErrors: true
   });
 
-  const result = script.runInContext(executionContext);
-  if (result && typeof result.then === 'function') {
-    await result;
+  const originalArgv = process.argv;
+  try {
+    process.argv = simulatedArgv;
+    const result = script.runInContext(executionContext);
+    if (result && typeof result.then === 'function') {
+      await result;
+    }
+  } finally {
+    process.argv = originalArgv;
   }
+
   moduleObject.loaded = true;
   process.stdout.write(`[MetaProcedure Runner] Script [${index + 1}] executed successfully.\n`);
 }
 
 async function run() {
   const configPath = process.argv[2] || path.resolve(process.cwd(), 'config.json');
+  const childArgs = process.argv.length > 2 ? process.argv.slice(3) : [];
+
   if (!fs.existsSync(configPath)) {
     console.error(`[MetaProcedure Runner] Target config file not found: ${configPath}`);
     process.exit(1);
@@ -108,7 +135,7 @@ async function run() {
   console.log(`[MetaProcedure Runner] Discovered ${scripts.length} script definition(s).`);
   for (let i = 0; i < scripts.length; i++) {
     try {
-      await executeScript(scripts[i], i);
+      await executeScript(scripts[i], i, childArgs);
     } catch (scriptError) {
       console.error(`[MetaProcedure Runner] Failure during execution of script [${i + 1}]:`, scriptError);
       process.exitCode = 1;
