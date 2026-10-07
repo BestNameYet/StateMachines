@@ -1,0 +1,232 @@
+{
+  "response_type": "gemini_api_context_implementation_research",
+  "researched_on": "2026-10-07",
+  "source_documents": [
+    {
+      "title": "Interactions API",
+      "importance": "Primary current architecture. Google states that the Interactions API is GA, recommended for new projects, supports server-side conversation state, and is where new Gemini capabilities will launch.",
+      "url": "https://ai.google.dev/gemini-api/docs/interactions-overview.md"
+    },
+    {
+      "title": "Text generation — Interactions API",
+      "importance": "Contains the concrete stateful and stateless multi-turn implementations, system instructions, streaming, and JavaScript/REST examples.",
+      "url": "https://ai.google.dev/gemini-api/docs/text-generation/"
+    },
+    {
+      "title": "Gemini thinking / thought signatures",
+      "importance": "Defines what must be preserved when conversation history is managed by the client, including thought signatures and tool signatures.",
+      "url": "https://ai.google.dev/gemini-api/docs/thinking/"
+    },
+    {
+      "title": "Understand and count tokens",
+      "importance": "Defines token accounting, countTokens, usage fields, multi-turn token accounting, and context-window inspection.",
+      "url": "https://ai.google.dev/gemini-api/docs/tokens"
+    },
+    {
+      "title": "Context caching",
+      "importance": "Defines implicit caching, explicit caching, cache TTLs, cache minimums, cache management, and how cached content participates in a prompt.",
+      "url": "https://ai.google.dev/gemini-api/docs/generate-content/caching"
+    },
+    {
+      "title": "GenerateContent text generation",
+      "importance": "Documents the older generateContent conversation representation using repeated Content objects with user/model roles. This is directly relevant because the existing PromptGemini executor currently uses generateContent.",
+      "url": "https://ai.google.dev/gemini-api/docs/generate-content/text-generation"
+    },
+    {
+      "title": "Interactions API data retention / ZDR",
+      "importance": "Defines the persistence consequences of stateful versus stateless conversation management.",
+      "url": "https://ai.google.dev/gemini-api/docs/interactions-overview.md"
+    },
+    {
+      "title": "Gemini model documentation",
+      "importance": "Documents current model context/output capacities and model metadata.",
+      "url": "https://ai.google.dev/gemini-api/docs/latest-model"
+    }
+  ],
+  "context_model": {
+    "current_recommended_api": "PromptGemini is currently based on Google's older generateContent architecture, while Google recommends the Interactions API for new development. generateContent remains supported, but Interactions provides first-class conversation state.",
+    "interaction_definition": "An Interaction represents one complete conversation/task turn. A stored Interaction contains a chronological sequence of execution steps, including model thoughts, tool calls/results, and final model output. interactions.create returns model-generated steps; a stored Interaction retrieved with interactions.get also contains user_input steps.",
+    "two_context_modes": {
+      "stateful": "Send the new input plus previous_interaction_id. Google retrieves the earlier conversation itself. You do not need to resend the prior dialogue.",
+      "stateless": "Set store=false and maintain the history yourself. Every subsequent request contains the accumulated steps plus the new user_input. This means the prior Gemini output is literally present in the next request package."
+    },
+    "critical_for_user_requirement": "The requirement that Gemini reconsume its former message by including it in the next reply package maps most literally to Interactions API stateless mode. The client takes interaction1.steps, appends them unchanged to client-maintained history, adds the next user_input, and sends the entire history again.",
+    "stateful_alternative": "previous_interaction_id gives Gemini equivalent conversational access without physically putting the previous Gemini response into the new HTTP request. If package-level replay is required for observability and verification, that distinction is material."
+  },
+  "implementation_requirements": {
+    "stateless_context_algorithm": [
+      "Maintain one authoritative ordered array of Gemini Interaction steps.",
+      "For the first request, insert the user_input and send it with store=false.",
+      "When Gemini responds, persist every returned model-generated step exactly as received.",
+      "Before the next request, append those model steps to history, then append the next ChatGPT message as a new user_input step.",
+      "Send the complete accumulated history again with store=false."
+    ],
+    "do_not_store_only_text": "Do not reduce Gemini's response to only interaction.output_text for continuation. output_text is a convenience projection and can omit earlier content separated by thoughts, images, audio, or tool calls. Preserve interaction.steps as the authoritative continuation record.",
+    "thought_signatures": "For stateless conversations, all model-generated thought steps must be resent exactly as received. They carry encrypted signatures required for reasoning continuity. Built-in tool call/result signatures must also be preserved, and previous thought blocks should still be resent if the model changes.",
+    "system_instruction": "System instructions are not conversation history. With stateful previous_interaction_id, tools, system_instruction, and generation_config are interaction-scoped and must be supplied again on each interaction if they should continue to apply.",
+    "configuration": "Each Gemini invocation should reconstruct current system_instruction, tools, and generation_config from authoritative configuration rather than assuming they persisted from the previous call.",
+    "durable_state": "For this architecture, GitHub can retain the authoritative step history independently of Gemini. A run record should at minimum persist the ordered Interaction steps, current exchange ID, request package, raw Interaction response, extracted user-facing output, and handshake state. The GitHub persistence choice is architectural inference; the requirement to retain/resend all steps in stateless mode is source-derived."
+  },
+  "request_structures": {
+    "stateful_rest": {
+      "endpoint": "POST https://generativelanguage.googleapis.com/v1beta/interactions",
+      "conceptual_body": {
+        "model": "gemini-3.8-flash",
+        "system_instruction": "<repeat governing instruction>",
+        "input": "<new ChatGPT message>",
+        "previous_interaction_id": "<previous Gemini interaction id>"
+      },
+      "behavior": "The server retrieves earlier conversation history from previous_interaction_id."
+    },
+    "stateless_rest": {
+      "endpoint": "POST https://generativelanguage.googleapis.com/v1beta/interactions",
+      "conceptual_body": {
+        "model": "gemini-3.8-flash",
+        "store": false,
+        "system_instruction": "<governing instruction>",
+        "input": [
+          {
+            "type": "user_input",
+            "content": "<first ChatGPT package>"
+          },
+          "<all model-generated steps from Gemini turn 1, unchanged>",
+          {
+            "type": "user_input",
+            "content": "<second ChatGPT package>"
+          }
+        ]
+      },
+      "behavior": "The client constructs history from the original user input, returned model steps, and each next user input."
+    },
+    "legacy_generate_content": {
+      "endpoint": "POST /v1beta/models/{model}:generateContent",
+      "body_model": "contents is a repeated Content field. For a multi-turn request it contains conversation history followed by the latest request. Content entries use user/model roles and parts.",
+      "relationship_to_current_promptgemini": "This is essentially what the current PromptGemini executor already implements when reuse_history is enabled: it retains user Content plus Gemini's returned Content and sends messages.contents on the next generateContent request."
+    }
+  },
+  "multi_turn_behavior": {
+    "stateful_mode": {
+      "automatic": [
+        "Google stores the interaction by default.",
+        "previous_interaction_id causes Google to reconstruct conversation history.",
+        "Thought blocks/signatures are managed server-side.",
+        "Server-side state generally makes implicit context caching easier to exploit."
+      ],
+      "caller_responsibilities": [
+        "Persist the latest interaction ID if the chain must continue.",
+        "Supply the new input.",
+        "Re-supply system_instruction, tools, and generation_config on every interaction where they are required."
+      ],
+      "retention": "Interactions are stored by default; retention depends on account/tier and current Google policy. store=false prevents subsequent use of previous_interaction_id."
+    },
+    "stateless_mode": {
+      "automatic": [
+        "Gemini processes the steps supplied in the current request."
+      ],
+      "caller_responsibilities": [
+        "Set store=false.",
+        "Persist the complete conversation history.",
+        "Append every Gemini-generated step exactly as returned.",
+        "Append each new ChatGPT turn as user_input.",
+        "Resend the complete accumulated step sequence.",
+        "Preserve thought and tool signatures without editing them."
+      ],
+      "fit_for_handshake_procedure": "This has strong observability because the exact context consumed by Gemini is inspectable in the outbound request. A verifier can establish that Gemini's preceding response was actually present rather than trusting only an opaque conversation handle. This procedural advantage is an inference from the stateless API semantics."
+    }
+  },
+  "context_caching": {
+    "not_the_same_as_conversation_state": "Context caching and dialogue history are separate concepts. Caching primarily reduces cost/latency of repeatedly supplying common tokens; it is not an authoritative conversation ledger.",
+    "implicit": "Implicit caching is automatically available on supported newer Gemini models. Applications should place large common material at the beginning and keep request prefixes similar. Cache-hit token counts are exposed in usage metadata.",
+    "why_this_matches_user_design": "A stateless dialogue repeatedly sends the same large prefix/history with additional turns appended. That structure is naturally favorable to implicit caching because the earlier portion remains a common prefix. This is architectural inference consistent with Google's cache guidance.",
+    "explicit": "Explicit context caching is available for generateContent-compatible flows. It lets a caller cache large common context once and subsequently reference that cached content. TTL and availability are governed by current Gemini API documentation.",
+    "interactions_limitation": "Explicit caching and Interactions API capability should be treated according to current documentation; where explicit caching is unavailable in Interactions, retain authoritative originals separately and rely on supported implicit/server-side mechanisms.",
+    "cache_management": "A cache must not be the sole authoritative storage of the MetaProcedure or conversation. Durable source artifacts should remain independently stored.",
+    "fixed_large_inputs": "If PromptGemini remains on generateContent, the canonical MetaProcedure and its large definitions file are strong conceptual candidates for explicit caching because they are large fixed context repeatedly reused. If PromptGemini migrates to Interactions, retain originals in GitHub and use supported interaction/caching semantics."
+  },
+  "token_and_window_management": {
+    "limits": "Current Gemini model limits should be read from current model documentation rather than assumed permanently.",
+    "programmatic_limits": "Do not hard-code context capacities when model metadata can expose current input/output limits.",
+    "preflight_count": "Use token-counting APIs before generation when necessary to determine whether the constructed context fits.",
+    "postflight_usage": "Persist usage information returned by Gemini so each exchange records input, output, thought, cached, tool-use, and total token consumption where available.",
+    "multi_turn_accounting": "In stateful chains, usage can include historical context consumed for the interaction, not merely the newest user message.",
+    "implementation_rule": "A robust dialogue runner should count or inspect token usage around each exchange and have an explicit context-compaction or BLOCKED policy before exceeding the active model's actual current limit. The exact compaction policy is application-defined."
+  },
+  "promptgemini_adaptation": {
+    "current_state": "The current PromptGemini executor uses generateContent directly through fetch. It constructs contents from messages.contents and has a reuse_history option. That is a legitimate multi-turn mechanism, but Interactions is the stronger current architecture for explicit conversation state.",
+    "minimum_change_if_generateContent_is_retained": {
+      "changes": [
+        "Set reuse_history=true for a multi-exchange dialogue.",
+        "Persist the exact returned candidate.content object, not merely parsed text.",
+        "On the next request send the ordered user/model Content objects in contents.",
+        "Do not strip or reconstruct Gemini thought-signature metadata from returned Parts.",
+        "Keep the current system_instruction attached to every request.",
+        "Persist the outbound contents array so the procedure can verify that the preceding Gemini response was actually supplied."
+      ],
+      "assessment": "This can satisfy basic explicit context replay using the API already implemented in PromptGemini."
+    },
+    "recommended_reimplementation": {
+      "api": "Interactions API, stateless mode",
+      "reason": "It maps closely onto the procedural requirement: context is represented as explicit ordered execution steps, the complete Gemini output steps can be persisted verbatim and physically included in the next request, and no server-side conversation state needs to be trusted for procedural evidence.",
+      "execution_sequence": [
+        "Read dialogue-state.json.",
+        "Append the current ChatGPT user_input package.",
+        "POST /v1beta/interactions with store=false and the entire steps array.",
+        "Verify the HTTP/API result.",
+        "Append response.steps verbatim.",
+        "Persist raw response and steps.",
+        "Extract final model output for the handshake.",
+        "Evaluate the handshake.",
+        "If continuation is required, construct the next user_input and repeat without ending ChatGPT's turn."
+      ],
+      "important": "The durable conversation object should be the steps array, not just a sequence of text messages."
+    },
+    "alternative_reimplementation": {
+      "api": "Interactions API, stateful mode",
+      "execution_sequence": [
+        "Create the first Interaction and persist its id.",
+        "For each next turn submit the new input with previous_interaction_id equal to the immediately preceding Interaction id.",
+        "Re-specify system_instruction, tools, and generation_config each time.",
+        "Persist every Interaction id and raw response."
+      ],
+      "advantage": "Simpler ordinary chat pattern; Google manages full history and thought signatures.",
+      "disadvantage_for_specific_contract": "The old Gemini response is not physically present in the new request payload. Therefore a literal requirement that the former message be included in the reply package either needs stateless mode or a redefinition toward server-side historical linkage."
+    },
+    "suggested_repository_state": {
+      "dialogue_state_json": {
+        "dialogue_id": "<stable id>",
+        "exchange_number": 0,
+        "steps": [],
+        "latest_interaction_id": null,
+        "latest_gemini_response": null,
+        "outstanding_obligations": [],
+        "handshake_state": "OPEN",
+        "token_usage": {}
+      },
+      "evidence_per_exchange": {
+        "outbound_request": "Exact JSON sent to Gemini",
+        "raw_interaction_response": "Exact Gemini response",
+        "returned_steps": "Unmodified response.steps",
+        "extracted_model_output": "Convenience representation only",
+        "exchange_id": "Local correlation identity",
+        "interaction_id": "Gemini interaction identity where applicable",
+        "handshake_evaluation": "CONTINUE | CLOSE_ACCEPTED | BLOCKED | FAILED"
+      }
+    }
+  },
+  "source_vs_inference": {
+    "directly_documented": [
+      "Interactions API supports server-managed conversation chaining with previous_interaction_id.",
+      "Stateless conversation management can be implemented by setting store=false and resending accumulated interaction steps.",
+      "Model-generated thought/tool continuation data must be preserved when the client manages history.",
+      "System instructions/tools/generation configuration are request/interaction-scoped and must be supplied according to the active API contract.",
+      "Token counting and usage metadata are available.",
+      "Context caching is distinct from conversation history."
+    ],
+    "architectural_inference": [
+      "For the MetaProcedure handshake requirement, stateless Interactions is the stronger fit because the precise Gemini context becomes observable evidence in every outbound request.",
+      "GitHub can serve as the durable authoritative dialogue ledger while Gemini receives exactly that ledger on each exchange."
+    ],
+    "most_important_correction_to_previous_design": "The 'previous Gemini message' should not merely be copied as a text field. Reliable continuation may require the complete returned model-generated steps, including thought/tool-signature state. The human-readable Gemini message can still be separately exposed in the handshake package, but it should not replace those steps."
+  },
+  "status": "COMPLETE"
+}
