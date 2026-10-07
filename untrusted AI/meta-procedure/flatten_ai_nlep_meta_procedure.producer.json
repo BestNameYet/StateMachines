@@ -1,0 +1,612 @@
+{
+  "response_type": "json_flattening_procedure",
+  "procedure_metadata": {
+    "procedure_id": "flatten_ai_nlep_meta_procedure",
+    "title": "Flatten AI-NLEP Meta-Procedure Into Canonical Atomic JSON Projection",
+    "version": "1.0",
+    "status": "ready",
+    "target_executor_class": "AI-NLE",
+    "purpose": "Retrieve the canonical AI-NLEP meta-procedure and deterministically decompose it into the canonical atomic JSON flattening representation defined by the GeminiSupervisor README.",
+    "source_object": {
+      "name": "731942_ai_nlep_meta_procedure.json",
+      "library_path": "/Precise Instructions/731942_ai_nlep_meta_procedure.json"
+    },
+    "flattening_authority": {
+      "repository": "BestNameYet/StateMachines",
+      "path": "ChatMachines/GeminiSupervisor/README.md",
+      "section": "Canonical JSON flattening and shuffle representation",
+      "section_start_line": 1025
+    }
+  },
+  "definitions": {
+    "source_json": "The complete parsed JSON value of 731942_ai_nlep_meta_procedure.json.",
+    "atom": "One top-level projection-array element that contributes exactly one payload fact while retaining sufficient ancestor structure to identify where that fact belongs.",
+    "terminal_property": "An object property whose value is not an object and not an array.",
+    "keyed_object_property": "An object property whose value is an object.",
+    "keyed_array_property": "An object property whose value is an array.",
+    "object_literal_atom": "An atom containing a keyed empty object at the complete ancestor route to establish that the keyed property's value is an object.",
+    "array_literal_atom": "An atom containing a keyed empty array at the complete ancestor route to establish that the keyed property's value is an array.",
+    "root_container_atom": "The bare literal {} or [] emitted when the supplied source JSON root is respectively an object or array.",
+    "anonymous_intermediate_container": "An object or array that is an array member or other unkeyed structural container whose existence and type may already be entailed by a deeper emitted atom.",
+    "payload_fact": "Exactly one terminal key-value fact, keyed container-type fact, root-container-type fact, or otherwise-disappearing empty anonymous-container fact.",
+    "projection": "The ordered top-level array containing all atomic JSON elements produced by this procedure.",
+    "ancestor_route": "The nested source structure from the root to the atom's payload fact, preserved using the source's literal keys and required container structure.",
+    "canonical_order": "The deterministic order produced by traversing the source JSON in its original object-property and array-member order.",
+    "original_array_order_authority": "The original source JSON, retained by source reference and used when array order must be reconstructed after any later shuffle."
+  },
+  "inputs": {
+    "source": {
+      "required": true,
+      "retrieval": {
+        "surface": "library",
+        "path": "/Precise Instructions/731942_ai_nlep_meta_procedure.json"
+      },
+      "requirements": [
+        "Retrieve the complete Library file.",
+        "Parse the complete file as JSON.",
+        "Do not substitute an uploaded shadow copy, prior excerpt, remembered content, summary, or reconstructed equivalent when the Library source is available."
+      ]
+    },
+    "flattening_specification": {
+      "required": true,
+      "authority": "BestNameYet/StateMachines/ChatMachines/GeminiSupervisor/README.md#Canonical-JSON-flattening-and-shuffle-representation",
+      "requirements": [
+        "Apply the documented canonical atomic decomposition semantics literally.",
+        "Do not replace them with generic JSON flattening conventions such as dotted paths, JSON Pointer, JSONPath, row tables, key-value tuples, or path-value pairs."
+      ]
+    }
+  },
+  "instructions": {
+    "primary_instruction": "Retrieve the complete canonical meta-procedure JSON and transform it into a deterministic ordered array of atomic nested JSON projection elements using the canonical GeminiSupervisor flattening semantics.",
+    "operations": [
+      {
+        "operation_id": "F1",
+        "operation": "retrieve",
+        "object": "canonical source JSON",
+        "inputs": [
+          "/Precise Instructions/731942_ai_nlep_meta_procedure.json"
+        ],
+        "outputs": [
+          "source_json"
+        ],
+        "preconditions": [],
+        "completion_condition": "The complete Library file has been retrieved and parsed as one JSON value."
+      },
+      {
+        "operation_id": "F2",
+        "operation": "initialize",
+        "object": "projection",
+        "inputs": [
+          "source_json"
+        ],
+        "outputs": [
+          "projection"
+        ],
+        "preconditions": [
+          "F1 completed."
+        ],
+        "completion_condition": "An empty projection array exists and the source root type is known."
+      },
+      {
+        "operation_id": "F3",
+        "operation": "emit",
+        "object": "root container atom",
+        "inputs": [
+          "source_json"
+        ],
+        "outputs": [
+          "first projection atom"
+        ],
+        "preconditions": [
+          "F2 completed."
+        ],
+        "completion_condition": "If the root is an object, {} has been emitted exactly once; if the root is an array, [] has been emitted exactly once; otherwise no root-container atom is emitted."
+      },
+      {
+        "operation_id": "F4",
+        "operation": "decompose",
+        "object": "object-valued properties",
+        "inputs": [
+          "each object encountered in source traversal"
+        ],
+        "outputs": [
+          "object-literal atoms",
+          "terminal-property atoms",
+          "descendant atoms"
+        ],
+        "preconditions": [
+          "The object's ancestor route is known."
+        ],
+        "completion_condition": "Every object property has been processed according to its value type and no two object sibling payload facts have been bundled into one atom."
+      },
+      {
+        "operation_id": "F5",
+        "operation": "emit",
+        "object": "keyed object-valued property",
+        "inputs": [
+          "literal source key",
+          "ancestor route"
+        ],
+        "outputs": [
+          "one keyed object-literal atom"
+        ],
+        "preconditions": [
+          "The property's value is an object."
+        ],
+        "completion_condition": "One atom establishes the keyed property as an object by placing the literal source key with value {} at the complete ancestor route before descendant atoms are emitted."
+      },
+      {
+        "operation_id": "F6",
+        "operation": "emit",
+        "object": "terminal object property",
+        "inputs": [
+          "literal source key",
+          "literal terminal value",
+          "ancestor route"
+        ],
+        "outputs": [
+          "one terminal-property atom"
+        ],
+        "preconditions": [
+          "The property's value is neither object nor array."
+        ],
+        "completion_condition": "Exactly one atom contains the terminal key and its exact source value at the complete ancestor route."
+      },
+      {
+        "operation_id": "F7",
+        "operation": "decompose",
+        "object": "keyed array-valued property",
+        "inputs": [
+          "literal source key",
+          "source array",
+          "ancestor route"
+        ],
+        "outputs": [
+          "one keyed array-literal atom",
+          "one atomic decomposition branch per array member"
+        ],
+        "preconditions": [
+          "The property's value is an array."
+        ],
+        "completion_condition": "The keyed property has one [] container atom and every array member has been independently decomposed without bundling multiple members into one payload atom."
+      },
+      {
+        "operation_id": "F8",
+        "operation": "decompose",
+        "object": "array member",
+        "inputs": [
+          "one source array member",
+          "array ancestor route"
+        ],
+        "outputs": [
+          "one or more atoms attributable to exactly that member"
+        ],
+        "preconditions": [
+          "F7 identified the member."
+        ],
+        "completion_condition": "At the array boundary, every content atom represents exactly one source member; descendants may preserve ancestor containers required to locate its facts."
+      },
+      {
+        "operation_id": "F9",
+        "operation": "suppress_or_emit",
+        "object": "anonymous intermediate container",
+        "inputs": [
+          "anonymous object or array encountered during recursive decomposition"
+        ],
+        "outputs": [
+          "no standalone atom when its existence and type are already entailed by deeper atoms",
+          "one standalone empty-container atom when the container is empty and would otherwise disappear"
+        ],
+        "preconditions": [
+          "The container has no literal source key at its immediate boundary."
+        ],
+        "completion_condition": "No redundant anonymous structural atom remains, and every empty anonymous container that would otherwise be lost is preserved."
+      },
+      {
+        "operation_id": "F10",
+        "operation": "preserve",
+        "object": "literal source semantics",
+        "inputs": [
+          "source keys",
+          "terminal values",
+          "nested routes"
+        ],
+        "outputs": [
+          "lossless atomic projection"
+        ],
+        "preconditions": [
+          "F3-F9 are operating."
+        ],
+        "completion_condition": "All original keys and terminal values are preserved exactly and provenance is represented only by retained nested JSON structure rather than added generic path or index metadata."
+      },
+      {
+        "operation_id": "F11",
+        "operation": "preserve",
+        "object": "canonical traversal order",
+        "inputs": [
+          "source object property order",
+          "source array member order"
+        ],
+        "outputs": [
+          "deterministically ordered projection"
+        ],
+        "preconditions": [
+          "Atoms are being emitted."
+        ],
+        "completion_condition": "Atoms occur in deterministic source traversal order and no shuffle has been applied."
+      },
+      {
+        "operation_id": "F12",
+        "operation": "validate",
+        "object": "atomicity",
+        "inputs": [
+          "projection"
+        ],
+        "outputs": [
+          "atomicity_validation"
+        ],
+        "preconditions": [
+          "Initial projection construction completed."
+        ],
+        "completion_condition": "Each atom contributes exactly one payload fact; object siblings are not bundled; multiple array members are not bundled."
+      },
+      {
+        "operation_id": "F13",
+        "operation": "validate",
+        "object": "container semantics",
+        "inputs": [
+          "source_json",
+          "projection"
+        ],
+        "outputs": [
+          "container_validation"
+        ],
+        "preconditions": [
+          "F12 completed."
+        ],
+        "completion_condition": "Root, keyed object, keyed array, and otherwise-disappearing empty anonymous containers are represented exactly as required, with no redundant anonymous intermediate atoms."
+      },
+      {
+        "operation_id": "F14",
+        "operation": "validate",
+        "object": "source coverage",
+        "inputs": [
+          "source_json",
+          "projection"
+        ],
+        "outputs": [
+          "coverage_validation"
+        ],
+        "preconditions": [
+          "F13 completed."
+        ],
+        "completion_condition": "Every source terminal property and every source array member is represented by the required atomic projection semantics with no omission or unauthorized duplication."
+      },
+      {
+        "operation_id": "F15",
+        "operation": "reconstruct",
+        "object": "source JSON from projection",
+        "inputs": [
+          "projection",
+          "original source ordering"
+        ],
+        "outputs": [
+          "reconstructed_json"
+        ],
+        "preconditions": [
+          "F14 completed."
+        ],
+        "completion_condition": "Recursive merging of atoms at matching nesting signatures, using canonical source order for arrays, produces a JSON value structurally and value-wise identical to source_json."
+      },
+      {
+        "operation_id": "F16",
+        "operation": "compare",
+        "object": "reconstructed JSON against canonical source JSON",
+        "inputs": [
+          "source_json",
+          "reconstructed_json"
+        ],
+        "outputs": [
+          "reconstruction_validation"
+        ],
+        "preconditions": [
+          "F15 completed."
+        ],
+        "completion_condition": "The reconstructed JSON and source JSON contain identical object keys, container types, array membership and ordering, terminal values, and complete nested structure."
+      },
+      {
+        "operation_id": "F17",
+        "operation": "serialize",
+        "object": "flattened projection",
+        "inputs": [
+          "projection"
+        ],
+        "outputs": [
+          "minified_projection_json"
+        ],
+        "preconditions": [
+          "F12-F16 pass."
+        ],
+        "completion_condition": "The projection is valid JSON and is minified without changing its structure or values."
+      },
+      {
+        "operation_id": "F18",
+        "operation": "return",
+        "object": "flattening result",
+        "inputs": [
+          "projection",
+          "validation results",
+          "source identity"
+        ],
+        "outputs": [
+          "return object conforming to return_schema"
+        ],
+        "preconditions": [
+          "All required validation operations completed."
+        ],
+        "completion_condition": "The return object conforms to return_schema and reports complete only when all required validation checks pass."
+      }
+    ],
+    "composition_relations": [
+      {
+        "before": "F1",
+        "after": "F2-F18"
+      },
+      {
+        "before": "F2",
+        "after": "F3-F18"
+      },
+      {
+        "before": "F3-F11",
+        "after": "F12-F16"
+      },
+      {
+        "before": "F12-F16",
+        "after": "F17"
+      },
+      {
+        "before": "F17",
+        "after": "F18"
+      }
+    ],
+    "recursive_decomposition_rules": [
+      {
+        "value_type": "object_root",
+        "rule": "Emit {} once, then recursively process each property in canonical source order."
+      },
+      {
+        "value_type": "array_root",
+        "rule": "Emit [] once, then recursively decompose each member independently in canonical source order."
+      },
+      {
+        "value_type": "keyed_object",
+        "rule": "Emit the keyed {} atom at the current ancestor route, then recursively process its properties."
+      },
+      {
+        "value_type": "keyed_array",
+        "rule": "Emit the keyed [] atom at the current ancestor route, then independently decompose each member."
+      },
+      {
+        "value_type": "terminal_property",
+        "rule": "Emit exactly one atom containing the literal key and literal value at the complete ancestor route."
+      },
+      {
+        "value_type": "nonempty_anonymous_object_or_array",
+        "rule": "Do not emit a standalone structural atom when descendant atoms already establish its existence and type."
+      },
+      {
+        "value_type": "empty_anonymous_object",
+        "rule": "Emit the empty object member because otherwise that source fact would disappear."
+      },
+      {
+        "value_type": "empty_anonymous_array",
+        "rule": "Emit the empty array member because otherwise that source fact would disappear."
+      },
+      {
+        "value_type": "array_terminal_member",
+        "rule": "Emit an atom containing exactly that one member at the array boundary with all required ancestors."
+      }
+    ]
+  },
+  "constraints": {
+    "required": [
+      "The output projection must be 100% valid JSON.",
+      "Every top-level projection element must contribute exactly one payload fact.",
+      "All source keys must remain literal and unchanged.",
+      "All terminal source values must remain literal and unchanged.",
+      "Ancestor objects and arrays may appear inside an atom only as required to preserve the route to its one payload fact.",
+      "Every keyed object-valued property must have its own keyed {} atom before descendant atoms.",
+      "Every keyed array-valued property must have its own keyed [] atom before member atoms.",
+      "Each array member must be independently decomposed.",
+      "An empty anonymous container that would otherwise disappear must be retained.",
+      "The deterministic projection must be constructed before any optional future shuffle."
+    ],
+    "prohibited": [
+      "Do not flatten into dotted paths.",
+      "Do not flatten into JSON Pointer strings.",
+      "Do not flatten into JSONPath expressions.",
+      "Do not emit generic path arrays.",
+      "Do not add array-index metadata to projection atoms.",
+      "Do not add separate provenance fields to projection atoms.",
+      "Do not rename source keys.",
+      "Do not convert scalar types.",
+      "Do not bundle sibling object properties into one payload atom.",
+      "Do not bundle multiple array members into one payload atom.",
+      "Do not emit redundant anonymous intermediate container atoms when descendants already establish the container's existence and type.",
+      "Do not shuffle raw keys, scalar values, nested atom content, characters, or internal object structure.",
+      "Do not use a preexisting flattened artifact as evidence that this procedure was executed."
+    ]
+  },
+  "invariants": [
+    {
+      "invariant_id": "I1",
+      "statement": "Every emitted atom adds exactly one payload fact."
+    },
+    {
+      "invariant_id": "I2",
+      "statement": "Every terminal source property appears exactly once as a terminal payload fact."
+    },
+    {
+      "invariant_id": "I3",
+      "statement": "Every keyed object or keyed array container fact appears exactly once as its corresponding empty-container atom."
+    },
+    {
+      "invariant_id": "I4",
+      "statement": "No atom contains payload facts from two sibling object properties."
+    },
+    {
+      "invariant_id": "I5",
+      "statement": "No atom contains more than one member at any decomposed array boundary."
+    },
+    {
+      "invariant_id": "I6",
+      "statement": "Nested structure inside an atom represents provenance through original JSON structure rather than auxiliary path metadata."
+    },
+    {
+      "invariant_id": "I7",
+      "statement": "The source JSON can be reconstructed losslessly when the projection is combined with the source's original array ordering."
+    }
+  ],
+  "verification_model": {
+    "checks": [
+      {
+        "check_id": "V1",
+        "claim": "Canonical source retrieved",
+        "pass_condition": "The complete Library JSON parses successfully."
+      },
+      {
+        "check_id": "V2",
+        "claim": "Projection is atomic",
+        "pass_condition": "Every projection element contributes exactly one payload fact."
+      },
+      {
+        "check_id": "V3",
+        "claim": "Terminal coverage is complete",
+        "pass_condition": "Every terminal property from source_json maps to exactly one terminal atom."
+      },
+      {
+        "check_id": "V4",
+        "claim": "Container coverage is complete",
+        "pass_condition": "All required root, keyed, and otherwise-disappearing empty containers are represented."
+      },
+      {
+        "check_id": "V5",
+        "claim": "No forbidden metadata was introduced",
+        "pass_condition": "No projection atom contains synthetic provenance keys, generic path fields, or array-index metadata."
+      },
+      {
+        "check_id": "V6",
+        "claim": "No sibling bundling occurred",
+        "pass_condition": "Each atom contains only the ancestor structure plus one payload fact."
+      },
+      {
+        "check_id": "V7",
+        "claim": "No array-member bundling occurred",
+        "pass_condition": "At each decomposed array boundary, a content atom contains exactly one source member."
+      },
+      {
+        "check_id": "V8",
+        "claim": "Reconstruction is lossless",
+        "pass_condition": "Reconstruction from projection plus original array order is structurally and value-wise identical to source_json."
+      },
+      {
+        "check_id": "V9",
+        "claim": "Output serialization is valid",
+        "pass_condition": "The final projection parses as valid JSON after minification."
+      }
+    ],
+    "completion_rule": "Status may be complete only if V1-V9 all pass in the current execution."
+  },
+  "termination": {
+    "complete_when": [
+      "F1-F18 have completed where applicable.",
+      "V1-V9 all pass.",
+      "The returned projection is the projection constructed during the current execution."
+    ],
+    "incomplete_when": [
+      "Flattening or validation work remains and can still be performed."
+    ],
+    "blocked_when": [
+      "The canonical Library source cannot be retrieved or parsed.",
+      "The governing flattening specification cannot be established.",
+      "Lossless reconstruction cannot be achieved without inventing semantics not authorized by the canonical procedure."
+    ],
+    "must_not_claim_complete_when": [
+      "Any source portion was not processed.",
+      "Any validation check is unevaluated or failed.",
+      "Completion is inferred from a preexisting flattened artifact.",
+      "The returned projection was not produced by the current execution."
+    ]
+  },
+  "return_contract": {
+    "format": "json",
+    "omission_policy": "No field required by the return_schema may be omitted. A complete status requires populated execution and validation evidence.",
+    "extension_policy": "Additional diagnostic fields may be added only when they do not alter the projection semantics or substitute for required fields."
+  },
+  "return_schema": {
+    "response_type": "flattened_json_projection",
+    "procedure_id": "flatten_ai_nlep_meta_procedure",
+    "status": "complete | incomplete | blocked | failed",
+    "source": {
+      "name": "string",
+      "library_path": "string",
+      "source_identity": "string",
+      "source_root_type": "object | array | scalar"
+    },
+    "flattening_authority": {
+      "repository": "string",
+      "path": "string",
+      "section": "string"
+    },
+    "execution": {
+      "operation_ledger": [
+        {
+          "operation_id": "F1-F18",
+          "status": "not_started | attempted | completed | failed | skipped_by_procedure",
+          "evidence": "string"
+        }
+      ]
+    },
+    "counts": {
+      "source_terminal_values": "integer",
+      "source_object_containers": "integer",
+      "source_array_containers": "integer",
+      "projection_atom_count": "integer"
+    },
+    "projection": [
+      "atomic nested JSON value"
+    ],
+    "projection_serialization": {
+      "minified": true,
+      "shuffle_applied": false,
+      "array_order_metadata_inside_atoms": false,
+      "separate_provenance_fields_inside_atoms": false
+    },
+    "original_order": {
+      "authority": "canonical source JSON",
+      "source_reference": "string",
+      "rule": "Use original source array order when reconstruction requires sequence."
+    },
+    "validation": {
+      "atomicity": "PASS | FAIL | UNEVALUATED",
+      "terminal_coverage": "PASS | FAIL | UNEVALUATED",
+      "container_coverage": "PASS | FAIL | UNEVALUATED",
+      "no_forbidden_metadata": "PASS | FAIL | UNEVALUATED",
+      "no_object_sibling_bundling": "PASS | FAIL | UNEVALUATED",
+      "no_array_member_bundling": "PASS | FAIL | UNEVALUATED",
+      "reconstruction": "PASS | FAIL | UNEVALUATED",
+      "valid_json": "PASS | FAIL | UNEVALUATED"
+    },
+    "reconstruction_result": {
+      "performed": "boolean",
+      "source_equivalent": "boolean",
+      "difference_count": "integer",
+      "differences": [
+        "object"
+      ]
+    },
+    "unresolved_defects": [
+      "object"
+    ]
+  }
+}
