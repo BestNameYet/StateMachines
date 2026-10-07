@@ -11,29 +11,19 @@
   "generic_reuse_message_history": false,
   "generic_inputs": [
     {
-      "key": "current_retrieval_workflow",
+      "key": "meta_procedure",
       "type": "file",
-      "path": "../../.github/workflows/untrusted-ai-test.yml"
+      "path": "../../untrusted AI/meta-procedure/731942_ai_nlep_meta_procedure.json"
     },
     {
-      "key": "http_status",
+      "key": "javascript_archive",
       "type": "file",
-      "path": "../../untrusted AI/shared-chat-status.txt"
+      "path": "../../untrusted AI/meta-procedure/TEMP/temp-js-files.zip"
     },
     {
-      "key": "http_headers",
+      "key": "agents_md_json_projection",
       "type": "file",
-      "path": "../../untrusted AI/shared-chat-headers.txt"
-    },
-    {
-      "key": "share_page_structural_diagnostics",
-      "type": "file",
-      "path": "../../untrusted AI/shared-chat-diagnostics.json"
-    },
-    {
-      "key": "known_artifact_fact",
-      "type": "literal",
-      "value": "GitHub reports untrusted AI/shared-chat-page.html as a successful HTTP 200 text/html capture whose current body is about 5.2 MB. The goal is to extract the complete shared ChatGPT conversation from that already-saved HTML into a machine-readable JSON file in untrusted AI. Do not propose another network-fetch mechanism unless the supplied evidence shows it is necessary."
+      "path": "../ComprehensionTasks/ProjectionsForTasks/agentsmdbaseproejction.json"
     }
   ],
   "evaluation_heuristic": "Act as a problem-solving implementation evaluator. Use only the supplied repository evidence. Determine the actual embedding/serialization mechanism visible in the diagnostics, then produce the smallest deterministic Node.js solution that reads the existing untrusted AI/shared-chat-page.html and extracts/reconstructs the complete shared conversation into untrusted AI/shared-chat.json. Prefer decoding the server-rendered React Router stream already present in the HTML over browser automation or undocumented network endpoints. Distinguish directly evidenced structure from inference. The implementation must fail loudly when expected markers or decoded conversation data are absent, preserve all conversation/message fields available in the embedded payload, and include concrete validation checks proving the resulting JSON contains the conversation rather than merely HTML or an encoded transport string. Return executable code, not pseudocode.",
