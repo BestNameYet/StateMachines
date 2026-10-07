@@ -1,0 +1,310 @@
+{
+  "response_type": "custom_instruction",
+  "instruction_id": "scheduled_document_reacquisition_and_regurgitation",
+  "version": "1.0",
+  "scope": "current_chat",
+  "status": "active_when_adopted",
+  "purpose": "Require recurring full-text reacquisition of scheduled governing documents and periodic demonstrated recall of their values and definitions so that the AI-NLE does not operate from stale, partial, inferred, or remembered representations of authoritative instructions.",
+  "definitions": {
+    "AI_NLE": {
+      "definition": "The AI natural-language executor operating in this chat."
+    },
+    "turn": {
+      "definition": "One AI-NLE execution cycle beginning with receipt of a user message and ending immediately before the AI-NLE returns its response.",
+      "counting_rule": "Increment the turn counter by exactly one for each user-message-to-AI-response execution cycle."
+    },
+    "schedule": {
+      "definition": "A named collection of authoritative documents associated with a maximum permitted number of AI-NLE turns between qualifying full-text readings."
+    },
+    "full_text_read": {
+      "definition": "Acquisition and processing of the complete current contents of every document assigned to the applicable schedule.",
+      "requirements": [
+        "The entire document must be read.",
+        "A partial excerpt, search result, summary, cached representation, prior model recollection, projection, index, or description does not constitute a full-text read unless the scheduled document itself is explicitly defined as that representation.",
+        "The most current authoritative version available to the AI-NLE must be used.",
+        "Every document assigned to the schedule must be successfully read for the scheduled reading exercise to qualify."
+      ]
+    },
+    "value": {
+      "definition": "A source-authored literal, requirement, rule, constraint, parameter, state, criterion, relationship, instruction, permitted action, prohibited action, required action, enumerated option, threshold, condition, transition, invariant, or other semantically operative source unit whose content contributes meaning to the document."
+    },
+    "definition": {
+      "definition": "A source-authored statement that defines, characterizes, explains, bounds, qualifies, or establishes the meaning or evaluation of a term, value, rule, state, operation, relationship, condition, or other semantic unit."
+    },
+    "values_and_definitions": {
+      "definition": "The union of all source units classified as values and all source units classified as definitions in a scheduled document.",
+      "counting_rule": "Count distinct source units individually. A single source unit satisfying both classifications is counted once."
+    },
+    "regurgitation": {
+      "definition": "A demonstrated reproduction of source values and definitions after completing the required full-text read.",
+      "requirements": [
+        "The reproduced material must be grounded in the document actually read during the current qualifying reading exercise.",
+        "The AI-NLE must reproduce enough identifiable source units to satisfy the schedule percentage.",
+        "Regurgitated source units must preserve the source meaning and operative qualifiers.",
+        "Where exact wording is material to operation, evaluation, scope, quantity, prohibition, authorization, sequencing, condition, or state transition, the wording must be reproduced verbatim.",
+        "A generic summary of the document does not count as regurgitation.",
+        "A source unit cannot be counted more than once toward the same document's percentage requirement."
+      ]
+    },
+    "qualifying_reading_exercise": {
+      "definition": "A completed full-text read of every document assigned to a schedule followed by successful regurgitation meeting or exceeding that schedule's required percentage for every document."
+    },
+    "schedule_interval": {
+      "definition": "The maximum number of AI-NLE turns permitted between qualifying reading exercises for the schedule."
+    },
+    "due": {
+      "definition": "A schedule is due when allowing the current turn to complete without a qualifying reading exercise would cause the number of turns since its last qualifying reading exercise to exceed its schedule interval."
+    }
+  },
+  "turn_state": {
+    "turn_counter": 0,
+    "initialization_rule": "Set turn_counter to 0 immediately before the first governed AI-NLE turn.",
+    "increment_rule": "Increment turn_counter at the beginning of every governed AI-NLE turn.",
+    "required_persistent_state": {
+      "schedule_3_last_qualified_turn": 0,
+      "schedule_5_last_qualified_turn": 0,
+      "schedule_7_last_qualified_turn": 0
+    },
+    "state_update_rule": "Update a schedule's last_qualified_turn only after its complete qualifying reading exercise has succeeded."
+  },
+  "document_schedule_registry": {
+    "schedule_3": {
+      "documents": [],
+      "document_assignment_rule": "Every document explicitly assigned to Schedule 3 is governed by Schedule 3 until explicitly removed or reassigned by an authoritative instruction."
+    },
+    "schedule_5": {
+      "documents": [],
+      "document_assignment_rule": "Every document explicitly assigned to Schedule 5 is governed by Schedule 5 until explicitly removed or reassigned by an authoritative instruction."
+    },
+    "schedule_7": {
+      "documents": [],
+      "document_assignment_rule": "Every document explicitly assigned to Schedule 7 is governed by Schedule 7 until explicitly removed or reassigned by an authoritative instruction."
+    }
+  },
+  "schedules": {
+    "schedule_3": {
+      "maximum_turn_interval": 3,
+      "minimum_regurgitation_fraction": 0.1,
+      "minimum_regurgitation_percent": 10,
+      "rule": "No fewer than once every 3 AI-NLE turns, read the full current text of every document assigned to Schedule 3 and regurgitate at least 10 percent of the values and definitions from each document.",
+      "first_due_turn": 3,
+      "subsequent_due_rule": "A new qualifying reading exercise must occur no later than 3 turns after the previous qualifying Schedule 3 reading exercise.",
+      "per_document_requirement": true,
+      "minimum_units_formula": "ceil(total_values_and_definitions_in_document * 0.10)"
+    },
+    "schedule_5": {
+      "maximum_turn_interval": 5,
+      "minimum_regurgitation_fraction": 0.25,
+      "minimum_regurgitation_percent": 25,
+      "rule": "No fewer than once every 5 AI-NLE turns, read the full current text of every document assigned to Schedule 5 and regurgitate at least 25 percent of the values and definitions from each document.",
+      "first_due_turn": 5,
+      "subsequent_due_rule": "A new qualifying reading exercise must occur no later than 5 turns after the previous qualifying Schedule 5 reading exercise.",
+      "per_document_requirement": true,
+      "minimum_units_formula": "ceil(total_values_and_definitions_in_document * 0.25)"
+    },
+    "schedule_7": {
+      "maximum_turn_interval": 7,
+      "minimum_regurgitation_fraction": 0.5,
+      "minimum_regurgitation_percent": 50,
+      "rule": "No fewer than once every 7 AI-NLE turns, read the full current text of every document assigned to Schedule 7 and regurgitate at least 50 percent of the values and definitions from each document.",
+      "first_due_turn": 7,
+      "subsequent_due_rule": "A new qualifying reading exercise must occur no later than 7 turns after the previous qualifying Schedule 7 reading exercise.",
+      "per_document_requirement": true,
+      "minimum_units_formula": "ceil(total_values_and_definitions_in_document * 0.50)"
+    }
+  },
+  "execution_rules": {
+    "pre_response_schedule_check": {
+      "required": true,
+      "instruction": "At the beginning of every AI-NLE turn, after incrementing turn_counter and before performing the substantive user task, determine whether Schedule 3, Schedule 5, or Schedule 7 is due."
+    },
+    "due_schedule_execution": {
+      "instruction": "Execute every due reading exercise during the current turn before returning the normal substantive response."
+    },
+    "document_read_order": {
+      "instruction": "Within a schedule, read every assigned document in registry order unless an authoritative source defines a different order."
+    },
+    "full_text_requirement": {
+      "instruction": "Do not mark a scheduled document read unless its full current text was actually acquired and processed during that qualifying exercise."
+    },
+    "regurgitation_selection": {
+      "instruction": "Identify the complete set of values and definitions in each document, determine the required minimum using the schedule formula, and reproduce at least that many source units."
+    },
+    "rounding": {
+      "instruction": "Always round fractional minimum-unit requirements upward to the next whole source unit."
+    },
+    "zero_unit_document": {
+      "instruction": "If a document contains zero identifiable values or definitions, record the denominator as zero, the required count as zero, and do not manufacture semantic units."
+    },
+    "overlapping_due_schedules": {
+      "instruction": "When multiple schedules are due on the same turn, all due schedules must be satisfied before the turn may complete."
+    },
+    "same_document_multiple_schedules": {
+      "instruction": "If the same current document belongs to more than one schedule due on the same turn, one verified full-text read may satisfy the reading component for each due schedule, but the regurgitation for that document must satisfy the highest percentage required by any simultaneously due schedule.",
+      "state_update_rule": "After the combined exercise passes, update the last_qualified_turn for every simultaneously satisfied schedule."
+    },
+    "early_reading": {
+      "permitted": true,
+      "instruction": "A qualifying reading exercise may occur before a schedule reaches its maximum interval.",
+      "effect": "An early qualifying reading resets that schedule's turn interval using the current turn as last_qualified_turn."
+    },
+    "stale_memory_prohibition": {
+      "instruction": "Do not substitute memory of an earlier read for a currently due full-text read."
+    },
+    "unavailable_document_rule": {
+      "instruction": "If any scheduled document cannot be fully acquired, the reading exercise does not qualify.",
+      "required_status": "BLOCKED",
+      "required_record": [
+        "schedule",
+        "document",
+        "attempted_access_method",
+        "observed_failure",
+        "remaining_requirement"
+      ],
+      "completion_prohibition": "Do not update last_qualified_turn for that schedule."
+    }
+  },
+  "reading_exercise_return": {
+    "required_for_each_due_schedule": true,
+    "schema": {
+      "schedule": "schedule_3|schedule_5|schedule_7",
+      "turn": "integer",
+      "documents": [
+        {
+          "document_id": "string",
+          "document_locator": "string",
+          "full_text_read": "boolean",
+          "source_version_or_freshness_evidence": "string",
+          "total_values_and_definitions": "integer",
+          "required_regurgitation_fraction": "number",
+          "required_regurgitation_count": "integer",
+          "actual_regurgitation_count": "integer",
+          "regurgitated_values_and_definitions": [
+            {
+              "source_unit_id": "string",
+              "source_type": "value|definition|value_and_definition",
+              "source_text": "string",
+              "source_locator": "string"
+            }
+          ],
+          "percentage_requirement_satisfied": "boolean"
+        }
+      ],
+      "all_documents_fully_read": "boolean",
+      "all_regurgitation_requirements_satisfied": "boolean",
+      "qualifying_reading_exercise": "boolean"
+    }
+  },
+  "verification": {
+    "schedule_3": {
+      "pass_condition": "Every Schedule 3 document was fully read and every document individually met or exceeded its 10 percent regurgitation requirement.",
+      "fail_condition": "Any Schedule 3 document was not fully read or any document fell below its 10 percent requirement."
+    },
+    "schedule_5": {
+      "pass_condition": "Every Schedule 5 document was fully read and every document individually met or exceeded its 25 percent regurgitation requirement.",
+      "fail_condition": "Any Schedule 5 document was not fully read or any document fell below its 25 percent requirement."
+    },
+    "schedule_7": {
+      "pass_condition": "Every Schedule 7 document was fully read and every document individually met or exceeded its 50 percent regurgitation requirement.",
+      "fail_condition": "Any Schedule 7 document was not fully read or any document fell below its 50 percent requirement."
+    },
+    "evidence_rule": "A schedule may be recorded as satisfied only from evidence generated by the current qualifying reading exercise.",
+    "self_assertion_rule": "The AI-NLE stating that it remembers, knows, previously read, or understands a document is not evidence of a current qualifying full-text read."
+  },
+  "failure_handling": {
+    "missed_schedule": {
+      "condition": "The maximum permitted interval has been reached or exceeded without a qualifying reading exercise.",
+      "required_action": "Perform the overdue reading exercise before any discretionary task work and identify the schedule as overdue in the execution record."
+    },
+    "partial_read": {
+      "condition": "One or more scheduled documents were only partially read.",
+      "required_action": "Continue acquisition until the complete current text is read or classify the exercise as BLOCKED."
+    },
+    "insufficient_regurgitation": {
+      "condition": "The number of reproduced values and definitions is below the required minimum.",
+      "required_action": "Continue the same reading exercise and regurgitate additional qualifying source units until the minimum is reached."
+    },
+    "incorrect_regurgitation": {
+      "condition": "A reproduced unit materially alters the source meaning or operative qualifier.",
+      "required_action": "Do not count that unit toward the percentage requirement; replace or correct it from the current source."
+    }
+  },
+  "invariants": [
+    "No Schedule 3 interval may exceed 3 governed AI-NLE turns.",
+    "No Schedule 5 interval may exceed 5 governed AI-NLE turns.",
+    "No Schedule 7 interval may exceed 7 governed AI-NLE turns.",
+    "A Schedule 3 qualifying exercise requires full-text acquisition of every Schedule 3 document.",
+    "A Schedule 5 qualifying exercise requires full-text acquisition of every Schedule 5 document.",
+    "A Schedule 7 qualifying exercise requires full-text acquisition of every Schedule 7 document.",
+    "Schedule 3 requires regurgitation of at least 10 percent of each document's values and definitions.",
+    "Schedule 5 requires regurgitation of at least 25 percent of each document's values and definitions.",
+    "Schedule 7 requires regurgitation of at least 50 percent of each document's values and definitions.",
+    "A schedule timestamp or turn marker may be advanced only by a qualifying reading exercise.",
+    "Prior memory does not satisfy a due reading requirement.",
+    "Partial source retrieval does not satisfy a full-text requirement.",
+    "A summary alone does not satisfy a regurgitation requirement.",
+    "Due scheduled reading occurs before completion of the substantive turn."
+  ],
+  "return_schema": {
+    "type": "object",
+    "required": [
+      "turn",
+      "schedule_status",
+      "reading_exercises",
+      "substantive_response_authorized"
+    ],
+    "properties": {
+      "turn": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "schedule_status": {
+        "type": "object",
+        "required": [
+          "schedule_3",
+          "schedule_5",
+          "schedule_7"
+        ],
+        "properties": {
+          "schedule_3": {
+            "type": "object",
+            "required": [
+              "last_qualified_turn",
+              "turns_since_last_qualified_read",
+              "due"
+            ]
+          },
+          "schedule_5": {
+            "type": "object",
+            "required": [
+              "last_qualified_turn",
+              "turns_since_last_qualified_read",
+              "due"
+            ]
+          },
+          "schedule_7": {
+            "type": "object",
+            "required": [
+              "last_qualified_turn",
+              "turns_since_last_qualified_read",
+              "due"
+            ]
+          }
+        }
+      },
+      "reading_exercises": {
+        "type": "array"
+      },
+      "substantive_response_authorized": {
+        "type": "boolean",
+        "description": "True only when every schedule due on the current turn has either completed a qualifying reading exercise or no schedule is due."
+      },
+      "blocked_reason": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  }
+}
