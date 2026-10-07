@@ -24,9 +24,14 @@
       "key": "agents_md_json_projection",
       "type": "file",
       "path": "../ComprehensionTasks/ProjectionsForTasks/agentsmdbaseproejction.json"
+    },
+    {
+      "key": "prior_specification",
+      "type": "file",
+      "path": "evaluations/gemini_prompt_procedure_spec_20261007_1/evaluation.json"
     }
   ],
-  "evaluation_heuristic": "Write the complete specification on this first evaluator pass. Use the supplied MetaProcedure, JavaScript source archive, and Agents.md JSON projection as the evidence base. The specification must define a procedure for communicating a prompt to Gemini. Do not return an analysis-only pass, discovery pass, questions, or a plan for later work. Add only the minimum additional rules necessary to make the procedure complete, internally coherent, and executable. The final output must conform to JWRS: include a 100-percent JSON jwrs_projection with an explicit return_schema, and in the same returned object execute that projection by providing the complete specification and all required artifacts. Return the necessary JavaScript implementation under the key gemini-prompt-communicator.js. Return the necessary GitHub Actions workflow YAML under the key gemini-prompt-workflow.yaml. Return the message and configuration template under the key gemini-prompt-message-config.json. The configuration template keys must be minimally verbose, comparable in compactness to the evaluator config, while covering every configuration category evidenced by the supplied archived JavaScript. Ground configuration categories in the archive; do not silently invent categories unsupported by the supplied inputs. Return executable code and complete YAML/JSON template content, not pseudocode.",
+  "evaluation_heuristic": "Write a complete JWRS AI-NLE procedure for sending a message to Gemini. Use all configured inputs, including the prior specification. The procedure must make response type, input files, heuristic/instructions, and every other previously used information/instruction/configuration category evidenced by the inputs configurable. Return exact executable JavaScript under gemini-message-executor.js. Return exact complete GitHub Actions YAML under gemini-message-workflow.yaml. Return a verbose config.json template whose concise keys cover the full evidenced configuration surface. The JavaScript, YAML, and config.json must agree exactly on field names and behavior. Cover message construction, model/API request settings, generation/output settings, timeouts/retries, paths, run identity, history where supported, input loading, persistence, validation, and failure reporting when evidenced. Do not return pseudocode or a discovery-only pass.",
   "evaluation_output_schema": {
     "response_type": "jwrs_execution_result",
     "jwrs_projection": {
@@ -35,17 +40,21 @@
       "return_schema": {}
     },
     "projection_printed_before_execution": true,
-    "specification": {
+    "ai_nle_procedure": {
+      "response_type": "ai_nle_procedure",
       "purpose": "",
-      "authorities": [],
+      "definitions": {},
+      "inputs": {},
+      "configuration_contract": {},
       "procedure": [],
-      "configuration_categories": [],
+      "validation": {},
+      "failure_handling": {},
       "invariants": [],
-      "failure_handling": {}
+      "return_schema": {}
     },
-    "gemini-prompt-communicator.js": "",
-    "gemini-prompt-workflow.yaml": "",
-    "gemini-prompt-message-config.json": {},
+    "gemini-message-executor.js": "",
+    "gemini-message-workflow.yaml": "",
+    "config.json": {},
     "same_turn_execution": true,
     "status": "COMPLETE | INCOMPLETE | BLOCKED | FAILED"
   },
