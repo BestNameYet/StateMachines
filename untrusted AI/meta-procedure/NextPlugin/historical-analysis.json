@@ -1,0 +1,929 @@
+{
+  "batch_count": 11,
+  "analysis_method": {
+    "files_examined": 152,
+    "source_files": 75,
+    "bytecode_files": 77,
+    "batch_rule": "Files were sorted by relative path and partitioned into batches of at most 15.",
+    "source_analysis": "Static AST/source inspection of imports, classes, functions, module variables, state structures, resource paths, protocol handlers, validation logic, tests, and call boundaries.",
+    "bytecode_analysis": "Static .pyc header, code-object, symbol, constant, and source-correspondence inspection using marshal/code metadata without executing bytecode.",
+    "execution_of_examined_code": false
+  },
+  "batches": [
+    {
+      "batch": 1,
+      "file_count": 15,
+      "py_count": 9,
+      "pyc_count": 6,
+      "files": [
+        "minimal-controller-clone/__pycache__/controller.cpython-312.pyc",
+        "minimal-controller-clone/__pycache__/controller.cpython-314.pyc",
+        "minimal-controller-clone/__pycache__/server.cpython-312.pyc",
+        "minimal-controller-clone/__pycache__/test_controller.cpython-312.pyc",
+        "minimal-controller-clone/__pycache__/test_controller.cpython-314.pyc",
+        "minimal-controller-clone/controller.py",
+        "minimal-controller-clone/server.py",
+        "minimal-controller-clone/test_controller.py",
+        "minimal-controller/controller.py",
+        "minimal-controller/server.py",
+        "minimal-controller/test_controller.py",
+        "mis-solver-query-v1-1/__pycache__/stdio_server.cpython-314.pyc",
+        "mis-solver-query-v1-1/runtime/original_execution_runtime/execution_contract_controller.py",
+        "mis-solver-query-v1-1/runtime/original_execution_runtime/runtime_carrier.py",
+        "mis-solver-query-v1-1/runtime/original_execution_runtime/runtime_client.py"
+      ],
+      "findings": [
+        "The minimal-controller family uses a thin MCP stdio shell around a stateful Controller object.",
+        "Transaction is a dataclass; Controller maintains an in-memory transaction dictionary and persists JSON receipts.",
+        "The basic state machine is questions -> answers -> script -> complete.",
+        "Validation is exact-schema oriented: response keys are explicitly compared rather than loosely accepted.",
+        "Receipt persistence uses temporary-file replacement, giving an atomic-write pattern.",
+        "minimal-controller-clone extends the state machine with architecture_choice and solution_application_questions before the ordinary question sequence.",
+        "The clone dynamically resolves solver-architecture-kb/scripts/server.py using importlib.util and calls architecture().",
+        "The large original execution controller is a deterministic contract/state controller with explicit schemas, protocols, integrity hashes, evidence classification, knowledge retrieval, action authorization, and impasse classification."
+      ],
+      "notable_functions": [
+        "Controller.start",
+        "Controller.respond",
+        "Controller.status",
+        "Controller.receipt",
+        "Controller._request",
+        "Controller._reject",
+        "Controller._save",
+        "Controller._design_architecture",
+        "dispatch",
+        "call_tool",
+        "seal",
+        "verify",
+        "emit",
+        "record",
+        "search_knowledge"
+      ],
+      "notable_variables": [
+        "SERVER_INFO",
+        "PROTOCOL_VERSION",
+        "TOOLS",
+        "Controller.transactions",
+        "Transaction.phase",
+        "CONTROL_VERSION",
+        "CONTRACT_PROTOCOL",
+        "KNOWLEDGE_QUERY_PROTOCOL",
+        "REALIZATION_PROTOCOL",
+        "EVIDENCE_PROTOCOL",
+        "IMPASSE_PROTOCOL",
+        "OP_KINDS",
+        "ACTION_ROLES",
+        "BEHAVIORAL_INSTRUCTIONS"
+      ],
+      "bytecode_notes": {
+        "source_correspondence": "Every .pyc in this batch maps to a sibling source file.",
+        "stale_snapshots": [
+          "minimal-controller-clone/__pycache__/controller.cpython-314.pyc",
+          "minimal-controller-clone/__pycache__/test_controller.cpython-314.pyc"
+        ],
+        "significance": "The stale clone bytecode predates the current architecture-selection additions, preserving an older design state."
+      }
+    },
+    {
+      "batch": 2,
+      "file_count": 15,
+      "py_count": 1,
+      "pyc_count": 14,
+      "files": [
+        "mis-solver-query-v1-1/runtime/original_execution_runtime/runtime_runner.py",
+        "mis-solver-query-v1-1/scripts/__pycache__/mis_cli.cpython-314.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/mis_controller.cpython-312.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/mis_controller.cpython-314.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/query_cli.cpython-314.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/retrieval_adapter.cpython-312.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/retrieval_adapter.cpython-314.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/server.cpython-312.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/server.cpython-314.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/server_integration.cpython-312.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/server_integration.cpython-314.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/solver_kb_adapter.cpython-312.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/solver_kb_adapter.cpython-314.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/solver_query.cpython-312.pyc",
+        "mis-solver-query-v1-1/scripts/__pycache__/solver_query.cpython-314.pyc"
+      ],
+      "findings": [
+        "runtime_runner.py bridges the deterministic execution-contract controller with runtime_client/carrier state.",
+        "Its design includes event reconstruction, recording-backlog handling, controller dispatch, and a carrier-event receipt schema.",
+        "The compiled MIS modules reveal the same principal boundaries later visible in source: MISController, retrieval adapter, server integration, solver KB adapter, solver query, and HTTP server.",
+        "Several CPython 3.12 caches are older than their present source equivalents, making this batch partly an implementation-history snapshot."
+      ],
+      "notable_functions": [
+        "runtime_runner.run",
+        "_event_from_output",
+        "_backlog_recording_instruction"
+      ],
+      "notable_variables": [
+        "CARRIER_EVENT_RECEIPT_SCHEMA"
+      ],
+      "bytecode_notes": {
+        "stale_snapshots": [
+          "mis-solver-query-v1-1/scripts/__pycache__/mis_controller.cpython-312.pyc",
+          "mis-solver-query-v1-1/scripts/__pycache__/server.cpython-312.pyc",
+          "mis-solver-query-v1-1/scripts/__pycache__/solver_kb_adapter.cpython-312.pyc",
+          "mis-solver-query-v1-1/scripts/__pycache__/solver_query.cpython-312.pyc"
+        ]
+      }
+    },
+    {
+      "batch": 3,
+      "file_count": 15,
+      "py_count": 9,
+      "pyc_count": 6,
+      "files": [
+        "mis-solver-query-v1-1/scripts/mis_cli.py",
+        "mis-solver-query-v1-1/scripts/mis_controller.py",
+        "mis-solver-query-v1-1/scripts/query_cli.py",
+        "mis-solver-query-v1-1/scripts/retrieval_adapter.py",
+        "mis-solver-query-v1-1/scripts/server.py",
+        "mis-solver-query-v1-1/scripts/server_integration.py",
+        "mis-solver-query-v1-1/scripts/solver_kb_adapter.py",
+        "mis-solver-query-v1-1/scripts/solver_query.py",
+        "mis-solver-query-v1-1/stdio_server.py",
+        "mis-solver-query-v1-1/tests/__pycache__/test_mis_query.cpython-312.pyc",
+        "mis-solver-query-v1-1/tests/__pycache__/test_mis_query.cpython-314.pyc",
+        "mis-solver-query-v1-1/tests/__pycache__/test_solver_query.cpython-312.pyc",
+        "mis-solver-query-v1-1/tests/__pycache__/test_solver_query.cpython-314.pyc",
+        "mis-solver-query-v1-1/tests/__pycache__/test_stdio_server.cpython-312.pyc",
+        "mis-solver-query-v1-1/tests/__pycache__/test_stdio_server.cpython-314.pyc"
+      ],
+      "findings": [
+        "This is a layered architecture: MCP transport -> server integration facade -> MISController -> retrieval abstraction -> SolverKnowledgeAdapter -> solver_query.",
+        "RetrievalAdapter is defined as a Protocol, allowing retrieval implementations to be swapped without changing MISController.",
+        "RetrievalResult is a dataclass carrying query, matches, status, adapter identity, provenance, and error information.",
+        "MISController separates user questions from external evidence acquisition.",
+        "Its state machine contains await_q1, questions, await_inquiry_plan, await_evidence, await_script, and complete.",
+        "Solver KB records are explicitly designated solver guidance rather than evidence for externally checkable claims.",
+        "The same tool implementation is exposed over both stdio MCP and an HTTP MCP server."
+      ],
+      "notable_functions": [
+        "MISController.start",
+        "MISController.respond",
+        "MISController._validate_inquiry_plan",
+        "MISController._validate_evidence",
+        "RetrievalService.retrieve",
+        "SolverKnowledgeAdapter.retrieve_context",
+        "search_knowledge",
+        "server_integration.controller_start",
+        "server_integration.retrieve_context",
+        "stdio_server.handle"
+      ],
+      "notable_variables": [
+        "RETRIEVAL_SERVICE",
+        "CONTROLLER",
+        "KB_PATH",
+        "KNOWLEDGE_TYPES",
+        "_TOKEN_RE",
+        "TOOLS"
+      ],
+      "bytecode_notes": {
+        "stale_snapshots": [
+          "mis-solver-query-v1-1/tests/__pycache__/test_mis_query.cpython-312.pyc",
+          "mis-solver-query-v1-1/tests/__pycache__/test_solver_query.cpython-312.pyc"
+        ],
+        "observation": "The older test bytecode still contains an earlier end-to-end protocol test while current source tests separately enforce world-evidence boundaries."
+      }
+    },
+    {
+      "batch": 4,
+      "file_count": 15,
+      "py_count": 7,
+      "pyc_count": 8,
+      "files": [
+        "mis-solver-query-v1-1/tests/test_mis_query.py",
+        "mis-solver-query-v1-1/tests/test_solver_query.py",
+        "mis-solver-query-v1-1/tests/test_stdio_server.py",
+        "mis-solver-query-v1-2/__pycache__/stdio_server.cpython-314.pyc",
+        "mis-solver-query-v1-2/runtime/original_execution_runtime/execution_contract_controller.py",
+        "mis-solver-query-v1-2/runtime/original_execution_runtime/runtime_carrier.py",
+        "mis-solver-query-v1-2/runtime/original_execution_runtime/runtime_client.py",
+        "mis-solver-query-v1-2/runtime/original_execution_runtime/runtime_runner.py",
+        "mis-solver-query-v1-2/scripts/__pycache__/mis_cli.cpython-314.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/mis_controller.cpython-312.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/mis_controller.cpython-314.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/query_cli.cpython-314.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/retrieval_adapter.cpython-312.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/retrieval_adapter.cpython-314.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/server.cpython-312.pyc"
+      ],
+      "findings": [
+        "The v1.1 tests encode architectural invariants, not merely unit behavior: KB guidance cannot be world evidence; external evidence must be separated; retrieval occurs before q1.",
+        "The original_execution_runtime files in v1.2 are byte-for-byte identical at source level to the copies in the other MIS packages.",
+        "That runtime uses integrity-sealed JSON payloads, explicit authority labels, transport protocols, a persistent event model, and a deterministic/semantic split.",
+        "Its operation taxonomy includes READ, SEARCH, CALCULATE, TRANSFORM, MUTATE, CREATE, DELETE, SEND, EXECUTE, WAIT, and OTHER."
+      ],
+      "notable_functions": [
+        "dispatch",
+        "handle_contract",
+        "handle_knowledge_query",
+        "handle_realization",
+        "handle_evidence",
+        "handle_impasse",
+        "_emit_task_action",
+        "evidence_request"
+      ],
+      "notable_variables": [
+        "VERDICTS",
+        "SCOPES",
+        "OP_KINDS",
+        "ACTION_ROLES",
+        "SEMANTIC_TRANSPORT_BY_PROTOCOL",
+        "RECORDER_MAX_DEPTH",
+        "RECORDER_MAX_CELL_CHARS"
+      ],
+      "bytecode_notes": {
+        "stale_snapshots": [
+          "mis-solver-query-v1-2/scripts/__pycache__/mis_controller.cpython-312.pyc",
+          "mis-solver-query-v1-2/scripts/__pycache__/retrieval_adapter.cpython-312.pyc",
+          "mis-solver-query-v1-2/scripts/__pycache__/server.cpython-312.pyc"
+        ]
+      }
+    },
+    {
+      "batch": 5,
+      "file_count": 15,
+      "py_count": 8,
+      "pyc_count": 7,
+      "files": [
+        "mis-solver-query-v1-2/scripts/__pycache__/server.cpython-314.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/server_integration.cpython-312.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/server_integration.cpython-314.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/solver_kb_adapter.cpython-312.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/solver_kb_adapter.cpython-314.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/solver_query.cpython-312.pyc",
+        "mis-solver-query-v1-2/scripts/__pycache__/solver_query.cpython-314.pyc",
+        "mis-solver-query-v1-2/scripts/mis_cli.py",
+        "mis-solver-query-v1-2/scripts/mis_controller.py",
+        "mis-solver-query-v1-2/scripts/query_cli.py",
+        "mis-solver-query-v1-2/scripts/retrieval_adapter.py",
+        "mis-solver-query-v1-2/scripts/server.py",
+        "mis-solver-query-v1-2/scripts/server_integration.py",
+        "mis-solver-query-v1-2/scripts/solver_kb_adapter.py",
+        "mis-solver-query-v1-2/scripts/solver_query.py"
+      ],
+      "findings": [
+        "v1.2 preserves the controller/retrieval/server layering of v1.1.",
+        "The major retrieval change is rank_all_knowledge(): every selected canonical KB record is returned in deterministic k-descending/id-ascending order rather than only a top-k subset.",
+        "Ranking uses BM25-style token scoring, exact ID/alias boosts, type priors, and separately reported one-hop link influence.",
+        "SolverKnowledgeAdapter converts ranked KB records into normalized RetrievalResult matches with explicit rank, k, score components, link provenance, and epistemic role.",
+        "retrieve_context becomes a complete-KB ranking interface rather than a small top-k lookup.",
+        "The HTTP server health response explicitly identifies version 1.2.0, HTTP transport, and /mcp."
+      ],
+      "notable_functions": [
+        "_score_records",
+        "rank_all_knowledge",
+        "search_knowledge",
+        "SolverKnowledgeAdapter.retrieve_context",
+        "call_tool"
+      ],
+      "notable_variables": [
+        "ROOT",
+        "KB_PATH",
+        "KNOWLEDGE_TYPES",
+        "_TOKEN_RE",
+        "RETRIEVAL_SERVICE",
+        "CONTROLLER"
+      ],
+      "bytecode_notes": {
+        "stale_snapshots": [
+          "mis-solver-query-v1-2/scripts/__pycache__/server_integration.cpython-312.pyc",
+          "mis-solver-query-v1-2/scripts/__pycache__/solver_kb_adapter.cpython-312.pyc",
+          "mis-solver-query-v1-2/scripts/__pycache__/solver_query.cpython-312.pyc"
+        ],
+        "observation": "The older solver_query bytecode does not contain _score_records/rank_all_knowledge, confirming that complete-KB ranking was added after that cache was produced."
+      }
+    },
+    {
+      "batch": 6,
+      "file_count": 15,
+      "py_count": 8,
+      "pyc_count": 7,
+      "files": [
+        "mis-solver-query-v1-2/stdio_server.py",
+        "mis-solver-query-v1-2/tests/__pycache__/test_http_server.cpython-314.pyc",
+        "mis-solver-query-v1-2/tests/__pycache__/test_mis_query.cpython-312.pyc",
+        "mis-solver-query-v1-2/tests/__pycache__/test_mis_query.cpython-314.pyc",
+        "mis-solver-query-v1-2/tests/__pycache__/test_solver_query.cpython-312.pyc",
+        "mis-solver-query-v1-2/tests/__pycache__/test_solver_query.cpython-314.pyc",
+        "mis-solver-query-v1-2/tests/__pycache__/test_stdio_server.cpython-312.pyc",
+        "mis-solver-query-v1-2/tests/__pycache__/test_stdio_server.cpython-314.pyc",
+        "mis-solver-query-v1-2/tests/test_http_server.py",
+        "mis-solver-query-v1-2/tests/test_mis_query.py",
+        "mis-solver-query-v1-2/tests/test_solver_query.py",
+        "mis-solver-query-v1-2/tests/test_stdio_server.py",
+        "mis-solver-query/runtime/original_execution_runtime/execution_contract_controller.py",
+        "mis-solver-query/runtime/original_execution_runtime/runtime_carrier.py",
+        "mis-solver-query/runtime/original_execution_runtime/runtime_client.py"
+      ],
+      "findings": [
+        "v1.2 explicitly tests parity across HTTP and stdio surfaces.",
+        "The tests assert that complete KB ranking contains every record sorted by k.",
+        "The stdio server remains a thin newline-delimited JSON-RPC adapter over the same TOOLS/call_tool implementation used by HTTP.",
+        "The base MIS package again contains the identical original execution runtime, demonstrating vendored duplication rather than shared-package dependency."
+      ],
+      "notable_functions": [
+        "stdio_server.send",
+        "stdio_server.handle",
+        "HttpServerTests.test_http_query_returns_complete_sorted_kb",
+        "QueryTests.test_full_kb_ranking_returns_every_record_sorted_by_k"
+      ],
+      "bytecode_notes": {
+        "stale_snapshots": [
+          "mis-solver-query-v1-2/tests/__pycache__/test_mis_query.cpython-312.pyc",
+          "mis-solver-query-v1-2/tests/__pycache__/test_solver_query.cpython-312.pyc",
+          "mis-solver-query-v1-2/tests/__pycache__/test_stdio_server.cpython-312.pyc"
+        ]
+      }
+    },
+    {
+      "batch": 7,
+      "file_count": 15,
+      "py_count": 9,
+      "pyc_count": 6,
+      "files": [
+        "mis-solver-query/runtime/original_execution_runtime/runtime_runner.py",
+        "mis-solver-query/scripts/__pycache__/mis_controller.cpython-314.pyc",
+        "mis-solver-query/scripts/__pycache__/retrieval_adapter.cpython-314.pyc",
+        "mis-solver-query/scripts/__pycache__/server.cpython-314.pyc",
+        "mis-solver-query/scripts/__pycache__/server_integration.cpython-314.pyc",
+        "mis-solver-query/scripts/__pycache__/solver_kb_adapter.cpython-314.pyc",
+        "mis-solver-query/scripts/__pycache__/solver_query.cpython-314.pyc",
+        "mis-solver-query/scripts/mis_cli.py",
+        "mis-solver-query/scripts/mis_controller.py",
+        "mis-solver-query/scripts/query_cli.py",
+        "mis-solver-query/scripts/retrieval_adapter.py",
+        "mis-solver-query/scripts/server.py",
+        "mis-solver-query/scripts/server_integration.py",
+        "mis-solver-query/scripts/solver_kb_adapter.py",
+        "mis-solver-query/scripts/solver_query.py"
+      ],
+      "findings": [
+        "The base MIS version shows the earlier architecture from which v1.1 evolved.",
+        "Its MISController has retrieval -> q1/questions -> script, without the later inquiry_plan/external_evidence phases.",
+        "The same retrieval abstraction and integration facade already exist, showing that v1.1 extended the controller state machine rather than replacing the overall architecture.",
+        "The original execution runtime runner remains a separate controller/carrier subsystem rather than being directly embedded into MCP dispatch."
+      ],
+      "notable_functions": [
+        "MISController.start",
+        "MISController.respond",
+        "RetrievalService.retrieve",
+        "SolverKnowledgeAdapter.retrieve_context",
+        "search_knowledge"
+      ],
+      "bytecode_notes": {
+        "stale_snapshots": [],
+        "observation": "The caches in this batch correspond to their present source sizes."
+      }
+    },
+    {
+      "batch": 8,
+      "file_count": 15,
+      "py_count": 6,
+      "pyc_count": 9,
+      "files": [
+        "mis-solver-query/stdio_server.py",
+        "mis-solver-query/tests/__pycache__/test_mis_query.cpython-314.pyc",
+        "mis-solver-query/tests/__pycache__/test_solver_query.cpython-314.pyc",
+        "mis-solver-query/tests/__pycache__/test_stdio_server.cpython-314.pyc",
+        "mis-solver-query/tests/test_mis_query.py",
+        "mis-solver-query/tests/test_solver_query.py",
+        "mis-solver-query/tests/test_stdio_server.py",
+        "semantic-runtime/__pycache__/http_server.cpython-314.pyc",
+        "semantic-runtime/__pycache__/server.cpython-314.pyc",
+        "semantic-runtime/__pycache__/test_http_server.cpython-314.pyc",
+        "semantic-runtime/__pycache__/test_script_builder.cpython-314.pyc",
+        "semantic-runtime/__pycache__/test_server.cpython-314.pyc",
+        "semantic-runtime/__pycache__/test_terminal_push.cpython-314.pyc",
+        "semantic-runtime/http_server.py",
+        "semantic-runtime/runtime/__init__.py"
+      ],
+      "findings": [
+        "Base MIS tests validate retrieval-before-question behavior and stdio MCP initialization/list/call behavior.",
+        "semantic-runtime introduces a different architecture: one transaction-oriented MCP surface backed by tokenized continuation addresses and terminal delivery.",
+        "semantic-runtime/http_server is not merely /mcp; it also exposes resolution, acknowledgement, and terminal-delivery operations around the same underlying runtime.",
+        "The semantic HTTP layer separates JSON-RPC errors from HTTP transport mechanics and delegates actual state transitions to Runner/DeliveryLedger."
+      ],
+      "notable_functions": [
+        "dispatch_http",
+        "Handler.do_GET",
+        "Handler.do_POST",
+        "Handler.resolve_address",
+        "Handler.acknowledge_delivery",
+        "Handler.read_terminal"
+      ],
+      "bytecode_notes": {
+        "stale_snapshots": [
+          "semantic-runtime/__pycache__/http_server.cpython-314.pyc"
+        ]
+      }
+    },
+    {
+      "batch": 9,
+      "file_count": 15,
+      "py_count": 4,
+      "pyc_count": 11,
+      "files": [
+        "semantic-runtime/runtime/__pycache__/__init__.cpython-314.pyc",
+        "semantic-runtime/runtime/__pycache__/address_codec.cpython-314.pyc",
+        "semantic-runtime/runtime/__pycache__/coordination_gate.cpython-314.pyc",
+        "semantic-runtime/runtime/__pycache__/delivery.cpython-314.pyc",
+        "semantic-runtime/runtime/__pycache__/runner.cpython-314.pyc",
+        "semantic-runtime/runtime/__pycache__/screen_paths.cpython-314.pyc",
+        "semantic-runtime/runtime/__pycache__/script_builder.cpython-314.pyc",
+        "semantic-runtime/runtime/__pycache__/script_validation.cpython-314.pyc",
+        "semantic-runtime/runtime/__pycache__/sheet_push.cpython-314.pyc",
+        "semantic-runtime/runtime/__pycache__/store.cpython-314.pyc",
+        "semantic-runtime/runtime/__pycache__/token_codec.cpython-314.pyc",
+        "semantic-runtime/runtime/address_codec.py",
+        "semantic-runtime/runtime/coordination_gate.py",
+        "semantic-runtime/runtime/delivery.py",
+        "semantic-runtime/runtime/runner.py"
+      ],
+      "findings": [
+        "Semantic Runtime represents execution position as self-contained encoded addresses rather than a conventional server-side transaction object.",
+        "Runner resolves an alias or token, optionally advances one transition, renders the new screen, and returns a continuation token.",
+        "DeliveryLedger adds replay-until-acknowledged semantics around addresses.",
+        "DeliveryLedger uses a threading.Lock, pending map, consumed-address set, acknowledged-delivery set, and terminal-to-address map.",
+        "Addresses become one-use only after acknowledgement; before acknowledgement the same pending result can be replayed.",
+        "coordination_gate is an interception layer around ordinary Runner transitions, providing HOLD/wait behavior without rewriting the core runner."
+      ],
+      "notable_functions": [
+        "encode_request",
+        "decode_request",
+        "Runner.transaction",
+        "Runner._advance",
+        "Runner._render",
+        "DeliveryLedger.resolve",
+        "DeliveryLedger.publish",
+        "DeliveryLedger.acknowledge",
+        "coordination_gate.context",
+        "coordination_gate.advance",
+        "coordination_gate.render"
+      ],
+      "notable_variables": [
+        "DeliveryLedger.pending",
+        "DeliveryLedger.consumed",
+        "DeliveryLedger.acknowledged",
+        "DeliveryLedger.terminals",
+        "PHASE_SCREEN"
+      ],
+      "bytecode_notes": {
+        "stale_snapshots": [],
+        "observation": "The CPython 3.14 runtime caches correspond to the current source modules."
+      }
+    },
+    {
+      "batch": 10,
+      "file_count": 15,
+      "py_count": 12,
+      "pyc_count": 3,
+      "files": [
+        "semantic-runtime/runtime/screen_paths.py",
+        "semantic-runtime/runtime/script_builder.py",
+        "semantic-runtime/runtime/script_validation.py",
+        "semantic-runtime/runtime/sheet_push.py",
+        "semantic-runtime/runtime/store.py",
+        "semantic-runtime/runtime/token_codec.py",
+        "semantic-runtime/server.py",
+        "semantic-runtime/test_catalog.py",
+        "semantic-runtime/test_http_server.py",
+        "semantic-runtime/test_script_builder.py",
+        "semantic-runtime/test_server.py",
+        "semantic-runtime/test_terminal_push.py",
+        "solver-architecture-kb/scripts/__pycache__/configure_tunnel.cpython-312.pyc",
+        "solver-architecture-kb/scripts/__pycache__/server.cpython-312.pyc",
+        "solver-architecture-kb/scripts/__pycache__/server.cpython-314.pyc"
+      ],
+      "findings": [
+        "DefinitionStore makes runtime behavior data-driven: aliases, immutable versioned scripts, and terminal mappings are ordinary JSON definitions.",
+        "Script versions are treated as immutable; an existing version may only be delivered again if identical.",
+        "token_codec encodes the full continuation state using compact URL-safe base64 JSON.",
+        "script_validation implements graph-level checks such as reachability to success, valid screen references, and path correctness.",
+        "script_builder is itself a runtime handler/state machine for constructing and publishing new scripts.",
+        "sheet_push provides an external delivery adapter to Apps Script.",
+        "semantic-runtime/server.py exposes exactly one MCP tool, transaction, despite the much larger internal runtime.",
+        "The MCP tool can operate locally or delegate statelessly to a configured Apps Script endpoint.",
+        "Tests target immutable versions, resumable tokens, failed-write retry behavior, HTTP acknowledgement semantics, and stdio MCP behavior."
+      ],
+      "notable_functions": [
+        "DefinitionStore.alias",
+        "DefinitionStore.script",
+        "DefinitionStore.publish_script",
+        "DefinitionStore.terminal",
+        "encode",
+        "decode",
+        "validate_script",
+        "validate_screen",
+        "reaches_success",
+        "script_builder.advance",
+        "script_builder.compile_script",
+        "push_delivery",
+        "call_transaction",
+        "dispatch"
+      ],
+      "notable_variables": [
+        "REQUIRED",
+        "PHASES",
+        "EXAMPLES",
+        "PROTOCOL_VERSION",
+        "SERVER_INFO",
+        "RUNNER",
+        "DELIVERIES",
+        "TERMINAL_STATE",
+        "TRANSACTION_TOOL"
+      ],
+      "bytecode_notes": {
+        "stale_snapshots": []
+      }
+    },
+    {
+      "batch": 11,
+      "file_count": 2,
+      "py_count": 2,
+      "pyc_count": 0,
+      "files": [
+        "solver-architecture-kb/scripts/configure_tunnel.py",
+        "solver-architecture-kb/scripts/server.py"
+      ],
+      "findings": [
+        "solver-architecture-kb is a compact HTTP MCP server implemented entirely with the Python standard library.",
+        "Its data layer is knowledge.jsonl plus ontology.json.",
+        "Retrieval uses token counters and TF-IDF-like cosine similarity.",
+        "classify() applies cue-based labels across ontology perspectives and marks unsupported dimensions needs-evidence.",
+        "architecture() combines classification with retrieved analogies and emits candidate architectures, selected stages, deterministic operations, semantic operations, coverage gaps, and stop conditions.",
+        "ingest_knowledge mutates the JSONL corpus and deterministically derives an ID from the record when one is absent.",
+        "configure_tunnel.py is a small configuration writer that requires an HTTPS tunnel URL."
+      ],
+      "notable_functions": [
+        "tokens",
+        "records",
+        "record_text",
+        "semantic_rank",
+        "classify",
+        "retrieve",
+        "architecture",
+        "call_tool",
+        "Handler.do_POST"
+      ],
+      "notable_variables": [
+        "ROOT",
+        "KB_PATH",
+        "ONTOLOGY",
+        "TOKEN",
+        "TOOLS"
+      ]
+    }
+  ],
+  "cross_batch_patterns": [
+    {
+      "pattern": "Thin MCP adapter over a separate implementation layer",
+      "source_observation": "server.py/stdio_server.py/http_server.py files largely implement initialize, ping, tools/list, tools/call, serialization, and errors, while Controller, MISController, Runner, retrieval adapters, or KB functions perform domain work."
+    },
+    {
+      "pattern": "Explicit state machines",
+      "source_observation": "Controller.phase, Tx.phase, Runner screen addresses, execution-contract predicate state, and builder phases all encode finite execution states explicitly rather than relying on conversational inference."
+    },
+    {
+      "pattern": "Schema-first interfaces",
+      "source_observation": "Tools carry JSON inputSchema definitions; controller prompts carry return_schema objects; many response handlers require exact keys and types."
+    },
+    {
+      "pattern": "Transport/domain separation",
+      "source_observation": "Several systems expose the same implementation through stdio and HTTP without duplicating domain logic."
+    },
+    {
+      "pattern": "StructuredContent plus text",
+      "source_observation": "MCP call results commonly return both serialized text content and structuredContent."
+    },
+    {
+      "pattern": "Event/receipt provenance",
+      "source_observation": "Minimal Controller, MISController, Execution Contract Controller, and Semantic Runtime all preserve explicit execution/event state in some form."
+    },
+    {
+      "pattern": "Deterministic validation before transition",
+      "source_observation": "State advancement is guarded by exact schema checks, transition membership, allowed enums, graph validation, or evidence/accounting checks."
+    },
+    {
+      "pattern": "Data-driven behavior",
+      "source_observation": "Solver behavior is substantially driven by JSON/JSONL KB records, ontology definitions, alias definitions, versioned scripts, terminal definitions, or return-schema objects rather than hard-coded monolithic flows."
+    },
+    {
+      "pattern": "Adapters around replaceable subsystems",
+      "source_observation": "RetrievalAdapter/NullRetrievalAdapter/SolverKnowledgeAdapter and Semantic Runtime's delivery/push layers isolate optional external mechanisms."
+    },
+    {
+      "pattern": "Boundary between deterministic and semantic work",
+      "source_observation": "The execution-contract runtime explicitly distinguishes deterministic actions/procedures from semantic requests; solver-architecture similarly labels deterministic_operations and semantic_operations."
+    },
+    {
+      "pattern": "Epistemic provenance separation",
+      "source_observation": "MIS v1.1/v1.2 treats KB records as solver guidance and explicitly prevents them from being submitted as world evidence."
+    },
+    {
+      "pattern": "Idempotency/retry-aware delivery",
+      "source_observation": "Atomic receipt replacement, immutable script publishing, replay-until-acknowledged delivery, deterministic hashes, and retry tests recur across implementations."
+    },
+    {
+      "pattern": "Global service singletons",
+      "source_observation": "controller, CONTROLLER, RETRIEVAL_SERVICE, RUNNER, DELIVERIES, and TERMINAL_STATE are module-level process objects.",
+      "inference": "These designs favor simple single-process service operation. In-memory state such as active transactions or terminal state does not itself imply restart persistence."
+    }
+  ],
+  "notable_functions_and_variables": [
+    {
+      "component": "Generic stdio MCP shell",
+      "functions": [
+        "send",
+        "result/send_result",
+        "error/send_error",
+        "dispatch/handle",
+        "call_tool",
+        "main"
+      ],
+      "variables": [
+        "SERVER_INFO",
+        "PROTOCOL_VERSION",
+        "TOOLS or TRANSACTION_TOOL"
+      ],
+      "role": "Newline-delimited JSON-RPC/MCP framing and tool dispatch."
+    },
+    {
+      "component": "Minimal Controller",
+      "functions": [
+        "Controller.start",
+        "Controller.respond",
+        "Controller.status",
+        "Controller.receipt",
+        "Controller._request",
+        "Controller._reject",
+        "Controller._save"
+      ],
+      "variables": [
+        "Transaction.transaction_id",
+        "desired_state",
+        "phase",
+        "questions",
+        "answers",
+        "question_index",
+        "script",
+        "events"
+      ],
+      "role": "Small explicit interrogation state machine."
+    },
+    {
+      "component": "Minimal Controller Clone",
+      "functions": [
+        "_ask_architecture_choice",
+        "_ask_solution_application_questions",
+        "_validate_architecture_choice",
+        "_design_architecture"
+      ],
+      "variables": [
+        "architecture",
+        "architecture_source",
+        "architecture_error",
+        "architecture_choice"
+      ],
+      "role": "Adds architecture retrieval/selection as a prerequisite to domain interrogation."
+    },
+    {
+      "component": "MIS Controller",
+      "functions": [
+        "start",
+        "respond",
+        "_q1_instruction",
+        "_inquiry_plan_instruction",
+        "_evidence_instruction",
+        "_script_instruction",
+        "_validate_inquiry_plan",
+        "_validate_evidence",
+        "prospective_state",
+        "receipt",
+        "finalize"
+      ],
+      "variables": [
+        "retrieval_matches",
+        "retrieval_adapter_id",
+        "retrieval_provenance",
+        "inquiry_plan",
+        "external_evidence",
+        "unresolved_evidence",
+        "events",
+        "final_script",
+        "post_report"
+      ],
+      "role": "State machine that separates solver guidance, user-provided information, external evidence, and executable procedure generation."
+    },
+    {
+      "component": "Knowledge retrieval",
+      "functions": [
+        "_tokens",
+        "_flatten_text",
+        "_record_search_text",
+        "_link_ids",
+        "_score_records",
+        "search_knowledge",
+        "rank_all_knowledge",
+        "SolverKnowledgeAdapter.retrieve_context"
+      ],
+      "variables": [
+        "KB_PATH",
+        "KNOWLEDGE_TYPES",
+        "_TOKEN_RE"
+      ],
+      "role": "Deterministic lexical/BM25-style ranking and normalized retrieval."
+    },
+    {
+      "component": "Execution Contract Controller",
+      "functions": [
+        "seal",
+        "verify",
+        "emit",
+        "record",
+        "contract_output_schema",
+        "knowledge_query_output_schema",
+        "realization_output_schema",
+        "search_knowledge",
+        "knowledge_query_request",
+        "realization_request",
+        "evidence_request",
+        "impasse_request",
+        "_emit_task_action",
+        "handle_contract",
+        "handle_knowledge_query",
+        "handle_realization",
+        "handle_evidence",
+        "handle_impasse",
+        "dispatch"
+      ],
+      "variables": [
+        "CONTROL_VERSION",
+        "INITIALIZATION_SCHEMA",
+        "PAYLOAD_SCHEMA",
+        "CONTRACT_SCHEMA",
+        "KNOWLEDGE_SCHEMA",
+        "SEMANTIC_TRANSPORT_BY_PROTOCOL",
+        "VERDICTS",
+        "SCOPES",
+        "OP_KINDS",
+        "ACTION_ROLES",
+        "BEHAVIORAL_INSTRUCTIONS"
+      ],
+      "role": "Formal controller alternating deterministic protocol/state enforcement with explicitly requested semantic decisions."
+    },
+    {
+      "component": "Semantic Runtime",
+      "functions": [
+        "Runner.transaction",
+        "Runner._advance",
+        "Runner._render",
+        "DefinitionStore.alias",
+        "DefinitionStore.script",
+        "DefinitionStore.publish_script",
+        "DeliveryLedger.resolve",
+        "DeliveryLedger.publish",
+        "DeliveryLedger.acknowledge",
+        "token_codec.encode",
+        "token_codec.decode",
+        "validate_script",
+        "script_builder.advance"
+      ],
+      "variables": [
+        "RUNNER",
+        "DELIVERIES",
+        "TERMINAL_STATE",
+        "TRANSACTION_TOOL",
+        "REQUIRED",
+        "PHASES",
+        "EXAMPLES"
+      ],
+      "role": "Token-addressed finite-state execution and terminal delivery engine behind a single MCP tool."
+    },
+    {
+      "component": "Solver Architecture KB",
+      "functions": [
+        "semantic_rank",
+        "classify",
+        "retrieve",
+        "architecture",
+        "call_tool"
+      ],
+      "variables": [
+        "ROOT",
+        "KB_PATH",
+        "ONTOLOGY",
+        "TOKEN",
+        "TOOLS"
+      ],
+      "role": "Ontology-guided architecture retrieval/synthesis exposed as HTTP MCP."
+    }
+  ],
+  "dependency_model": {
+    "third_party_python_packages_observed": [],
+    "stdlib_heavy": true,
+    "common_standard_library_dependencies": [
+      "json",
+      "pathlib",
+      "sys",
+      "typing",
+      "copy",
+      "hashlib",
+      "uuid",
+      "re",
+      "dataclasses",
+      "argparse",
+      "math",
+      "http.server",
+      "urllib",
+      "socket",
+      "threading",
+      "subprocess",
+      "unittest"
+    ],
+    "local_dependency_chains": [
+      "minimal-controller/server.py -> controller.py",
+      "minimal-controller-clone/server.py -> controller.py -> optional solver-architecture-kb/scripts/server.py",
+      "mis-solver-query/stdio_server.py -> scripts/server.py -> scripts/server_integration.py -> MISController/RetrievalService/SolverKnowledgeAdapter -> solver_query.py",
+      "semantic-runtime/server.py -> Runner + DefinitionStore + DeliveryLedger + sheet_push -> runtime modules",
+      "solver-architecture-kb/scripts/server.py -> data/knowledge.jsonl + assets/ontology.json"
+    ],
+    "resource_dependencies": [
+      "MIS: data/execution_knowledge_base.json",
+      "Execution runtime: execution_knowledge_base.json plus runtime manifest/state/overlay/event files",
+      "Semantic Runtime: definitions/aliases/*.json, definitions/scripts/*.json, definitions/terminals.json",
+      "Solver Architecture KB: data/knowledge.jsonl and assets/ontology.json"
+    ],
+    "external_service_edges": [
+      "Semantic Runtime optionally posts to Google Apps Script.",
+      "Semantic Runtime terminal metadata constructs Google Sheets URLs.",
+      "Solver Architecture KB and MIS v1.2 can be exposed through an HTTP/tunnel configuration."
+    ]
+  },
+  "versioning_and_duplication": {
+    "py_count": 75,
+    "pyc_count": 77,
+    "pyc_python_versions": {
+      "cpython-3.14": 54,
+      "cpython-3.12": 23
+    },
+    "orphan_pyc_without_source": 0,
+    "pyc_matching_current_source_size": 59,
+    "pyc_stale_relative_to_current_source_size": 18,
+    "important_conclusion": "The .pyc set is useful both as compiled confirmation of source structure and as implementation-history evidence, but it must not be assumed that every .pyc represents the current adjacent .py.",
+    "major_duplicate_family": {
+      "files": [
+        "runtime/original_execution_runtime/execution_contract_controller.py",
+        "runtime/original_execution_runtime/runtime_carrier.py",
+        "runtime/original_execution_runtime/runtime_client.py",
+        "runtime/original_execution_runtime/runtime_runner.py"
+      ],
+      "observation": "These four source files are byte-for-byte identical across mis-solver-query, mis-solver-query-v1-1, and mis-solver-query-v1-2."
+    },
+    "evolution": [
+      "Base MIS: retrieval -> user q1 -> script.",
+      "MIS v1.1: adds explicit inquiry planning and external-evidence acquisition, and prohibits solver-KB guidance from masquerading as world evidence.",
+      "MIS v1.2: retains the v1.1 state machine but changes retrieval toward complete canonical-KB ranking using rank_all_knowledge and adds HTTP-specific validation/tests.",
+      "minimal-controller-clone: evolves the minimal controller by inserting solver-architecture selection and application-specific questioning.",
+      "Semantic Runtime: represents a separate design lineage emphasizing tokenized continuation state, immutable data-defined scripts, single-tool MCP exposure, and acknowledged delivery."
+    ]
+  },
+  "mcp_architecture_findings": [
+    {
+      "finding": "The irreducible protocol shell is small.",
+      "details": "Across these servers, the recurring MCP core is initialize + ping + tools/list + tools/call + JSON-RPC result/error framing. Domain complexity is optional and sits behind that boundary."
+    },
+    {
+      "finding": "Tool definitions are data.",
+      "details": "TOOLS lists or TRANSACTION_TOOL dictionaries define name, description, and inputSchema separately from the dispatch implementation."
+    },
+    {
+      "finding": "One MCP endpoint can hide a large runtime.",
+      "details": "semantic-runtime exposes only transaction while internally containing routing, continuation tokens, graph validation, script construction, delivery acknowledgement, terminal state, and Apps Script integration."
+    },
+    {
+      "finding": "stdio and HTTP are interchangeable outer transports in these designs.",
+      "details": "MIS exposes the same call_tool/TOOLS domain surface through stdio_server.py and scripts/server.py."
+    },
+    {
+      "finding": "The most reusable MCP boundary is transport -> tool registry -> dispatcher -> domain function.",
+      "details": "This pattern appears in minimal-controller, MIS, semantic-runtime, and solver-architecture-kb with different amounts of machinery behind the domain function."
+    },
+    {
+      "finding": "State does not need to live in the MCP protocol layer.",
+      "details": "State is delegated to Controller/Tx objects, encoded continuation tokens, definition files, delivery ledgers, or formal controller payloads."
+    },
+    {
+      "finding": "Exact structured contracts are favored over free-form messages.",
+      "details": "The code repeatedly validates exact keys, required properties, enums, IDs, state transitions, evidence accounting, and graph structure before accepting a transition."
+    },
+    {
+      "finding": "The examined implementations require no third-party MCP SDK.",
+      "details": "The MCP protocol is implemented directly using Python standard-library JSON, stdin/stdout, and http.server primitives."
+    }
+  ],
+  "status": "COMPLETE"
+}
