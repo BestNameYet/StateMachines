@@ -1,0 +1,54 @@
+{
+  "task": "Create an executable Node.js script that rebuilds the saved ChatGPT shared-page HTML while changing only boolean true values belonging to three exact serialized conversation metadata keys to false.",
+  "source_html": "untrusted AI/shared-chat-page.html",
+  "existing_extractor": "untrusted AI/extract-shared-chat.js",
+  "target_keys": [
+    "is_visually_hidden_from_conversation",
+    "is_redacted",
+    "hide_inline_actions"
+  ],
+  "known_decoded_occurrences": {
+    "is_visually_hidden_from_conversation": {
+      "total": 767,
+      "true": 673,
+      "false": 94,
+      "commentary_true": 349
+    },
+    "is_redacted": {
+      "total": 1806,
+      "true": 1806,
+      "commentary_true": 1030
+    },
+    "hide_inline_actions": {
+      "total": 301,
+      "true": 301,
+      "commentary_true": 80
+    },
+    "reasoning_recap_type_hide_all": 19
+  },
+  "source_structure": {
+    "transport": "React Router streamController.enqueue string containing a flattened JSON array",
+    "enqueue_chunks_found": 2,
+    "main_payload_selection": "first decoded enqueue string whose trimmed form starts with '['",
+    "important_flattening_fact": "Property names may be deduplicated strings referenced by object keys like _<index>, and boolean values may also be shared slots. Do not mutate a globally shared true slot if unrelated properties reference it; retarget only selected properties to a false slot (existing or newly appended)."
+  },
+  "requirements": [
+    "Accept input HTML path and output HTML path as CLI arguments.",
+    "Locate and decode the main streamController.enqueue JSON-string argument without executing arbitrary page JavaScript.",
+    "Parse the flattened payload array.",
+    "Identify each object property whose decoded property-name string is exactly one of the three target keys.",
+    "If that property's referenced semantic value is boolean true, change only that property to semantic false.",
+    "Preserve existing false values.",
+    "Do not globally replace true literals or mutate a shared true slot used by unrelated properties.",
+    "Do not change reasoning_recap_type='hide_all'.",
+    "Re-serialize the changed main payload back into the original enqueue call while preserving the remainder of the HTML byte-for-byte where possible.",
+    "Fail loudly when the expected stream payload or target keys are absent.",
+    "Print a JSON summary containing per-key changed counts and input/output paths."
+  ],
+  "validation_expectations": [
+    "All source target-key true values become false.",
+    "No non-target semantic values change.",
+    "The non-boolean hide_all reasoning marker remains unchanged.",
+    "The rebuilt HTML is accepted by the existing extract-shared-chat.js mechanism."
+  ]
+}
