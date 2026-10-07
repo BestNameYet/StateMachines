@@ -1,0 +1,63 @@
+{
+  "response_type": "aichannel_architecture_decision",
+  "repository_findings": {
+    "most_optimized_persistent_control_surface": {
+      "plugin": "semantic-runtime",
+      "basis": [
+        "One MCP tool (`transaction`) fronts a much larger runtime.",
+        "Behavior lives in definitions/aliases/scripts instead of tool proliferation.",
+        "Continuation state is explicit and resumable.",
+        "Delivery/acknowledgement semantics distinguish produced output from acknowledged delivery.",
+        "Immutable versioned definitions reduce silent behavior drift."
+      ],
+      "qualification": "This is the best control surface among the examined plugins; MCP exposure itself does not guarantee an agent will call the tool unless the host/plugin instruction surface requires or strongly routes behavior through it."
+    },
+    "less_optimized_surfaces": [
+      {
+        "plugin": "minimal-controller",
+        "reason": "Clear controller design, but four separate MCP tools expose lifecycle mechanics directly."
+      },
+      {
+        "plugin": "mis-solver-query-v1-2",
+        "reason": "Strong epistemic/retrieval design, but controller/retrieval operations remain a wider multi-tool surface."
+      },
+      {
+        "plugin": "solver-architecture-kb",
+        "reason": "Compact server, but behavior is largely hard-coded functions plus mutable KB rather than a general behavior runtime."
+      }
+    ]
+  },
+  "configurable_mcp_architecture": {
+    "name": "AIChannel",
+    "surface": "One stable model-controlled MCP tool: ai_channel.",
+    "actions": [
+      "invoke",
+      "configure",
+      "get_config",
+      "list_behaviors",
+      "status",
+      "receipt"
+    ],
+    "behavior_model": "Versioned JSON behavior definitions composed from a fixed internal operation registry.",
+    "state_model": "Explicit transaction_id identifies application state; state is durable in SQLite and pinned to the configuration version that created it.",
+    "transition_model": "Data-defined state machines with initial/current/final states and event-named transitions.",
+    "persistence": "SQLite config versions, active-config pointer, transactions, append-only events/receipts.",
+    "safety_boundary": "Configuration selects fixed operations; no eval/import/dynamic Python module execution.",
+    "transport": "Current implementation is stdio and supports a legacy initialization path plus modern server/discover/tools calls; runtime is transport-independent.",
+    "runtime_reconfiguration": "configure replaces the entire active configuration atomically with optional expected_version compare-and-swap.",
+    "observability": "Every state-machine transaction has an ordered receipt.",
+    "extensibility": "New deterministic capabilities are added once to OperationRegistry, then composed by behavior config without changing the MCP surface."
+  },
+  "likely_final_goal": {
+    "classification": "inference",
+    "inference": "The prior plugin lineages appear to be converging on a persistent, procedure-driven agent control plane: one small stable host-facing interface, with behavior represented as versioned data/state-machine definitions, explicit evidence/receipts, and reusable deterministic primitives rather than a new bespoke MCP server for each workflow.",
+    "supporting_observations": [
+      "minimal-controller externalizes transaction state and receipts.",
+      "MIS separates retrieval/evidence/controller roles and evolves through versioned controller behavior.",
+      "semantic-runtime collapses the external MCP surface to one transaction tool while moving behavior into definitions and continuation state.",
+      "solver-architecture-kb turns problem-solving architecture selection into a callable reusable service.",
+      "MetaProcedure formalizes semantic projection, state/transition models, verification, and return contracts."
+    ]
+  },
+  "implemented_target": "AIChannel prototype in this directory."
+}

@@ -1,0 +1,42 @@
+{
+  "response_type": "aichannel_verification",
+  "static_checks": {
+    "generated_json_files_parsed": 10,
+    "authored_python_files_parsed": 6,
+    "source_archive_members": 75,
+    "source_archive_only_py": true,
+    "source_archive_uncompressed_bytes": 496238,
+    "exact_code_bits_verified": 19,
+    "exact_code_bits_total": 19
+  },
+  "executed_tests": {
+    "unit_tests": {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v",
+      "tests_run": 6,
+      "failures": 0,
+      "errors": 0,
+      "result": "PASS"
+    },
+    "mcp_stdio_smoke": {
+      "operations": [
+        "tools/list",
+        "tools/call ai_channel echo"
+      ],
+      "observed_echo": {
+        "message": "hello"
+      },
+      "result": "PASS"
+    }
+  },
+  "untrusted_code_execution": {
+    "prior_plugin_code_executed": false,
+    "note": "Prior plugin source was inspected statically only."
+  },
+  "known_limits": [
+    "The implementation is a prototype stdio MCP server, not a formal MCP conformance-suite certification.",
+    "HTTP transport and OAuth are intentionally not implemented; external-source security requirements are recorded for a future remote transport.",
+    "The fixed internal operation registry covers the reusable behavior classes observed in the plugins but does not attempt byte-for-byte emulation of every prior plugin."
+  ],
+  "errors": [],
+  "status": "COMPLETE"
+}

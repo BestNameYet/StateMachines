@@ -1,0 +1,131 @@
+{
+  "response_type": "external_best_practices",
+  "researched_on": "2026-10-07",
+  "sources": [
+    {
+      "id": "EXT1",
+      "title": "Model Context Protocol Specification \u2014 2026-07-28",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28"
+    },
+    {
+      "id": "EXT2",
+      "title": "Model Context Protocol \u2014 Tools \u2014 2026-07-28",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
+    },
+    {
+      "id": "EXT3",
+      "title": "Model Context Protocol \u2014 Transports Overview \u2014 2026-07-28",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports"
+    },
+    {
+      "id": "EXT4",
+      "title": "Model Context Protocol \u2014 Authorization \u2014 2026-07-28",
+      "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization"
+    },
+    {
+      "id": "EXT5",
+      "title": "Model Context Protocol \u2014 Security Best Practices \u2014 2026-07-28",
+      "url": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices"
+    },
+    {
+      "id": "EXT6",
+      "title": "The 2026-07-28 Specification",
+      "url": "https://blog.modelcontextprotocol.io/posts/2026-07-28/"
+    },
+    {
+      "id": "EXT7",
+      "title": "State Chart XML (SCXML): State Machine Notation for Control Abstraction 1.0",
+      "url": "https://www.w3.org/TR/scxml/"
+    },
+    {
+      "id": "EXT8",
+      "title": "JSON Schema: A Media Type for Describing JSON Documents \u2014 Draft 2020-12",
+      "url": "https://json-schema.org/draft/2020-12/json-schema-core"
+    },
+    {
+      "id": "EXT9",
+      "title": "JSON Schema Validation: A Vocabulary for Structural Validation of JSON \u2014 Draft 2020-12",
+      "url": "https://json-schema.org/draft/2020-12/json-schema-validation"
+    },
+    {
+      "id": "EXT10",
+      "title": "Atomic Commit In SQLite",
+      "url": "https://www.sqlite.org/atomiccommit.html"
+    },
+    {
+      "id": "EXT11",
+      "title": "Write-Ahead Logging",
+      "url": "https://www.sqlite.org/wal.html"
+    },
+    {
+      "id": "EXT12",
+      "title": "The Twelve-Factor App \u2014 III. Config",
+      "url": "https://www.12factor.net/config"
+    }
+  ],
+  "derived_practices": [
+    {
+      "practice": "Keep the MCP protocol surface stateless and put application continuity in explicit handles/state.",
+      "sources": [
+        "EXT1",
+        "EXT6"
+      ],
+      "application": "AIChannel uses transaction_id; SQLite state is application state, not MCP connection state."
+    },
+    {
+      "practice": "Keep a deterministic, schema-described tool surface; structured output should conform to an output schema.",
+      "sources": [
+        "EXT2",
+        "EXT8",
+        "EXT9"
+      ],
+      "application": "AIChannel exposes one stable tool with JSON Schema 2020-12 input/output definitions."
+    },
+    {
+      "practice": "Separate protocol semantics from transport binding.",
+      "sources": [
+        "EXT3"
+      ],
+      "application": "Runtime/internal API does not depend on stdio framing; server.py is the transport adapter."
+    },
+    {
+      "practice": "For long-lived behavior, use explicit deterministic states, transition guards, and run-to-completion semantics.",
+      "sources": [
+        "EXT7"
+      ],
+      "application": "Behavior configuration has explicit initial state, states, transitions, events, and final states."
+    },
+    {
+      "practice": "Persist configuration/state transactionally rather than with ad-hoc partially written files.",
+      "sources": [
+        "EXT10",
+        "EXT11"
+      ],
+      "application": "SQLite stores configuration versions, transaction state, and receipts; WAL is enabled."
+    },
+    {
+      "practice": "Treat deployment secrets/credentials separately from behavior configuration.",
+      "sources": [
+        "EXT4",
+        "EXT12"
+      ],
+      "application": "AIChannel behavior config contains no credentials; stdio credentials, if ever needed, must come from environment."
+    },
+    {
+      "practice": "Use least privilege and do not pass through tokens intended for other resources.",
+      "sources": [
+        "EXT4",
+        "EXT5"
+      ],
+      "application": "Current stdio prototype performs no remote OAuth/token forwarding; any HTTP extension must validate resource/audience and scopes."
+    },
+    {
+      "practice": "Configuration must not become a code-injection channel.",
+      "sources": [
+        "EXT5",
+        "EXT9"
+      ],
+      "application": "Runtime configuration can only name fixed internal operations; it cannot contain Python/eval."
+    }
+  ]
+}

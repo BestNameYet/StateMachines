@@ -1,0 +1,284 @@
+{
+  "response_type": "plugin_implementation_internal_api",
+  "version": "1.0",
+  "purpose": "Normalize reusable implementation primitives observed in prior MCP plugins into an auditable internal API for AIChannel.",
+  "authority_policy": {
+    "source_code": "Exact .py source under plugin-python-sources.zip is authoritative for code snippets.",
+    "historical_analysis": "historical-analysis.json is secondary synthesis and does not override source.",
+    "pyc": "Compiled caches are historical/supporting evidence only when current source differs."
+  },
+  "primitives": [
+    {
+      "api": "mcp.dispatch(request) -> result",
+      "pattern": "Thin transport shell delegates tools/call to a domain dispatcher.",
+      "derived_from": [
+        "S1",
+        "S2",
+        "S16",
+        "S19"
+      ],
+      "aichannel_realization": "server.dispatch + AIChannelRuntime.call"
+    },
+    {
+      "api": "config.replace(config, expected_version?) -> version",
+      "pattern": "Configuration is separated from transport and versioned; changes are explicit state transitions.",
+      "derived_from": [
+        "S14"
+      ],
+      "aichannel_realization": "Store.replace_config + AIChannelRuntime.configure"
+    },
+    {
+      "api": "transaction.start(behavior, state) -> transaction_id",
+      "pattern": "Long-lived application state uses an explicit transaction handle rather than transport-session state.",
+      "derived_from": [
+        "S3",
+        "S4",
+        "S12",
+        "S15"
+      ],
+      "aichannel_realization": "Store.create_transaction + AIChannelRuntime._state_machine"
+    },
+    {
+      "api": "transaction.advance(transaction_id, event, input) -> state/output",
+      "pattern": "Explicit state-machine transition guarded by current state and accepted event/schema.",
+      "derived_from": [
+        "S4",
+        "S12"
+      ],
+      "aichannel_realization": "AIChannelRuntime._state_machine"
+    },
+    {
+      "api": "receipt.read(transaction_id) -> ordered events",
+      "pattern": "Execution history is a first-class receipt rather than inferred from final state.",
+      "derived_from": [
+        "S4",
+        "S12"
+      ],
+      "aichannel_realization": "Store.append_event + Store.receipt"
+    },
+    {
+      "api": "operation.run(name, context, specification)",
+      "pattern": "Behavior composition refers to fixed operation names, separating data-defined behavior from executable implementation.",
+      "derived_from": [
+        "S1",
+        "S6",
+        "S16",
+        "S19"
+      ],
+      "aichannel_realization": "OperationRegistry.run"
+    },
+    {
+      "api": "retrieval.rank(query, corpus) -> ordered matches",
+      "pattern": "Retrieval is a replaceable internal capability with deterministic ranking/provenance.",
+      "derived_from": [
+        "S7",
+        "S8",
+        "S9",
+        "S17"
+      ],
+      "aichannel_realization": "op_retrieve"
+    },
+    {
+      "api": "continuation.encode/decode(state) -> explicit handle",
+      "pattern": "Continuation state is explicit and portable rather than hidden in the MCP connection.",
+      "derived_from": [
+        "S10",
+        "S11"
+      ],
+      "aichannel_realization": "AIChannel uses transaction_id plus persisted state rather than opaque token; token codec remains an alternative implementation."
+    },
+    {
+      "api": "delivery.resolve/publish/acknowledge",
+      "pattern": "Replay-until-acknowledged delivery protects against ambiguous delivery state.",
+      "derived_from": [
+        "S12"
+      ],
+      "aichannel_realization": "Receipt ledger is implemented; acknowledgement can be added as a registered operation without changing MCP surface."
+    },
+    {
+      "api": "definitions.load/publish(versioned behavior)",
+      "pattern": "Immutable/versioned definitions move behavior out of server code.",
+      "derived_from": [
+        "S14"
+      ],
+      "aichannel_realization": "Versioned config rows in SQLite; state-machine transactions are pinned to config_version."
+    }
+  ],
+  "exact_code_bits": [
+    {
+      "snippet_id": "S1",
+      "source_path": "minimal-controller/server.py",
+      "source_sha256": "630f02cd6f535ef115d74e9186616639e5773d007dc434af8bfc5a3bf5e3bf88",
+      "symbol": "call_tool",
+      "start_line": 75,
+      "end_line": 89,
+      "code": "def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:\n    handlers: dict[str, Callable[..., dict[str, Any]]] = {\n        \"controller_start\": controller.start,\n        \"controller_respond\": controller.respond,\n        \"controller_status\": controller.status,\n        \"controller_receipt\": controller.receipt,\n    }\n    if name not in handlers:\n        raise ValueError(f\"unknown tool: {name}\")\n    structured = handlers[name](**arguments)\n    return {\n        \"content\": [{\"type\": \"text\", \"text\": json.dumps(structured, ensure_ascii=False)}],\n        \"structuredContent\": structured,\n        \"isError\": False,\n    }"
+    },
+    {
+      "snippet_id": "S2",
+      "source_path": "minimal-controller/server.py",
+      "source_sha256": "630f02cd6f535ef115d74e9186616639e5773d007dc434af8bfc5a3bf5e3bf88",
+      "symbol": "dispatch",
+      "start_line": 92,
+      "end_line": 120,
+      "code": "def dispatch(message: dict[str, Any]) -> None:\n    method = message.get(\"method\")\n    request_id = message.get(\"id\")\n    params = message.get(\"params\") or {}\n    if request_id is None:\n        return\n    try:\n        if method == \"initialize\":\n            result(\n                request_id,\n                {\n                    \"protocolVersion\": PROTOCOL_VERSION,\n                    \"capabilities\": {\"tools\": {\"listChanged\": False}},\n                    \"serverInfo\": SERVER_INFO,\n                },\n            )\n        elif method == \"ping\":\n            result(request_id, {})\n        elif method == \"tools/list\":\n            result(request_id, {\"tools\": TOOLS})\n        elif method == \"tools/call\":\n            result(request_id, call_tool(params.get(\"name\", \"\"), params.get(\"arguments\") or {}))\n        else:\n            error(request_id, -32601, f\"method not found: {method}\")\n    except (TypeError, ValueError) as exc:\n        error(request_id, -32602, str(exc))\n    except Exception as exc:\n        print(f\"controller server error: {exc}\", file=sys.stderr, flush=True)\n        error(request_id, -32603, \"internal controller error\")"
+    },
+    {
+      "snippet_id": "S3",
+      "source_path": "minimal-controller/controller.py",
+      "source_sha256": "c1584612a982f0bc06ce07622c1553fc08ae065467471138c95a801cba3d73bf",
+      "symbol": "Transaction",
+      "start_line": 12,
+      "end_line": 20,
+      "code": "class Transaction:\n    transaction_id: str\n    desired_state: str\n    phase: str = \"questions\"\n    questions: list[str] = field(default_factory=list)\n    answers: list[dict[str, str]] = field(default_factory=list)\n    question_index: int = 0\n    script: str | None = None\n    events: list[dict[str, Any]] = field(default_factory=list)"
+    },
+    {
+      "snippet_id": "S4",
+      "source_path": "minimal-controller/controller.py",
+      "source_sha256": "c1584612a982f0bc06ce07622c1553fc08ae065467471138c95a801cba3d73bf",
+      "symbol": "Controller",
+      "start_line": 23,
+      "end_line": 185,
+      "code": "class Controller:\n    \"\"\"Deterministic instruction, validation, and receipt controller.\"\"\"\n\n    def __init__(self, receipt_dir: Path | None = None) -> None:\n        self.transactions: dict[str, Transaction] = {}\n        self.receipt_dir = receipt_dir or self._default_receipt_dir()\n\n    def start(self, desired_state: str) -> dict[str, Any]:\n        if not isinstance(desired_state, str) or not desired_state.strip():\n            raise ValueError(\"desired_state must be a non-empty string\")\n        transaction_id = str(uuid.uuid4())\n        transaction = Transaction(transaction_id, desired_state.strip())\n        self.transactions[transaction_id] = transaction\n        request = self._request(\n            transaction,\n            \"Create a list of questions q1 that would assist a solver such as yourself in meeting \"\n            \"the desired state. Return only the required return schema.\",\n            {\"q1\": [\"<question>\"]},\n        )\n        self._save(transaction)\n        return {\"transaction_id\": transaction_id, **request}\n\n    def respond(self, transaction_id: str, response: dict[str, Any]) -> dict[str, Any]:\n        transaction = self._require(transaction_id)\n        if not isinstance(response, dict):\n            return self._reject(transaction, \"response must be a JSON object\")\n\n        if transaction.phase == \"questions\":\n            error = self._validate_questions(response)\n            if error:\n                return self._reject(transaction, error)\n            self._record(transaction, \"stdin\", response)\n            transaction.questions = response[\"q1\"]\n            if transaction.questions:\n                transaction.phase = \"answers\"\n                result = self._ask_current_question(transaction)\n            else:\n                result = self._ask_for_script(transaction)\n        elif transaction.phase == \"answers\":\n            error = self._validate_answer(response)\n            if error:\n                return self._reject(transaction, error)\n            self._record(transaction, \"stdin\", response)\n            question = transaction.questions[transaction.question_index]\n            transaction.answers.append({\"question\": question, \"answer\": response[\"answer\"]})\n            transaction.question_index += 1\n            if transaction.question_index < len(transaction.questions):\n                result = self._ask_current_question(transaction)\n            else:\n                result = self._ask_for_script(transaction)\n        elif transaction.phase == \"script\":\n            error = self._validate_script(response)\n            if error:\n                return self._reject(transaction, error)\n            self._record(transaction, \"stdin\", response)\n            transaction.script = response[\"script\"]\n            transaction.phase = \"complete\"\n            result = {\n                \"transaction_id\": transaction_id,\n                \"status\": \"complete\",\n                \"message\": \"Thanks, that completes the interrogation.\",\n                \"script\": transaction.script,\n                \"execution\": \"not_run\",\n            }\n            self._record(transaction, \"stdout\", result)\n        else:\n            raise ValueError(\"transaction is already complete\")\n\n        self._save(transaction)\n        return result\n\n    def status(self, transaction_id: str) -> dict[str, Any]:\n        transaction = self._require(transaction_id)\n        return {\n            \"transaction_id\": transaction.transaction_id,\n            \"desired_state\": transaction.desired_state,\n            \"phase\": transaction.phase,\n            \"question_index\": transaction.question_index,\n            \"question_count\": len(transaction.questions),\n            \"complete\": transaction.phase == \"complete\",\n        }\n\n    def receipt(self, transaction_id: str) -> dict[str, Any]:\n        return asdict(self._require(transaction_id))\n\n    def _ask_current_question(self, transaction: Transaction) -> dict[str, Any]:\n        return {\n            \"transaction_id\": transaction.transaction_id,\n            **self._request(\n                transaction,\n                transaction.questions[transaction.question_index],\n                {\"answer\": \"<answer>\"},\n            ),\n        }\n\n    def _ask_for_script(self, transaction: Transaction) -> dict[str, Any]:\n        transaction.phase = \"script\"\n        request = {\n            \"instruction\": \"Return a script using qa1 as the context parameter. Return only the required return schema.\",\n            \"qa1\": transaction.answers,\n            \"return_schema\": {\"script\": \"<script>\"},\n        }\n        self._record(transaction, \"stdout\", request)\n        return {\"transaction_id\": transaction.transaction_id, **request}\n\n    def _request(self, transaction: Transaction, instruction: str, schema: dict[str, Any]) -> dict[str, Any]:\n        request = {\"instruction\": instruction, \"return_schema\": schema}\n        self._record(transaction, \"stdout\", request)\n        return request\n\n    def _reject(self, transaction: Transaction, error: str) -> dict[str, Any]:\n        previous = next(event[\"data\"] for event in reversed(transaction.events) if event[\"stream\"] == \"stdout\")\n        result = {\"error\": error, \"repeat\": previous}\n        self._record(transaction, \"validation\", result)\n        self._save(transaction)\n        return result\n\n    @staticmethod\n    def _validate_questions(value: dict[str, Any]) -> str | None:\n        if set(value) != {\"q1\"}:\n            return \"response keys must be exactly ['q1']\"\n        if not isinstance(value[\"q1\"], list) or not all(isinstance(q, str) for q in value[\"q1\"]):\n            return \"q1 must be a JSON array of strings\"\n        return None\n\n    @staticmethod\n    def _validate_answer(value: dict[str, Any]) -> str | None:\n        if set(value) != {\"answer\"}:\n            return \"response keys must be exactly ['answer']\"\n        return None if isinstance(value[\"answer\"], str) else \"answer must be a string\"\n\n    @staticmethod\n    def _validate_script(value: dict[str, Any]) -> str | None:\n        if set(value) != {\"script\"}:\n            return \"response keys must be exactly ['script']\"\n        return None if isinstance(value[\"script\"], str) else \"script must be a string\"\n\n    def _require(self, transaction_id: str) -> Transaction:\n        try:\n            return self.transactions[transaction_id]\n        except KeyError:\n            raise ValueError(\"unknown transaction_id\") from None\n\n    @staticmethod\n    def _record(transaction: Transaction, stream: str, data: dict[str, Any]) -> None:\n        transaction.events.append({\"sequence\": len(transaction.events), \"stream\": stream, \"data\": data})\n\n    def _save(self, transaction: Transaction) -> None:\n        self.receipt_dir.mkdir(parents=True, exist_ok=True)\n        path = self.receipt_dir / f\"{transaction.transaction_id}.json\"\n        temporary = path.with_suffix(\".tmp\")\n        temporary.write_text(json.dumps(asdict(transaction), ensure_ascii=False, indent=2), encoding=\"utf-8\")\n        temporary.replace(path)\n\n    @staticmethod\n    def _default_receipt_dir() -> Path:\n        override = os.environ.get(\"ECC_DATA_DIR\")\n        if override:\n            return Path(override)\n        local_app_data = os.environ.get(\"LOCALAPPDATA\")\n        if local_app_data:\n            return Path(local_app_data) / \"ExecutionContractController\" / \"receipts\"\n        return Path.home() / \".execution-contract-controller\" / \"receipts\""
+    },
+    {
+      "snippet_id": "S5",
+      "source_path": "mis-solver-query-v1-2/scripts/retrieval_adapter.py",
+      "source_sha256": "b2ced0fda6fd496656c6c604ebe79730ae1c66c0990ba203a138b7346f4c9ecd",
+      "symbol": "RetrievalResult",
+      "start_line": 9,
+      "end_line": 27,
+      "code": "class RetrievalResult:\n    \"\"\"Normalized result consumed by MIS and returned by the public retrieval boundary.\"\"\"\n\n    query: str\n    matches: list[dict[str, Any]] = field(default_factory=list)\n    status: str = \"ok\"\n    adapter_id: str = \"null\"\n    provenance: dict[str, Any] = field(default_factory=dict)\n    error: str | None = None\n\n    def to_dict(self) -> dict[str, Any]:\n        return {\n            \"query\": self.query,\n            \"matches\": copy.deepcopy(self.matches),\n            \"status\": self.status,\n            \"adapter_id\": self.adapter_id,\n            \"provenance\": copy.deepcopy(self.provenance),\n            \"error\": self.error,\n        }"
+    },
+    {
+      "snippet_id": "S6",
+      "source_path": "mis-solver-query-v1-2/scripts/retrieval_adapter.py",
+      "source_sha256": "b2ced0fda6fd496656c6c604ebe79730ae1c66c0990ba203a138b7346f4c9ecd",
+      "symbol": "RetrievalAdapter",
+      "start_line": 31,
+      "end_line": 37,
+      "code": "class RetrievalAdapter(Protocol):\n    \"\"\"Future Solver/KB adapters implement exactly this local Python interface.\"\"\"\n\n    adapter_id: str\n\n    def retrieve_context(self, query: str, limit: int = 52) -> RetrievalResult | Mapping[str, Any]:\n        ..."
+    },
+    {
+      "snippet_id": "S7",
+      "source_path": "mis-solver-query-v1-2/scripts/retrieval_adapter.py",
+      "source_sha256": "b2ced0fda6fd496656c6c604ebe79730ae1c66c0990ba203a138b7346f4c9ecd",
+      "symbol": "RetrievalService",
+      "start_line": 49,
+      "end_line": 116,
+      "code": "class RetrievalService:\n    \"\"\"Single fail-open normalization boundary shared by MIS and public tool calls.\"\"\"\n\n    def __init__(self, adapter: RetrievalAdapter | None = None):\n        self.adapter: RetrievalAdapter = adapter or NullRetrievalAdapter()\n\n    def set_adapter(self, adapter: RetrievalAdapter | None) -> None:\n        self.adapter = adapter or NullRetrievalAdapter()\n\n    def retrieve(self, query: str, limit: int = 52) -> RetrievalResult:\n        if not isinstance(query, str) or not query.strip():\n            raise ValueError(\"query must be a non-empty string\")\n        if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1 or limit > 52:\n            raise ValueError(\"limit must be an integer from 1 to 52\")\n\n        adapter_id = str(getattr(self.adapter, \"adapter_id\", self.adapter.__class__.__name__))\n        try:\n            raw = self.adapter.retrieve_context(query, limit)\n            return self._normalize(query, raw, adapter_id)\n        except Exception as exc:  # Retrieval must not prevent a transaction from starting.\n            return RetrievalResult(\n                query=query,\n                matches=[],\n                status=\"error\",\n                adapter_id=adapter_id,\n                provenance={},\n                error=f\"{exc.__class__.__name__}: {exc}\",\n            )\n\n    @staticmethod\n    def _normalize(\n        query: str,\n        raw: RetrievalResult | Mapping[str, Any],\n        fallback_adapter_id: str,\n    ) -> RetrievalResult:\n        if isinstance(raw, RetrievalResult):\n            candidate = raw.to_dict()\n        elif isinstance(raw, Mapping):\n            candidate = dict(raw)\n        else:\n            raise TypeError(\"adapter result must be RetrievalResult or mapping\")\n\n        matches = candidate.get(\"matches\", [])\n        if not isinstance(matches, list) or not all(isinstance(item, Mapping) for item in matches):\n            raise TypeError(\"adapter result 'matches' must be a list of mappings\")\n\n        provenance = candidate.get(\"provenance\", {})\n        if provenance is None:\n            provenance = {}\n        if not isinstance(provenance, Mapping):\n            raise TypeError(\"adapter result 'provenance' must be a mapping\")\n\n        status = candidate.get(\"status\", \"ok\")\n        if status not in {\"ok\", \"error\"}:\n            raise ValueError(\"adapter result 'status' must be 'ok' or 'error'\")\n\n        error = candidate.get(\"error\")\n        if error is not None and not isinstance(error, str):\n            raise TypeError(\"adapter result 'error' must be a string or null\")\n\n        return RetrievalResult(\n            query=query,\n            matches=[copy.deepcopy(dict(item)) for item in matches],\n            status=status,\n            adapter_id=str(candidate.get(\"adapter_id\") or fallback_adapter_id),\n            provenance=copy.deepcopy(dict(provenance)),\n            error=error,\n        )"
+    },
+    {
+      "snippet_id": "S8",
+      "source_path": "mis-solver-query-v1-2/scripts/solver_query.py",
+      "source_sha256": "a43740ab1f9c95b5679eae4d31c2b79ff179dc441974e1ea81128cda3e443473",
+      "symbol": "_score_records",
+      "start_line": 49,
+      "end_line": 77,
+      "code": "def _score_records(query: str, records: list[dict[str, Any]], cfg: dict[str, Any]) -> list[tuple[float,dict[str,Any]]]:\n    qset=set(_tokens(query))\n    docs={}; df={}\n    for r in records:\n        toks=_tokens(_record_search_text(r)); docs[r[\"id\"]]=toks\n        for tok in set(toks): df[tok]=df.get(tok,0)+1\n    n=len(records); avgdl=sum(map(len,docs.values()))/max(n,1)\n    priors=cfg.get(\"type_prior\",{}) if isinstance(cfg.get(\"type_prior\"),dict) else {}\n    scored=[]; low_query=query.lower()\n    for r in records:\n        toks=docs[r[\"id\"]]; counts={}\n        for tok in toks: counts[tok]=counts.get(tok,0)+1\n        score=0.0\n        for tok in qset:\n            if tok not in counts: continue\n            freq=counts[tok]\n            idf=math.log(1.0+(n-df.get(tok,0)+0.5)/(df.get(tok,0)+0.5))\n            denom=freq+1.2*(1-0.75+0.75*len(toks)/max(avgdl,1.0))\n            score += idf*(freq*2.2/denom)\n        kid=str(r[\"id\"]).lower()\n        if kid in low_query: score += 8.0\n        retrieval=r.get(\"retrieval\",{}) if isinstance(r.get(\"retrieval\"),dict) else {}\n        aliases=retrieval.get(\"aliases\",[])\n        if isinstance(aliases,list):\n            for alias in aliases:\n                if isinstance(alias,str) and alias.lower() in low_query: score += 4.0\n        score *= float(priors.get(r.get(\"type\"),1.0))\n        scored.append((score,r))\n    return scored"
+    },
+    {
+      "snippet_id": "S9",
+      "source_path": "mis-solver-query-v1-2/scripts/solver_query.py",
+      "source_sha256": "a43740ab1f9c95b5679eae4d31c2b79ff179dc441974e1ea81128cda3e443473",
+      "symbol": "rank_all_knowledge",
+      "start_line": 80,
+      "end_line": 123,
+      "code": "def rank_all_knowledge(query: str, requested_types: list[str]|None=None, kb_path: str|pathlib.Path=KB_PATH) -> dict[str, Any]:\n    \"\"\"Return every selected canonical record sorted by final relevance value ``k``.\n\n    ``k`` is the native BM25-style score plus deterministic exact-id/alias boosts\n    and the type prior. One-hop link influence is exposed separately so it cannot\n    displace a stronger direct match. Zero-score records remain in the result.\n    \"\"\"\n    if not isinstance(query,str) or not query.strip(): raise ValueError(\"knowledge query must be non-empty\")\n    kb=load_kb(kb_path)\n    cfg=kb.get(\"retrieval\",{}) if isinstance(kb.get(\"retrieval\"),dict) else {}\n    types=requested_types or sorted(KNOWLEDGE_TYPES)\n    bad=[t for t in types if t not in KNOWLEDGE_TYPES]\n    if bad: raise ValueError(f\"unknown knowledge types: {bad}\")\n    records=[r for r in kb[\"records\"] if isinstance(r,dict) and r.get(\"type\") in types]\n    base=_score_records(query,records,cfg)\n    base_by_id={r[\"id\"]:score for score,r in base}\n    bonus_by_id={r[\"id\"]:0.0 for _,r in base}\n    linked_from={r[\"id\"]:[] for _,r in base}\n    for score,r in base:\n        if score <= 0: continue\n        for linked_id in _link_ids(r):\n            if linked_id in bonus_by_id:\n                bonus_by_id[linked_id] += score*0.35\n                linked_from[linked_id].append(r[\"id\"])\n    ranked=[]\n    for _,r in base:\n        record_id=r[\"id\"]\n        base_score=base_by_id[record_id]\n        link_bonus=bonus_by_id[record_id]\n        ranked.append({\n            \"id\":record_id,\n            \"type\":r[\"type\"],\n            \"k\":round(base_score,6),\n            \"score_components\":{\"base\":round(base_score,6),\"link_bonus\":round(link_bonus,6)},\n            \"linked_from\":sorted(linked_from[record_id]),\n            \"record\":copy.deepcopy(r),\n        })\n    ranked.sort(key=lambda item:(-item[\"k\"],item[\"id\"]))\n    for rank,item in enumerate(ranked,1): item[\"rank\"]=rank\n    return {\n        \"schema\":kb.get(\"schema\"),\"version\":kb.get(\"version\"),\n        \"epistemic_policy\":copy.deepcopy(kb.get(\"epistemic_policy\",{})),\n        \"query\":query,\"sort\":\"k_desc_id_asc\",\"record_count\":len(ranked),\"records\":ranked,\n    }"
+    },
+    {
+      "snippet_id": "S10",
+      "source_path": "mis-solver-query-v1-2/scripts/solver_query.py",
+      "source_sha256": "a43740ab1f9c95b5679eae4d31c2b79ff179dc441974e1ea81128cda3e443473",
+      "symbol": "search_knowledge",
+      "start_line": 126,
+      "end_line": 162,
+      "code": "def search_knowledge(query: str, requested_types: list[str]|None=None, top_k: int|None=None, kb_path: str|pathlib.Path=KB_PATH) -> dict[str, Any]:\n    \"\"\"Canonical Solver-KB query recovered from execution_contract_controller.py.\n\n    Ranking: BM25-style token score + exact ID/alias boosts + type priors,\n    followed by one-hop linked-record expansion. This is intentionally not the\n    unrelated ChatGPT-history NumPy/GloVe query implementation.\n    \"\"\"\n    if not isinstance(query,str) or not query.strip(): raise ValueError(\"knowledge query must be non-empty\")\n    kb=load_kb(kb_path)\n    cfg=kb.get(\"retrieval\",{}) if isinstance(kb.get(\"retrieval\"),dict) else {}\n    max_k=int(cfg.get(\"max_top_k\",16)); k=min(max(1,int(top_k or cfg.get(\"default_top_k\",8))),max_k)\n    types=requested_types or sorted(KNOWLEDGE_TYPES)\n    bad=[t for t in types if t not in KNOWLEDGE_TYPES]\n    if bad: raise ValueError(f\"unknown knowledge types: {bad}\")\n    records=[r for r in kb[\"records\"] if isinstance(r,dict) and r.get(\"type\") in types]\n    if not records:\n        return {\"schema\":kb.get(\"schema\"),\"version\":kb.get(\"version\"),\n                \"epistemic_policy\":copy.deepcopy(kb.get(\"epistemic_policy\",{})),\n                \"query\":query,\"types\":types,\"results\":[]}\n    scored=[item for item in _score_records(query,records,cfg) if item[0]>0]\n    scored.sort(key=lambda x:(-x[0],x[1][\"id\"])); primary=scored[:k]\n    by_id={r[\"id\"]:r for r in kb[\"records\"] if isinstance(r,dict) and isinstance(r.get(\"id\"),str)}\n    results=[]; seen=set()\n    for score,r in primary:\n        results.append({\"id\":r[\"id\"],\"type\":r[\"type\"],\"score\":round(score,6),\"source\":\"primary\",\"record\":copy.deepcopy(r)})\n        seen.add(r[\"id\"])\n    for score,r in primary:\n        for linked_id in _link_ids(r):\n            if linked_id in seen or linked_id not in by_id: continue\n            linked=by_id[linked_id]\n            results.append({\"id\":linked_id,\"type\":linked.get(\"type\"),\"score\":round(score*0.35,6),\"source\":f\"link:{r['id']}\",\"record\":copy.deepcopy(linked)})\n            seen.add(linked_id)\n            if len(results)>=max_k: break\n        if len(results)>=max_k: break\n    return {\"schema\":kb.get(\"schema\"),\"version\":kb.get(\"version\"),\n            \"epistemic_policy\":copy.deepcopy(kb.get(\"epistemic_policy\",{})),\n            \"query\":query,\"types\":types,\"results\":results}"
+    },
+    {
+      "snippet_id": "S11",
+      "source_path": "semantic-runtime/runtime/token_codec.py",
+      "source_sha256": "e6161679dfcd1502a5d09f7f3beeec058e54098992011b8cb4107ffdfbd95392",
+      "symbol": "encode",
+      "start_line": 6,
+      "end_line": 9,
+      "code": "def encode(value: dict) -> str:\n    \"\"\"Return compact URL-safe JSON without padding.\"\"\"\n    raw = json.dumps(value, separators=(\",\", \":\"), sort_keys=True).encode()\n    return base64.urlsafe_b64encode(raw).decode().rstrip(\"=\")"
+    },
+    {
+      "snippet_id": "S12",
+      "source_path": "semantic-runtime/runtime/token_codec.py",
+      "source_sha256": "e6161679dfcd1502a5d09f7f3beeec058e54098992011b8cb4107ffdfbd95392",
+      "symbol": "decode",
+      "start_line": 11,
+      "end_line": 20,
+      "code": "def decode(token: str) -> dict:\n    \"\"\"Decode a token and require its address fields.\"\"\"\n    try:\n        value = json.loads(base64.urlsafe_b64decode(token + \"=\" * (-len(token) % 4)))\n    except Exception as exc:\n        raise ValueError(\"invalid token\") from exc\n    missing = REQUIRED - value.keys()\n    if missing:\n        raise ValueError(f\"token missing: {', '.join(sorted(missing))}\")\n    return value"
+    },
+    {
+      "snippet_id": "S13",
+      "source_path": "semantic-runtime/runtime/delivery.py",
+      "source_sha256": "961e03e0727377862c5a096d19b188c9ee074805f057dd99048fac05264fed0c",
+      "symbol": "DeliveryLedger",
+      "start_line": 18,
+      "end_line": 91,
+      "code": "class DeliveryLedger:\n    \"\"\"Resolve each address once and replay its result until acknowledgement.\"\"\"\n\n    def __init__(self, runner):\n        self.runner = runner\n        self.lock = threading.Lock()\n        self.pending = {}\n        self.consumed = set()\n        self.acknowledged = set()\n        self.terminals = {}\n\n    def resolve(self, address: str) -> dict:\n        \"\"\"Return one stable pending delivery for an address.\"\"\"\n        with self.lock:\n            if address in self.consumed:\n                raise AddressConsumed(address)\n            if address not in self.pending:\n                self.pending[address] = self._create_delivery(address)\n            return dict(self.pending[address])\n\n    def acknowledge(self, delivery_id: str) -> dict:\n        \"\"\"Consume an address only after its delivery is acknowledged.\"\"\"\n        with self.lock:\n            if delivery_id in self.acknowledged:\n                return {\"status\": \"ACKNOWLEDGED\", \"delivery_id\": delivery_id}\n            address = self._address_for(delivery_id)\n            terminal = self.pending[address].get(\"terminal\")\n            self.pending.pop(address)\n            if self.terminals.get(str(terminal)) == address:\n                self.terminals.pop(str(terminal))\n            self.consumed.add(address)\n            self.acknowledged.add(delivery_id)\n            return {\"status\": \"ACKNOWLEDGED\", \"delivery_id\": delivery_id}\n\n    def publish(self, terminal, result: dict) -> dict:\n        \"\"\"Place one MCP result in a terminal outbox for Apps Script.\"\"\"\n        with self.lock:\n            address = \"mcp:\" + uuid.uuid4().hex\n            delivery = self._delivery(address, terminal, result)\n            self.pending[address] = delivery\n            self.terminals[str(terminal)] = address\n            return dict(delivery)\n\n    def latest(self, terminal) -> dict:\n        \"\"\"Return the latest unacknowledged result for one terminal.\"\"\"\n        with self.lock:\n            address = self.terminals.get(str(terminal))\n            if address is None:\n                raise DeliveryNotFound(str(terminal))\n            return dict(self.pending[address])\n\n    def _create_delivery(self, address: str) -> dict:\n        \"\"\"Execute one address and package the result for Apps Script.\"\"\"\n        command = decode_request(address)\n        result = self.runner.transaction(command[\"value\"], response=command.get(\"response\"), terminal=command.get(\"terminal\"))\n        return self._delivery(address, command.get(\"terminal\"), result)\n\n    def _delivery(self, address: str, terminal, result: dict) -> dict:\n        \"\"\"Build one pending delivery shared by push and address flows.\"\"\"\n        delivery_id = hashlib.sha256(address.encode()).hexdigest()[:24]\n        return {\n            \"status\": \"PENDING_ACK\",\n            \"delivery_id\": delivery_id,\n            \"terminal\": terminal,\n            \"result\": result,\n            \"ack_path\": \"/ack\",\n        }\n\n    def _address_for(self, delivery_id: str) -> str:\n        \"\"\"Find the pending address belonging to a delivery identifier.\"\"\"\n        for address, delivery in self.pending.items():\n            if delivery[\"delivery_id\"] == delivery_id:\n                return address\n        raise DeliveryNotFound(delivery_id)"
+    },
+    {
+      "snippet_id": "S14",
+      "source_path": "semantic-runtime/runtime/store.py",
+      "source_sha256": "fc89d06bc906d10c33a0131983409aa9e46992ba671b257fce6532d4df2f7351",
+      "symbol": "DefinitionStore",
+      "start_line": 6,
+      "end_line": 66,
+      "code": "class DefinitionStore:\n    \"\"\"Resolve aliases and versioned scripts from one directory.\"\"\"\n    def __init__(self, root: str | Path):\n        self.root = Path(root)\n    def alias(self, name: str) -> dict:\n        \"\"\"Return the initial address assigned to an alias.\"\"\"\n        return self._read(self.root / \"aliases\" / f\"{name}.json\")\n    def catalog(self) -> list:\n        \"\"\"List installed entry aliases whose script and screen resolve.\"\"\"\n        entries = []\n        for path in sorted((self.root / \"aliases\").glob(\"*.json\")):\n            address = self._read(path)\n            script = self.script(address[\"script\"], address[\"version\"])\n            if address[\"screen\"] not in script[\"screens\"]:\n                raise LookupError(f\"Invalid entry screen for alias: {path.stem}\")\n            entries.append({\"alias\": path.stem, \"entry\": address})\n        return entries\n    def script(self, name: str, version: int) -> dict:\n        \"\"\"Return one immutable script version.\"\"\"\n        return self._read(self.root / \"scripts\" / f\"{name}.v{version}.json\")\n    def check_publish(self, script):\n        \"\"\"Validate a new version and reject changes to an existing version.\"\"\"\n        validate_script(script)\n        path = self.root / 'scripts' / f\"{script['id']}.v{script['version']}.json\"\n        if path.exists() and self._read(path) != script:\n            raise ValueError('This version already exists. Choose a new version; old versions are immutable.')\n        return path\n\n    def publish_script(self, script):\n        \"\"\"Create an approved definition, allowing identical delivery retries.\"\"\"\n        path = self.check_publish(script)\n        path.parent.mkdir(parents=True, exist_ok=True)\n        try:\n            with path.open('x', encoding='utf-8') as output:\n                json.dump(script, output, indent=2, ensure_ascii=False)\n        except FileExistsError:\n            if self._read(path) != script:\n                raise ValueError('Version already exists with different content.') from None\n        return path\n    def terminal(self, identifier) -> dict:\n        \"\"\"Return the canonical Sheet location for one terminal.\"\"\"\n        directory = self._read(self.root / \"terminals.json\")\n        key = str(identifier)\n        try:\n            terminal = dict(directory[\"terminals\"][key])\n        except KeyError as exc:\n            raise LookupError(f\"terminal not found: {key}\") from exc\n        spreadsheet_id = directory[\"spreadsheet_id\"]\n        terminal[\"id\"] = identifier\n        terminal[\"spreadsheet_id\"] = spreadsheet_id\n        terminal[\"url\"] = (\n            f\"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit\"\n            f\"?gid={terminal['gid']}#gid={terminal['gid']}\"\n        )\n        return terminal\n    @staticmethod\n    def _read(path: Path) -> dict:\n        \"\"\"Read one JSON object or fail with its exact missing address.\"\"\"\n        if not path.is_file():\n            raise LookupError(f\"definition not found: {path.name}\")\n        return json.loads(path.read_text(encoding=\"utf-8\"))"
+    },
+    {
+      "snippet_id": "S15",
+      "source_path": "semantic-runtime/server.py",
+      "source_sha256": "f6d2dbcc19eeac1ac755955076337ae765005c47e5e63ff6df98d5f26b4106b0",
+      "symbol": "call_transaction",
+      "start_line": 50,
+      "end_line": 79,
+      "code": "def call_transaction(arguments: dict[str, Any]) -> dict[str, Any]:\n    \"\"\"Route a runtime result to a terminal without exposing it to the agent.\"\"\"\n    if apps_script_mode():\n        return forward_to_apps_script(arguments)\n    value, terminal = terminal_request(arguments)\n    result = RUNNER.transaction(\n        value,\n        arguments.get(\"response\"),\n        terminal,\n    )\n    result[\"addresses\"] = [\n        \"/resolve/\" + encode_request(command) for command in result[\"commands\"]\n    ]\n    terminal = result.get(\"terminal\")\n    if terminal is None:\n        raise ValueError(\"terminal is required for routed output\")\n    location = RUNNER.store.terminal(terminal)\n    delivery = DELIVERIES.publish(terminal, result)\n    try:\n        rendered = push_delivery(delivery)\n    except Exception:\n        return {\"content\": [{\"type\": \"text\", \"text\": f\"Terminal {terminal} update failed; retry the call.\"}],\n                \"structuredContent\": {\"status\": \"DELIVERY_FAILED\", \"terminal\": terminal,\n                                      \"terminal_url\": location[\"url\"]}, \"isError\": True}\n    TERMINAL_STATE[str(terminal)] = result[\"in_token\"]\n    if rendered:\n        DELIVERIES.acknowledge(delivery[\"delivery_id\"])\n    # The terminal is the sole interaction surface by default. A deployment\n    # may opt into a short configured reply without exposing screen data.\n    return configured_reply(terminal, location[\"url\"])"
+    },
+    {
+      "snippet_id": "S16",
+      "source_path": "semantic-runtime/server.py",
+      "source_sha256": "f6d2dbcc19eeac1ac755955076337ae765005c47e5e63ff6df98d5f26b4106b0",
+      "symbol": "dispatch",
+      "start_line": 137,
+      "end_line": 153,
+      "code": "def dispatch(message: dict[str, Any]) -> None:\n    \"\"\"Route one supported MCP JSON-RPC request.\"\"\"\n    request_id = message.get(\"id\")\n    if request_id is None:\n        return\n    method = message.get(\"method\")\n    params = message.get(\"params\") or {}\n    if method == \"initialize\":\n        send_result(request_id, {\"protocolVersion\": PROTOCOL_VERSION, \"capabilities\": {\"tools\": {\"listChanged\": False}}, \"serverInfo\": SERVER_INFO})\n    elif method == \"ping\":\n        send_result(request_id, {})\n    elif method == \"tools/list\":\n        send_result(request_id, {\"tools\": [TRANSACTION_TOOL]})\n    elif method == \"tools/call\" and params.get(\"name\") == \"transaction\":\n        send_result(request_id, call_transaction(params.get(\"arguments\") or {}))\n    else:\n        send_error(request_id, -32601, f\"method not found: {method}\")"
+    },
+    {
+      "snippet_id": "S17",
+      "source_path": "solver-architecture-kb/scripts/server.py",
+      "source_sha256": "5b6b6782ce3456df719303f7eed417ef2de7e73e3f5e039a96373b805228dc46",
+      "symbol": "semantic_rank",
+      "start_line": 22,
+      "end_line": 32,
+      "code": "def semantic_rank(query, items):\n    docs = [Counter(tokens(record_text(r))) for r in items]\n    q = Counter(tokens(query))\n    n = max(1, len(docs))\n    df = Counter(t for d in docs for t in d)\n    def vec(c): return {t: f * (math.log((n + 1)/(df[t] + 1)) + 1) for t, f in c.items()}\n    qv = vec(q)\n    def cosine(d):\n        dv = vec(d); dot = sum(qv.get(t,0)*v for t,v in dv.items())\n        return dot / ((sum(v*v for v in qv.values())**.5 or 1)*(sum(v*v for v in dv.values())**.5 or 1))\n    return sorted(((cosine(d), r) for d, r in zip(docs, items)), key=lambda x: x[0], reverse=True)"
+    },
+    {
+      "snippet_id": "S18",
+      "source_path": "solver-architecture-kb/scripts/server.py",
+      "source_sha256": "5b6b6782ce3456df719303f7eed417ef2de7e73e3f5e039a96373b805228dc46",
+      "symbol": "architecture",
+      "start_line": 52,
+      "end_line": 72,
+      "code": "def architecture(goal, constraints=''):\n    cls = classify(goal); hits = retrieve(goal+' '+constraints, 5)\n    families = []\n    for h in hits:\n        if h['solver_family'] not in families: families.append(h['solver_family'])\n    return {\n      'problem_representation': cls,\n      'evidence': hits,\n      'candidate_architectures': [\n        {'name':'ontology-guided case synthesis','families':families[:3] or ['retrieval_and_synthesis'],'tradeoff':'Fast and evidence-linked; limited by corpus coverage.'},\n        {'name':'fresh model plus adversarial validation','families':['creative_design','verification'],'tradeoff':'Can escape corpus bias; costs more and needs stronger tests.'}\n      ],\n      'selected_architecture': {\n        'stages':['frame exact objective and authority','classify across every ontology perspective','retrieve positive and disconfirming analogies','generate at least two architectures','check assumption and interface compatibility','select and express executable task graph','run mechanical and semantic validation','stop on satisfied gates or explicit impasse'],\n        'deterministic_operations':['schema validation','provenance preservation','ID generation','coverage accounting'],\n        'semantic_operations':['classification','analogy judgment','architecture composition','adequacy evaluation'],\n        'stop_conditions':['all mandatory acceptance tests pass','a required authority or input is unavailable','new evidence no longer changes the selected architecture materially']\n      },\n      'coverage_gaps':[p for p,v in cls['perspectives'].items() if v['coverage']=='needs-evidence'],\n      'warning':'Selection is a defeasible recommendation derived from the current KB, not proof of optimality.'\n    }"
+    },
+    {
+      "snippet_id": "S19",
+      "source_path": "solver-architecture-kb/scripts/server.py",
+      "source_sha256": "5b6b6782ce3456df719303f7eed417ef2de7e73e3f5e039a96373b805228dc46",
+      "symbol": "call_tool",
+      "start_line": 82,
+      "end_line": 96,
+      "code": "def call_tool(name, a):\n    if name == 'classify_problem': return classify(a['goal'])\n    if name == 'retrieve_solver_patterns': return retrieve(a['query'], a.get('limit',5))\n    if name == 'design_solver_architecture': return architecture(a['goal'], a.get('constraints',''))\n    if name == 'kb_stats':\n        rs=records(); return {'records':len(rs),'solver_families':dict(Counter(r.get('solver_family','unknown') for r in rs)),'ontology':ONTOLOGY}\n    if name == 'ingest_knowledge':\n        r=a['record']; required=['title','problem','solver_family','solver_pattern','source']\n        missing=[x for x in required if not r.get(x)]\n        if missing: raise ValueError('Missing required fields: '+', '.join(missing))\n        r.setdefault('id','kb-'+hashlib.sha256(json.dumps(r,sort_keys=True).encode()).hexdigest()[:16])\n        r.setdefault('problem_tags',[]); r.setdefault('applicability',[]); r.setdefault('failure_modes',[]); r.setdefault('validation',[])\n        with KB_PATH.open('a',encoding='utf-8') as f: f.write(json.dumps(r,ensure_ascii=False)+'\\n')\n        return {'ingested':r['id'],'source':r['source']}\n    raise ValueError('Unknown tool')"
+    }
+  ],
+  "verification": {
+    "snippet_extraction": "Each exact_code_bits entry was extracted from AST node lineno/end_lineno boundaries.",
+    "source_hashing": "Each snippet records SHA-256 of its complete source file."
+  }
+}

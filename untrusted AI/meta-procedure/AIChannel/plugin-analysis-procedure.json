@@ -1,0 +1,288 @@
+{
+  "response_type": "ai_nlep_plugin_implementation_analysis_procedure",
+  "procedure_metadata": {
+    "version": "1.0",
+    "purpose": "Analyze prior MCP plugin implementations from source, extract exact implementation evidence, derive reusable design patterns, and construct a verified internal API without executing untrusted plugin code.",
+    "construction_authority": "../731942_ai_nlep_meta_procedure.json",
+    "definitions_authority": "../731942_meta_procedure_flat_array_definitions.json"
+  },
+  "definitions": [
+    {
+      "term": "implementation_unit",
+      "definition": "One source file, class, function, module variable, configuration object, or resource reference whose behavior can be established from source."
+    },
+    {
+      "term": "exact_code_bit",
+      "definition": "A verbatim source span identified by source path, source SHA-256, symbol, and line range."
+    },
+    {
+      "term": "design_pattern",
+      "definition": "A repeated implementation relationship or structure supported by at least one exact_code_bit and preferably by multiple independent implementations."
+    },
+    {
+      "term": "internal_api_primitive",
+      "definition": "A stable implementation capability abstracted from one or more source-backed functions or patterns and expressed with explicit inputs, outputs, state effects, and failure behavior."
+    },
+    {
+      "term": "source_observation",
+      "definition": "A claim entailed by inspected source text or static bytecode metadata."
+    },
+    {
+      "term": "inference",
+      "definition": "A conclusion that combines observations but is not itself literally encoded in one authoritative source."
+    }
+  ],
+  "authorities": {
+    "precedence": [
+      "Current .py source",
+      "Current plugin configuration that resolves runtime entrypoints",
+      "Tests associated with the current source",
+      "Historical .pyc when current source is absent or historical comparison is the explicit subject",
+      "historical-analysis.json",
+      "Model inference"
+    ],
+    "rule": "A lower-precedence source must not override a higher-precedence source without an explicit conflict record."
+  },
+  "instructions": {
+    "operations": [
+      {
+        "id": "A1",
+        "operation": "inventory",
+        "inputs": [
+          "plugin-python-sources.zip"
+        ],
+        "outputs": [
+          "source_inventory"
+        ],
+        "completion_condition": "Every .py member is identified by relative path, size, and SHA-256."
+      },
+      {
+        "id": "A2",
+        "operation": "parse",
+        "inputs": [
+          "source_inventory"
+        ],
+        "outputs": [
+          "AST symbol inventory",
+          "imports",
+          "module variables",
+          "resource references"
+        ],
+        "completion_condition": "Every parseable Python source has a static symbol/import inventory; parse failures are explicit."
+      },
+      {
+        "id": "A3",
+        "operation": "resolve dependencies",
+        "inputs": [
+          "AST symbol inventory",
+          "imports"
+        ],
+        "outputs": [
+          "local dependency graph",
+          "stdlib/third-party split"
+        ],
+        "completion_condition": "Local import edges and explicit file/resource paths are represented without executing modules."
+      },
+      {
+        "id": "A4",
+        "operation": "extract exact code",
+        "inputs": [
+          "AST symbol inventory"
+        ],
+        "outputs": [
+          "exact_code_bits"
+        ],
+        "completion_condition": "Every selected reusable symbol has verbatim code, path, source hash, and exact line boundaries."
+      },
+      {
+        "id": "A5",
+        "operation": "classify roles",
+        "inputs": [
+          "symbols",
+          "dependency graph",
+          "MCP configs"
+        ],
+        "outputs": [
+          "transport",
+          "dispatcher",
+          "state",
+          "persistence",
+          "retrieval",
+          "validation",
+          "delivery",
+          "configuration",
+          "security role assignments"
+        ],
+        "completion_condition": "Every consequential selected unit has at least one explicit implementation role."
+      },
+      {
+        "id": "A6",
+        "operation": "detect patterns",
+        "inputs": [
+          "role assignments",
+          "exact_code_bits"
+        ],
+        "outputs": [
+          "pattern candidates"
+        ],
+        "completion_condition": "Each pattern names supporting source units and distinguishes repetition from one-off implementation."
+      },
+      {
+        "id": "A7",
+        "operation": "compare versions",
+        "inputs": [
+          "same-family files",
+          "pyc metadata if relevant"
+        ],
+        "outputs": [
+          "duplication/evolution records"
+        ],
+        "completion_condition": "Current source duplication and known historical cache divergence are not conflated."
+      },
+      {
+        "id": "A8",
+        "operation": "project internal API",
+        "inputs": [
+          "patterns",
+          "exact_code_bits"
+        ],
+        "outputs": [
+          "internal_api_primitives"
+        ],
+        "completion_condition": "Each primitive has a stable name, inputs/outputs, state effects, errors, and source derivation."
+      },
+      {
+        "id": "A9",
+        "operation": "audit configuration boundary",
+        "inputs": [
+          "internal_api_primitives"
+        ],
+        "outputs": [
+          "configuration-safe subset"
+        ],
+        "completion_condition": "Configuration selects fixed primitives and cannot silently become arbitrary code execution."
+      },
+      {
+        "id": "A10",
+        "operation": "construct target architecture",
+        "inputs": [
+          "internal API",
+          "historical analysis",
+          "MetaProcedure semantics"
+        ],
+        "outputs": [
+          "configurable MCP architecture"
+        ],
+        "completion_condition": "Transport, configuration, state, transition, persistence, verification, and return contracts are explicit and composable."
+      },
+      {
+        "id": "A11",
+        "operation": "verify",
+        "inputs": [
+          "all generated artifacts",
+          "source archive"
+        ],
+        "outputs": [
+          "verification record"
+        ],
+        "completion_condition": "Snippet hashes/line spans resolve, generated JSON parses, source coverage is counted, and implementation tests pass where code is executed."
+      },
+      {
+        "id": "A12",
+        "operation": "terminate",
+        "inputs": [
+          "verification record",
+          "known defects"
+        ],
+        "outputs": [
+          "status"
+        ],
+        "completion_condition": "COMPLETE only when all required analysis operations are executed and no known material defect remains."
+      }
+    ]
+  },
+  "constraints": [
+    "Do not import or execute prior plugin modules.",
+    "Do not infer runtime necessity from filename alone.",
+    "Do not quote reconstructed code as exact code.",
+    "Do not let historical .pyc override current source.",
+    "Do not label an architectural inference as a source observation.",
+    "Do not create configurable arbitrary-code execution when fixed internal primitives suffice."
+  ],
+  "invariants": [
+    "Every exact_code_bit retains source path, source SHA-256, symbol, and line range.",
+    "Every internal API primitive links to source evidence or is explicitly marked newly designed.",
+    "Transport behavior remains separable from domain behavior.",
+    "State transitions are explicit where state materially affects execution.",
+    "Action evidence and resulting-state evidence remain distinct.",
+    "A completion claim requires actual analysis/test records, not the presence of expected output files."
+  ],
+  "verification_model": {
+    "source_exactness": "Re-extract every snippet from source line span and byte-compare it to the stored snippet.",
+    "dependency_accuracy": "Check every claimed local import target exists or mark it unresolved.",
+    "pattern_support": "Require at least one exact source support; mark cross-plugin generalizations as inference.",
+    "implementation": "Run only newly authored AIChannel code/tests; do not execute untrusted prior plugin code."
+  },
+  "construction_property_coverage": {
+    "P1": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P2": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P3": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P4": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P5": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P6": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P7": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P8": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P9": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P10": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P11": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P12": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P13": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P14": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P15": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P16": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P17": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P18": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P19": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract.",
+    "P20": "Applied through the procedure's explicit definitions, authorities, operation decomposition, state/transition modeling, verification, traceability, and return contract."
+  },
+  "return_schema": {
+    "type": "object",
+    "required": [
+      "source_inventory",
+      "exact_code_bits",
+      "dependency_graph",
+      "patterns",
+      "internal_api",
+      "verification",
+      "status"
+    ],
+    "properties": {
+      "source_inventory": {
+        "type": "array"
+      },
+      "exact_code_bits": {
+        "type": "array"
+      },
+      "dependency_graph": {
+        "type": "object"
+      },
+      "patterns": {
+        "type": "array"
+      },
+      "internal_api": {
+        "type": "array"
+      },
+      "verification": {
+        "type": "object"
+      },
+      "status": {
+        "enum": [
+          "COMPLETE",
+          "INCOMPLETE",
+          "BLOCKED",
+          "FAILED"
+        ]
+      }
+    }
+  }
+}

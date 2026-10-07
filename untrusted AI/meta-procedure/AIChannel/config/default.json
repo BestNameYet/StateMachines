@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "default_behavior": "echo",
+  "behaviors": {
+    "echo": {
+      "kind": "pipeline",
+      "description": "Return the supplied input unchanged.",
+      "steps": [
+        {"op": "echo", "value": {"$ref": "input"}}
+      ]
+    },
+    "rank_knowledge": {
+      "kind": "pipeline",
+      "description": "Rank a configured corpus against input.query and return matches.",
+      "steps": [
+        {
+          "op": "retrieve",
+          "query": {"$ref": "input.query"},
+          "corpus": [
+            {"id": "state-machine", "text": "explicit state transitions validation deterministic controller"},
+            {"id": "retrieval", "text": "knowledge retrieval ranking provenance evidence"},
+            {"id": "delivery", "text": "persistent delivery acknowledgement replay receipt"}
+          ],
+          "limit": 3,
+          "as": "matches"
+        },
+        {"op": "emit", "value": {"$ref": "matches"}}
+      ]
+    },
+    "two_step_controller": {
+      "kind": "state_machine",
+      "description": "Minimal persistent state-machine example with an explicit transaction handle.",
+      "initial": "request",
+      "states": {
+        "request": {
+          "on_enter": [
+            {"op": "emit", "value": {"instruction": "Return an object containing answer."}}
+          ],
+          "transitions": [
+            {
+              "event": "respond",
+              "required": ["answer"],
+              "target": "complete",
+              "actions": [
+                {"op": "assign", "path": "answer", "value": {"$ref": "input.answer"}}
+              ]
+            }
+          ]
+        },
+        "complete": {
+          "final": true,
+          "on_enter": [
+            {"op": "emit", "value": {"answer": {"$ref": "state.answer"}}}
+          ],
+          "transitions": []
+        }
+      }
+    }
+  }
+}
