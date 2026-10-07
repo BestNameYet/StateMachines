@@ -27,10 +27,37 @@ function findScriptNodes(target, collected = []) {
 
 async function executeScript(scriptSource, index) {
   process.stdout.write(`[MetaProcedure Runner] Executing script [${index + 1}]...\n`);
+
+  const scriptFilename = path.resolve(process.cwd(), `metaprocedure_script_${index + 1}.js`);
+  const scriptDirname = path.dirname(scriptFilename);
+
+  const moduleObject = {
+    id: scriptFilename,
+    filename: scriptFilename,
+    path: scriptDirname,
+    exports: {},
+    loaded: false,
+    children: []
+  };
+
+  const scopedRequire = function (id) {
+    return require(id);
+  };
+  for (const prop of Object.getOwnPropertyNames(require)) {
+    try {
+      scopedRequire[prop] = require[prop];
+    } catch (_) {}
+  }
+  scopedRequire.main = moduleObject;
+
   const contextObject = {
     console,
     process,
-    require,
+    require: scopedRequire,
+    module: moduleObject,
+    exports: moduleObject.exports,
+    __filename: scriptFilename,
+    __dirname: scriptDirname,
     Buffer,
     setTimeout,
     clearTimeout,
@@ -39,15 +66,20 @@ async function executeScript(scriptSource, index) {
     setImmediate,
     clearImmediate
   };
+  contextObject.global = contextObject;
+  contextObject.globalThis = contextObject;
+
   const executionContext = vm.createContext(contextObject);
   const script = new vm.Script(scriptSource, {
-    filename: `metaprocedure_script_${index + 1}.js`,
+    filename: scriptFilename,
     displayErrors: true
   });
+
   const result = script.runInContext(executionContext);
   if (result && typeof result.then === 'function') {
     await result;
   }
+  moduleObject.loaded = true;
   process.stdout.write(`[MetaProcedure Runner] Script [${index + 1}] executed successfully.\n`);
 }
 
