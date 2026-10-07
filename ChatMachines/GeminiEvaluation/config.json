@@ -18,7 +18,7 @@
     {
       "key": "javascript_archive",
       "type": "file",
-      "path": "../../untrusted AI/meta-procedure/TEMP/temp-js-files.zip"
+      "path": "../../untrusted AI/meta-procedure/TEMP/temp-js-files.archive.json"
     },
     {
       "key": "agents_md_json_projection",
@@ -26,17 +26,28 @@
       "path": "../ComprehensionTasks/ProjectionsForTasks/agentsmdbaseproejction.json"
     }
   ],
-  "evaluation_heuristic": "Act as a problem-solving implementation evaluator. Use only the supplied repository evidence. Determine the actual embedding/serialization mechanism visible in the diagnostics, then produce the smallest deterministic Node.js solution that reads the existing untrusted AI/shared-chat-page.html and extracts/reconstructs the complete shared conversation into untrusted AI/shared-chat.json. Prefer decoding the server-rendered React Router stream already present in the HTML over browser automation or undocumented network endpoints. Distinguish directly evidenced structure from inference. The implementation must fail loudly when expected markers or decoded conversation data are absent, preserve all conversation/message fields available in the embedded payload, and include concrete validation checks proving the resulting JSON contains the conversation rather than merely HTML or an encoded transport string. Return executable code, not pseudocode.",
+  "evaluation_heuristic": "Write the complete specification on this first evaluator pass. Use the supplied MetaProcedure, JavaScript source archive, and Agents.md JSON projection as the evidence base. The specification must define a procedure for communicating a prompt to Gemini. Do not return an analysis-only pass, discovery pass, questions, or a plan for later work. Add only the minimum additional rules necessary to make the procedure complete, internally coherent, and executable. The final output must conform to JWRS: include a 100-percent JSON jwrs_projection with an explicit return_schema, and in the same returned object execute that projection by providing the complete specification and all required artifacts. Return the necessary JavaScript implementation under the key gemini-prompt-communicator.js. Return the necessary GitHub Actions workflow YAML under the key gemini-prompt-workflow.yaml. Return the message and configuration template under the key gemini-prompt-message-config.json. The configuration template keys must be minimally verbose, comparable in compactness to the evaluator config, while covering every configuration category evidenced by the supplied archived JavaScript. Ground configuration categories in the archive; do not silently invent categories unsupported by the supplied inputs. Return executable code and complete YAML/JSON template content, not pseudocode.",
   "evaluation_output_schema": {
-    "response_type": "shared_chat_extraction_solution",
-    "established_facts": [],
-    "serialization_diagnosis": "",
-    "extraction_algorithm": [],
-    "node_program": "",
-    "workflow_integration": "",
-    "validation_checks": [],
-    "expected_output_shape": "",
-    "uncertainties": []
+    "response_type": "jwrs_execution_result",
+    "jwrs_projection": {
+      "response_type": "jwrs_projection",
+      "request": {},
+      "return_schema": {}
+    },
+    "projection_printed_before_execution": true,
+    "specification": {
+      "purpose": "",
+      "authorities": [],
+      "procedure": [],
+      "configuration_categories": [],
+      "invariants": [],
+      "failure_handling": {}
+    },
+    "gemini-prompt-communicator.js": "",
+    "gemini-prompt-workflow.yaml": "",
+    "gemini-prompt-message-config.json": {},
+    "same_turn_execution": true,
+    "status": "COMPLETE | INCOMPLETE | BLOCKED | FAILED"
   },
   "evaluations_root": "evaluations",
   "run_evaluation_file": "evaluation.json",
