@@ -4,27 +4,27 @@
   "sources": [
     {
       "id": "EXT1",
-      "title": "Model Context Protocol Specification \u2014 2026-07-28",
+      "title": "Model Context Protocol Specification — 2026-07-28",
       "url": "https://modelcontextprotocol.io/specification/2026-07-28"
     },
     {
       "id": "EXT2",
-      "title": "Model Context Protocol \u2014 Tools \u2014 2026-07-28",
+      "title": "Model Context Protocol — Tools — 2026-07-28",
       "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools"
     },
     {
       "id": "EXT3",
-      "title": "Model Context Protocol \u2014 Transports Overview \u2014 2026-07-28",
+      "title": "Model Context Protocol — Transports Overview — 2026-07-28",
       "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/transports"
     },
     {
       "id": "EXT4",
-      "title": "Model Context Protocol \u2014 Authorization \u2014 2026-07-28",
+      "title": "Model Context Protocol — Authorization — 2026-07-28",
       "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization"
     },
     {
       "id": "EXT5",
-      "title": "Model Context Protocol \u2014 Security Best Practices \u2014 2026-07-28",
+      "title": "Model Context Protocol — Security Best Practices — 2026-07-28",
       "url": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices"
     },
     {
@@ -39,12 +39,12 @@
     },
     {
       "id": "EXT8",
-      "title": "JSON Schema: A Media Type for Describing JSON Documents \u2014 Draft 2020-12",
+      "title": "JSON Schema: A Media Type for Describing JSON Documents — Draft 2020-12",
       "url": "https://json-schema.org/draft/2020-12/json-schema-core"
     },
     {
       "id": "EXT9",
-      "title": "JSON Schema Validation: A Vocabulary for Structural Validation of JSON \u2014 Draft 2020-12",
+      "title": "JSON Schema Validation: A Vocabulary for Structural Validation of JSON — Draft 2020-12",
       "url": "https://json-schema.org/draft/2020-12/json-schema-validation"
     },
     {
@@ -59,8 +59,26 @@
     },
     {
       "id": "EXT12",
-      "title": "The Twelve-Factor App \u2014 III. Config",
+      "title": "The Twelve-Factor App — III. Config",
       "url": "https://www.12factor.net/config"
+    },
+    {
+      "id": "EXT13",
+      "title": "Secure MCP Tunnel | OpenAI API",
+      "url": "https://developers.openai.com/api/docs/guides/secure-mcp-tunnels",
+      "source_type": "OpenAI official documentation",
+      "source_derived_findings": [
+        "Secure MCP Tunnel connects private MCP servers to supported OpenAI products without opening inbound firewall ports or exposing the MCP server to the public internet.",
+        "tunnel-client runs inside the network that can reach the private MCP server, makes outbound HTTPS connections to OpenAI, long-polls for queued work, forwards MCP JSON-RPC requests locally, and returns responses through the same tunnel.",
+        "The private MCP server can be reached by tunnel-client over stdio or HTTP.",
+        "Secure MCP Tunnel supports private MCP connections and custom MCP server testing, but does not provide the public HTTPS endpoint required for public plugin submission.",
+        "Responses API integrations identify the private MCP connection with tunnel_id; server_url is reserved for an MCP server that the Responses API can reach directly.",
+        "Tunnel permissions and ChatGPT custom MCP permissions are separate. Tunnel roles distinguish Read, Manage, and Use, and tunnel associations determine which Platform organizations and ChatGPT workspaces can discover or use the tunnel.",
+        "tunnel-client should run in the same trust boundary that can already reach the MCP server; documented deployment patterns include Kubernetes sidecar, dedicated Kubernetes deployment, and VM/systemd service.",
+        "Operational surfaces include tunnel-client doctor plus /healthz, /readyz, /metrics, and a loopback-only local admin UI at /ui.",
+        "The tunnel path separates transport-level logging from normal app-level compliance logging. Tunnel metadata changes are exposed through API Platform audit logs while normal app invocation/auth lifecycle logging still applies.",
+        "tunnel-client supports enterprise networking features including outbound proxies, custom CA bundles, control-plane client certificates, and MCP-side mTLS."
+      ]
     }
   ],
   "derived_practices": [
@@ -126,6 +144,48 @@
         "EXT9"
       ],
       "application": "Runtime configuration can only name fixed internal operations; it cannot contain Python/eval."
+    },
+    {
+      "practice": "For a private MCP server used by supported OpenAI products, prefer an outbound-only Secure MCP Tunnel when private-network reachability is required and public ingress is not.",
+      "sources": [
+        "EXT13"
+      ],
+      "application": "AIChannel can remain a private stdio or HTTP MCP server while tunnel-client runs inside the same trust boundary and forwards requests without exposing AIChannel publicly."
+    },
+    {
+      "practice": "Treat the tunnel as transport, not as the application endpoint contract.",
+      "sources": [
+        "EXT13"
+      ],
+      "application": "AIChannel's MCP semantics remain unchanged behind the tunnel; tunnel-client handles outbound connectivity and forwarding while AIChannel remains transport-independent."
+    },
+    {
+      "practice": "Bind private MCP access to explicit OpenAI organization/workspace associations and separate tunnel permissions from ChatGPT custom-MCP permissions.",
+      "sources": [
+        "EXT13"
+      ],
+      "application": "Deployment configuration should record the intended tunnel_id, authorized Platform organizations, target ChatGPT workspaces, and required Read/Manage/Use roles separately from AIChannel behavior configuration."
+    },
+    {
+      "practice": "Use tunnel_id for Responses API access to a tunneled private MCP server; do not substitute the OpenAI-hosted tunnel endpoint as server_url.",
+      "sources": [
+        "EXT13"
+      ],
+      "application": "Any future AIChannel Responses API integration should select the tunnel by tunnel_id while preserving server_url for directly reachable MCP endpoints."
+    },
+    {
+      "practice": "Operate tunnel-client as a first-class service with explicit health, readiness, metrics, and diagnostic checks.",
+      "sources": [
+        "EXT13"
+      ],
+      "application": "A production AIChannel deployment should validate tunnel-client with doctor and monitor /healthz, /readyz, and /metrics before treating private MCP connectivity as available."
+    },
+    {
+      "practice": "Do not treat Secure MCP Tunnel as a public plugin-distribution endpoint.",
+      "sources": [
+        "EXT13"
+      ],
+      "application": "Private AIChannel testing/operation can use the tunnel; public plugin submission still requires a stable publicly reachable HTTPS MCP endpoint or a public HTTPS proxy in front of the private service."
     }
   ]
 }
