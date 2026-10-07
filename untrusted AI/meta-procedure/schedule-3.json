@@ -1,0 +1,55 @@
+{
+  "response_type": "scheduled_document_registry",
+  "schedule_id": "schedule_3",
+  "version": "1.0",
+  "purpose": "Identify the authoritative documents governed by Schedule 3 of the scheduled document reacquisition and regurgitation custom instruction.",
+  "maximum_turn_interval": 3,
+  "minimum_regurgitation_fraction": 0.1,
+  "minimum_regurgitation_percent": 10,
+  "documents": [
+    {
+      "item_number": 1,
+      "document_name": "Github MetaProcedure FlatArray Definitions",
+      "repository": "BestNameYet/StateMachines",
+      "branch": "main",
+      "path": "untrusted AI/meta-procedure/731942_meta_procedure_flat_array_definitions.json",
+      "format": "json",
+      "expected_root_type": "array",
+      "expected_array_length": 7011,
+      "source_role": "authoritative_schedule_document",
+      "read_requirement": "full_text",
+      "regurgitation_requirement": {
+        "basis": "values_and_definitions",
+        "minimum_fraction": 0.1,
+        "minimum_percent": 10,
+        "per_document": true
+      }
+    }
+  ],
+  "execution_contract": {
+    "read_all_documents": true,
+    "full_text_required": true,
+    "partial_read_does_not_qualify": true,
+    "memory_does_not_qualify": true,
+    "minimum_turn_frequency": "no_less_than_once_every_3_turns",
+    "regurgitation_scope": "at_least_10_percent_of_values_and_definitions_from_each_document"
+  },
+  "return_schema": {
+    "schedule_id": "schedule_3",
+    "turn": "integer",
+    "documents": [
+      {
+        "item_number": "integer",
+        "document_name": "string",
+        "document_locator": "string",
+        "full_text_read": "boolean",
+        "total_values_and_definitions": "integer",
+        "required_regurgitation_count": "integer",
+        "actual_regurgitation_count": "integer",
+        "percentage_requirement_satisfied": "boolean",
+        "regurgitated_values_and_definitions": []
+      }
+    ],
+    "qualifying_reading_exercise": "boolean"
+  }
+}
