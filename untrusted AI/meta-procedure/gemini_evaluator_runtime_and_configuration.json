@@ -1,0 +1,69 @@
+{
+  "response_type": "gemini_evaluator_runtime_and_configuration_reference",
+  "version": "1.0",
+  "repository": "BestNameYet/StateMachines",
+  "evaluator": {
+    "path": "ChatMachines/GeminiEvaluation/evaluate-supervisor.js",
+    "blob_sha": "ccf4e456b4795ce89bbda8ce3790f64cc90c830e"
+  },
+  "configuration": {
+    "path": "ChatMachines/GeminiEvaluation/config.json",
+    "blob_sha": "449e00a391fc2d81d28b97f98538c265313d14a1",
+    "values": {
+      "runtime_root": ".",
+      "new_message_folder": "evaluator-nextmessage",
+      "new_message_file": "nextmessage.json",
+      "messages_file": "generic-evaluator-messages.json",
+      "generic_messages_file": "generic-evaluator-messages.json",
+      "evaluation_output_file": "program-evaluation.json",
+      "default_model": "gemini-3.8-flash",
+      "request_timeout_ms": 600000,
+      "evaluation_mode": "generic",
+      "generic_reuse_message_history": false,
+      "generic_inputs": [
+        {
+          "key": "current_retrieval_workflow",
+          "type": "file",
+          "path": "../../.github/workflows/untrusted-ai-test.yml"
+        },
+        {
+          "key": "http_status",
+          "type": "file",
+          "path": "../../untrusted AI/shared-chat-status.txt"
+        },
+        {
+          "key": "http_headers",
+          "type": "file",
+          "path": "../../untrusted AI/shared-chat-headers.txt"
+        },
+        {
+          "key": "share_page_structural_diagnostics",
+          "type": "file",
+          "path": "../../untrusted AI/shared-chat-diagnostics.json"
+        },
+        {
+          "key": "known_artifact_fact",
+          "type": "literal",
+          "value": "GitHub reports untrusted AI/shared-chat-page.html as a successful HTTP 200 text/html capture whose current body is about 5.2 MB. The goal is to extract the complete shared ChatGPT conversation from that already-saved HTML into a machine-readable JSON file in untrusted AI. Do not propose another network-fetch mechanism unless the supplied evidence shows it is necessary."
+        }
+      ],
+      "evaluation_heuristic": "Act as a problem-solving implementation evaluator. Use only the supplied repository evidence. Determine the actual embedding/serialization mechanism visible in the diagnostics, then produce the smallest deterministic Node.js solution that reads the existing untrusted AI/shared-chat-page.html and extracts/reconstructs the complete shared conversation into untrusted AI/shared-chat.json. Prefer decoding the server-rendered React Router stream already present in the HTML over browser automation or undocumented network endpoints. Distinguish directly evidenced structure from inference. The implementation must fail loudly when expected markers or decoded conversation data are absent, preserve all conversation/message fields available in the embedded payload, and include concrete validation checks proving the resulting JSON contains the conversation rather than merely HTML or an encoded transport string. Return executable code, not pseudocode.",
+      "evaluation_output_schema": {
+        "response_type": "shared_chat_extraction_solution",
+        "established_facts": [],
+        "serialization_diagnosis": "",
+        "extraction_algorithm": [],
+        "node_program": "",
+        "workflow_integration": "",
+        "validation_checks": [],
+        "expected_output_shape": "",
+        "uncertainties": []
+      },
+      "evaluations_root": "evaluations",
+      "run_evaluation_file": "evaluation.json",
+      "run_messages_file": "messages.json",
+      "run_outputs_directory": "outputs",
+      "write_latest_compatibility_outputs": false
+    }
+  }
+}
