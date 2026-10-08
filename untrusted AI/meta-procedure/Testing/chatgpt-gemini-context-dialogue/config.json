@@ -28,26 +28,22 @@
     "nonce_param": "run_nonce",
     "nonce_regex": "^[A-Za-z0-9._-]+$",
     "default_nonce_prefix": "context_rich_dialogue",
-    "default_nonce": "large_zip_extraction_plan_20261008_1",
+    "default_nonce": "jwrs_instruction_revision_20261008_1",
     "reuse_history": false
   },
   "prompt": {
-    "system_instruction": "You are Gemini reviewing an actual large ZIP extraction limit in an existing StateMachines system. Work from the provided current implementation and verified execution report. Produce an actionable, source-grounded architecture and test plan. Distinguish documented capabilities, inferred approaches and required experiments. Avoid inventing workflows; preserve source archive.",
-    "heuristic": "The authenticated Apps Script can read Drive metadata, create Drive files and return JSON through an existing GitHub Actions Node/JS Runner/Apps Script POST. A 993074157-byte ZIP failed during full Utilities.unzip with 'exceeds the maximum file size'. Develop a precise method for enumerating and extracting selected files from large ZIPs without loading the whole archive into Apps Script blobs. Evaluate Node.js-on-GitHub range downloads from Google Drive, Drive API authenticated HTTP Range access, ZIP central-directory parsing and ZIP64, selective streamed extraction, checkpointing and Drive output writing; identify exactly which credentials and capabilities must be established, and alternatives when unavailable. The user wants a plan, not an untested implementation claim. Make the plan configurable for multiple archive IDs and ordered actions, and include deterministic tests and verification. Account for a potentially public/shareable Drive file vs authenticated only and for not exposing private data outside authorized paths. Avoid claiming Apps Script can range-read Drive blobs unless verified.",
+    "system_instruction": "Act as an editor of a short AI-NLE project custom instruction, not as an elaborate supervisory controller. Apply useful principles of supplied canonical meta-procedure and GeminiSupervisor Agents.md, never paste their rules. Retain high-visibility JSON projection before actions, same-turn execution, user instruction fidelity, and an explicit return_schema. Do not invent oracular guarantees, endless verifiers, or unworkable controls. Return concise JSON including a complete minified-ready revised instruction and reasoned tradeoffs.",
+    "heuristic": "Revise current JWRS custom instruction version 1.0 for clarity, brevity and completeness. User says its primary functions are (a) a conspicuously formal visible interface between user and AI-NLE to indicate early compliance, (b) a materialized representation of instructions aiding execution, (c) actual same-turn action rather than merely projection. Past complex verifiers/recovery systems were ineffective because the AI-NLE can ignore them, even when deterministic inputs are provided. Treat all semantic fidelity as a best-effort target, not an oracle-provable guarantee. Preserve explicit return_schema and JSON-only minified final instruction. Use principles from authoritative source files and not their detailed program-specific rules. Deliver a coherent standalone custom instruction as JSON and a compact explanation outside it within Gemini response fields.",
     "output_schema": {
-      "response_type": "large_archive_extraction_plan",
-      "verified_facts": [],
-      "candidate_architectures": [],
-      "recommended_architecture": {},
-      "implementation_steps": [],
-      "required_capability_tests": [],
-      "configuration_changes": [],
-      "verification_predicates": [],
-      "failure_repairs": [],
-      "open_questions": []
+      "response_type": "jwrs_instruction_revision",
+      "revised_instruction": {},
+      "principles_applied": [],
+      "simplifications": [],
+      "limitations": [],
+      "review_notes": []
     },
-    "template_prefix": "Produce a rigorous large-ZIP extraction plan using the supplied live code, execution report, and documentation.",
-    "template_suffix": "Return a single valid JSON object with the configured response_type and keys. Do not present conjectures as verified execution capabilities."
+    "template_prefix": "Create the revised JWRS instruction from these sources, prioritizing simple operational compliance.",
+    "template_suffix": "Return only JSON with response_type jwrs_instruction_revision and complete revised_instruction object including its return_schema."
   },
   "inputs": [
     {
@@ -57,43 +53,32 @@
       "required": true
     },
     {
-      "key": "promptgemini_procedure",
+      "key": "gemini_supervisor_agents",
       "type": "file",
-      "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/PromptGemini.json",
+      "path": "ChatMachines/GeminiSupervisor/Agents.md",
       "required": true
     },
     {
-      "key": "archive_procedure",
+      "key": "gemini_supervisor_readme",
       "type": "file",
-      "path": "metaprocedures/procedures/AchiveExtraction/procedure.json",
+      "path": "ChatMachines/GeminiSupervisor/README.md",
       "required": true
     },
     {
-      "key": "archive_config",
-      "type": "file",
-      "path": "metaprocedures/procedures/AchiveExtraction/config.json",
-      "required": true
-    },
-    {
-      "key": "remote_apps_script_source",
-      "type": "file",
-      "path": "metaprocedures/procedures/AchiveExtraction/apps-script-source.js",
-      "required": true
-    },
-    {
-      "key": "node_workflow",
-      "type": "file",
-      "path": ".github/workflows/github-node-test.yml",
-      "required": true
-    },
-    {
-      "key": "verified_large_zip_failure",
+      "key": "current_project_instruction",
       "type": "literal",
-      "value": "Actual completed run 37742876274; Drive report https://drive.google.com/file/d/1xYNKKj-OxG281SiJXEdzo6aXaM6Gyk_c/view. Source archive id 1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK, size 993074157 bytes, preserved true; inspect PASS; list_entries FAIL with exact error 'File takeout-20261008T042958Z-2-001.zip exceeds the maximum file size.' Node successfully followed Apps Script ContentService 302 redirect to obtain report JSON and independent Drive fetch verified report. Apps Script Drive file creation was separately retested PASS."
+      "value": "{\"response_type\":\"custom_instruction\",\"instruction_id\":\"jwrs_projection_before_execution\",\"version\":\"1.0\",\"scope\":\"every_user_prompt\",\"governing_rule\":\"Before substantive execution: print valid JSON projection of user's complete operative request with explicit return_schema; then execute exact printed projection in same turn, no additional approval; accurately state COMPLETE/INCOMPLETE/BLOCKED/FAILED, never equate projection, intention, or attempt with completion. Preserve constraints, targets, quantities, sequence, prohibitions, permissions, and output contract.\"}",
+      "required": true
+    },
+    {
+      "key": "conversation_purpose_and_design_constraints",
+      "type": "literal",
+      "value": "The user calls JWRS a simple framing/interface, a conspicuous first compliance signal, and externalized hard-copy instructions. Their historical verifier/recovery rule systems added complexity the AI ignored; even deterministic inputs can be ignored. Avoid unnecessary controls and non-decidable semantic guarantees; use stochastic improvement goals. Keep JSON projection first, actual same-turn execution, return schema, and minified all-JSON finished artifact.",
+      "required": true
     }
   ],
   "validation": {
-    "expected_response_type": "large_archive_extraction_plan",
+    "expected_response_type": "jwrs_instruction_revision",
     "require_json": true,
     "strip_markdown_fence": true,
     "allow_repair": true
