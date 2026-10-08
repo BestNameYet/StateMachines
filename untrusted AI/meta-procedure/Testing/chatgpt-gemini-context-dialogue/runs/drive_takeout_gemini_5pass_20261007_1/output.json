@@ -1,54 +1,179 @@
 {
   "response_type": "drive_takeout_gemini_iteration",
-  "pass": 2,
+  "pass": 3,
   "findings": [
     {
-      "category": "architectural_triad_clarification",
-      "detail": "The architecture cleanly decouples three environments: (1) PromptGemini (.github/workflows/prompt-gemini-context-rich-dialogue.yml + gemini-message-executor.js) hosts the five-pass AI-NLE evaluation dialogue; (2) MetaProcedure JS Runner (js-runner.js) is a Node.js CLI runner that parses JSON and executes JavaScript found in 'script' fields; (3) Google Apps Script (Code.gs doPost bridge) executes remote Google Workspace APIs (DriveApp, Utilities) via HTTP POST."
+      "category": "earlier_pass_critique",
+      "detail": "Pass 1 and 2 rightly rejected the 'Gemini-as-execution-agent' fiction, but did not make explicit that DriveTakeoutInventory is purely a JS Runner -> Apps Script execution procedure. PromptGemini governs this supervisory review dialogue, whereas the runtime execution of DriveTakeoutInventory does not call the Gemini API."
     },
     {
-      "category": "pass_1_assumption_challenge",
-      "detail": "Pass 1 noted the 25MB cap was invented, but overlooked why: Google Apps Script has hard execution runtime (6 min) and blob memory limits (~50MB). However, rather than an arbitrary 25MB hardcoded cap, the procedure must inspect ZIP metadata safely, handle unzipping errors gracefully in Apps Script without silent failure, and record inspection status deterministically."
+      "category": "remote_exception_handling_defect",
+      "detail": "The original candidate relied on a rigid `sourceBytes > maxUnzipBytes` branch. In Apps Script, `Utilities.unzip(file.getBlob())` throws an untrapped runtime exception when archives exceed internal memory limits or contain unsupported formats, crashing before report generation. Decompression must be wrapped in a `try...catch` block to guarantee inspection report persistence regardless of decompression feasibility."
     },
     {
-      "category": "structural_gap_against_metaprocedure",
-      "detail": "Under 731942_ai_nlep_meta_procedure.json, an NLEP must include 16+ canonical objects (definitions, instructions with operation ledgers, constraints, invariants, state_model, transition_model, verification_model, error_model, procedure_execution_semantics, self_evaluation). Current procedure.json is an ad-hoc stub with a raw script string."
-    },
-    {
-      "category": "action_vs_effect_evidence_conflation",
-      "detail": "Current procedure.json considers the procedure complete when Drive file ID and URL are parsed from HTTP response. Per MetaProcedure VP3/VP4/VC8/VC9, action occurrence (Node.js script execution) and external effect (Google Drive report creation) must be distinctly tracked and verified."
+      "category": "state_and_transition_formalization",
+      "detail": "Under MetaProcedure properties P11 (State explicitness) and P12 (Transition semantics), the procedure lacked explicit state variables tracking remote execution, report file creation, local persistence, and deterministic error/retry branches."
     }
   ],
   "document_revision": {
     "target": "untrusted AI/meta-procedure/Procedures/DriveTakeoutInventory/procedure.json",
-    "structural_blueprint": {
-      "response_type": "ai_nlep",
-      "procedure_metadata": {
-        "procedure_id": "drive_takeout_inventory_20261007_1",
-        "title": "Drive Takeout Archive Inventory and Inspection",
-        "purpose": "Execute via MetaProcedure JS Runner to evaluate Google Drive Takeout archives through Apps Script doPost bridge and generate verified inspection reports.",
-        "target_executor_class": "AI-NLE",
-        "version": "2.0.0",
-        "status": "in_progress"
+    "operation_ledger": [
+      {
+        "operation_id": "OP1_ingest_parameters",
+        "operation": "ingest",
+        "object": "target drive file ID and execution run ID",
+        "inputs": [
+          "input.drive_file_id",
+          "procedure_metadata.procedure_id"
+        ],
+        "outputs": [
+          "state.target_file_id",
+          "state.run_id"
+        ],
+        "completion_condition": "Non-empty string identifiers verified."
       },
-      "canonical_execution_binding": {
-        "runner_invocation": "node 'untrusted AI/meta-procedure/Procedures/JS Runner/js-runner.js' 'untrusted AI/meta-procedure/Procedures/DriveTakeoutInventory/procedure.json'",
-        "script_target_key": "script",
-        "remote_endpoint": "https://script.google.com/macros/s/AKfycbxz7tkba4wl-wWzDn90iuh0us2l2EUD3AYV9HyVJckETKGjhPKFthnqPyYmcOPOk_g5FA/exec",
-        "post_envelope": {
-          "sourcecode": "Apps Script evaluation function string",
-          "arguments": {
-            "fileId": "1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK",
-            "runId": "string"
-          }
-        }
+      {
+        "operation_id": "OP2_construct_bridge_payload",
+        "operation": "construct",
+        "object": "Apps Script doPost body",
+        "inputs": [
+          "state.target_file_id",
+          "state.run_id"
+        ],
+        "outputs": [
+          "state.bridge_payload"
+        ],
+        "completion_condition": "JSON body conforms to {sourcecode: string, arguments: object}."
+      },
+      {
+        "operation_id": "OP3_dispatch_to_apps_script",
+        "operation": "dispatch",
+        "object": "HTTP POST to deployed Web App endpoint",
+        "inputs": [
+          "state.bridge_payload",
+          "config.endpoint_url"
+        ],
+        "outputs": [
+          "state.http_response_text",
+          "state.http_status"
+        ],
+        "completion_condition": "HTTP status 200 received with parseable JSON body."
+      },
+      {
+        "operation_id": "OP4_execute_remote_drive_inspection",
+        "operation": "execute_remote",
+        "object": "DriveApp and Utilities inspection in Google Workspace",
+        "inputs": [
+          "arguments.fileId",
+          "arguments.runId"
+        ],
+        "outputs": [
+          "report.status",
+          "report.driveFileId",
+          "report.driveFileUrl"
+        ],
+        "completion_condition": "Drive inspection report file created in Drive and file identifiers returned."
+      },
+      {
+        "operation_id": "OP5_persist_local_receipt",
+        "operation": "persist",
+        "object": "filesystem execution receipt",
+        "inputs": [
+          "state.parsed_remote_result"
+        ],
+        "outputs": [
+          "untrusted AI/meta-procedure/Procedures/DriveTakeoutInventory/latest-result.json"
+        ],
+        "completion_condition": "Receipt file written atomically to disk containing verified driveFileId."
       }
+    ],
+    "state_model": {
+      "state_variables": [
+        {
+          "name": "target_file_id",
+          "allowed_values": [
+            "string"
+          ],
+          "initial_value": "1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK",
+          "authoritative_source": "input.drive_file_id"
+        },
+        {
+          "name": "dispatch_status",
+          "allowed_values": [
+            "not_started",
+            "pending",
+            "success",
+            "http_error",
+            "timeout"
+          ],
+          "initial_value": "not_started",
+          "authoritative_source": "JS Runner fetch response"
+        },
+        {
+          "name": "remote_inspection_status",
+          "allowed_values": [
+            "not_run",
+            "ENUMERATED",
+            "METADATA_ONLY",
+            "UNZIP_FAILED"
+          ],
+          "initial_value": "not_run",
+          "authoritative_source": "Apps Script execution result.status"
+        },
+        {
+          "name": "drive_report_file_id",
+          "allowed_values": [
+            "null",
+            "string"
+          ],
+          "initial_value": null,
+          "authoritative_source": "Apps Script execution result.driveFileId"
+        },
+        {
+          "name": "local_receipt_persisted",
+          "allowed_values": [
+            false,
+            true
+          ],
+          "initial_value": false,
+          "authoritative_source": "fs.existsSync(latest-result.json)"
+        }
+      ]
+    },
+    "transition_model": {
+      "transitions": [
+        {
+          "from": "not_started",
+          "to": "dispatched",
+          "condition": "Bridge payload serialized and POST initiated"
+        },
+        {
+          "from": "dispatched",
+          "to": "dispatched",
+          "condition": "Transient network/HTTP 5xx failure, retry count < max_retries"
+        },
+        {
+          "from": "dispatched",
+          "to": "blocked",
+          "condition": "HTTP status non-200 or retries exhausted"
+        },
+        {
+          "from": "dispatched",
+          "to": "receipt_persisting",
+          "condition": "HTTP 200 with valid JSON containing driveFileId and driveFileUrl"
+        },
+        {
+          "from": "receipt_persisting",
+          "to": "complete",
+          "condition": "latest-result.json successfully written and non-empty"
+        }
+      ]
     }
   },
   "unresolved": [
-    "Definition of exact operation ledger items M1-Mn for the DriveTakeoutInventory procedure",
-    "Graceful handling strategy in Apps Script when archive entries exceed blob limits without crashing the endpoint",
-    "Formalizing the transition model and retry rules for network/Apps Script errors in accordance with MetaProcedure"
+    "Full mapping of MetaProcedure definitions, constraints, invariants, error_model, and self_evaluation sections into the candidate JSON",
+    "Preserving backward compatibility for the JS Runner runner command (`node js-runner.js procedure.json` scanning for key 'script')",
+    "Ensuring adversarial checks guard against false PASS where HTTP succeeded but Apps Script failed to create the Drive report"
   ],
-  "next_pass_focus": "Pass 3: Synthesize complete instructions.operations, state_model, and transition_model, detailing the exact JavaScript payload and error handling for the Apps Script bridge."
+  "next_pass_focus": "Pass 4: Assemble the comprehensive verification_model, error_model, and adversarial interpretation guards, resolving action vs effect verification."
 }
