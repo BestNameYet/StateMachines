@@ -28,88 +28,41 @@
     "nonce_param": "run_nonce",
     "nonce_regex": "^[A-Za-z0-9._-]+$",
     "default_nonce_prefix": "context_rich_dialogue",
-    "default_nonce": "context_rich_dialogue_20261007_1",
-    "reuse_history": false
+    "default_nonce": "drive_takeout_gemini_5pass_20261007_1",
+    "reuse_history": true
   },
   "prompt": {
-    "system_instruction": "You are constructing an AI natural-language-executable procedure. The supplied canonical MetaProcedure and companion definitions govern construction. Execute that construction process, repair every known repairable material defect, and return one complete valid JSON procedure only. Do not return an outline, commentary, markdown, pseudocode, or implementation code.",
-    "heuristic": "Construct the requested ChatGPT↔Gemini context-rich dialogue procedure from the supplied requirements. Apply the canonical MetaProcedure as the construction authority. In particular, do not repeat the prior failure: Gemini access must be concretely executable and observable. Bind the dialogue procedure's Gemini send/receive mechanics to the supplied PromptGemini procedure and its actual executor/workflow evidence. The resulting procedure must preserve Gemini's immediately preceding response in every later package, maintain explicit exchange and handshake state, prevent premature ChatGPT turn termination, and self-evaluate all applicable MetaProcedure properties. If any required interface or transition remains abstract, repair it before returning COMPLETE.",
+    "system_instruction": "You are the Gemini reviewer in an existing five-pass repository-grounded discussion. The attached documentation archive is authoritative evidence. Identify architecture and implementation errors precisely; do not invent interfaces or substitute new workflows. Return one concise valid JSON object for the requested pass.",
+    "heuristic": "Review the current DriveTakeoutInventory candidate against the complete attached repository documentation, especially MetaProcedure, PromptGemini, JS Runner, and existing GitHub workflows. The assistant previously invented a new YAML workflow, a 25MB archive cap, an unneeded HTTP result contract, a Gemini-as-agent fiction, and abstract interface assumptions. On each pass, criticize and improve the candidate, preserving prior dialogue context. Pass 5 must produce a corrected implementable document with evidence, deterministic verification and adaptive repairs.",
     "output_schema": {
-      "response_type": "chatgpt_gemini_context_rich_dialogue_procedure",
-      "procedure_metadata": {},
-      "definitions": [],
-      "instructions": {},
-      "constraints": [],
-      "invariants": [],
-      "authorities": {},
-      "inference_and_discretion_policy": {},
-      "state_model": {},
-      "transition_model": {},
-      "verification_model": {},
-      "error_model": {},
-      "examples_policy": {},
-      "context_policy": {},
-      "return_contract": {},
-      "procedure_execution_semantics": {},
-      "termination": {},
-      "self_evaluation": {}
+      "response_type": "drive_takeout_gemini_iteration",
+      "pass": 1,
+      "findings": [],
+      "document_revision": {},
+      "unresolved": [],
+      "next_pass_focus": ""
     },
-    "template_prefix": "Construct the final procedure from the authoritative inputs below.",
-    "template_suffix": "Return exactly one JSON object. The procedure itself is the result. Do not claim MetaProcedure compliance if a material specification gap remains."
+    "template_prefix": "Review the authoritative documentation archive and the exact failed attempt. Reiterate over five separate exchanges, preserving previous responses.",
+    "template_suffix": "Return one complete JSON object, with response_type drive_takeout_gemini_iteration. Do not claim execution of any code not actually run."
   },
   "inputs": [
     {
-      "key": "meta_procedure",
+      "key": "full_documentation_archive",
       "type": "file",
-      "path": "untrusted AI/meta-procedure/731942_ai_nlep_meta_procedure.json",
+      "path": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/drive-takeout-documentation-archive.json",
       "numbered": false,
       "required": true
     },
     {
-      "key": "meta_procedure_definitions",
+      "key": "current_solution",
       "type": "file",
-      "path": "untrusted AI/meta-procedure/731942_meta_procedure_flat_array_definitions.json",
-      "numbered": false,
-      "required": true
-    },
-    {
-      "key": "requirements_specification",
-      "type": "file",
-      "path": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/requirements-spec.json",
-      "numbered": false,
-      "required": true
-    },
-    {
-      "key": "prior_failure_analysis",
-      "type": "file",
-      "path": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/prior-failure-analysis.json",
-      "numbered": false,
-      "required": true
-    },
-    {
-      "key": "prompt_gemini_procedure",
-      "type": "file",
-      "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/PromptGemini.json",
-      "numbered": false,
-      "required": true
-    },
-    {
-      "key": "prompt_gemini_executor",
-      "type": "file",
-      "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/gemini-message-executor.js",
-      "numbered": true,
-      "required": true
-    },
-    {
-      "key": "prompt_gemini_workflow",
-      "type": "file",
-      "path": ".github/workflows/prompt-gemini-hidden-page-authoring.yml",
-      "numbered": true,
-      "required": true
+      "path": "untrusted AI/meta-procedure/Procedures/DriveTakeoutInventory/procedure.json",
+      "required": true,
+      "numbered": false
     }
   ],
   "validation": {
-    "expected_response_type": "chatgpt_gemini_context_rich_dialogue_procedure",
+    "expected_response_type": "drive_takeout_gemini_iteration",
     "require_json": true,
     "strip_markdown_fence": true,
     "allow_repair": true
