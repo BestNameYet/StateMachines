@@ -66,29 +66,18 @@
     }
   },
   "workflow": {
-    "status": "NOT_WIRED",
-    "candidate_path": ".github/workflows/achive-extraction.yml",
+    "status": "BOUND_EXISTING_WORKFLOW",
+    "path": ".github/workflows/github-node-test.yml",
     "trigger": {
       "event": "push",
       "branch": "main",
-      "path": "metaprocedures/procedures/AchiveExtraction/config.json"
+      "path": "ChatMachines/GitHubNodeTest/run.js"
     },
     "runner": "ubuntu-latest",
-    "checkout": "actions/checkout@v4",
-    "node_setup": "actions/setup-node@v4",
     "node_version": "22",
-    "invocation_config_key": "runtime.runner.command",
-    "verified_existing_pattern": {
-      "path": ".github/workflows/run-html-hidden-var-editor.yml",
-      "actual_trigger": ".github/workflows/run-html-hidden-var-editor.yml",
-      "current_procedure": "HTMLHiddenVarEditor",
-      "suitability": "EXAMPLE_ONLY_NOT_BOUND_TO_ARCHIVE_EXTRACTION"
-    },
-    "nonmatching_workflow": {
-      "path": ".github/workflows/prompt-gemini-js-runner-authoring.yml",
-      "purpose": "Author/rewrite JS Runner using Gemini, not execute arbitrary archive procedure"
-    },
-    "execution_enabled": false,
-    "activation_requirement": "A GitHub Actions workflow must explicitly invoke runtime.runner.command and have a matching trigger. No currently inspected workflow provides that binding."
+    "entrypoint": "ChatMachines/GitHubNodeTest/run.js",
+    "invocation": "node 'untrusted AI/meta-procedure/Procedures/JS Runner/js-runner.js' 'metaprocedures/procedures/AchiveExtraction/procedure.json'",
+    "binding": "GitHub Node test workflow executes run.js on changes to run.js. run.js launches the existing JS Runner as a child process.",
+    "execution_enabled": true
   }
 }
