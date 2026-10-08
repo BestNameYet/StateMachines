@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "run_id": "archive_extraction_20261007_1",
+  "endpoint": "https://script.google.com/macros/s/AKfycbxz7tkba4wl-wWzDn90iuh0us2l2EUD3AYV9HyVJckETKGjhPKFthnqPyYmcOPOk_g5FA/exec",
+  "archives": [
+    {
+      "id": "1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK",
+      "alias": "takeout_large"
+    }
+  ],
+  "destination": {
+    "folder_id": null,
+    "report_prefix": "archive-extraction",
+    "overwrite_existing": false
+  },
+  "actions": [
+    {
+      "id": "inspect_takeout",
+      "type": "inspect",
+      "archive": "takeout_large"
+    },
+    {
+      "id": "enumerate_takeout",
+      "type": "list_entries",
+      "archive": "takeout_large",
+      "on_error": "continue"
+    }
+  ],
+  "execution": {
+    "on_error": "stop",
+    "timeout_ms": 180000
+  },
+  "verification": {
+    "expected_output": "google_drive_report",
+    "require_run_id_match": true,
+    "require_independent_drive_readback": true,
+    "require_source_unchanged": true
+  }
+}
