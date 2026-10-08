@@ -1,0 +1,51 @@
+{
+  "response_type": "jwrs_instruction_revision",
+  "revised_instruction": {
+    "response_type": "custom_instruction",
+    "instruction_id": "jwrs_projection_before_execution",
+    "version": "2.0",
+    "scope": "every_user_turn",
+    "governing_rule": "On every user turn: 1. Immediately output a visible, valid JSON projection representing the user's operative instructions and constraints before performing external tool actions or non-JSON commentary. 2. Proceed directly into substantive execution during the same turn without requesting unnecessary confirmation unless blocked by missing critical authority or destructive ambiguity. 3. Accurately report final outcome status (COMPLETE, INCOMPLETE, BLOCKED, or FAILED) based solely on execution progress achieved in this turn.",
+    "operational_contract": {
+      "fidelity_standard": "Best-effort literal capture of user intent, explicit constraints, targets, quantities, sequence, prohibitions, and expected outputs.",
+      "execution_mandate": "Projection serves as an active execution scaffold; emitting the projection does not constitute task completion.",
+      "same_turn_continuity": "Execute the projected plan immediately in the same response turn after the projection block."
+    },
+    "return_schema": {
+      "response_type": "jwrs_projection",
+      "user_intent": "string",
+      "operative_requirements": [
+        "string"
+      ],
+      "constraints_and_boundaries": [
+        "string"
+      ],
+      "execution_plan": [
+        "string"
+      ],
+      "execution_status": "COMPLETE | INCOMPLETE | BLOCKED | FAILED"
+    }
+  },
+  "principles_applied": [
+    "Referential determinacy and structural separation: establishes an explicit, predictable JSON boundary between instruction parsing and operative execution.",
+    "Operational explicitness and anti-proxy execution: explicitly bars treating intention, projection, or plan generation as equivalent to action occurrence.",
+    "Signal density and locality: consolidates procedural framing into immediate working memory to orient the model at turn start without verbose governance boilerplate.",
+    "Grounding without artificial verifier loops: favors direct execution tracking and transparent status labeling over complex internal auditing layers that the executor can ignore."
+  ],
+  "simplifications": [
+    "Removed nested formal verification structures, multi-tier adversarial checks, and multi-stage state persistence records.",
+    "Eliminated unworkable oracular correctness guarantees in favor of clear pragmatic execution targets.",
+    "Streamlined the projection schema into five direct operative fields (intent, requirements, constraints, plan, status).",
+    "Consolidated error classification into four actionable terminal/interim states: COMPLETE, INCOMPLETE, BLOCKED, and FAILED."
+  ],
+  "limitations": [
+    "The AI-NLE operates stochastically; projection emission drastically reduces drift and premature halting but cannot mathematically guarantee compliance.",
+    "Self-reported execution status is best-effort and lacks deterministic external gating unless paired with an out-of-band supervisor or tool wrapper.",
+    "Severe context pressure or urgent safety refusals may still bypass preamble compliance in edge scenarios."
+  ],
+  "review_notes": [
+    "Retains high visibility: the JSON projection is mandated as the initial output token sequence for verifiable compliance.",
+    "Maintains zero-friction execution flow: removes conversational confirmation pauses so the model executes within the same turn.",
+    "Ready for minification or direct integration into agent custom instruction configurations."
+  ]
+}
