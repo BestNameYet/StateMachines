@@ -1,0 +1,162 @@
+{
+  "response_type": "ai_nlep",
+  "procedure_metadata": {
+    "name": "AchiveExtraction",
+    "version": "1.0",
+    "purpose": "Configurable ordered actions on designated Drive ZIP archives using existing MetaProcedure JS Runner and Apps Script eval bridge.",
+    "authority": "untrusted AI/meta-procedure/731942_ai_nlep_meta_procedure.json",
+    "source_procedure": "untrusted AI/meta-procedure/Procedures/DriveTakeoutInventory/gemini-revised-procedure.json",
+    "execution_status": "NOT_EXECUTED"
+  },
+  "definitions": {
+    "archive": "Drive file addressed by exact file id and alias",
+    "action": "Registered Apps Script archive operation selected in config.json",
+    "run_id": "Unique identifier of this execution's evidence"
+  },
+  "input": {
+    "config_file": "metaprocedures/procedures/AchiveExtraction/config.json",
+    "remote_program": "metaprocedures/procedures/AchiveExtraction/apps-script-source.js",
+    "entrypoint": "untrusted AI/meta-procedure/Procedures/JS Runner/js-runner.js"
+  },
+  "available_actions": [
+    {
+      "type": "inspect",
+      "description": "Get Drive metadata without decompressing ZIP",
+      "args": [
+        "archive"
+      ]
+    },
+    {
+      "type": "list_entries",
+      "description": "Decompress ZIP and list entry names and sizes; subject to Apps Script blob/execution limits",
+      "args": [
+        "archive",
+        "on_error"
+      ]
+    },
+    {
+      "type": "extract_selected",
+      "description": "Decompress ZIP and write exact named entries as separate Drive files",
+      "args": [
+        "archive",
+        "entries",
+        "output_prefix",
+        "on_error"
+      ]
+    },
+    {
+      "type": "copy_archive",
+      "description": "Copy the original archive to the configured destination without changing source",
+      "args": [
+        "archive",
+        "output_name",
+        "on_error"
+      ]
+    }
+  ],
+  "instructions": {
+    "operations": [
+      {
+        "id": "A1",
+        "task": "Validate archive IDs, aliases and ordered action registry"
+      },
+      {
+        "id": "A2",
+        "task": "Run this procedure JSON script using existing MetaProcedure JS Runner in a GitHub Node.js workflow"
+      },
+      {
+        "id": "A3",
+        "task": "POST apps-script-source.js as sourcecode with config as arguments"
+      },
+      {
+        "id": "A4",
+        "task": "Apps Script processes the action sequence and writes run-scoped report to Google Drive"
+      },
+      {
+        "id": "A5",
+        "task": "Read the matching report independently through Google Drive and compare every configured action to report status and output artifacts"
+      },
+      {
+        "id": "A6",
+        "task": "On recoverable failure modify configuration or use a verified repair branch then re-execute and re-evaluate"
+      }
+    ]
+  },
+  "constraints": [
+    "Do not modify source archives.",
+    "Exact archive IDs and ordered actions are supplied by user in config.json.",
+    "No arbitrary size threshold; Apps Script limitations may prevent decompressing large ZIPs.",
+    "Never infer extraction success from HTTP status.",
+    "Never execute arbitrary user supplied action type; only registered operations.",
+    "Avoid overwrite of existing artifacts; report names include run_id."
+  ],
+  "invariants": [
+    "Source Drive IDs retain size and last-modified timestamp within the observable procedure.",
+    "No final PASS without independent Drive readback and action evidence."
+  ],
+  "authorities": {
+    "repository": "BestNameYet/StateMachines",
+    "config": "metaprocedures/procedures/AchiveExtraction/config.json",
+    "execution_runtime": "untrusted AI/meta-procedure/Procedures/JS Runner/js-runner.js",
+    "remote_runtime": "Google Apps Script doPost eval(sourcecode)(arguments)"
+  },
+  "state_model": {
+    "states": [
+      "CONFIGURED",
+      "DISPATCHED",
+      "REMOTE_EXECUTED",
+      "DRIVE_RECORDED",
+      "VERIFIED",
+      "FAILED",
+      "BLOCKED"
+    ],
+    "persisted_in": "Google Drive run-scoped report"
+  },
+  "transition_model": {
+    "CONFIGURED": "DISPATCHED only on real POST",
+    "DISPATCHED": "REMOTE_EXECUTED only with execution evidence",
+    "REMOTE_EXECUTED": "DRIVE_RECORDED when new report is observed",
+    "DRIVE_RECORDED": "VERIFIED only after deterministic checks"
+  },
+  "verification_model": {
+    "independent_source": "Google Drive",
+    "required_checks": [
+      "Run id equals requested run id",
+      "All configured actions present in order",
+      "Every mandatory action passes",
+      "Every output locator resolves to a Drive file",
+      "Source archive metadata unchanged",
+      "No omitted or unreported action"
+    ],
+    "http_result_is_proof": false
+  },
+  "error_model": {
+    "unknown_action": "Fail before dispatch",
+    "unzip_failure": "Record action error in Drive report; obey on_error policy",
+    "missing_selected_entry": "Record missing entry and fail the action",
+    "remote_timeout": "Before retry check Drive for run-specific result to avoid duplicate effects",
+    "permissions": "BLOCKED until authorized access restored"
+  },
+  "return_contract": {
+    "statuses": [
+      "COMPLETE",
+      "INCOMPLETE",
+      "BLOCKED",
+      "FAILED"
+    ],
+    "complete_if": "All mandatory Drive checks pass and current execution action evidence exists"
+  },
+  "procedure_execution_semantics": {
+    "order": "config.actions array order",
+    "dispatch": "one initial POST launches entire configured Apps Script sequence",
+    "gemini": "Not required for routine execution; configurable PromptGemini used only when explicitly requested for review or adaptive repair"
+  },
+  "termination": {
+    "success": "Verified Drive goal state",
+    "failure": "Documented nonrepairable or exhausted failure"
+  },
+  "self_evaluation": {
+    "status": "PENDING_EXECUTION_VERIFICATION"
+  },
+  "script": "(async function () {\n  const fs = require('node:fs');\n  const path = require('node:path');\n  const https = require('node:https');\n  const base = 'metaprocedures/procedures/AchiveExtraction';\n  const config = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), base, 'config.json'), 'utf8'));\n  const remoteSource = fs.readFileSync(path.resolve(process.cwd(), base, 'apps-script-source.js'), 'utf8').trim();\n  if (!/^[A-Za-z0-9._-]+$/.test(config.run_id)) throw new Error('Invalid run_id');\n  if (!Array.isArray(config.archives) || !config.archives.length) throw new Error('No archives configured');\n  if (!Array.isArray(config.actions) || !config.actions.length) throw new Error('No actions configured');\n  const aliases = new Set();\n  for (const a of config.archives) {\n    if (typeof a.id !== 'string' || !a.id || typeof a.alias !== 'string' || !/^[A-Za-z0-9._-]+$/.test(a.alias) || aliases.has(a.alias)) throw new Error('Invalid archive');\n    aliases.add(a.alias);\n  }\n  const allowed = new Set(['inspect','list_entries','extract_selected','copy_archive']);\n  const actionIds = new Set();\n  for (const a of config.actions) {\n    if (!a.id || actionIds.has(a.id) || !allowed.has(a.type) || !aliases.has(a.archive)) throw new Error('Invalid action');\n    if (a.on_error && !['continue','stop'].includes(a.on_error)) throw new Error('Invalid on_error');\n    if (a.type === 'extract_selected' && (!Array.isArray(a.entries) || !a.entries.length)) throw new Error('Missing extraction entries');\n    actionIds.add(a.id);\n  }\n  const body = JSON.stringify({sourcecode:remoteSource,arguments:{run_id:config.run_id,archives:config.archives,actions:config.actions,destination:config.destination,execution:config.execution}});\n  const target = new URL(config.endpoint);\n  if (target.protocol !== 'https:' || target.hostname !== 'script.google.com' || !target.pathname.endsWith('/exec')) throw new Error('Invalid Apps Script endpoint');\n  const transport = await new Promise((resolve,reject)=>{\n    const request = https.request(target,{method:'POST',headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)},timeout:config.execution.timeout_ms || 180000},response=>{\n      let sample='';\n      response.on('data',chunk=>{if(sample.length<512) sample+=chunk.toString('utf8').slice(0,512-sample.length);});\n      response.on('end',()=>resolve({status:response.statusCode,location:response.headers.location || null,body_sample:sample}));\n    });\n    request.on('timeout',()=>request.destroy(new Error('POST timed out')));\n    request.on('error',reject);\n    request.end(body);\n  });\n  if (transport.status < 200 || transport.status >= 400) throw new Error('POST was not accepted: HTTP '+transport.status+' '+transport.body_sample);\n  console.log(JSON.stringify({run_id:config.run_id,transport_status:transport.status,dispatch_observed:true,goal_verified:false,verification_required:'Read the run-scoped JSON report in Google Drive and compare action results with config.json.'}));\n})()"
+}
