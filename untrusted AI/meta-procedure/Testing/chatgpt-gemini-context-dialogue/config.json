@@ -28,24 +28,26 @@
     "nonce_param": "run_nonce",
     "nonce_regex": "^[A-Za-z0-9._-]+$",
     "default_nonce_prefix": "context_rich_dialogue",
-    "default_nonce": "archive_extraction_failure_review_20261008_1",
+    "default_nonce": "large_zip_extraction_plan_20261008_1",
     "reuse_history": false
   },
   "prompt": {
-    "system_instruction": "You are Gemini reviewing an actual execution failure in an existing StateMachines procedure. Follow supplied canonical documentation and actual code. Return a grounded JSON diagnosis and specific repair recommendations; distinguish verified evidence from hypotheses. Do not invent a new workflow or report unexecuted fixes as completed.",
-    "heuristic": "Diagnose the current AchiveExtraction failure from its exact executable sources, configuration, GitHub trigger, and independently observed error. The prior workflow HTTP 200 body was HTML with title Error and an Apps Script exception: 'You do not have permission to call DriveApp.createFile. Required permissions: https://www.googleapis.com/auth/drive' (line 12). Examine why the Apps Script endpoint lacks authorization, whether program architecture unnecessarily demands DriveApp.createFile, and how to repair through already configured mechanisms. Do not simply restate error. Explain testable repair paths, exact edits if warranted, and state what cannot be fixed from GitHub without Apps Script authorization.",
+    "system_instruction": "You are Gemini reviewing an actual large ZIP extraction limit in an existing StateMachines system. Work from the provided current implementation and verified execution report. Produce an actionable, source-grounded architecture and test plan. Distinguish documented capabilities, inferred approaches and required experiments. Avoid inventing workflows; preserve source archive.",
+    "heuristic": "The authenticated Apps Script can read Drive metadata, create Drive files and return JSON through an existing GitHub Actions Node/JS Runner/Apps Script POST. A 993074157-byte ZIP failed during full Utilities.unzip with 'exceeds the maximum file size'. Develop a precise method for enumerating and extracting selected files from large ZIPs without loading the whole archive into Apps Script blobs. Evaluate Node.js-on-GitHub range downloads from Google Drive, Drive API authenticated HTTP Range access, ZIP central-directory parsing and ZIP64, selective streamed extraction, checkpointing and Drive output writing; identify exactly which credentials and capabilities must be established, and alternatives when unavailable. The user wants a plan, not an untested implementation claim. Make the plan configurable for multiple archive IDs and ordered actions, and include deterministic tests and verification. Account for a potentially public/shareable Drive file vs authenticated only and for not exposing private data outside authorized paths. Avoid claiming Apps Script can range-read Drive blobs unless verified.",
     "output_schema": {
-      "response_type": "archive_extraction_failure_diagnosis",
+      "response_type": "large_archive_extraction_plan",
       "verified_facts": [],
-      "root_causes": [],
-      "mistake_pattern": [],
-      "repairs": [],
-      "verification_plan": [],
-      "limitations": [],
-      "recommended_next_operation": ""
+      "candidate_architectures": [],
+      "recommended_architecture": {},
+      "implementation_steps": [],
+      "required_capability_tests": [],
+      "configuration_changes": [],
+      "verification_predicates": [],
+      "failure_repairs": [],
+      "open_questions": []
     },
-    "template_prefix": "Analyze the latest real AchiveExtraction workflow failure using these authoritative files and evidence.",
-    "template_suffix": "Return a single valid JSON object with response_type archive_extraction_failure_diagnosis. Ground claims in supplied files; identify the most actionable next operation."
+    "template_prefix": "Produce a rigorous large-ZIP extraction plan using the supplied live code, execution report, and documentation.",
+    "template_suffix": "Return a single valid JSON object with the configured response_type and keys. Do not present conjectures as verified execution capabilities."
   },
   "inputs": [
     {
@@ -79,26 +81,19 @@
       "required": true
     },
     {
-      "key": "node_trigger_source",
-      "type": "file",
-      "path": "ChatMachines/GitHubNodeTest/run.js",
-      "required": true
-    },
-    {
       "key": "node_workflow",
       "type": "file",
       "path": ".github/workflows/github-node-test.yml",
       "required": true
     },
     {
-      "key": "failure_evidence",
+      "key": "verified_large_zip_failure",
       "type": "literal",
-      "value": "GitHub Actions run 37741046518, job 113191589900, failed during Node.js execution. Its captured Apps Script HTTP 200 body was HTML title Error with exception context: Exception: You do not have permission to call DriveApp.createFile. Required permissions: https://www.googleapis.com/auth/drive. For more information see https://developers.google.com/apps-script/guides/support/troubleshooting#authorization-is (line 12). No run-scoped report was found in Drive for archive_extraction_20261007_1.",
-      "required": true
+      "value": "Actual completed run 37742876274; Drive report https://drive.google.com/file/d/1xYNKKj-OxG281SiJXEdzo6aXaM6Gyk_c/view. Source archive id 1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK, size 993074157 bytes, preserved true; inspect PASS; list_entries FAIL with exact error 'File takeout-20261008T042958Z-2-001.zip exceeds the maximum file size.' Node successfully followed Apps Script ContentService 302 redirect to obtain report JSON and independent Drive fetch verified report. Apps Script Drive file creation was separately retested PASS."
     }
   ],
   "validation": {
-    "expected_response_type": "archive_extraction_failure_diagnosis",
+    "expected_response_type": "large_archive_extraction_plan",
     "require_json": true,
     "strip_markdown_fence": true,
     "allow_repair": true
