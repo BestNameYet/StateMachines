@@ -1,179 +1,105 @@
 {
   "response_type": "drive_takeout_gemini_iteration",
-  "pass": 3,
+  "pass": 4,
   "findings": [
     {
-      "category": "earlier_pass_critique",
-      "detail": "Pass 1 and 2 rightly rejected the 'Gemini-as-execution-agent' fiction, but did not make explicit that DriveTakeoutInventory is purely a JS Runner -> Apps Script execution procedure. PromptGemini governs this supervisory review dialogue, whereas the runtime execution of DriveTakeoutInventory does not call the Gemini API."
+      "category": "drive_modification_boundary_clarification",
+      "detail": "A critical distinction exists between modifying the source archive and creating an inspection report. Constraint 'Do not overwrite the source ZIP' mandates source immutability (archiveModified: false, sourceFileId intact), while constraint 'Write inspection results to Google Drive' mandates creating a distinct, new Drive file (driveFileId !== sourceFileId). Earlier passes conflated writing to Drive with archive mutation."
     },
     {
-      "category": "remote_exception_handling_defect",
-      "detail": "The original candidate relied on a rigid `sourceBytes > maxUnzipBytes` branch. In Apps Script, `Utilities.unzip(file.getBlob())` throws an untrapped runtime exception when archives exceed internal memory limits or contain unsupported formats, crashing before report generation. Decompression must be wrapped in a `try...catch` block to guarantee inspection report persistence regardless of decompression feasibility."
+      "category": "action_and_effect_verification_coupling",
+      "detail": "Under MetaProcedure VP3 and SCR11, action occurrence (Node.js script executing via JS Runner) and effect verification (Apps Script creating the Drive file and returning re-findable locators) must have independent verification checks. A successful HTTP 200 without a verified driveFileId is an invalid completion proxy."
     },
     {
-      "category": "state_and_transition_formalization",
-      "detail": "Under MetaProcedure properties P11 (State explicitness) and P12 (Transition semantics), the procedure lacked explicit state variables tracking remote execution, report file creation, local persistence, and deterministic error/retry branches."
+      "category": "adversarial_interpretation_vulnerabilities",
+      "detail": "Without strict guards, an executor could: (1) claim completion from a preexisting latest-result.json; (2) interpret unzipping failure as total procedure failure rather than producing a METADATA_ONLY or UNZIP_FAILED report; (3) emit a valid response object where driveFileId equals the sourceFileId (overwriting the source)."
     }
   ],
   "document_revision": {
     "target": "untrusted AI/meta-procedure/Procedures/DriveTakeoutInventory/procedure.json",
-    "operation_ledger": [
-      {
-        "operation_id": "OP1_ingest_parameters",
-        "operation": "ingest",
-        "object": "target drive file ID and execution run ID",
-        "inputs": [
-          "input.drive_file_id",
-          "procedure_metadata.procedure_id"
-        ],
-        "outputs": [
-          "state.target_file_id",
-          "state.run_id"
-        ],
-        "completion_condition": "Non-empty string identifiers verified."
-      },
-      {
-        "operation_id": "OP2_construct_bridge_payload",
-        "operation": "construct",
-        "object": "Apps Script doPost body",
-        "inputs": [
-          "state.target_file_id",
-          "state.run_id"
-        ],
-        "outputs": [
-          "state.bridge_payload"
-        ],
-        "completion_condition": "JSON body conforms to {sourcecode: string, arguments: object}."
-      },
-      {
-        "operation_id": "OP3_dispatch_to_apps_script",
-        "operation": "dispatch",
-        "object": "HTTP POST to deployed Web App endpoint",
-        "inputs": [
-          "state.bridge_payload",
-          "config.endpoint_url"
-        ],
-        "outputs": [
-          "state.http_response_text",
-          "state.http_status"
-        ],
-        "completion_condition": "HTTP status 200 received with parseable JSON body."
-      },
-      {
-        "operation_id": "OP4_execute_remote_drive_inspection",
-        "operation": "execute_remote",
-        "object": "DriveApp and Utilities inspection in Google Workspace",
-        "inputs": [
-          "arguments.fileId",
-          "arguments.runId"
-        ],
-        "outputs": [
-          "report.status",
-          "report.driveFileId",
-          "report.driveFileUrl"
-        ],
-        "completion_condition": "Drive inspection report file created in Drive and file identifiers returned."
-      },
-      {
-        "operation_id": "OP5_persist_local_receipt",
-        "operation": "persist",
-        "object": "filesystem execution receipt",
-        "inputs": [
-          "state.parsed_remote_result"
-        ],
-        "outputs": [
-          "untrusted AI/meta-procedure/Procedures/DriveTakeoutInventory/latest-result.json"
-        ],
-        "completion_condition": "Receipt file written atomically to disk containing verified driveFileId."
-      }
-    ],
-    "state_model": {
-      "state_variables": [
+    "verification_model": {
+      "principles": [
+        "VP1: Verify prescribed archive inspection without inferring unstated goals.",
+        "VP2: Require re-findable locators (driveFileId, driveFileUrl) to entail report creation.",
+        "VP3: Separate JS Runner action occurrence from Google Drive report creation.",
+        "VP4: Source archive immutability is strictly verified: sourceFileId !== driveFileId.",
+        "VP5: Preexisting latest-result.json does not satisfy action occurrence for current run."
+      ],
+      "checks": [
         {
-          "name": "target_file_id",
-          "allowed_values": [
-            "string"
-          ],
-          "initial_value": "1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK",
-          "authoritative_source": "input.drive_file_id"
+          "check_id": "VC1_source_immutability",
+          "claim": "Source ZIP archive is unmodified",
+          "evidence_required": "remote_result.archiveModified === false && remote_result.sourceBytes > 0 && remote_result.driveFileId !== remote_result.sourceFileId",
+          "pass_condition": "Source file metadata confirms immutability and report file is distinct",
+          "fail_condition": "Source archive overwritten or report file matches source ID",
+          "on_fail": "FAIL procedure and flag critical constraint violation"
         },
         {
-          "name": "dispatch_status",
-          "allowed_values": [
-            "not_started",
-            "pending",
-            "success",
-            "http_error",
-            "timeout"
-          ],
-          "initial_value": "not_started",
-          "authoritative_source": "JS Runner fetch response"
+          "check_id": "VC2_remote_report_effect",
+          "claim": "Inspection report created in Google Drive",
+          "evidence_required": "remote_result.driveFileId non-empty string and remote_result.driveFileUrl valid URL",
+          "pass_condition": "Both locators exist and are non-empty",
+          "fail_condition": "driveFileId or driveFileUrl missing or null",
+          "on_fail": "Mark remote effect unverified; retry or block"
         },
         {
-          "name": "remote_inspection_status",
-          "allowed_values": [
-            "not_run",
-            "ENUMERATED",
-            "METADATA_ONLY",
-            "UNZIP_FAILED"
-          ],
-          "initial_value": "not_run",
-          "authoritative_source": "Apps Script execution result.status"
-        },
-        {
-          "name": "drive_report_file_id",
-          "allowed_values": [
-            "null",
-            "string"
-          ],
-          "initial_value": null,
-          "authoritative_source": "Apps Script execution result.driveFileId"
-        },
-        {
-          "name": "local_receipt_persisted",
-          "allowed_values": [
-            false,
-            true
-          ],
-          "initial_value": false,
-          "authoritative_source": "fs.existsSync(latest-result.json)"
+          "check_id": "VC3_local_receipt_persistence",
+          "claim": "Result JSON persisted to workspace filesystem",
+          "evidence_required": "fs.existsSync('latest-result.json') with matching runId and driveFileId",
+          "pass_condition": "File exists, parses, and matches in-memory result",
+          "fail_condition": "File missing, unparseable, or mismatched",
+          "on_fail": "Re-execute atomic file write"
         }
       ]
     },
-    "transition_model": {
-      "transitions": [
+    "error_model": {
+      "known_failure_modes": [
         {
-          "from": "not_started",
-          "to": "dispatched",
-          "condition": "Bridge payload serialized and POST initiated"
+          "failure_id": "E1_unzip_memory_quota_exhausted",
+          "name": "Utilities.unzip Memory or Timeout Failure in Apps Script",
+          "cause": "Archive is too large for in-memory decompression in Apps Script runtime",
+          "prevention": "Wrap Utilities.unzip in try/catch block inside Apps Script sourcecode",
+          "detection": "Catch block in sourcecode intercepts error and sets status to UNZIP_FAILED or METADATA_ONLY",
+          "recovery": "Create Drive report containing complete file metadata and error diagnostic; return valid report locators"
         },
         {
-          "from": "dispatched",
-          "to": "dispatched",
-          "condition": "Transient network/HTTP 5xx failure, retry count < max_retries"
+          "failure_id": "E2_apps_script_endpoint_transient_error",
+          "name": "HTTP 429/5xx or Network Timeout",
+          "cause": "Google Apps Script infrastructure rate-limiting or network hiccup",
+          "prevention": "Configure exponential backoff and timeout abort signals in Node.js fetch",
+          "detection": "HTTP status !== 200 or fetch throws network error",
+          "recovery": "Retry up to 2 times with delay; if still failing, write failure diagnostic and terminate non-zero"
         },
         {
-          "from": "dispatched",
-          "to": "blocked",
-          "condition": "HTTP status non-200 or retries exhausted"
+          "failure_id": "E3_source_file_not_found",
+          "name": "DriveApp.getFileById Failed",
+          "cause": "Supplied file ID is invalid or inaccessible to the Apps Script service account",
+          "prevention": "Validate drive_file_id parameter format before dispatch",
+          "detection": "Apps Script catch block reports file not found error",
+          "recovery": "Return BLOCKED status specifying missing permission/file"
+        }
+      ]
+    },
+    "adversarial_interpretation_model": {
+      "guards": [
+        {
+          "risk": "Executor skips remote execution because latest-result.json exists from prior run",
+          "guard": "Require fresh run_id match between runtime execution and latest-result.json; delete stale receipt before dispatch"
         },
         {
-          "from": "dispatched",
-          "to": "receipt_persisting",
-          "condition": "HTTP 200 with valid JSON containing driveFileId and driveFileUrl"
+          "risk": "Executor modifies source file in Drive instead of creating new report",
+          "guard": "Check driveFileId !== sourceFileId and assert archiveModified === false"
         },
         {
-          "from": "receipt_persisting",
-          "to": "complete",
-          "condition": "latest-result.json successfully written and non-empty"
+          "risk": "Executor treats unzipping failure as total procedure abort without generating report",
+          "guard": "Enforce that report creation occurs in all branches, recording metadata and failure reason if decompression fails"
         }
       ]
     }
   },
   "unresolved": [
-    "Full mapping of MetaProcedure definitions, constraints, invariants, error_model, and self_evaluation sections into the candidate JSON",
-    "Preserving backward compatibility for the JS Runner runner command (`node js-runner.js procedure.json` scanning for key 'script')",
-    "Ensuring adversarial checks guard against false PASS where HTTP succeeded but Apps Script failed to create the Drive report"
+    "Final integration of all components into the canonical procedure.json, retaining exact compatibility with JS Runner (which searches for key 'script')",
+    "Ensuring the top-level response adheres strictly to the 731942_ai_nlep_meta_procedure.json template schema"
   ],
-  "next_pass_focus": "Pass 4: Assemble the comprehensive verification_model, error_model, and adversarial interpretation guards, resolving action vs effect verification."
+  "next_pass_focus": "Pass 5: Deliver the complete, finalized, and implementable DriveTakeoutInventory procedure.json document conforming strictly to MetaProcedure, JS Runner contract, and Apps Script bridge specifications."
 }
