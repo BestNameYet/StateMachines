@@ -28,41 +28,77 @@
     "nonce_param": "run_nonce",
     "nonce_regex": "^[A-Za-z0-9._-]+$",
     "default_nonce_prefix": "context_rich_dialogue",
-    "default_nonce": "drive_takeout_gemini_5pass_20261007_1",
-    "reuse_history": true
+    "default_nonce": "archive_extraction_failure_review_20261008_1",
+    "reuse_history": false
   },
   "prompt": {
-    "system_instruction": "You are the Gemini reviewer in an existing five-pass repository-grounded discussion. The attached documentation archive is authoritative evidence. Identify architecture and implementation errors precisely; do not invent interfaces or substitute new workflows. Return one concise valid JSON object for the requested pass.",
-    "heuristic": "Review the current DriveTakeoutInventory candidate against the complete attached repository documentation, especially MetaProcedure, PromptGemini, JS Runner, and existing GitHub workflows. The assistant previously invented a new YAML workflow, a 25MB archive cap, an unneeded HTTP result contract, a Gemini-as-agent fiction, and abstract interface assumptions. On each pass, criticize and improve the candidate, preserving prior dialogue context. Pass 5 must produce a corrected implementable document with evidence, deterministic verification and adaptive repairs.",
+    "system_instruction": "You are Gemini reviewing an actual execution failure in an existing StateMachines procedure. Follow supplied canonical documentation and actual code. Return a grounded JSON diagnosis and specific repair recommendations; distinguish verified evidence from hypotheses. Do not invent a new workflow or report unexecuted fixes as completed.",
+    "heuristic": "Diagnose the current AchiveExtraction failure from its exact executable sources, configuration, GitHub trigger, and independently observed error. The prior workflow HTTP 200 body was HTML with title Error and an Apps Script exception: 'You do not have permission to call DriveApp.createFile. Required permissions: https://www.googleapis.com/auth/drive' (line 12). Examine why the Apps Script endpoint lacks authorization, whether program architecture unnecessarily demands DriveApp.createFile, and how to repair through already configured mechanisms. Do not simply restate error. Explain testable repair paths, exact edits if warranted, and state what cannot be fixed from GitHub without Apps Script authorization.",
     "output_schema": {
-      "response_type": "drive_takeout_gemini_iteration",
-      "pass": 1,
-      "findings": [],
-      "document_revision": {},
-      "unresolved": [],
-      "next_pass_focus": ""
+      "response_type": "archive_extraction_failure_diagnosis",
+      "verified_facts": [],
+      "root_causes": [],
+      "mistake_pattern": [],
+      "repairs": [],
+      "verification_plan": [],
+      "limitations": [],
+      "recommended_next_operation": ""
     },
-    "template_prefix": "Review the authoritative documentation archive and the exact failed attempt. Reiterate over five separate exchanges, preserving previous responses.",
-    "template_suffix": "Return one complete JSON object, with response_type drive_takeout_gemini_iteration. Do not claim execution of any code not actually run."
+    "template_prefix": "Analyze the latest real AchiveExtraction workflow failure using these authoritative files and evidence.",
+    "template_suffix": "Return a single valid JSON object with response_type archive_extraction_failure_diagnosis. Ground claims in supplied files; identify the most actionable next operation."
   },
   "inputs": [
     {
-      "key": "full_documentation_archive",
+      "key": "canonical_metaprocedure",
       "type": "file",
-      "path": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/drive-takeout-documentation-archive.json",
-      "numbered": false,
+      "path": "untrusted AI/meta-procedure/731942_ai_nlep_meta_procedure.json",
       "required": true
     },
     {
-      "key": "current_solution",
+      "key": "promptgemini_procedure",
       "type": "file",
-      "path": "untrusted AI/meta-procedure/Procedures/DriveTakeoutInventory/procedure.json",
-      "required": true,
-      "numbered": false
+      "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/PromptGemini.json",
+      "required": true
+    },
+    {
+      "key": "archive_procedure",
+      "type": "file",
+      "path": "metaprocedures/procedures/AchiveExtraction/procedure.json",
+      "required": true
+    },
+    {
+      "key": "archive_config",
+      "type": "file",
+      "path": "metaprocedures/procedures/AchiveExtraction/config.json",
+      "required": true
+    },
+    {
+      "key": "remote_apps_script_source",
+      "type": "file",
+      "path": "metaprocedures/procedures/AchiveExtraction/apps-script-source.js",
+      "required": true
+    },
+    {
+      "key": "node_trigger_source",
+      "type": "file",
+      "path": "ChatMachines/GitHubNodeTest/run.js",
+      "required": true
+    },
+    {
+      "key": "node_workflow",
+      "type": "file",
+      "path": ".github/workflows/github-node-test.yml",
+      "required": true
+    },
+    {
+      "key": "failure_evidence",
+      "type": "literal",
+      "value": "GitHub Actions run 37741046518, job 113191589900, failed during Node.js execution. Its captured Apps Script HTTP 200 body was HTML title Error with exception context: Exception: You do not have permission to call DriveApp.createFile. Required permissions: https://www.googleapis.com/auth/drive. For more information see https://developers.google.com/apps-script/guides/support/troubleshooting#authorization-is (line 12). No run-scoped report was found in Drive for archive_extraction_20261007_1.",
+      "required": true
     }
   ],
   "validation": {
-    "expected_response_type": "drive_takeout_gemini_iteration",
+    "expected_response_type": "archive_extraction_failure_diagnosis",
     "require_json": true,
     "strip_markdown_fence": true,
     "allow_repair": true
