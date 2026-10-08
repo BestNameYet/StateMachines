@@ -35,5 +35,60 @@
     "require_run_id_match": true,
     "require_independent_drive_readback": true,
     "require_source_unchanged": true
+  },
+  "runtime": {
+    "repository": "BestNameYet/StateMachines",
+    "branch": "main",
+    "working_directory": ".",
+    "node_version": "22",
+    "runner": {
+      "executable": "node",
+      "path": "untrusted AI/meta-procedure/Procedures/JS Runner/js-runner.js",
+      "procedure_json": "metaprocedures/procedures/AchiveExtraction/procedure.json",
+      "command": "node 'untrusted AI/meta-procedure/Procedures/JS Runner/js-runner.js' 'metaprocedures/procedures/AchiveExtraction/procedure.json'",
+      "source_field": "script"
+    },
+    "remote": {
+      "kind": "Google Apps Script",
+      "method": "POST",
+      "endpoint_config_key": "endpoint",
+      "source_path": "metaprocedures/procedures/AchiveExtraction/apps-script-source.js",
+      "body_shape": {
+        "sourcecode": "source contents of apps-script-source.js",
+        "arguments": "archives, actions, destination, execution and run_id from config.json"
+      }
+    },
+    "result": {
+      "authority": "Google Drive",
+      "folder_id_config_key": "destination.folder_id",
+      "report_name_template": "{destination.report_prefix}-{run_id}.json",
+      "independent_readback_config_key": "verification.require_independent_drive_readback"
+    }
+  },
+  "workflow": {
+    "status": "NOT_WIRED",
+    "candidate_path": ".github/workflows/achive-extraction.yml",
+    "trigger": {
+      "event": "push",
+      "branch": "main",
+      "path": "metaprocedures/procedures/AchiveExtraction/config.json"
+    },
+    "runner": "ubuntu-latest",
+    "checkout": "actions/checkout@v4",
+    "node_setup": "actions/setup-node@v4",
+    "node_version": "22",
+    "invocation_config_key": "runtime.runner.command",
+    "verified_existing_pattern": {
+      "path": ".github/workflows/run-html-hidden-var-editor.yml",
+      "actual_trigger": ".github/workflows/run-html-hidden-var-editor.yml",
+      "current_procedure": "HTMLHiddenVarEditor",
+      "suitability": "EXAMPLE_ONLY_NOT_BOUND_TO_ARCHIVE_EXTRACTION"
+    },
+    "nonmatching_workflow": {
+      "path": ".github/workflows/prompt-gemini-js-runner-authoring.yml",
+      "purpose": "Author/rewrite JS Runner using Gemini, not execute arbitrary archive procedure"
+    },
+    "execution_enabled": false,
+    "activation_requirement": "A GitHub Actions workflow must explicitly invoke runtime.runner.command and have a matching trigger. No currently inspected workflow provides that binding."
   }
 }
