@@ -1,0 +1,47 @@
+{
+  "response_type": "ai_nlep",
+  "procedure_id": "drive_takeout_inventory_20261007_1",
+  "purpose": "Run GitHub JavaScript through MetaProcedure JS Runner, POST a JavaScript function to Apps Script, inspect the supplied Drive Takeout ZIP, and write a separate Drive inspection report.",
+  "authority": "untrusted AI/meta-procedure/731942_ai_nlep_meta_procedure.json",
+  "input": {
+    "drive_file_id": "1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK"
+  },
+  "constraints": [
+    "Do not overwrite the source ZIP.",
+    "Do not attempt in-memory unzip for archives over 25 MB.",
+    "Write inspection results to Google Drive.",
+    "Require returned Drive file identifiers before reporting execution success."
+  ],
+  "execution": [
+    {
+      "step": "1",
+      "operation": "Run JSON script with existing JS Runner"
+    },
+    {
+      "step": "2",
+      "operation": "POST sourcecode and arguments to deployed Apps Script"
+    },
+    {
+      "step": "3",
+      "operation": "Read ZIP metadata and conditionally enumerate small archive entries"
+    },
+    {
+      "step": "4",
+      "operation": "Create Drive inspection JSON and return its file ID"
+    },
+    {
+      "step": "5",
+      "operation": "Persist result to GitHub for inspection"
+    }
+  ],
+  "script": "'use strict';\n(async()=>{\n const fs=require('node:fs');\n const body={sourcecode:\"(input) => {\\n  const file = DriveApp.getFileById(input.fileId);\\n  const info = {sourceFileId:file.getId(), sourceName:file.getName(), sourceBytes:file.getSize(), mimeType:file.getMimeType(), inspectedAt:new Date().toISOString()};\\n  if (info.sourceBytes > input.maxUnzipBytes) {\\n    const report = {status:\\\"BLOCKED_LARGE_ARCHIVE\\\", reason:\\\"Archive exceeds configured Apps Script in-memory unzip safety threshold.\\\", metadata:info, archiveModified:false};\\n    const output = DriveApp.createFile(\\\"takeout-archive-inspection-\\\"+input.runId+\\\".json\\\", JSON.stringify(report,null,2), MimeType.PLAIN_TEXT);\\n    return {status:report.status, driveFileId:output.getId(), driveFileUrl:output.getUrl(), sourceBytes:info.sourceBytes, archiveModified:false};\\n  }\\n  const entries = Utilities.unzip(file.getBlob()).map(b=>({name:b.getName(), bytes:b.getSize()}));\\n  const report={status:\\\"ENUMERATED\\\", metadata:info, entries:entries, archiveModified:false};\\n  const output = DriveApp.createFile(\\\"takeout-archive-inspection-\\\"+input.runId+\\\".json\\\", JSON.stringify(report,null,2), MimeType.PLAIN_TEXT);\\n  return {status:\\\"ENUMERATED\\\", driveFileId:output.getId(), driveFileUrl:output.getUrl(), entryCount:entries.length, archiveModified:false};\\n}\",arguments:{fileId:\"1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK\",runId:\"drive_takeout_inventory_20261007_1\",maxUnzipBytes:25000000}};\n const url=\"https://script.google.com/macros/s/AKfycbxz7tkba4wl-wWzDn90iuh0us2l2EUD3AYV9HyVJckETKGjhPKFthnqPyYmcOPOk_g5FA/exec\";\n const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),redirect:'follow'});\n const text=await response.text();\n if(!response.ok)throw new Error('Apps Script HTTP '+response.status+': '+text.slice(0,500));\n let result;try{result=JSON.parse(text)}catch(e){throw new Error('Endpoint did not return JSON: '+text.slice(0,500))}\n if(!result.driveFileId||!result.driveFileUrl)throw new Error('Missing Drive output evidence: '+JSON.stringify(result));\n fs.writeFileSync(\"untrusted AI/meta-procedure/Procedures/DriveTakeoutInventory/latest-result.json\",JSON.stringify(result,null,2));\n console.log(JSON.stringify(result));\n})().catch(e=>{console.error(e);process.exitCode=1});",
+  "return_schema": {
+    "type": "object",
+    "required": [
+      "status",
+      "driveFileId",
+      "driveFileUrl",
+      "archiveModified"
+    ]
+  }
+}
