@@ -13,3 +13,10 @@ const result = {
 };
 
 console.log(JSON.stringify(result, null, 2));
+
+// Invoke the configured AchiveExtraction procedure through the documented JS Runner.
+const { execFileSync } = require('node:child_process');
+execFileSync(process.execPath, [
+  'untrusted AI/meta-procedure/Procedures/JS Runner/js-runner.js',
+  'metaprocedures/procedures/AchiveExtraction/procedure.json'
+], { stdio: 'inherit', cwd: process.cwd() });
