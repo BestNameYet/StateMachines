@@ -1,0 +1,287 @@
+{
+  "response_type": "large_archive_extraction_plan",
+  "verified_facts": [
+    "Run 37742876274 verified that archive 1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK exists, has size 993,074,157 bytes, and remains unmodified across execution.",
+    "Apps Script action inspect passed and returned valid metadata (size 993,074,157 bytes, mimeType application/zip).",
+    "Apps Script action list_entries failed with the exact error: 'File takeout-20261008T042958Z-2-001.zip exceeds the maximum file size.'",
+    "The failure occurred during Utilities.unzip(f.getBlob()) because Google Apps Script enforces a strict blob and uncompressed payload size limitation (typically 50MB) on Drive blobs and Utilities.unzip.",
+    "The existing GitHub Actions runner (ubuntu-latest, Node.js 22) dispatches to the Apps Script endpoint via HTTPS POST, receives a 302/303 redirect to script.googleusercontent.com, and successfully reads the JSON response payload.",
+    "Apps Script createFile successfully creates Drive files, including the run-scoped execution report (id 1xYNKKj-OxG281SiJXEdzo6aXaM6Gyk_c).",
+    "The GitHub Actions runner has full network access, Node.js buffer and stream primitives, and is not constrained by Apps Script's 50MB in-memory blob ceiling.",
+    "Currently evidenced GitHub secrets only document GEMINI_API_KEY; no Google Drive OAuth credentials or Google Service Account keys are currently evidenced in GitHub Actions repository secrets."
+  ],
+  "candidate_architectures": [
+    {
+      "architecture_id": "ARCH_1_NODE_RANGE_DIRECT",
+      "title": "Node.js Range-Extraction Runner with Apps Script Drive Bridge for Persistence",
+      "description": "Node.js on GitHub Actions executes HTTP Range requests directly against Google Drive to read the ZIP Central Directory and extract only selected file ranges, then sends extracted file payloads back to Apps Script via the established eval/POST bridge for Drive persistence.",
+      "credential_prerequisites": [
+        "Requires that the Drive file is publicly readable ('Anyone with the link can view') OR that a Google Drive API Key / OAuth Token / Service Account is provided to the GitHub Actions runner for authenticated Drive download."
+      ],
+      "strengths": [
+        "Never downloads the full 993MB archive if only central directory and selected files are read.",
+        "Zero risk of Apps Script 50MB blob limit during archive decompression.",
+        "Standard ZIP central directory parsing and ZIP64 can be done with minimal I/O (often < 5MB total network transfer).",
+        "Reuses existing verified Apps Script createFile bridge for writing output artifacts to Drive."
+      ],
+      "weaknesses": [
+        "Direct Google Drive web download links (`drive.google.com/uc?export=download&id=...`) often do not honor HTTP Range headers, or return HTTP 200 with the full stream or virus-scan warning HTML for files over 100MB.",
+        "Requires authenticated Drive API v3 endpoint (`https://www.googleapis.com/drive/v3/files/{id}?alt=media`) to reliably support HTTP Range 206 Partial Content."
+      ],
+      "viability": "high_contingent_on_range_support"
+    },
+    {
+      "architecture_id": "ARCH_2_NODE_STREAMING_WHOLE_ARCHIVE",
+      "title": "Node.js Streamed Full Download and Selective Extraction",
+      "description": "Node.js downloads or streams the full 993,074,157 bytes from Drive (either directly via Drive API or via a confirmed download mechanism), streams it through a parsing unzip stream (e.g. unzipper / yauzl / node:zlib stream), extracts only configured entries to disk, and pushes them to Drive via Apps Script.",
+      "credential_prerequisites": [
+        "Direct Drive access credentials (or public link handling virus scan confirmation bypass)."
+      ],
+      "strengths": [
+        "Does not require HTTP Range support from Google Drive endpoints.",
+        "Node runner has standard 7GB+ RAM and abundant disk space; 993MB fits comfortably within GitHub Actions ephemeral storage.",
+        "Completely bypasses Apps Script blob limits."
+      ],
+      "weaknesses": [
+        "Downloads ~947 MiB over the network on every run even if only a 2 KB text file is needed.",
+        "Slower execution and higher bandwidth usage."
+      ],
+      "viability": "fallback_if_range_unsupported"
+    },
+    {
+      "architecture_id": "ARCH_3_APPS_SCRIPT_CHUNKED_RANGE_PROXY",
+      "title": "Apps Script Drive API UrlFetchApp Range Proxy",
+      "description": "Apps Script uses ScriptApp.getOAuthToken() and UrlFetchApp to query the Drive API v3 endpoint using HTTP Range headers to fetch chunks of the archive, assembling central directory headers or extracted files within Apps Script.",
+      "credential_prerequisites": [
+        "Apps Script OAuth scopes must include https://www.googleapis.com/auth/drive or https://www.googleapis.com/auth/drive.readonly."
+      ],
+      "strengths": [
+        "All credentials stay inside the existing Google Workspace domain; no new Google secrets in GitHub Actions."
+      ],
+      "weaknesses": [
+        "Apps Script UrlFetchApp payload limit is 50MB and total execution timeout is 6 minutes.",
+        "Decompressing raw DEFLATE streams in pure Apps Script JavaScript without native zlib primitives requires custom JS inflate implementations, which are slow and memory-intensive.",
+        "High risk of script timeout or script memory exhaustion on large decompressed files."
+      ],
+      "viability": "low_not_recommended"
+    }
+  ],
+  "recommended_architecture": {
+    "architecture_id": "ARCH_1_HYBRID_RANGE_WITH_PROBE",
+    "name": "Capability-Gated Node.js Selective Range Extraction with Apps Script Persistence Bridge",
+    "rationale": "Separates concerns: GitHub Node.js provides robust buffer processing, zlib decompression, ZIP64 parsing, and HTTP streaming without memory limits; Apps Script provides authenticated Google Drive file creation and metadata verification without having to unpack large blobs. A deterministic capability probe determines whether Drive returns HTTP 206 Partial Content or requires authenticated tokens or whole-stream fallback.",
+    "components": {
+      "capability_probe": "A lightweight Node.js probe that sends a 16-byte Range GET ('bytes=0-15') to the target Drive endpoint to verify 206 status and Range header compliance.",
+      "zip_central_directory_engine": "Node.js parser that fetches the tail of the archive (last 65KB to 1MB) to read the End of Central Directory (EOCD) record, Zip64 EOCD Locator / Zip64 EOCD Record if present, and subsequent Central Directory entries without reading archive file payloads.",
+      "selective_range_extractor": "Extracts only target entries: sends Range requests for the specific byte offsets [local_header_offset, local_header_offset + comp_size + header_len], parses the local header, decompresses the payload using node:zlib (createInflateRaw), and computes CRC32.",
+      "drive_output_bridge": "Uploads extracted file buffers to Drive via the established Apps Script eval POST endpoint, invoking DriveApp.createFile with run-scoped naming and destination folder mapping.",
+      "verifier": "Queries the Drive report and independently checks file existence, size, and source archive immutability."
+    }
+  },
+  "implementation_steps": [
+    {
+      "step_number": 1,
+      "name": "probe_drive_access_and_range_capability",
+      "objective": "Deterministically determine whether the source archive is accessible via HTTP Range requests without credentials, with a download confirmation token, or requires a Google Service Account / OAuth token.",
+      "operations": [
+        "Dispatch a GET request for bytes=0-15 using the file download endpoint (e.g., https://www.googleapis.com/drive/v3/files/{id}?alt=media or drive.google.com export).",
+        "Evaluate response code: 206 (Range supported), 200 (Whole stream returned, Range ignored), 403/401 (Authentication required), or 200 with HTML (Virus scan prompt).",
+        "If 401/403 and no token is present, transition to BLOCKED requesting authorized credentials."
+      ]
+    },
+    {
+      "step_number": 2,
+      "name": "parse_zip_central_directory",
+      "objective": "Locate and parse the ZIP Central Directory and ZIP64 structures using Range requests at the tail of the archive.",
+      "operations": [
+        "Request the last 65,557 bytes of the archive (minimum needed for standard EOCD comment boundary).",
+        "Search backward for EOCD signature (0x06054b50).",
+        "Check for Zip64 EOCD Locator signature (0x07064b50) immediately preceding the EOCD record; if present, read Zip64 EOCD Record (0x06064b50) to obtain 64-bit Central Directory size, offset, and total entries.",
+        "Perform a Range request covering the entire Central Directory byte range [cd_offset, cd_offset + cd_size].",
+        "Parse each Central Directory file header (0x02014b50) into an inventory table: entry name, compression method, compressed size, uncompressed size, CRC-32, and local header relative offset."
+      ]
+    },
+    {
+      "step_number": 3,
+      "name": "match_and_plan_entry_extraction",
+      "objective": "Filter the archive inventory against configured target entry names or patterns and generate extraction tasks.",
+      "operations": [
+        "Compare requested entry list from config.actions with central directory inventory.",
+        "Verify all target entries exist; report missing entries according to configured on_error policy.",
+        "Sort extraction tasks by ascending local_header_offset to optimize network reads and ensure deterministic extraction sequence."
+      ]
+    },
+    {
+      "step_number": 4,
+      "name": "stream_decompress_and_validate_entries",
+      "objective": "Selectively fetch compressed byte slices, decompress entries in Node.js, and verify data integrity.",
+      "operations": [
+        "For each target entry, fetch [local_offset, local_offset + 30 + extra_len + comp_size] via Range GET.",
+        "Validate Local File Header signature (0x04034b50) and parse variable file name / extra field lengths to pinpoint exact data start.",
+        "Decompress compressed slice using node:zlib (createInflateRaw for method 8 / DEFLATE, or pass-through for method 0 / STORE).",
+        "Calculate CRC-32 and uncompressed length; assert exact match against central directory metadata.",
+        "Stage uncompressed file in run-isolated ephemeral workspace on runner."
+      ]
+    },
+    {
+      "step_number": 5,
+      "name": "persist_extracted_files_via_apps_script",
+      "objective": "Transmit extracted file contents to Google Drive through the authenticated Apps Script bridge.",
+      "operations": [
+        "Partition extracted files into chunks compatible with Apps Script POST transport (e.g. base64-encoded in discrete POSTs if file > 10MB, or direct upload).",
+        "Invoke Apps Script createFile handler with file name, content, MIME type, and target destination.folder_id.",
+        "Capture created Drive file IDs and URLs into execution report."
+      ]
+    },
+    {
+      "step_number": 6,
+      "name": "verify_and_record_run_report",
+      "objective": "Produce a comprehensive execution report, persist it to Drive, and assert all verification predicates.",
+      "operations": [
+        "Check source archive metadata (file size and last updated timestamp) to confirm source preservation invariant.",
+        "Compile final JSON report detailing probed capabilities, central directory summary, extracted artifacts with Drive IDs, and execution timestamps.",
+        "Commit report to Google Drive and verify matching run_id and artifact locators."
+      ]
+    }
+  ],
+  "required_capability_tests": [
+    {
+      "test_id": "TEST_DRIVE_RANGE_SUPPORT",
+      "target": "Google Drive download endpoint for archive 1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK",
+      "method": "HTTP GET with header 'Range: bytes=0-15'",
+      "expected_outcome": "HTTP 206 Partial Content with Content-Range header matching 'bytes 0-15/993074157' and 16 bytes payload containing ZIP signature 0x50 0x4B.",
+      "fallback_if_failed": "If HTTP 200 is returned, server ignores Range headers; must switch to ARCH_2 (streamed download). If 403 or HTML login/virus warning returned, test requires Google Drive API authentication token."
+    },
+    {
+      "test_id": "TEST_AUTHENTICATED_DRIVE_READ",
+      "target": "Drive API v3 media endpoint with runtime credential",
+      "method": "HTTP GET 'https://www.googleapis.com/drive/v3/files/1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK?alt=media' with 'Authorization: Bearer <TOKEN>' and 'Range: bytes=0-15'",
+      "expected_outcome": "HTTP 206 Partial Content confirming authenticated partial read access from GitHub runner.",
+      "fallback_if_failed": "Verify whether service account or OAuth client has read permissions on the file."
+    },
+    {
+      "test_id": "TEST_ZIP64_EOCD_PARSER",
+      "target": "Tail of archive 1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK",
+      "method": "Request last 65,536 bytes; locate EOCD and Zip64 Locator/Record; parse 64-bit offsets.",
+      "expected_outcome": "Central directory offset, size, and total entry count successfully resolved without byte alignment errors.",
+      "fallback_if_failed": "Fetch larger tail block (up to 1MB) in case of large archive comments or unexpected trailer padding."
+    },
+    {
+      "test_id": "TEST_APPS_SCRIPT_CHUNKED_WRITE",
+      "target": "Apps Script createFile POST bridge",
+      "method": "Send a 1MB test payload via JSON POST to Apps Script endpoint to create a temporary test artifact in destination folder.",
+      "expected_outcome": "HTTP 200 / 302 follow returning valid Drive file ID and matching size.",
+      "fallback_if_failed": "Reduce chunk size or configure direct Drive API upload if service account credentials are available."
+    }
+  ],
+  "configuration_changes": [
+    {
+      "file": "metaprocedures/procedures/AchiveExtraction/config.json",
+      "path": "archives[0].access_mode",
+      "new_value": "direct_range | drive_api_authenticated | streamed_fallback",
+      "rationale": "Allows configuring the extraction mechanism per archive based on credential availability and file size."
+    },
+    {
+      "file": "metaprocedures/procedures/AchiveExtraction/config.json",
+      "path": "actions",
+      "new_value": [
+        {
+          "id": "inspect_takeout",
+          "type": "inspect",
+          "archive": "takeout_large"
+        },
+        {
+          "id": "list_entries_range",
+          "type": "list_entries_range",
+          "archive": "takeout_large",
+          "on_error": "stop"
+        },
+        {
+          "id": "extract_selected_range",
+          "type": "extract_selected_range",
+          "archive": "takeout_large",
+          "entries": [
+            "Takeout/archive_manifest.json"
+          ],
+          "output_prefix": "extracted",
+          "on_error": "continue"
+        }
+      ],
+      "rationale": "Replaces full-archive in-memory unzip actions with range-based list and extraction actions."
+    },
+    {
+      "file": "metaprocedures/procedures/AchiveExtraction/config.json",
+      "path": "runtime.range_engine",
+      "new_value": {
+        "tail_probe_bytes": 65536,
+        "max_tail_bytes": 1048576,
+        "chunk_size_bytes": 5242880,
+        "max_parallel_ranges": 2,
+        "allow_whole_download_fallback": false
+      },
+      "rationale": "Provides explicit limits and tuning for range queries and streaming buffers."
+    }
+  ],
+  "verification_predicates": [
+    {
+      "predicate_id": "VP_SOURCE_PRESERVED",
+      "claim": "Source archive size and last modified timestamp remain strictly identical before and after extraction.",
+      "evaluation_method": "Compare DriveApp metadata recorded in inspect action before extraction with metadata obtained after extraction.",
+      "pass_criteria": "initial.size === final.size && initial.updated === final.updated"
+    },
+    {
+      "predicate_id": "VP_NO_FULL_BLOB_APPS_SCRIPT",
+      "claim": "Apps Script never calls Utilities.unzip or getBlob() on archives exceeding 50MB.",
+      "evaluation_method": "Inspect remote execution code and verify that archives > 50,000,000 bytes are handled exclusively via range reads or external extraction.",
+      "pass_criteria": "remote_execution_log contains no 'exceeds the maximum file size' error."
+    },
+    {
+      "predicate_id": "VP_CRC32_MATCH",
+      "claim": "Extracted uncompressed payload CRC-32 matches the CRC-32 recorded in the Central Directory header.",
+      "evaluation_method": "Node.js compute CRC-32 on decompressed buffer and compare against entry.crc32.",
+      "pass_criteria": "computed_crc32 === entry_central_directory_crc32"
+    },
+    {
+      "predicate_id": "VP_DRIVE_ARTIFACT_RESOLVABLE",
+      "claim": "Every extracted file is resolvable in Google Drive with matching size and non-empty file ID.",
+      "evaluation_method": "Read back each created output file via DriveApp or Drive API and assert size equals uncompressed entry size.",
+      "pass_criteria": "drive_file.getSize() === entry.uncompressed_size"
+    }
+  ],
+  "failure_repairs": [
+    {
+      "failure_scenario": "Google Drive download returns HTTP 200 with full stream or HTML virus scan warning instead of HTTP 206 Partial Content.",
+      "root_cause": "Drive web front-end (drive.google.com/uc) does not support byte ranges for large unauthenticated downloads.",
+      "repair_action": "Switch access_mode to drive_api_authenticated. Use Google Drive API v3 (https://www.googleapis.com/drive/v3/files/{id}?alt=media) with an authorized bearer token or Service Account key. If credentials cannot be provided, switch to ARCH_2 (streamed download of the file to disk in GitHub Actions workspace) if confirming the virus-scan token."
+    },
+    {
+      "failure_scenario": "EOCD signature (0x06054b50) is not found in the initial 65KB tail request.",
+      "root_cause": "ZIP archive has a trailing comment or extra data exceeding 65KB, or has ZIP64 spanning records.",
+      "repair_action": "Increase tail fetch buffer to 512KB and up to 1MB. Search backward from file length minus 22 bytes."
+    },
+    {
+      "failure_scenario": "Archive exceeds 4GB or entry count exceeds 65,535 (Zip64 format required).",
+      "root_cause": "Standard 32-bit ZIP offsets wrap around at 4GB; 993MB archive may or may not use Zip64, but Google Takeout often employs Zip64 structures.",
+      "repair_action": "The parser must inspect the Zip64 EOCD Locator at (eocd_offset - 20). If present, read the 64-bit Central Directory offset and 64-bit entry counts from the Zip64 EOCD record."
+    },
+    {
+      "failure_scenario": "Apps Script POST payload size limit exceeded when uploading extracted files.",
+      "root_cause": "An extracted file is larger than the 10MB-50MB POST body limit of Google Apps Script web apps.",
+      "repair_action": "Implement chunked upload or write extracted files to GitHub Actions run artifacts if Drive upload is constrained, or use direct Drive API Resumable Upload session from Node.js runner."
+    }
+  ],
+  "open_questions": [
+    {
+      "question": "Is archive 1MxvFWzM9b-HnZlfr29kzmbqx5BbBetOK configured with public link access ('anyone with the link can view'), or is it strictly private to the Google Workspace account running the Apps Script web app?",
+      "impact": "If private, Node.js running on GitHub Actions cannot make direct Range GET requests to Google Drive without an authenticated OAuth token or Google Service Account secret added to the repository."
+    },
+    {
+      "question": "Does the repository have access to a Google Cloud Service Account with Drive read/write scopes that can be added to GitHub Secrets?",
+      "impact": "A Service Account enables direct, authenticated, range-enabled reads via the official Drive API v3, providing the highest reliability and lowest latency."
+    },
+    {
+      "question": "What specific file entries (names or paths) from takeout-20261008T042958Z-2-001.zip need to be extracted, and what are their estimated uncompressed sizes?",
+      "impact": "Determines whether extracted entries can be transferred back to Drive through the existing Apps Script doPost bridge in a single payload or require chunked upload."
+    }
+  ]
+}
