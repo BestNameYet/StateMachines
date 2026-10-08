@@ -14,7 +14,7 @@ const result = {
 
 console.log(JSON.stringify(result, null, 2));
 
-// Invoke the configured AchiveExtraction procedure through the documented JS Runner. URL VM compatibility repaired; diagnostic rerun checks terminal Apps Script response and HTML title.
+// Invoke the configured AchiveExtraction procedure through the documented JS Runner. URL VM compatibility repaired; diagnostic rerun captures Apps Script exception context.
 const { execFileSync } = require('node:child_process');
 execFileSync(process.execPath, [
   'untrusted AI/meta-procedure/Procedures/JS Runner/js-runner.js',
