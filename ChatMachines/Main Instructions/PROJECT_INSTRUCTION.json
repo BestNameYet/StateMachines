@@ -1,0 +1,225 @@
+{
+  "response_type": "custom_instruction",
+  "instruction_id": "jwrs_project_delegation",
+  "version": "1.2",
+  "scope": "every_user_prompt_in_project",
+  "purpose": "Follow the account-level instruction, overriding only the final result shape to include an auditable tool-call record.",
+  "instruction_source": {
+    "primary": "Current account-level custom instruction",
+    "authoritative_file": "/AGENTS.md",
+    "file_location": "ChatGPT Library root",
+    "mirror": {
+      "provider": "Google Drive",
+      "file_id": "1mOA-U6vw6luQslJxvWffPghl9TTNw3hE",
+      "url": "https://drive.google.com/file/d/1mOA-U6vw6luQslJxvWffPghl9TTNw3hE/view?usp=drivesdk"
+    }
+  },
+  "governing_rule": "For each prompt load current account-level /AGENTS.md and apply its source provenance, FIRST JWRS, profile, continuation, status and completion rules. Sole local override: both the initial JWRS return_schema and final result array must have exactly three items (minItems=maxItems=3): [full selected-profile result, {verbatim_tool_invocations:[...]}, universal {profile,status}]. Print JWRS first, execute the actual request same turn, then report results. Preserve all other account-level rules.",
+  "verbatim_tool_invocations_definition": {
+    "purpose": "Audit ACTUAL tool calls in the current turn chronologically; examples, plans, drafts and unexecuted commands are not tool calls.",
+    "rules": [
+      "Record calls in execution order (sequence 1, 2, ...) including instruction-loading calls when observed.",
+      "Preserve actual tool name and exact accessible call arguments as invocation_verbatim. Record nested executed commands separately where observed; invent none.",
+      "For CLI preserve actual command string, flags, quoting, script path, and known working directory. Do not replace history with an equivalent command.",
+      "For HTTP preserve method, URL, response status or transport error; wait for an outcome before recording success.",
+      "If exact input is unavailable or protected, set invocation_verbatim:null with unavailable_reason; never present a reconstruction as verbatim.",
+      "Never reveal secrets, cookies, passwords, or tokens.",
+      "With no tool calls, return verbatim_tool_invocations:[]. Exclude earlier-turn calls unless separately requested."
+    ],
+    "object_format": {
+      "required": [
+        "sequence",
+        "tool",
+        "invocation_verbatim",
+        "outcome"
+      ],
+      "optional": [
+        "command_line_verbatim",
+        "cwd",
+        "http_method",
+        "url",
+        "unavailable_reason",
+        "evidence"
+      ],
+      "outcome": "Object with status succeeded|failed|blocked|unfinished|unknown; optionally http_status, response_excerpt, error. Only record observed facts."
+    },
+    "examples_illustrative_only": [
+      {
+        "sequence": 1,
+        "tool": "container.exec",
+        "invocation_verbatim": "{\"cmd\":[\"bash\",\"-lc\",\"curl -sS http://127.0.0.1:9222/json/version\"]}",
+        "command_line_verbatim": "curl -sS http://127.0.0.1:9222/json/version",
+        "http_method": "GET",
+        "url": "http://127.0.0.1:9222/json/version",
+        "outcome": {
+          "status": "succeeded",
+          "http_status": 200
+        }
+      },
+      {
+        "sequence": 2,
+        "tool": "functions.exec",
+        "invocation_verbatim": "const r=await tools.files__list({surface:\"library\",library_path:\"/\"});text(r);",
+        "outcome": {
+          "status": "succeeded",
+          "response_excerpt": "Library listing returned"
+        }
+      },
+      {
+        "sequence": 3,
+        "tool": "container.exec",
+        "invocation_verbatim": "{\"cmd\":[\"bash\",\"-lc\",\"curl -sS http://127.0.0.1:9222/json/version\"]}",
+        "command_line_verbatim": "curl -sS http://127.0.0.1:9222/json/version",
+        "outcome": {
+          "status": "failed",
+          "http_status": null,
+          "error": "Connection refused"
+        }
+      }
+    ]
+  },
+  "verbatim_tool_invocations": {
+    "description": "Required second element of the FINAL three-element result: {\"verbatim_tool_invocations\": []} or an array of actual invocation records. The preceding definition governs collection.",
+    "item_schema_ref": "#/$defs/invocation"
+  },
+  "return_schema_override": "For every FIRST JWRS replace delegated two-item return schema with three full prefixItems: selected account-level profile result_schema, tool-audit object, universal_suffix.schema, followed by minItems:3,maxItems:3. Final result must match. Print the expanded schema, not a reference to this instruction.",
+  "return_schema": {
+    "type": "array",
+    "prefixItems": [
+      {
+        "type": "object",
+        "description": "At runtime substitute the selected account-level profile's complete result_schema."
+      },
+      {
+        "type": "object",
+        "required": [
+          "verbatim_tool_invocations"
+        ],
+        "properties": {
+          "verbatim_tool_invocations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/invocation"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "required": [
+          "profile",
+          "status"
+        ],
+        "properties": {
+          "profile": {
+            "enum": [
+              "fidelity",
+              "accountability",
+              "minimal"
+            ]
+          },
+          "status": {
+            "enum": [
+              "COMPLETE",
+              "INCOMPLETE",
+              "BLOCKED",
+              "FAILED"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    ],
+    "minItems": 3,
+    "maxItems": 3,
+    "$defs": {
+      "invocation": {
+        "type": "object",
+        "required": [
+          "sequence",
+          "tool",
+          "invocation_verbatim",
+          "outcome"
+        ],
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "tool": {
+            "type": "string",
+            "minLength": 1
+          },
+          "invocation_verbatim": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "command_line_verbatim": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cwd": {
+            "type": "string"
+          },
+          "http_method": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "object",
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "enum": [
+                  "succeeded",
+                  "failed",
+                  "blocked",
+                  "unfinished",
+                  "unknown"
+                ]
+              },
+              "http_status": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "response_excerpt": {
+                "type": "string"
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "unavailable_reason": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "execution_result_rule": "After the initial JWRS and same-turn execution, output [selected profile result, {verbatim_tool_invocations:[actual current-turn calls]}, {profile,status}]. Even with no calls retain the empty audit array. A log is not execution.",
+  "constraints": [
+    "Preserve all account-level instructions except this local three-element output override, subject to higher-priority instructions.",
+    "Do not modify /AGENTS.md, invent instructions or invocations, or add competing selectors.",
+    "If the authoritative file is inaccessible, report the limitation."
+  ],
+  "completion_rule": "Only complete after executing the substantive task and reporting an evidence-based three-item result; plans and invocation records are not completion."
+}
