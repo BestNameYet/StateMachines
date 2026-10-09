@@ -13,7 +13,7 @@
     "top_p": 0.95,
     "top_k": 40,
     "response_mime_type": "application/json",
-    "max_output_tokens": 32768
+    "max_output_tokens": 65536
   },
   "paths": {
     "runtime_root": "../../../../",
@@ -28,57 +28,42 @@
     "nonce_param": "run_nonce",
     "nonce_regex": "^[A-Za-z0-9._-]+$",
     "default_nonce_prefix": "context_rich_dialogue",
-    "default_nonce": "jwrs_instruction_revision_20261008_1",
+    "default_nonce": "merge_account_project_20261009_1",
     "reuse_history": false
   },
   "prompt": {
-    "system_instruction": "Act as an editor of a short AI-NLE project custom instruction, not as an elaborate supervisory controller. Apply useful principles of supplied canonical meta-procedure and GeminiSupervisor Agents.md, never paste their rules. Retain high-visibility JSON projection before actions, same-turn execution, user instruction fidelity, and an explicit return_schema. Do not invent oracular guarantees, endless verifiers, or unworkable controls. Return concise JSON including a complete minified-ready revised instruction and reasoned tradeoffs.",
-    "heuristic": "Revise current JWRS custom instruction version 1.0 for clarity, brevity and completeness. User says its primary functions are (a) a conspicuously formal visible interface between user and AI-NLE to indicate early compliance, (b) a materialized representation of instructions aiding execution, (c) actual same-turn action rather than merely projection. Past complex verifiers/recovery systems were ineffective because the AI-NLE can ignore them, even when deterministic inputs are provided. Treat all semantic fidelity as a best-effort target, not an oracle-provable guarantee. Preserve explicit return_schema and JSON-only minified final instruction. Use principles from authoritative source files and not their detailed program-specific rules. Deliver a coherent standalone custom instruction as JSON and a compact explanation outside it within Gemini response fields.",
+    "system_instruction": "You are performing an independent, source-faithful merge of two authoritative JSON instruction files. The output must be one valid JSON object containing the COMPLETE merged instruction as merged_instruction, with an AGENTS.md root. Retain the full account-level instruction including profiles, selectors, completion logic, examples and all nested fields, while integrating the additional local project instruction requirements as operational requirements, especially the ACTUAL verbatim tool-call audit as the second element of the three-element return array. Revise every incompatible two-element reference in schemas, descriptions and examples to three elements. Never substitute an abstract plan, a patch-only response or an abridgement of the account instruction for the full merged artifact. Do not modify the input sources. Do not use or refer to any previous candidate merge.",
+    "heuristic": "Read and merge exactly the two configured input files: AGENTS.md (account authority) and PROJECT_INSTRUCTION.json (local extension). Retain every account top-level key and all unchanged nested structures, and preserve the local instruction's intent. Sole local override: initial JWRS return_schema and final execution array contain exactly [profile result, {verbatim_tool_invocations:[...]}, {profile,status}], minItems=maxItems=3. Include actual tool invocation capture definitions and constraints with no invented execution. Adapt meta return_schema and all embedded example schemas. Preserve a copy of the project's detailed audit definition and clear provenance. Return the complete merged file object, not advice or a JSON patch. Also report merge decisions and any unresolved inconsistencies.",
     "output_schema": {
-      "response_type": "jwrs_instruction_revision",
-      "revised_instruction": {},
-      "principles_applied": [],
-      "simplifications": [],
-      "limitations": [],
-      "review_notes": []
+      "response_type": "instruction_merge_result",
+      "merged_instruction": {
+        "AGENTS.md": {}
+      },
+      "changes": [],
+      "conflicts": [],
+      "verification_notes": []
     },
-    "template_prefix": "Create the revised JWRS instruction from these sources, prioritizing simple operational compliance.",
-    "template_suffix": "Return only JSON with response_type jwrs_instruction_revision and complete revised_instruction object including its return_schema."
+    "template_prefix": "INDEPENDENT FULL-FILE MERGE; sources are only account_instruction and local_project_instruction. Produce complete machine-readable merged JSON.",
+    "template_suffix": "Return only valid JSON with response_type=instruction_merge_result, the entire merged_instruction object, and changes/conflicts/verification_notes. The merged_instruction must retain every original account rule except alterations necessary for the three-element local override. Minify output if needed; do not omit fields."
   },
   "inputs": [
     {
-      "key": "canonical_metaprocedure",
+      "key": "account_instruction",
       "type": "file",
-      "path": "untrusted AI/meta-procedure/731942_ai_nlep_meta_procedure.json",
-      "required": true
+      "path": "ChatMachines/Main Instructions/AGENTS.md",
+      "required": true,
+      "numbered": false
     },
     {
-      "key": "gemini_supervisor_agents",
+      "key": "local_project_instruction",
       "type": "file",
-      "path": "ChatMachines/GeminiSupervisor/Agents.md",
-      "required": true
-    },
-    {
-      "key": "gemini_supervisor_readme",
-      "type": "file",
-      "path": "ChatMachines/GeminiSupervisor/README.md",
-      "required": true
-    },
-    {
-      "key": "current_project_instruction",
-      "type": "literal",
-      "value": "{\"response_type\":\"custom_instruction\",\"instruction_id\":\"jwrs_projection_before_execution\",\"version\":\"1.0\",\"scope\":\"every_user_prompt\",\"governing_rule\":\"Before substantive execution: print valid JSON projection of user's complete operative request with explicit return_schema; then execute exact printed projection in same turn, no additional approval; accurately state COMPLETE/INCOMPLETE/BLOCKED/FAILED, never equate projection, intention, or attempt with completion. Preserve constraints, targets, quantities, sequence, prohibitions, permissions, and output contract.\"}",
-      "required": true
-    },
-    {
-      "key": "conversation_purpose_and_design_constraints",
-      "type": "literal",
-      "value": "The user calls JWRS a simple framing/interface, a conspicuous first compliance signal, and externalized hard-copy instructions. Their historical verifier/recovery rule systems added complexity the AI ignored; even deterministic inputs can be ignored. Avoid unnecessary controls and non-decidable semantic guarantees; use stochastic improvement goals. Keep JSON projection first, actual same-turn execution, return schema, and minified all-JSON finished artifact.",
-      "required": true
+      "path": "ChatMachines/Main Instructions/PROJECT_INSTRUCTION.json",
+      "required": true,
+      "numbered": false
     }
   ],
   "validation": {
-    "expected_response_type": "jwrs_instruction_revision",
+    "expected_response_type": "instruction_merge_result",
     "require_json": true,
     "strip_markdown_fence": true,
     "allow_repair": true
