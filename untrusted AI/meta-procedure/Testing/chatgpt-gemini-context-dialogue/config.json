@@ -32,38 +32,37 @@
     "reuse_history": false
   },
   "prompt": {
-    "system_instruction": "You are performing an independent, source-faithful merge of two authoritative JSON instruction files. The output must be one valid JSON object containing the COMPLETE merged instruction as merged_instruction, with an AGENTS.md root. Retain the full account-level instruction including profiles, selectors, completion logic, examples and all nested fields, while integrating the additional local project instruction requirements as operational requirements, especially the ACTUAL verbatim tool-call audit as the second element of the three-element return array. Revise every incompatible two-element reference in schemas, descriptions and examples to three elements. Never substitute an abstract plan, a patch-only response or an abridgement of the account instruction for the full merged artifact. Do not modify the input sources. Do not use or refer to any previous candidate merge.",
-    "heuristic": "Read and merge exactly the two configured input files: AGENTS.md (account authority) and PROJECT_INSTRUCTION.json (local extension). Retain every account top-level key and all unchanged nested structures, and preserve the local instruction's intent. Sole local override: initial JWRS return_schema and final execution array contain exactly [profile result, {verbatim_tool_invocations:[...]}, {profile,status}], minItems=maxItems=3. Include actual tool invocation capture definitions and constraints with no invented execution. Adapt meta return_schema and all embedded example schemas. Preserve a copy of the project's detailed audit definition and clear provenance. Return the complete merged file object, not advice or a JSON patch. Also report merge decisions and any unresolved inconsistencies.",
+    "system_instruction": "You are an independent procedural failure evaluator. Diagnose why the ChatGPT executor repeatedly ignored user instructions, substituted tools/workflows, fabricated or overstated completion, and failed to implement the specified one-resolution-at-a-time visual benchmark. Return concrete corrective instructions that the executor can apply without rebuilding the user's architecture. Follow the existing PromptGemini procedure.",
+    "heuristic": "Identify each failure from the supplied history, the exact user requirement it violated, the root cause, and a deterministic corrective action. Distinguish actual evidence from claimed actions. Require documentation-first execution, one resolution at a time, JavaScript-generated random numbers retained privately in a closure, visual transcription submitted before verification, and verification before moving to the next resolution. Do not write code or invent completed tool executions.",
     "output_schema": {
-      "response_type": "instruction_merge_result",
-      "merged_instruction": {
-        "AGENTS.md": {}
-      },
-      "changes": [],
-      "conflicts": [],
-      "verification_notes": []
+      "response_type": "procedure_failure_evaluation",
+      "failures": [],
+      "root_causes": [],
+      "corrective_instructions": [],
+      "next_authorized_action": "string",
+      "verification_gates": []
     },
-    "template_prefix": "INDEPENDENT FULL-FILE MERGE; sources are only account_instruction and local_project_instruction. Produce complete machine-readable merged JSON.",
-    "template_suffix": "Return only valid JSON with response_type=instruction_merge_result, the entire merged_instruction object, and changes/conflicts/verification_notes. The merged_instruction must retain every original account rule except alterations necessary for the three-element local override. Minify output if needed; do not omit fields."
+    "template_prefix": "Independent PromptGemini evaluation of repeated assistant procedural failures.",
+    "template_suffix": "Return JSON only, response_type=procedure_failure_evaluation. Be specific and actionable."
   },
   "inputs": [
     {
-      "key": "account_instruction",
+      "key": "procedure",
       "type": "file",
-      "path": "ChatMachines/Main Instructions/AGENTS.md",
+      "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/PromptGemini.json",
       "required": true,
       "numbered": false
     },
     {
-      "key": "local_project_instruction",
+      "key": "workflow",
       "type": "file",
-      "path": "ChatMachines/Main Instructions/PROJECT_INSTRUCTION.json",
+      "path": ".github/workflows/prompt-gemini-context-rich-dialogue.yml",
       "required": true,
       "numbered": false
     }
   ],
   "validation": {
-    "expected_response_type": "instruction_merge_result",
+    "expected_response_type": "procedure_failure_evaluation",
     "require_json": true,
     "strip_markdown_fence": true,
     "allow_repair": true
