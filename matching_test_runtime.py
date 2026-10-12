@@ -10,7 +10,8 @@ import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parent
-TEST = ROOT / "matching_test"
+CONFIG = json.loads((ROOT / "matching/runtime_config.json").read_text())
+TEST = ROOT / CONFIG["test"]["directory"]
 SOURCE = ROOT / "matching"
 
 def run(*args, cwd=ROOT):
