@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Container image creation test — UNDER CONSTRUCTION.
+"""Partially completed not fully realized container image creation test under construction.
 
 Implemented: clean and prepare an isolated test branch and workspace.
 Not implemented: create a container image or verify the resulting image.
@@ -27,7 +27,7 @@ def require(endpoint, method="GET", fields=()):
     return json.loads(output) if output else {}
 
 
-def run_container_image_creation_test(test_config, repo):
+def partially_completed_not_fully_realized_container_image_creation_test_under_construction(test_config, repo):
     """Run the implemented preparation stage; image creation remains unimplemented."""
     branch = test_config["branch"]
     location = test_config["location"]
@@ -76,7 +76,7 @@ def run_container_image_creation_test(test_config, repo):
 def main():
     from pathlib import Path
     settings = json.loads(Path("matching/operation_config.json").read_text())
-    return run_container_image_creation_test(settings["container_image_creation_test"], os.environ["GITHUB_REPOSITORY"])
+    return partially_completed_not_fully_realized_container_image_creation_test_under_construction(settings["partially completed not fully realized container image creation test under construction"], os.environ["GITHUB_REPOSITORY"])
 
 
 if __name__ == "__main__":
