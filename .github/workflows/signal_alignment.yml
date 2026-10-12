@@ -8,6 +8,9 @@ on:
       - '.github/workflows/signal_alignment.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
@@ -78,3 +81,15 @@ jobs:
       - name: Initialize workspace and model sessions
         run: |
           python matching/bootstrap.py
+      - name: Persist validated models in Git LFS
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs install --local
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- matching/models/.gitattributes matching/models/spatial_detector.onnx matching/models/feature_encoder.onnx
+          if ! git diff --cached --quiet; then
+            git commit -m 'Persist validated matching ONNX models via Git LFS'
+            git push origin HEAD:main
+          fi
