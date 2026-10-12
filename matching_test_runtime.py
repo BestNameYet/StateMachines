@@ -10,7 +10,7 @@ import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parent
-TEST = ROOT / "matching test"
+TEST = ROOT / "matching_test"
 SOURCE = ROOT / "matching"
 
 def run(*args, cwd=ROOT):
