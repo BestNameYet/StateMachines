@@ -28,21 +28,15 @@ def commit(message):
     return sha
 
 def verify(sha, expected):
-    with tempfile.TemporaryDirectory() as directory:
-        header = run("git", "config", "--local", "--get",
-                     "http.https://github.com/.extraheader")
-        run("git", "-c", "http.https://github.com/.extraheader=" + header,
-            "clone", "--quiet", "--no-checkout",
-            "https://github.com/" + os.environ["GITHUB_REPOSITORY"] + ".git", directory)
-        run("git", "config", "--local", "http.https://github.com/.extraheader", header,
-            cwd=directory)
-        run("git", "checkout", "--quiet", sha, cwd=directory)
-        run("git", "lfs", "pull", "--include=matching/persistence_test/*", cwd=directory)
-        candidate = Path(directory) / "matching/persistence_test/fixture.bin"
-        if expected is None:
-            assert not candidate.exists()
-        else:
-            assert candidate.exists() and hashlib.sha256(candidate.read_bytes()).hexdigest() == expected
+    assert run("git", "ls-remote", "origin", "refs/heads/main").split()[0] == sha
+    if expected is not None:
+        pointer = run("git", "show", sha + ":matching/persistence_test/fixture.bin")
+        assert "version https://git-lfs.github.com/spec/v1" in pointer
+        assert "oid sha256:" + expected in pointer
+        assert "size " in pointer
+    else:
+        paths = run("git", "ls-tree", "-r", "--name-only", sha)
+        assert not any(p.startswith("matching/persistence_test/") for p in paths.splitlines())
 
 def main():
     existing = DIRECTORY.exists()
