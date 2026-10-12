@@ -71,46 +71,26 @@ The program writes `matching/metrics.md` by default, or the path in `GITHUB_STEP
 - To rebuild the image, update the committed Dockerfile, requirements, models, or wheels, or remove the published image. The next `matching-trigger` issue automatically rebuilds it. Rebuilds require GHCR package write access.
 - The old dependency persistence and dataset extraction workflows have been removed; their outputs remain in the repository.
 
-## Standalone container-image creation test
+## Configurable container build
 
-The component runner selects the literal-named
+The single entry script is
 `partially_completed_not_fully_realized_container_image_creation_test_under_construction.py`.
-Its test function receives only its object from `operation_config.json` and starts
-with the existing disposable-branch cleanup. It creates `matching_test`, prepares
-its workspace, and then builds and verifies a local Docker image on the Actions runner.
-The test branch remains available for inspection as before; this test does not publish
-an image or run the comparison program.
+Set `mode` to `normal` or `test` in `matching/operation_config.json`.
+Both modes call `run_pipeline` and use the same manifest acquisition, Docker build,
+container verification, and JSON reporting functions.
 
-`build_context_manifest.json` supplies the Python version, direct wheel requirements,
-model URLs and checksums, directories, repository files, and optional directory metadata
-file template. The workflow sets up that exact interpreter. The context builder generates
-`requirements.txt` from `wheels`, resolves all transitive wheels through pip, and downloads
-each model from its published URL. It rejects a model unless its size and SHA-256 match.
-It does not use Git LFS model or wheel downloads. The isolated Docker context contains
-only manifest inputs and generated requirements/wheels, with a dynamically calculated
-file inventory rather than a hardcoded completeness count.
+Test mode changes only environment preparation: it pre-cleans/checks the disposable
+branch, creates `matching_test` from the configured base branch, and renames the
+primary source folder to `matching_test` on that branch. The Docker context,
+container model paths, and report use `matching_test` too.
+Normal mode uses the current checkout and primary folder `matching`.
+Shared settings live in `build`; test isolation settings live in `test`.
+The same manifest is resolved under the selected primary folder. Generated
+Dockerfile paths are relocated to that folder for test mode.
 
-Docker receives the manifest Python version as its build argument. Verification runs
-with networking disabled and checks the actual interpreter version, imports NumPy,
-Pillow, and ONNX Runtime, and loads both ONNX sessions. The JSON evidence records the
-source commit, manifest hash, acquired file hashes, image ID, and verification output.
-The workflow uploads it as `matching-container-image-creation-result`, including a
-controlled failure report if the test cannot finish. Changes to the test, manifest,
-configuration, helpers, Dockerfile, or component workflow trigger this test on `main`;
-manual dispatch is also available.
-
-## Build mode setting
-
-Set top-level `mode` in `matching/operation_config.json` to `"test"` or
-`"normal"`. The committed setting remains `"test"` to preserve existing behavior.
-
-- `test` selects the existing isolated test function: branch cleanup and creation,
-  manifest acquisition, Docker build, and post-build container verification.
-- `normal` selects the `normal` settings object: manifest acquisition and Docker
-  build from the current checkout, without test-branch operations or a post-build
-  verification container. Both modes write the configured JSON report.
-- Missing or unsupported modes print the current configuration and a corrected
-  example, then exit with a controlled failure.
-
-Publisher checksum checks and the Dockerfile's build-time dependency/model checks
-remain in both modes. Neither mode publishes the runner-local image.
+Both modes download wheels using the manifest Python version, check model
+publisher sizes and hashes, build the image, and run import/model verification
+with networking disabled. File inventories are calculated dynamically.
+The workflow uploads the report from either primary folder. The test branch
+remains for inspection. Neither mode publishes the runner-local image.
+Missing or invalid modes print the current config and a corrected example.

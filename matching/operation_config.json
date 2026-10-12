@@ -1,22 +1,18 @@
 {
-  "description": "Container build mode and operation settings.",
+  "description": "One shared build pipeline; test changes only pre-clean, branch, and primary folder.",
+  "mode": "test",
   "cleanup": {
-    "description": "Configuration for the standalone cleanup function.",
     "branch": "matching_test"
   },
-  "partially completed not fully realized container image creation test under construction": {
-    "description": "Creates isolated manifest context, builds a Docker image, verifies packages and model loading.",
-    "branch": "matching_test",
-    "location": "matching_test",
-    "base_branch": "main",
-    "manifest": "matching/build_context_manifest.json",
-    "image": "matching-runtime:creation-test",
-    "report": "matching/container-image-creation-result.json"
+  "build": {
+    "primary_folder": "matching",
+    "manifest": "build_context_manifest.json",
+    "image": "matching-runtime:creation",
+    "report": "container-image-creation-result.json"
   },
-  "mode": "test",
-  "normal": {
-    "manifest": "matching/build_context_manifest.json",
-    "image": "matching-runtime:normal",
-    "report": "matching/container-image-creation-result.json"
+  "test": {
+    "branch": "matching_test",
+    "primary_folder": "matching_test",
+    "base_branch": "main"
   }
 }

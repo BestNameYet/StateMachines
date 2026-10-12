@@ -29,40 +29,40 @@ def require(endpoint, method="GET", fields=()):
     return json.loads(output) if output else {}
 
 
-def prepare_build_environment(test_config, repo):
-    """Check out the isolated test branch into a dedicated local Docker build context."""
-    branch = test_config["branch"]
-    runner_temp = Path(os.environ.get("RUNNER_TEMP", tempfile.gettempdir()))
-    runner_temp.mkdir(parents=True, exist_ok=True)
-    context = Path(tempfile.mkdtemp(prefix="matching-image-build-", dir=runner_temp))
+def prepare_test_environment(settings, repo):
+    test = settings["test"]
+    cleanup = delete_test_branch(test, repo)
+    if cleanup["outcome"] not in ("DELETED", "NO_ACTION_REQUIRED"):
+        raise RuntimeError(f"Cleanup failed: {cleanup}")
+    branch = test["branch"]
+    base = require(f"repos/{repo}/git/ref/heads/{test['base_branch']}")
+    require(f"repos/{repo}/git/refs", "POST",
+            (("ref", f"refs/heads/{branch}"), ("sha", base["object"]["sha"])))
+    context = Path(tempfile.mkdtemp(prefix="matching-build-"))
     env = os.environ.copy()
     env["GIT_LFS_SKIP_SMUDGE"] = "1"
-    try:
-        subprocess.run(
-            ["gh", "repo", "clone", repo, str(context), "--",
-             "--branch", branch, "--single-branch"],
-            env=env, check=True, capture_output=True, text=True,
-        )
-        checked_out_branch = subprocess.run(
-            ["git", "-C", str(context), "branch", "--show-current"],
-            check=True, capture_output=True, text=True,
-        ).stdout.strip()
-        if checked_out_branch != branch:
-            raise RuntimeError(f"Expected {branch}, checked out {checked_out_branch}")
-        expected = context / test_config["location"] / ".gitkeep"
-        if not expected.is_file():
-            raise RuntimeError(f"Test workspace marker missing: {expected}")
-        if not (context / "matching" / "Dockerfile.runtime").is_file():
-            raise RuntimeError("Test branch lacks matching/Dockerfile.runtime")
-        commit = subprocess.run(
-            ["git", "-C", str(context), "rev-parse", "HEAD"],
-            check=True, capture_output=True, text=True,
-        ).stdout.strip()
-        return {"build_context": str(context), "branch": branch, "commit": commit}
-    except Exception:
-        import shutil
-        shutil.rmtree(context, ignore_errors=True)
-        raise
+    env["GIT_LFS_SKIP_PUSH"] = "1"
+    subprocess.run(["gh", "repo", "clone", repo, str(context), "--",
+                    "--branch", branch, "--single-branch"], env=env, check=True)
+    subprocess.run(["git", "-C", str(context), "mv", settings["build"]["primary_folder"],
+                    test["primary_folder"]], env=env, check=True)
+    subprocess.run(["git", "-C", str(context), "-c", "user.name=github-actions[bot]",
+                    "-c", "user.email=41898282+github-actions[bot]@users.noreply.github.com",
+                    "commit", "-m", "Use matching_test as isolated build primary folder"], env=env, check=True)
+    subprocess.run(["gh", "auth", "setup-git"], env=env, check=True)
+    subprocess.run(["git", "-C", str(context), "push", "origin", "HEAD:" + branch], env=env, check=True)
+    commit = subprocess.check_output(["git", "-C", str(context), "rev-parse", "HEAD"], text=True).strip()
+    if require(f"repos/{repo}/git/ref/heads/{branch}")["object"]["sha"] != commit:
+        raise RuntimeError("Test branch persistence differs from checkout")
+    return {"checkout": str(context), "branch": branch, "primary_folder": test["primary_folder"],
+            "commit": commit, "cleanup": cleanup}
+
+
+def prepare_environment(settings, repo):
+    if settings["mode"] == "test":
+        return prepare_test_environment(settings, repo)
+    return {"checkout": str(Path.cwd()), "primary_folder": settings["build"]["primary_folder"],
+            "commit": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()}
 
 
 def create_container(prepared, image):
@@ -114,77 +114,25 @@ def create_and_verify_container(prepared, image):
     return verify_container(prepared, create_container(prepared, image))
 
 
-def partially_completed_not_fully_realized_container_image_creation_test_under_construction(test_config, repo):
-    """Create and verify the image using the configured isolated branch."""
-    branch = test_config["branch"]
-    location = test_config["location"]
-    base_branch = test_config.get("base_branch", "main")
-    for value in (branch, location, base_branch):
-        if not isinstance(value, str) or not value or value.startswith("/") or ".." in value.split("/"):
-            raise ValueError("Invalid test branch or location")
-    directory_marker = f"{location.rstrip('/')}/.gitkeep"
-    record = {"branch": branch, "workspace": directory_marker,
-              "initial_exists": None, "created": False, "verified": False,
-              "outcome": "FAILED",
-              "test_complete": False,
-              "pending_stages": ["manifest_context_preparation", "container_image_creation", "container_image_verification"]}
+def run_pipeline(settings, repo):
+    """The same acquisition, build, verification and reporting functions for both modes."""
+    record = {"mode": settings["mode"], "outcome": "FAILED", "pending_stages":
+              ["environment", "manifest_context", "image_build_and_verification"]}
+    folder = settings["test"]["primary_folder"] if settings["mode"] == "test" else settings["build"]["primary_folder"]
     try:
-        cleanup_result = delete_test_branch(test_config, repo)
-        record["cleanup"] = cleanup_result
-        record["initial_exists"] = cleanup_result["initial_exists"]
-        if cleanup_result["outcome"] not in ("DELETED", "NO_ACTION_REQUIRED"):
-            raise RuntimeError(f"Cleanup failed: {cleanup_result}")
-
-        base = require(f"repos/{repo}/git/ref/heads/{base_branch}")
-        sha = base["object"]["sha"]
-        require(f"repos/{repo}/git/refs", "POST",
-                (("ref", f"refs/heads/{branch}"), ("sha", sha)))
-        record["created"] = True
-        print(f"Created branch {branch} from {base_branch} at {sha}", flush=True)
-
-        require(f"repos/{repo}/contents/{directory_marker}", "PUT",
-                (("message", "Initialize isolated matching test workspace"),
-                 ("content", ""), ("branch", branch)))
-
-        file = require(f"repos/{repo}/contents/{directory_marker}?ref={branch}")
-        if file.get("type") != "file":
-            raise RuntimeError("Created test workspace failed verification")
-
-        record["build_environment"] = prepare_build_environment(test_config, repo)
-        record["verified"] = True
+        record["environment"] = prepare_environment(settings, repo)
+        record["pending_stages"].remove("environment")
         record["manifest_context"] = prepare_manifest_context(
-            record["build_environment"]["build_context"], test_config["manifest"]
-        )
-        record["pending_stages"].remove("manifest_context_preparation")
-        record["container"] = create_and_verify_container(record["manifest_context"], test_config["image"])
+            record["environment"]["checkout"],
+            str(Path(folder) / settings["build"]["manifest"]), primary_folder=folder)
+        record["pending_stages"].remove("manifest_context")
+        record["container"] = create_and_verify_container(record["manifest_context"], settings["build"]["image"])
         record["pending_stages"] = []
-        record["test_complete"] = True
-        record["outcome"] = "COMPLETE"
-        print("Container image built and verified", flush=True)
-    except Exception as exc:
-        record["error"] = str(exc)
-        print(f"Controlled failure: {exc}", flush=True)
-    report = Path(test_config["report"])
-    report.parent.mkdir(parents=True, exist_ok=True)
-    report.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(record, indent=2), flush=True)
-    return 0 if record["test_complete"] else 1
-
-
-def normal(operation_config, repo):
-    """Build from the current checkout without disposable-branch or runtime tests."""
-    record = {"mode": "normal", "outcome": "FAILED", "verification_executed": False}
-    try:
-        record["source_commit"] = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], text=True
-        ).strip()
-        record["manifest_context"] = prepare_manifest_context(Path.cwd(), operation_config["manifest"])
-        record["container"] = create_container(record["manifest_context"], operation_config["image"])
         record["outcome"] = "COMPLETE"
     except Exception as exc:
         record["error"] = str(exc)
         print(f"Controlled failure: {exc}", flush=True)
-    report = Path(operation_config["report"])
+    report = Path(folder) / settings["build"]["report"]
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(record, indent=2), flush=True)
@@ -192,18 +140,13 @@ def normal(operation_config, repo):
 
 
 def run_mode(settings, repo):
-    mode = settings.get("mode")
-    if mode not in ("test", "normal"):
+    if settings.get("mode") not in ("test", "normal"):
         print("Invalid mode: allowed values are test and normal.", flush=True)
         print(json.dumps(settings, indent=2), flush=True)
         print("Example corrected configuration:", flush=True)
         print(json.dumps({**settings, "mode": "test"}, indent=2), flush=True)
         return 1
-    if mode == "normal":
-        return normal(settings["normal"], repo)
-    return partially_completed_not_fully_realized_container_image_creation_test_under_construction(
-        settings["partially completed not fully realized container image creation test under construction"], repo
-    )
+    return run_pipeline(settings, repo)
 
 
 def main():

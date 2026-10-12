@@ -25,8 +25,10 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def prepare_manifest_context(checkout, manifest_relative="matching/build_context_manifest.json"):
+def prepare_manifest_context(checkout, manifest_relative="matching/build_context_manifest.json", primary_folder="matching"):
     checkout = Path(checkout).resolve()
+    if primary_folder not in ("matching", "matching_test"):
+        raise ValueError("Unsupported primary folder")
     manifest_path = safe_path(checkout, manifest_relative)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     root = Path(tempfile.mkdtemp(prefix="matching-manifest-context-"))
@@ -35,7 +37,10 @@ def prepare_manifest_context(checkout, manifest_relative="matching/build_context
             safe_path(root, directory).mkdir(parents=True, exist_ok=True)
 
         def copy(entry):
-            source = safe_path(checkout, entry["path"])
+            source_path = Path(entry["path"])
+            if source_path.parts[0] == "matching":
+                source_path = Path(primary_folder, *source_path.parts[1:])
+            source = safe_path(checkout, str(source_path))
             if not source.is_file():
                 if entry.get("required"):
                     raise ValueError(f"Missing required repository input: {entry['path']}")
@@ -74,17 +79,23 @@ def prepare_manifest_context(checkout, manifest_relative="matching/build_context
         dockerfile = safe_path(root, manifest["dockerfile"])
         if not context.is_dir() or not dockerfile.is_file():
             raise ValueError("Build context or Dockerfile missing")
+        for entry in manifest["models"]:
+            path = safe_path(root, entry["path"])
+            if path.stat().st_size != entry["size_bytes"] or sha256(path) != entry["sha256"]:
+                raise ValueError(f"Model failed readback verification: {entry['path']}")
+        if primary_folder != "matching":
+            (root / "matching").rename(root / primary_folder)
+            dockerfile = root / primary_folder / Path(manifest["dockerfile"]).name
+            dockerfile.write_text(dockerfile.read_text().replace("matching/", primary_folder + "/"))
+            for model in models:
+                model["path"] = str(Path(primary_folder, *Path(model["path"]).parts[1:]))
         inventory = [
             {"path": str(path.relative_to(root)), "size_bytes": path.stat().st_size,
              "sha256": sha256(path)}
             for path in sorted(root.rglob("*")) if path.is_file()
         ]
-        for entry in manifest["models"]:
-            path = safe_path(root, entry["path"])
-            if path.stat().st_size != entry["size_bytes"] or sha256(path) != entry["sha256"]:
-                raise ValueError(f"Model failed readback verification: {entry['path']}")
         return {"build_context": str(context), "context_root": str(root),
-                "dockerfile": str(dockerfile), "python_version": version,
+                "dockerfile": str(dockerfile), "python_version": version, "primary_folder": primary_folder,
                 "manifest_sha256": sha256(manifest_path), "models": models,
                 "inventory": inventory}
     except Exception:
