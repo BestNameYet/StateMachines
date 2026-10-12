@@ -24,21 +24,58 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r matching/requirements.txt
-      - name: Ensure Model Weights Exist
+      - name: Provision and validate ONNX models
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p matching/models
-          # Fetch lightweight spatial detector (~1.2MB) if missing
-          if [ ! -f "matching/models/spatial_detector.onnx" ]; then
-            curl -fsSL "https://raw.githubusercontent.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/master/models/onnx/version-RFB-320.onnx" \
-                 -o "matching/models/spatial_detector.onnx"
-          fi
-          # Fetch lightweight latent feature encoder (~4.2MB) if missing
-          if [ ! -f "matching/models/feature_encoder.onnx" ]; then
-            curl -fsSL "https://raw.githubusercontent.com/onnx/models/main/validated/vision/body_analysis/arcface/model/arcfaceresnet100-8.onnx" \
-                 -o "matching/models/feature_encoder.onnx" || \
-            curl -fsSL "https://huggingface.co/qualcomm/MobileFaceNet/resolve/main/MobileFaceNet.onnx" \
-                 -o "matching/models/feature_encoder.onnx"
-          fi
+          python - <<'PY'
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          import onnxruntime as ort
+
+          sources = {
+              "spatial_detector": [
+                  "https://raw.githubusercontent.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/master/models/onnx/version-RFB-320.onnx",
+              ],
+              "feature_encoder": [
+                  "https://huggingface.co/qualcomm/MobileFaceNet/resolve/main/MobileFaceNet.onnx?download=true",
+                  "https://raw.githubusercontent.com/onnx/models/main/validated/vision/body_analysis/arcface/model/arcfaceresnet100-8.onnx",
+              ],
+          }
+
+          def valid(path):
+              try:
+                  session = ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
+                  return bool(session.get_inputs() and session.get_outputs())
+              except Exception as exc:
+                  print(f"Invalid model at {path}: {type(exc).__name__}: {exc}")
+                  return False
+
+          for name, urls in sources.items():
+              target = Path("matching/models") / f"{name}.onnx"
+              if target.is_file() and valid(target):
+                  continue
+              target.unlink(missing_ok=True)
+              for url in urls:
+                  candidate = target.with_suffix(".download")
+                  try:
+                      request = Request(url, headers={"User-Agent": "StateMachines-model-bootstrap/1.0"})
+                      with urlopen(request, timeout=90) as response:
+                          with candidate.open("wb") as out:
+                              while chunk := response.read(1024 * 1024):
+                                  out.write(chunk)
+                      if valid(candidate):
+                          candidate.replace(target)
+                          print(f"Validated {name}: {target.stat().st_size} bytes")
+                          break
+                  except Exception as exc:
+                      print(f"Download failed for {name}: {type(exc).__name__}: {exc}")
+                  finally:
+                      candidate.unlink(missing_ok=True)
+              if not target.is_file():
+                  raise SystemExit(f"No valid ONNX model available for {name}")
+          PY
       - name: Initialize workspace and model sessions
         run: |
           python matching/bootstrap.py
