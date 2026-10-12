@@ -48,7 +48,7 @@ def run_test(test_config, repo):
               "initial_exists": None, "created": False, "verified": False,
               "outcome": "FAILED"}
     try:
-        cleanup_result = delete_test_branch({"cleanup": {"branch": branch}}, repo)
+        cleanup_result = delete_test_branch(test_config, repo)
         record["cleanup"] = cleanup_result
         record["initial_exists"] = cleanup_result["initial_exists"]
         if cleanup_result["outcome"] not in ("DELETED", "NO_ACTION_REQUIRED"):
