@@ -8,9 +8,6 @@ import json
 import os
 import subprocess
 
-BRANCH = "matching_test"
-DIRECTORY_MARKER = "matching_test/.gitkeep"
-
 
 def api(endpoint, method="GET", fields=()):
     command = ["gh", "api", "-X", method, endpoint]
@@ -36,42 +33,61 @@ def branch_exists(repo, branch):
     raise RuntimeError(f"Cannot check branch {branch}: {error or output}")
 
 
-def main():
-    repo = os.environ["GITHUB_REPOSITORY"]
-    record = {"branch": BRANCH, "workspace": DIRECTORY_MARKER,
+def run_test(test_config, repo):
+    """Execute the test setup using the selector-provided mode configuration."""
+    if not isinstance(test_config, dict):
+        raise ValueError("Test configuration must be an object")
+    branch = test_config["branch"]
+    location = test_config["location"]
+    base_branch = test_config.get("base_branch", "main")
+    for value in (branch, location, base_branch):
+        if not isinstance(value, str) or not value.strip() or value.startswith("/") or ".." in value.split("/"):
+            raise ValueError("Invalid branch or location in test configuration")
+    directory_marker = f"{location.rstrip('/')}/.gitkeep"
+    record = {"branch": branch, "workspace": directory_marker,
               "initial_exists": None, "created": False, "verified": False,
               "outcome": "FAILED"}
     try:
-        record["initial_exists"] = branch_exists(repo, BRANCH)
+        record["initial_exists"] = branch_exists(repo, branch)
         print(f"Branch exists: {'YES' if record['initial_exists'] else 'NO'}", flush=True)
         if record["initial_exists"]:
             raise RuntimeError(
-                f"Branch {BRANCH} already exists. Run the separate cleanup component first."
+                f"Branch {branch} already exists. Run the separate cleanup component first."
             )
 
-        base = require(f"repos/{repo}/git/ref/heads/main")
+        base = require(f"repos/{repo}/git/ref/heads/{base_branch}")
         sha = base["object"]["sha"]
         require(f"repos/{repo}/git/refs", "POST",
-                (("ref", f"refs/heads/{BRANCH}"), ("sha", sha)))
+                (("ref", f"refs/heads/{branch}"), ("sha", sha)))
         record["created"] = True
-        print(f"Created branch {BRANCH} from main at {sha}", flush=True)
+        print(f"Created branch {branch} from {base_branch} at {sha}", flush=True)
 
-        require(f"repos/{repo}/contents/{DIRECTORY_MARKER}", "PUT",
+        require(f"repos/{repo}/contents/{directory_marker}", "PUT",
                 (("message", "Initialize isolated matching test workspace"),
-                 ("content", ""), ("branch", BRANCH)))
+                 ("content", ""), ("branch", branch)))
 
-        file = require(f"repos/{repo}/contents/{DIRECTORY_MARKER}?ref={BRANCH}")
-        if file.get("type") != "file" or not branch_exists(repo, BRANCH):
+        file = require(f"repos/{repo}/contents/{directory_marker}?ref={branch}")
+        if file.get("type") != "file" or not branch_exists(repo, branch):
             raise RuntimeError("Created test branch or workspace failed verification")
 
         record["verified"] = True
         record["outcome"] = "READY"
-        print("Verified matching_test branch and root-level workspace", flush=True)
+        print("Verified configured test branch and workspace", flush=True)
     except Exception as exc:
         record["error"] = str(exc)
         print(f"Controlled failure: {exc}", flush=True)
     print(json.dumps(record, indent=2), flush=True)
     return 0 if record["outcome"] == "READY" else 1
+
+
+def main():
+    import argparse
+    from pathlib import Path
+    parser = argparse.ArgumentParser(description="Prepare the selector-configured matching test workspace")
+    parser.add_argument("--config", required=True, help="Path to mode selector JSON")
+    args = parser.parse_args()
+    selector = json.loads(Path(args.config).read_text())
+    return run_test(selector["test"], os.environ["GITHUB_REPOSITORY"])
 
 
 if __name__ == "__main__":
