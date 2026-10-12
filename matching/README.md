@@ -70,3 +70,31 @@ The program writes `matching/metrics.md` by default, or the path in `GITHUB_STEP
 - `wheels/` and `models/` are retained as build inputs for `Dockerfile.runtime`; do not remove them merely because the comparison job reads them from the published container.
 - To rebuild the image, update the committed Dockerfile, requirements, models, or wheels, or remove the published image. The next `matching-trigger` issue automatically rebuilds it. Rebuilds require GHCR package write access.
 - The old dependency persistence and dataset extraction workflows have been removed; their outputs remain in the repository.
+
+## Standalone container-image creation test
+
+The component runner selects the literal-named
+`partially_completed_not_fully_realized_container_image_creation_test_under_construction.py`.
+Its test function receives only its object from `operation_config.json` and starts
+with the existing disposable-branch cleanup. It creates `matching_test`, prepares
+its workspace, and then builds and verifies a local Docker image on the Actions runner.
+The test branch remains available for inspection as before; this test does not publish
+an image or run the comparison program.
+
+`build_context_manifest.json` supplies the Python version, direct wheel requirements,
+model URLs and checksums, directories, repository files, and optional directory metadata
+file template. The workflow sets up that exact interpreter. The context builder generates
+`requirements.txt` from `wheels`, resolves all transitive wheels through pip, and downloads
+each model from its published URL. It rejects a model unless its size and SHA-256 match.
+It does not use Git LFS model or wheel downloads. The isolated Docker context contains
+only manifest inputs and generated requirements/wheels, with a dynamically calculated
+file inventory rather than a hardcoded completeness count.
+
+Docker receives the manifest Python version as its build argument. Verification runs
+with networking disabled and checks the actual interpreter version, imports NumPy,
+Pillow, and ONNX Runtime, and loads both ONNX sessions. The JSON evidence records the
+source commit, manifest hash, acquired file hashes, image ID, and verification output.
+The workflow uploads it as `matching-container-image-creation-result`, including a
+controlled failure report if the test cannot finish. Changes to the test, manifest,
+configuration, helpers, Dockerfile, or component workflow trigger this test on `main`;
+manual dispatch is also available.

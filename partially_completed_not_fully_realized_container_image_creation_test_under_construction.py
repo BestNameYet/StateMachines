@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Partially completed not fully realized container image creation test under construction.
 
-Implemented: clean and prepare an isolated test branch and workspace.
-Not implemented: create a container image or verify the resulting image.
+Create an isolated branch, acquire manifest inputs, build and verify the image.
 The disposable test branch is left in place for inspection/cleanup.
 """
 import json
@@ -12,6 +11,7 @@ import tempfile
 from pathlib import Path
 
 from matching_branch_cleanup import delete_test_branch
+from matching.build_context import prepare_manifest_context
 
 
 def api(endpoint, method="GET", fields=()):
@@ -65,8 +65,49 @@ def prepare_build_environment(test_config, repo):
         raise
 
 
+def create_and_verify_container(prepared, image):
+    """Build the image and check packages and ONNX loading without image comparison."""
+    subprocess.run([
+        "docker", "build", "--file", prepared["dockerfile"],
+        "--build-arg", "PYTHON_VERSION=" + prepared["python_version"],
+        "--tag", image, prepared["build_context"],
+    ], check=True)
+    image_id = subprocess.check_output(
+        ["docker", "image", "inspect", "--format", "{{.Id}}", image], text=True
+    ).strip()
+    verification = """
+import json, sys
+from pathlib import Path
+import numpy, PIL, onnxruntime as ort
+spec = json.loads(sys.argv[1])
+actual = ".".join(map(str, sys.version_info[:3]))
+if actual != spec["python_version"]:
+    raise RuntimeError(f"Container interpreter {actual} differs from manifest")
+models = []
+for entry in spec["models"]:
+    path = Path("/workspace") / entry["path"]
+    session = ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
+    if not session.get_inputs() or not session.get_outputs():
+        raise RuntimeError(f"Model lacks inputs/outputs: {path}")
+    models.append({"path": entry["path"], "providers": session.get_providers()})
+print(json.dumps({"python_version": actual, "packages": {
+    "numpy": numpy.__version__, "Pillow": PIL.__version__,
+    "onnxruntime": ort.__version__}, "models": models}))
+"""
+    result = subprocess.run([
+        "docker", "run", "--rm", "--network", "none", "--entrypoint", "python",
+        image_id, "-c", verification,
+        json.dumps({"python_version": prepared["python_version"], "models": prepared["models"]}),
+    ], check=True, capture_output=True, text=True)
+    print(result.stdout, flush=True)
+    if result.stderr:
+        print(result.stderr, flush=True)
+    return {"image": image, "image_id": image_id,
+            "verification": json.loads(result.stdout)}
+
+
 def partially_completed_not_fully_realized_container_image_creation_test_under_construction(test_config, repo):
-    """Run the implemented preparation stage; image creation remains unimplemented."""
+    """Create and verify the image using the configured isolated branch."""
     branch = test_config["branch"]
     location = test_config["location"]
     base_branch = test_config.get("base_branch", "main")
@@ -78,7 +119,7 @@ def partially_completed_not_fully_realized_container_image_creation_test_under_c
               "initial_exists": None, "created": False, "verified": False,
               "outcome": "FAILED",
               "test_complete": False,
-              "pending_stages": ["container_image_creation", "container_image_verification"]}
+              "pending_stages": ["manifest_context_preparation", "container_image_creation", "container_image_verification"]}
     try:
         cleanup_result = delete_test_branch(test_config, repo)
         record["cleanup"] = cleanup_result
@@ -103,13 +144,23 @@ def partially_completed_not_fully_realized_container_image_creation_test_under_c
 
         record["build_environment"] = prepare_build_environment(test_config, repo)
         record["verified"] = True
-        record["outcome"] = "PARTIALLY_IMPLEMENTED"
-        print("Test branch checked out as isolated build context; image creation is not executed", flush=True)
+        record["manifest_context"] = prepare_manifest_context(
+            record["build_environment"]["build_context"], test_config["manifest"]
+        )
+        record["pending_stages"].remove("manifest_context_preparation")
+        record["container"] = create_and_verify_container(record["manifest_context"], test_config["image"])
+        record["pending_stages"] = []
+        record["test_complete"] = True
+        record["outcome"] = "COMPLETE"
+        print("Container image built and verified", flush=True)
     except Exception as exc:
         record["error"] = str(exc)
         print(f"Controlled failure: {exc}", flush=True)
+    report = Path(test_config["report"])
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(record, indent=2), flush=True)
-    return 0 if record["outcome"] == "PARTIALLY_IMPLEMENTED" else 1
+    return 0 if record["test_complete"] else 1
 
 
 def main():
