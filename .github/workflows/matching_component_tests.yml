@@ -2,6 +2,11 @@ name: Matching Component Tests
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - matching/component_test_config.json
+      - .github/workflows/matching_component_tests.yml
 
 jobs:
   component_test:
@@ -12,24 +17,31 @@ jobs:
         run: |
           python - <<'PY'
           import json
-          import pathlib
+          from pathlib import Path
           import subprocess
           import sys
 
-          try:
-              config = json.loads(pathlib.Path("matching/component_test_config.json").read_text())
-              script = config.get("script") if isinstance(config, dict) else None
-          except (OSError, ValueError) as exc:
-              print(f"No script available: {exc}")
+          config_path = Path("matching/component_test_config.json")
+          if not config_path.is_file():
+              print("No script available: configuration file does not exist.")
               sys.exit(0)
 
+          try:
+              config = json.loads(config_path.read_text())
+          except (ValueError, OSError) as exc:
+              print(f"No script available: configuration unreadable: {exc}")
+              sys.exit(0)
+
+          script = config.get("script") if isinstance(config, dict) else None
           if not isinstance(script, str) or not script.strip():
-              print("No script available")
+              print("No script available: script path not configured.")
               sys.exit(0)
-          path = pathlib.Path(script)
+
+          path = Path(script)
           if path.is_absolute() or ".." in path.parts or path.suffix != ".py" or not path.is_file():
-              print(f"No script available: {script}")
+              print(f"No script available: script path does not resolve to a Python file: {script}")
               sys.exit(0)
+
           print(f"Running configured component: {script}", flush=True)
           subprocess.run([sys.executable, str(path)], check=True)
           PY
