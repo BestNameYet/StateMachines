@@ -3,7 +3,10 @@
   "purpose": "Exact Docker build context inputs for matching/Dockerfile.runtime on main; retrieval commands are implemented in code, not this manifest.",
   "dockerfile": "matching/Dockerfile.runtime",
   "build_context_root": ".",
-  "base_image": "python:3.10.22-slim-bookworm",
+  "base_image": {
+    "source": "dockerfile",
+    "instruction": "FROM"
+  },
   "directories": [
     "matching",
     "matching/models",
@@ -21,13 +24,6 @@
       "minimum_bytes": 1
     }
   ],
-  "completeness": {
-    "expected_files": 1,
-    "expected_wheels": 0,
-    "expected_models": 2,
-    "rule": "Explicit files are listed in files. Existing .gitkeep and .gitattributes in each listed directory are included by directory_file_templates. Direct Python requirements are enumerated in wheels; resolved wheel artifacts are not inventoried. Dockerfile.runtime still uses the wheel archive.",
-    "expected_directory_metadata_files": 4
-  },
   "wheels": [
     {
       "name": "onnxruntime",
