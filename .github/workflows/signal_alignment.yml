@@ -1,32 +1,22 @@
 name: Matching Image Comparison
 
 on:
-  push:
-    paths:
-      - 'matching/trigger.json'
+  pull_request:
+    types: [opened]
+    branches: [main]
 
 permissions:
   contents: write
   packages: read
+  pull-requests: write
+
+concurrency:
+  group: matching-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
-  gate:
-    runs-on: ubuntu-latest
-    outputs:
-      enabled: ${{ steps.check.outputs.enabled }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Validate JSON trigger
-        id: check
-        shell: bash
-        run: |
-          set -euo pipefail
-          jq -e 'type == "object" and (keys | sort) == (["run", "timestamp"] | sort) and (.run | type == "boolean") and (.timestamp | type == "string")' matching/trigger.json > /dev/null
-          echo "enabled=$(jq -r '.run' matching/trigger.json)" >> "$GITHUB_OUTPUT"
-
   compare:
-    needs: gate
-    if: needs.gate.outputs.enabled == 'true'
+    if: startsWith(github.event.pull_request.head.ref, 'matching-trigger/') && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current image sets and comparison program
@@ -34,6 +24,7 @@ jobs:
         env:
           GIT_LFS_SKIP_SMUDGE: '1'
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           lfs: false
 
       - name: Authenticate to GitHub Container Registry
@@ -77,31 +68,22 @@ jobs:
           path: matching/metrics.md
           if-no-files-found: ignore
 
-  reset_trigger:
-    needs: [gate, compare]
-    if: always() && needs.gate.outputs.enabled == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Reset consumed trigger and timestamp
+
+      - name: Close request and delete temporary branch
+        if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
         shell: bash
         run: |
           set -euo pipefail
-          # Only reset the trigger that started this run; never overwrite a newer request.
-          original="$(gh api "repos/${GH_REPO}/contents/matching/trigger.json?ref=${GITHUB_SHA}")"
-          original_sha="$(jq -r '.sha' <<< "$original")"
-          current="$(gh api "repos/${GH_REPO}/contents/matching/trigger.json?ref=main")"
-          current_sha="$(jq -r '.sha' <<< "$current")"
-          if [ "$original_sha" != "$current_sha" ]; then
-            echo "Trigger changed since this run started; leaving newer request untouched."
-            exit 0
+          gh api --method PATCH "repos/${GH_REPO}/pulls/${PR_NUMBER}" -f state=closed
+          current_sha="$(gh api "repos/${GH_REPO}/git/ref/heads/${BRANCH}" --jq '.object.sha')"
+          if [ "$current_sha" = "$EXPECTED_SHA" ]; then
+            gh api --method DELETE "repos/${GH_REPO}/git/refs/heads/${BRANCH}"
+          else
+            echo "Branch changed after PR opened; preserving it to avoid deleting newer work."
           fi
-          updated="$(jq -n --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{timestamp: $timestamp, run: false}')"
-          encoded="$(printf '%s\n' "$updated" | base64 -w0)"
-          gh api --method PUT "repos/${GH_REPO}/contents/matching/trigger.json" \
-            -f message="Reset consumed matching trigger" \
-            -f content="$encoded" \
-            -f sha="$current_sha" \
-            -f branch=main
