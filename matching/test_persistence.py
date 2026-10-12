@@ -29,8 +29,13 @@ def commit(message):
 
 def verify(sha, expected):
     with tempfile.TemporaryDirectory() as directory:
-        run("git", "clone", "--quiet", "--no-checkout",
+        header = run("git", "config", "--local", "--get",
+                     "http.https://github.com/.extraheader")
+        run("git", "-c", "http.https://github.com/.extraheader=" + header,
+            "clone", "--quiet", "--no-checkout",
             "https://github.com/" + os.environ["GITHUB_REPOSITORY"] + ".git", directory)
+        run("git", "config", "--local", "http.https://github.com/.extraheader", header,
+            cwd=directory)
         run("git", "checkout", "--quiet", sha, cwd=directory)
         run("git", "lfs", "pull", "--include=matching/persistence_test/*", cwd=directory)
         candidate = Path(directory) / "matching/persistence_test/fixture.bin"
@@ -40,14 +45,19 @@ def verify(sha, expected):
             assert candidate.exists() and hashlib.sha256(candidate.read_bytes()).hexdigest() == expected
 
 def main():
-    assert not DIRECTORY.exists(), "Test directory already exists"
+    existing = DIRECTORY.exists()
+    if existing and not (DIRECTORY / "fixture.bin").exists():
+        raise RuntimeError("Unexpected pre-existing test directory")
     run("git", "lfs", "install", "--local")
-    DIRECTORY.mkdir()
-    (DIRECTORY / ".gitattributes").write_text("*.bin filter=lfs diff=lfs merge=lfs -text\n")
-    payload = b"StateMachines Git LFS persistence test fixture" * 30000
-    (DIRECTORY / "fixture.bin").write_bytes(payload)
-    digest = hashlib.sha256(payload).hexdigest()
-    saved = commit("test: persist isolated LFS fixture")
+    if not existing:
+        DIRECTORY.mkdir()
+        (DIRECTORY / ".gitattributes").write_text("*.bin filter=lfs diff=lfs merge=lfs -text\n")
+        payload = b"StateMachines Git LFS persistence test fixture" * 30000
+        (DIRECTORY / "fixture.bin").write_bytes(payload)
+        saved = commit("test: persist isolated LFS fixture")
+    else:
+        saved = run("git", "rev-parse", "HEAD")
+    digest = hashlib.sha256((DIRECTORY / "fixture.bin").read_bytes()).hexdigest()
     verify(saved, digest)
     (DIRECTORY / "fixture.bin").unlink()
     (DIRECTORY / ".gitattributes").unlink()
