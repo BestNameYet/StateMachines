@@ -49,7 +49,8 @@ def delete_test_branch(config, repository, *, api=github_api, log=print):
     return record
 
 def main():
-    config = json.loads(Path("matching/component_test_config.json").read_text())
+    settings = json.loads(Path("matching/operation_config.json").read_text())
+    config = settings["cleanup"]
     record = delete_test_branch(config, os.environ["GITHUB_REPOSITORY"])
     print(json.dumps(record, indent=2))
     return 1 if record["outcome"] == "FAILED" else 0
