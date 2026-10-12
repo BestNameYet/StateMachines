@@ -1,60 +1,89 @@
-name: Extract matching dataset
+name: Extract Signal matching dataset
+
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
-      - 'matching/datasets/incoming/*.zip'
+      - 'matching/Signal_matching_dataset.zip'
+      - '.github/workflows/extract_matching_dataset.yml'
+
 permissions:
   contents: write
+
+concurrency:
+  group: signal-matching-extract-main
+  cancel-in-progress: false
+
 jobs:
   extract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           persist-credentials: true
-      - name: Extract and validate filtered synthetic dataset
+
+      - name: Validate and extract 28 JPEGs
         shell: bash
+        env:
+          SIGNAL_ZIP_PASSWORD: ${{ secrets.SIGNAL_ZIP_PASSWORD }}
         run: |
           python - <<'PY'
+          import os, re, zipfile
           from pathlib import Path
-          from zipfile import ZipFile
-          from hashlib import sha256
-          import csv, io
-          incoming = Path('matching/datasets/incoming/synthetic_face_photo_dataset_filtered.zip')
+
+          source = Path('matching/Signal_matching_dataset.zip')
           destination = Path('matching/datasets/telemetry_batch')
-          if not incoming.is_file():
-              raise SystemExit(f'Missing input archive: {incoming}')
-          with ZipFile(incoming) as z:
-              names = z.namelist()
-              images = sorted(n for n in names if n.startswith('photos/') and n.lower().endswith('.jpg'))
-              if len(images) != 28:
-                  raise SystemExit(f'Expected 28 JPEG images; got {len(images)}')
-              if len(set(Path(n).name for n in images)) != 28:
-                  raise SystemExit('Duplicate destination basenames')
-              unexpected = [n for n in names if n not in images and n not in ('manifest.csv', 'README.txt')]
-              if unexpected:
-                  raise SystemExit(f'Unexpected ZIP entries: {unexpected}')
-              destination.mkdir(parents=True, exist_ok=True)
-              for name in images:
-                  data = z.read(name)
-                  if not data.startswith(bytes.fromhex('ffd8ff')):
+          expected = {f'signal_{i:03d}.jpg' for i in range(1, 29)}
+          if not source.is_file():
+              raise SystemExit(f'Missing archive: {source}')
+
+          password = os.environ.get('SIGNAL_ZIP_PASSWORD', '').encode() or None
+          with zipfile.ZipFile(source) as archive:
+              entries = [i for i in archive.infolist() if not i.is_dir()]
+              matches = {}
+              for info in entries:
+                  basename = info.filename.replace('\\', '/').rsplit('/', 1)[-1]
+                  if re.fullmatch(r'signal_\d{3}\.jpg', basename, re.I):
+                      normalized = basename.lower()
+                      if normalized not in expected or normalized in matches:
+                          raise SystemExit(f'Unexpected or duplicate image: {info.filename}')
+                      matches[normalized] = info
+              if set(matches) != expected:
+                  raise SystemExit(f'Expected 28 named JPEGs; missing: {sorted(expected - set(matches))}')
+
+              verified = {}
+              for name in sorted(expected):
+                  info = matches[name]
+                  if info.flag_bits & 1 and password is None:
+                      raise SystemExit('Encrypted archive requires SIGNAL_ZIP_PASSWORD secret')
+                  try:
+                      data = archive.read(info, pwd=password)
+                  except (RuntimeError, ValueError, zipfile.BadZipFile) as error:
+                      raise SystemExit(f'Unable to read {name}: {type(error).__name__}') from None
+                  if not data.startswith(b'\xff\xd8\xff') or not data.endswith(b'\xff\xd9'):
                       raise SystemExit(f'Invalid JPEG signature: {name}')
-                  output = destination / Path(name).name
-                  if output.exists() and output.read_bytes() != data:
-                      raise SystemExit(f'Refusing to overwrite different content: {output}')
-                  output.write_bytes(data)
-                  if sha256(output.read_bytes()).digest() != sha256(data).digest():
-                      raise SystemExit(f'Failed verification: {output}')
-              print(f'Extracted and byte-verified {len(images)} JPEGs')
+                  verified[name] = data
+
+          destination.mkdir(parents=True, exist_ok=True)
+          for name, data in verified.items():
+              target = destination / name
+              if target.exists() and target.read_bytes() != data:
+                  raise SystemExit(f'Refusing to overwrite different file: {target}')
+              target.write_bytes(data)
+              if target.read_bytes() != data:
+                  raise SystemExit(f'Byte verification failed: {target}')
+          print(f'Validated and extracted {len(verified)} JPEGs')
           PY
-      - name: Commit extracted images
+
+      - name: Commit extracted JPEGs
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add matching/datasets/telemetry_batch/*.jpg
+          git add -- matching/datasets/telemetry_batch/signal_*.jpg
           if ! git diff --cached --quiet; then
-            git commit -m 'Extract verified synthetic matching dataset'
-            git push
+            git commit -m 'Extract verified Signal matching dataset'
+            git push origin HEAD:main
           fi
