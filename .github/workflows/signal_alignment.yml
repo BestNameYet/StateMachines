@@ -4,96 +4,42 @@ on:
   push:
     paths:
       - 'matching/bootstrap.py'
-      - 'matching/models/**'
       - '.github/workflows/signal_alignment.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  packages: read
 
 jobs:
   bootstrap:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code and Git LFS assets
+      - name: Checkout matching scripts without downloading LFS assets
         uses: actions/checkout@v4
+        env:
+          GIT_LFS_SKIP_SMUDGE: '1'
         with:
-          lfs: true
-      - name: Setup Python
-        uses: actions/setup-python@v5
+          lfs: false
+
+      - name: Authenticate to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          python-version: '3.10'
-      - name: Install Runtime Dependencies from stored wheels only
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Initialize using prebuilt Python and ONNX runtime
         shell: bash
         run: |
           set -euo pipefail
-          git lfs pull --include='matching/wheels/*,matching/models/*'
-          test -n "$(find matching/wheels -maxdepth 1 -name '*.whl' -print -quit)"
-          python -m pip install --no-index --find-links=matching/wheels -r matching/requirements.txt
-          python -c 'import onnxruntime, numpy, PIL; print("Offline dependency imports passed")'
-      - name: Provision and validate ONNX models
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p matching/models
-          python - <<'PY'
-          from pathlib import Path
-          from urllib.request import Request, urlopen
-          import onnxruntime as ort
-
-          sources = {
-              "spatial_detector": [
-                  "https://raw.githubusercontent.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/master/models/onnx/version-RFB-320.onnx",
-              ],
-              "feature_encoder": [
-                  "https://huggingface.co/onnx-community/arcface-onnx/resolve/main/arcface.onnx?download=true",
-              ],
-          }
-
-          def valid(path):
-              try:
-                  session = ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
-                  return bool(session.get_inputs() and session.get_outputs())
-              except Exception as exc:
-                  print(f"Invalid model at {path}: {type(exc).__name__}: {exc}")
-                  return False
-
-          for name, urls in sources.items():
-              target = Path("matching/models") / f"{name}.onnx"
-              if target.is_file() and valid(target):
-                  continue
-              target.unlink(missing_ok=True)
-              for url in urls:
-                  candidate = target.with_suffix(".download")
-                  try:
-                      request = Request(url, headers={"User-Agent": "StateMachines-model-bootstrap/1.0"})
-                      with urlopen(request, timeout=90) as response:
-                          with candidate.open("wb") as out:
-                              while chunk := response.read(1024 * 1024):
-                                  out.write(chunk)
-                      if valid(candidate):
-                          candidate.replace(target)
-                          print(f"Validated {name}: {target.stat().st_size} bytes")
-                          break
-                  except Exception as exc:
-                      print(f"Download failed for {name}: {type(exc).__name__}: {exc}")
-                  finally:
-                      candidate.unlink(missing_ok=True)
-              if not target.is_file():
-                  raise SystemExit(f"No valid ONNX model available for {name}")
-          PY
-      - name: Initialize workspace and model sessions
-        run: |
-          python matching/bootstrap.py
-      - name: Persist validated models in Git LFS
-        shell: bash
-        run: |
-          set -euo pipefail
-          git lfs install --local
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- matching/models/.gitattributes matching/models/spatial_detector.onnx matching/models/feature_encoder.onnx
-          if ! git diff --cached --quiet; then
-            git commit -m 'Persist validated matching ONNX models via Git LFS'
-            git push origin HEAD:main
-          fi
+          docker run --rm \
+            --mount "type=bind,src=${{ github.workspace }},dst=/repo" \
+            --workdir /repo \
+            --entrypoint /bin/sh \
+            ghcr.io/bestnameyet/statemachines-matching-runtime@sha256:42120a7434505e51189977362dcec4467367257cff6d29210dc6a85c5ba6f3ad \
+            -ec '
+              cp /workspace/matching/models/spatial_detector.onnx matching/models/spatial_detector.onnx
+              cp /workspace/matching/models/feature_encoder.onnx matching/models/feature_encoder.onnx
+              python matching/bootstrap.py
+            '
