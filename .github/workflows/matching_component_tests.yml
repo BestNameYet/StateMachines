@@ -1,0 +1,32 @@
+name: Matching Component Tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  component_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run configured component
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json
+          import pathlib
+          import subprocess
+          import sys
+
+          config = json.loads(pathlib.Path("matching/component_test_config.json").read_text())
+          script = config["script"]
+          path = pathlib.Path(script)
+          if path.is_absolute() or ".." in path.parts or path.suffix != ".py" or not path.is_file():
+              raise SystemExit(f"Invalid component script: {script!r}")
+          print(f"Running configured component: {script}", flush=True)
+          subprocess.run([sys.executable, str(path)], check=True)
+          PY
