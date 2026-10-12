@@ -106,7 +106,7 @@ def main() -> None:
             "dockerfile_sha256": sha256(matching / "Dockerfile.runtime"),
             "requirements_sha256": sha256(matching / "requirements.txt"),
         }
-        (matching / "recovery-inventory.json").write_text(json.dumps(inventory, indent=2) + "\\n")
+        (matching / "recovery-inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")
         for record in model_inventory:
             file = models / record["filename"]
             if sha256(file) != record["sha256"] or file.stat().st_size != record["size_bytes"]:
@@ -141,7 +141,8 @@ def persist_git_lfs(destination: Path) -> None:
     repo = ROOT.parent
     run(["git", "-C", str(repo), "lfs", "install", "--local"])
     # Explicitly track binary outputs as LFS objects, as in the original workflow.
-    # The repository already contains the original LFS tracking attributes.\n    # Do not regenerate them or introduce new persistence structure.
+    # The repository already contains the original LFS tracking attributes.
+    # Do not regenerate them or introduce new persistence structure.
     source = destination / "matching"
     for subdir, pattern in (("models", "*.onnx"), ("wheels", "*.whl")):
         target = ROOT / subdir
