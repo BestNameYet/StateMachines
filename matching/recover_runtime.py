@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Reconstruct the current matching runtime from upstream sources.
+"""Acquire and persist verified matching image build inputs.
 
-Recovery-only entry point. Requires Python 3.10, pip, Docker, and network access.
-Does not change the active workflow, repository models, or repository wheels.
+Stage 1 only: downloads correct models and wheels into a durable filesystem
+location. Docker build/push must run separately, after persistence is verified.
+Requires Python 3.10, pip, and network access.
 """
 from __future__ import annotations
 
@@ -66,22 +67,25 @@ def run(args: list[str]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--image", default="ghcr.io/bestnameyet/statemachines-matching-runtime:py310")
-    parser.add_argument("--output-archive", type=Path, help="Optional tar.gz of verified build inputs")
-    parser.add_argument("--no-build", action="store_true", help="Download and verify only")
+    parser.add_argument("--destination", type=Path, required=True,
+                        help="Persistent directory to retain all build inputs; must not exist")
     args = parser.parse_args()
-
     if sys.version_info[:2] != (3, 10):
-        raise SystemExit("Recovery requires Python 3.10 to download compatible wheels")
+        raise SystemExit("Acquisition requires Python 3.10 to download compatible wheels")
 
-    with tempfile.TemporaryDirectory(prefix="matching-recovery-") as tmp:
-        context = Path(tmp)
-        matching = context / "matching"
+    destination = args.destination.resolve()
+    if destination.exists():
+        raise SystemExit(f"Destination already exists; refusing overwrite: {destination}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    # Stage on the SAME filesystem so final publication is an atomic rename.
+    staging = Path(tempfile.mkdtemp(prefix=".matching-acquire-", dir=destination.parent))
+    try:
+        matching = staging / "matching"
         models = matching / "models"
         wheels = matching / "wheels"
         models.mkdir(parents=True)
         wheels.mkdir(parents=True)
-
         shutil.copy2(ROOT / "Dockerfile.runtime", matching / "Dockerfile.runtime")
         shutil.copy2(ROOT / "requirements.txt", matching / "requirements.txt")
 
@@ -102,23 +106,48 @@ def main() -> None:
             "dockerfile_sha256": sha256(matching / "Dockerfile.runtime"),
             "requirements_sha256": sha256(matching / "requirements.txt"),
         }
-        (matching / "recovery-inventory.json").write_text(json.dumps(inventory, indent=2) + "\n")
-
-        if args.output_archive:
-            import tarfile
-            archive = args.output_archive.resolve()
-            archive.parent.mkdir(parents=True, exist_ok=True)
-            with tarfile.open(archive, "w:gz") as tar:
-                tar.add(matching, arcname="matching")
-            print(f"Created recovery archive: {archive}", flush=True)
-
-        if not args.no_build:
-            # The current Dockerfile performs offline installation and ONNX session validation.
-            run(["docker", "build", "--file", str(matching / "Dockerfile.runtime"),
-                 "--tag", args.image, str(context)])
-            print(f"Built verified runtime: {args.image}", flush=True)
+        (matching / "recovery-inventory.json").write_text(json.dumps(inventory, indent=2) + "\\n")
+        for record in model_inventory:
+            file = models / record["filename"]
+            if sha256(file) != record["sha256"] or file.stat().st_size != record["size_bytes"]:
+                raise RuntimeError(f"Model changed during acquisition: {file}")
+        for record in wheel_inventory:
+            file = wheels / record["filename"]
+            if sha256(file) != record["sha256"] or file.stat().st_size != record["size_bytes"]:
+                raise RuntimeError(f"Wheel changed during acquisition: {file}")
+        staging.rename(destination)
+        print(f"Persisted verified build inputs: {destination}", flush=True)
         print(json.dumps(inventory, indent=2))
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging)
+
+
+def verify_persisted(destination: Path) -> None:
+    """Reopen persisted files in a separate process to verify disk-backed inputs."""
+    matching = destination / "matching"
+    inventory = json.loads((matching / "recovery-inventory.json").read_text())
+    for item in inventory["models"]:
+        file = matching / "models" / item["filename"]
+        if sha256(file) != item["sha256"] or file.stat().st_size != item["size_bytes"]:
+            raise RuntimeError(f"Persisted model failed verification: {file}")
+    for item in inventory["wheels"]:
+        file = matching / "wheels" / item["filename"]
+        if sha256(file) != item["sha256"] or file.stat().st_size != item["size_bytes"]:
+            raise RuntimeError(f"Persisted wheel failed verification: {file}")
+    for name, key in (("Dockerfile.runtime", "dockerfile_sha256"),
+                      ("requirements.txt", "requirements_sha256")):
+        if sha256(matching / name) != inventory[key]:
+            raise RuntimeError(f"Persisted build file failed verification: {name}")
+    print(f"Verified persisted files: {destination}")
+
+
+def cli() -> None:
+    if len(sys.argv) == 3 and sys.argv[1] == "--verify":
+        verify_persisted(Path(sys.argv[2]).resolve())
+    else:
+        main()
 
 
 if __name__ == "__main__":
-    main()
+    cli()
