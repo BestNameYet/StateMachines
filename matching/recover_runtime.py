@@ -68,7 +68,9 @@ def run(args: list[str]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--destination", type=Path, required=True,
-                        help="Persistent directory to retain all build inputs; must not exist")
+                        help="Filesystem staging directory; must not exist")
+    parser.add_argument("--persist-git-lfs", action="store_true",
+                        help="Commit verified models and wheels to origin/main using original Git LFS procedure")
     args = parser.parse_args()
     if sys.version_info[:2] != (3, 10):
         raise SystemExit("Acquisition requires Python 3.10 to download compatible wheels")
@@ -116,11 +118,48 @@ def main() -> None:
             if sha256(file) != record["sha256"] or file.stat().st_size != record["size_bytes"]:
                 raise RuntimeError(f"Wheel changed during acquisition: {file}")
         staging.rename(destination)
-        print(f"Persisted verified build inputs: {destination}", flush=True)
+        print(f"Acquired verified build inputs: {destination}", flush=True)
+        if args.persist_git_lfs:
+            persist_git_lfs(destination)
         print(json.dumps(inventory, indent=2))
     finally:
         if staging.exists():
             shutil.rmtree(staging)
+
+
+
+def persist_git_lfs(destination: Path) -> None:
+    """Use the original Actions persistence method: git lfs, git add, commit, push."""
+    # Verify on-disk files before staging anything for Git.
+    verify_persisted(destination)
+    repo = ROOT.parent
+    run(["git", "-C", str(repo), "lfs", "install", "--local"])
+    # Explicitly track binary outputs as LFS objects, as in the original workflow.
+    run(["git", "-C", str(repo), "lfs", "track", "matching/models/*.onnx"])
+    run(["git", "-C", str(repo), "lfs", "track", "matching/wheels/*.whl"])
+    source = destination / "matching"
+    for subdir, pattern in (("models", "*.onnx"), ("wheels", "*.whl")):
+        target = ROOT / subdir
+        target.mkdir(parents=True, exist_ok=True)
+        for file in (source / subdir).glob(pattern):
+            shutil.copy2(file, target / file.name)
+    shutil.copy2(source / "recovery-inventory.json", ROOT / "recovery-inventory.json")
+    run(["git", "-C", str(repo), "add", "--",
+         "matching/models", "matching/wheels",
+         "matching/recovery-inventory.json", ".gitattributes"])
+    # No unrelated changes are staged by this procedure.
+    staged = subprocess.run(["git", "-C", str(repo), "diff", "--cached", "--quiet"],
+                            check=False)
+    if staged.returncode == 0:
+        print("Verified LFS build inputs already committed; no push required")
+        return
+    if staged.returncode != 1:
+        raise RuntimeError("Cannot inspect staged Git changes")
+    run(["git", "-C", str(repo), "-c", "user.name=github-actions[bot]",
+         "-c", "user.email=41898282+github-actions[bot]@users.noreply.github.com",
+         "commit", "-m", "Persist verified matching models and wheels via Git LFS"])
+    run(["git", "-C", str(repo), "push", "origin", "HEAD:main"])
+    print("Persisted verified model and wheel files via Git LFS to origin/main")
 
 
 def verify_persisted(destination: Path) -> None:
