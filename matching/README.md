@@ -1,96 +1,236 @@
-# Matching image comparison
+# Matching image-comparison program
 
-## Purpose and current behavior
+This program compares one reference image—the **anchor**—with each image in a
+candidate batch. It extracts a normalized feature vector from each image,
+calculates its distance from the anchor vector, and produces a ranked report.
 
-This directory implements an ONNX-based image comparison pipeline. GitHub Actions starts it when a **new repository issue** is opened with the **exact title** `matching-trigger`. No branch, pull request, JSON toggle, or commit is needed to request a comparison.
+The executable entry point is `matching/state_machine.py`. The active GitHub
+Actions workflow is `.github/workflows/signal_alignment.yml`.
 
-The program compares each image in `datasets/telemetry_batch/` against **one** anchor image selected from `datasets/anchor/`. It does **not** perform all-pairs matching, identify people by name, or automatically create an anchor. Its numeric threshold is a configured heuristic, not a validated identity probability.
+## Run a comparison
 
-## Entry points
+1. Put exactly one readable reference image in `matching/datasets/anchor/`.
+   Put the candidate images in `matching/datasets/telemetry_batch/`.
+   Commit the inputs to the repository default branch, currently `main`.
+2. Open a **new** repository issue titled exactly `matching-trigger`.
+3. Read the result in the issue comment, Actions summary, or uploaded
+   `matching-comparison-report` artifact.
 
-- `../.github/workflows/signal_alignment.yml` — **active execution workflow**. Trigger: `issues: [opened]`; the comparison job is gated on the exact issue title `matching-trigger`. It uses the current default-branch checkout.
-- `state_machine.py` — **active Python comparison program**, called by the workflow inside Docker.
-- `Dockerfile.runtime` — Python 3.10 container definition, offline dependency installation, and model verification.
-- `obsolete/bootstrap.py` — previous initialization-only script; not invoked by the active workflow.
+The title is case-sensitive. The issue body is not parsed for settings.
+Editing or reopening an existing issue does not start a comparison.
+The workflow comments on and closes the trigger issue even when comparison
+fails, provided its final reporting step can complete.
 
-## How to request an execution
+**Current input state, checked October 12, 2026:** the candidate directory
+contains `signal_001.jpg` through `signal_028.jpg`. The anchor directory contains
+only `.gitkeep`. A reference image still needs to be supplied; without it, the
+program fails at `LOAD_ANCHOR`.
 
-1. Ensure the desired images are committed to `matching/datasets/anchor/` and `matching/datasets/telemetry_batch/` on the repository default branch (`main`).
-2. Open a **new issue** in this repository titled exactly `matching-trigger` (case-sensitive). Issue body is not parsed for arguments.
-3. The GitHub Actions workflow starts. It posts the outcome and any generated report to that issue and then closes it. Each issue has its own issue number and Actions run.
+## Files and runtime inputs
 
-Opening any differently titled issue does not execute the comparison job. Editing or reopening an existing issue does not trigger this workflow, because the configured event is `opened` only. A workflow run may still appear with a skipped job for other issue titles.
+| Path | Role |
+| --- | --- |
+| `matching/state_machine.py` | Comparison state machine and vector adapter |
+| `.github/workflows/signal_alignment.yml` | Resolve/build the runtime, run comparison, and publish the report |
+| `matching/Dockerfile.runtime` | Build the dependency/model runtime image |
+| `matching/requirements.txt` | Dependency requirements used by the comparison workflow's image build |
+| `matching/wheels/*.whl` | Offline wheel archive used when that workflow rebuilds its image |
+| `matching/models/spatial_detector.onnx` | Locate a region in each image |
+| `matching/models/feature_encoder.onnx` | Extract the feature vector |
+| `matching/datasets/anchor/` | Reference image |
+| `matching/datasets/telemetry_batch/` | Candidate images |
+| `matching/metrics.md` | Default generated comparison report |
 
-## Data layout
+Runtime Python packages are ONNX Runtime, NumPy, and Pillow. Both ONNX files must
+be real model bytes, not unresolved Git LFS pointers. The comparison script
+does not download dependencies or models itself.
 
-```text
-matching/
-  README.md
-  state_machine.py
-  Dockerfile.runtime
-  requirements.txt
-  models/
-    spatial_detector.onnx
-    feature_encoder.onnx
-  wheels/                      # archived dependency wheels used to build image
-  datasets/
-    anchor/                   # reference images; program chooses first glob match
-    telemetry_batch/          # candidate images scanned on every run
-  obsolete/
-    bootstrap.py
+Keep the dataset directories limited to readable image files. The scanner is
+not recursive and does not filter by image extension or check whether an entry
+is a regular file before trying to open it. The glob excludes hidden dotfiles,
+and the code also excludes filenames ending in `.gitkeep`.
+
+## What happens inside the program
+
+`PipelineState` defines the execution states. `VectorSignalPipeline` owns paths,
+the anchor vector, candidate results, and the report. `VectorAdapter` owns the
+detector and encoder ONNX sessions.
+
+```mermaid
+flowchart TD
+    A["INIT: create directories and load models"] --> B["LOAD_ANCHOR: select and embed reference"]
+    A -. "Missing model" .-> X["ERROR: exit 1"]
+    B -. "Missing or unreadable anchor" .-> X
+    B --> C["SCAN_BATCH: embed each candidate"]
+    C --> D{"Candidate processed?"}
+    D -- Yes --> E["Calculate distance and label"]
+    D -- No --> F["Record Fault and continue"]
+    E --> G{"More candidates?"}
+    F --> G
+    G -- Yes --> C
+    G -- No --> H["RANK_DISTANCES: sort ascending"]
+    H --> I["EMIT_METRICS: print and append report"]
+    I --> J["COMPLETED"]
 ```
 
-The currently committed telemetry batch contains `signal_001.jpg` through `signal_028.jpg`. The anchor directory currently contains only `.gitkeep`, **not a reference image**. An execution with no anchor image fails in the `LOAD_ANCHOR` state. The code currently selects the first non-`.gitkeep` file returned by `glob` in the anchor directory; selection is not deterministic if multiple anchors exist. Keep exactly one valid anchor image until selection is made explicit. The scanner attempts every non-`.gitkeep` file in the telemetry directory, including unsupported files; image decode failures are recorded as faults.
+ONNX session-construction exceptions can terminate initialization directly;
+they are not all converted into the explicit `ERROR` state.
 
-## Execution details
+### Anchor selection
 
-1. GitHub receives an `issues.opened` event. The workflow job runs only when `github.event.issue.title == 'matching-trigger'`.
-2. `actions/checkout@v4` checks out repository files with Git LFS downloads disabled.
-3. Git LFS retrieves the committed ONNX models and offline dependency wheels. The workflow computes a SHA-256 fingerprint of the Dockerfile, requirements, models, and wheel files.
-4. Docker authenticates to GHCR, attempts to pull the stable `:py310` image, and compares its embedded build-input fingerprint. If the image is absent or its fingerprint differs, the workflow builds from the repository and pushes a replacement under the same tag. Concurrent comparison runs are serialized to prevent competing builds.
-5. `docker run` starts the resolved image digest and bind-mounts the checked-out repository at `/repo`. It copies the two **already packaged** ONNX models from `/workspace/matching/models/` into `/repo/matching/models/`, replacing any Git LFS pointers in the checkout. Normal runs do not reinstall dependencies; rebuilds install exclusively from the committed wheel archive. Fresh runners pull the image when available.
-6. The container executes `python matching/state_machine.py` from `/repo`. The program loads both ONNX sessions, reads an anchor image, scans the telemetry directory, extracts vectors, computes Euclidean distances, sorts results, and emits a Markdown report.
-7. The workflow copies `matching/metrics.md` to the Actions step summary if it exists, uploads it as artifact `matching-comparison-report`, posts the job result and report to the triggering issue, and closes the issue even when the comparison step fails. The report is **not committed** to the repository.
+The program takes the first eligible path returned by `glob` in the anchor
+directory. It does not choose the newest image or sort paths before selection.
+Selection is therefore not deterministic when multiple anchors exist.
+Use exactly one anchor image with the current implementation.
 
-The runtime is published under the stable tag `ghcr.io/bestnameyet/statemachines-matching-runtime:py310`. Each run resolves and records its immutable digest and the build-input fingerprint. The workflow is the sole owner of building and executing the runtime; there is no separate container-build workflow.
+The program computes the anchor vector once and compares every candidate to it.
+It does not compare all candidates with one another or choose an anchor from
+the candidate batch.
 
-## Comparison semantics and outputs
+### Region detection
 
-`state_machine.py` uses `spatial_detector.onnx` to attempt region localization and `feature_encoder.onnx` to compute normalized embeddings. If no detector region passes its internal confidence threshold, it embeds the whole frame. It compares the anchor vector with each candidate using Euclidean distance and marks candidates `PASSED` when distance is **strictly less than 0.65**, otherwise `DIVERGENT`. Per-image processing exceptions are marked `Fault` and do not stop the remainder of the batch. Output is sorted by ascending distance.
+For every image, the adapter:
 
-The program writes `matching/metrics.md` by default, or the path in `GITHUB_STEP_SUMMARY` if set. The workflow sets that environment variable inside Docker to `/repo/matching/metrics.md` and then publishes the report separately to the real GitHub Actions summary. The report contains anchor basename, number of batch files, threshold, and a ranked result table. This is similarity scoring, not a verified face-identity conclusion.
+1. Opens the file and converts it to RGB.
+2. Resizes it to 320 × 240 for the detector.
+3. Converts pixels to float32 and normalizes them as `(pixel - 127) / 128`.
+4. Runs the detector and selects the box with the highest class-1 confidence.
+5. Accepts that box when confidence is at least 0.65 and the clamped crop is
+   at least 10 pixels wide and high.
 
-## Failure and maintenance notes
+If the selected region is rejected, the encoder receives the whole image.
+The code selects one region; it does not process every detected region.
+It crops and resizes, without landmark-based alignment.
 
-- Missing anchor: comparison fails; the workflow comments on and closes the trigger issue with the failure status and a link to logs.
-- Empty telemetry directory: the program produces a report with zero batch entities if an anchor exists.
-- Missing or invalid model: comparison fails during initialization.
-- The `matching/trigger.json` file is **legacy/inert**. The previous JSON, push, and pull-request trigger mechanisms are not used.
-- `matching/Signal_matching_dataset.zip` is a retained source archive; the one-time extraction workflow is retired. The 28 extracted JPEGs remain in `datasets/telemetry_batch/`.
-- `wheels/` and `models/` are retained as build inputs for `Dockerfile.runtime`; do not remove them merely because the comparison job reads them from the published container.
-- To rebuild the image, update the committed Dockerfile, requirements, models, or wheels, or remove the published image. The next `matching-trigger` issue automatically rebuilds it. Rebuilds require GHCR package write access.
-- The old dependency persistence and dataset extraction workflows have been removed; their outputs remain in the repository.
+### Feature extraction
 
-## Configurable container build
+The selected crop, or whole-image fallback, is resized to 112 × 112.
+Pixels become float32, are arranged as a channels-first tensor, and are
+normalized as `(pixel - 127.5) / 128`. The encoder's first output is flattened.
+The resulting vector is divided by its Euclidean norm when that norm is positive.
 
-The single entry script is
-`partially_completed_not_fully_realized_container_image_creation_test_under_construction.py`.
-Set `mode` to `normal` or `test` in `matching/operation_config.json`.
-Both modes call `run_pipeline` and use the same manifest acquisition, Docker build,
-container verification, and JSON reporting functions.
+### Distance and classification
 
-Test mode changes only environment preparation: it pre-cleans/checks the disposable
-branch, creates `matching_test` from the configured base branch, and renames the
-primary source folder to `matching_test` on that branch. The Docker context,
-container model paths, and report use `matching_test` too.
-Normal mode uses the current checkout and primary folder `matching`.
-Shared settings live in `build`; test isolation settings live in `test`.
-The same manifest is resolved under the selected primary folder. Generated
-Dockerfile paths are relocated to that folder for test mode.
+For each candidate, the program calculates:
 
-Both modes download wheels using the manifest Python version, check model
-publisher sizes and hashes, build the image, and run import/model verification
-with networking disabled. File inventories are calculated dynamically.
-The workflow uploads the report from either primary folder. The test branch
-remains for inspection. Neither mode publishes the runner-local image.
-Missing or invalid modes print the current config and a corrected example.
+```text
+distance = Euclidean norm(anchor_vector - candidate_vector)
+```
+
+| Condition | Report status | Coherent flag |
+| --- | --- | --- |
+| Distance strictly less than 0.65 | `PASSED` | `TRUE` |
+| Distance 0.65 or greater | `DIVERGENT` | `FALSE` |
+| Candidate processing raises an exception | `Fault: <error>` | `FALSE` |
+
+The detector confidence cutoff and vector-distance cutoff both currently use
+0.65, but they are separate values serving different purposes. They are
+hardcoded in Python, not supplied by the issue or operation config.
+
+Lower distance ranks earlier. A fault uses an internal distance sentinel of
+999.0 and displays `N/A` in the report. Candidate faults do not stop the batch.
+
+The labels express the code's similarity threshold. They are not a calibrated
+identity probability or a verified identity conclusion. Whole-image fallback,
+multiple subjects, crop quality, and the selected models can materially affect
+the distance.
+
+## How the GitHub workflow supplies the runtime
+
+The comparison job runs only for the exact `matching-trigger` issue title.
+
+1. Check out the default-branch program and images with automatic LFS smudging disabled.
+2. Explicitly pull LFS model and wheel files. The current workflow requires at
+   least ten wheel files and model files larger than one million bytes.
+3. Authenticate to GitHub Container Registry.
+4. Calculate a build-input fingerprint from the Dockerfile, requirements,
+   models, and wheel-directory contents.
+5. Pull `ghcr.io/bestnameyet/statemachines-matching-runtime:py310`. Reuse it
+   only when its embedded fingerprint matches. Otherwise build and push a
+   replacement using the repository inputs.
+6. Resolve the image's immutable digest and record its provenance in the summary.
+7. Run that digest with the repository mounted at `/repo`. Copy its packaged
+   model bytes into the checkout's `matching/models/` directory, then execute
+   `python matching/state_machine.py`.
+8. Publish the report and close the trigger issue.
+
+Concurrent comparison jobs are serialized. Rebuilds require package-write
+permission; issue reporting requires issue-write permission. The workflow's
+registry location is currently hardcoded to the original repository owner/name.
+
+## Reports and exit behavior
+
+The Markdown report includes the anchor basename, candidate count, threshold,
+and a table with rank, candidate filename, vector distance, coherent flag, and status.
+
+The script prints transitions and the report to stdout. It appends the report
+to `GITHUB_STEP_SUMMARY` when that environment variable is set; otherwise it
+appends to `matching/metrics.md`. Repeated local runs can append multiple reports
+to the same file.
+
+The workflow sets the container's report path to `/repo/matching/metrics.md`,
+copies that file to the real Actions summary, uploads it as an artifact, and
+includes it in the issue comment. It does not commit the metrics report.
+
+| Situation | Current behavior |
+| --- | --- |
+| Missing model file | Explicit pipeline error and exit 1 |
+| Invalid model/session initialization | Exception can terminate execution |
+| Missing anchor | Explicit pipeline error and exit 1 |
+| Anchor decode or embedding failure | Explicit pipeline error and exit 1 |
+| Empty candidate batch with a valid anchor | Report with zero candidates |
+| Candidate decode or embedding failure | Fault row; continue processing |
+| All candidates fault | Batch can still complete; inspect the rows |
+| Report-file write failure | Print a notice and still transition to COMPLETED |
+
+A successful process exit therefore establishes that the pipeline completed,
+not that every candidate passed or that the report file was successfully written.
+
+## Run directly
+
+From the repository root, with dependencies installed and real models and images
+at the listed paths:
+
+```bash
+python matching/state_machine.py
+```
+
+The script's CLI has no arguments for the anchor, threshold, or mode.
+`VectorSignalPipeline(base_dir=...)` accepts another base directory when called
+from Python, but the command-line entry point uses `matching`.
+
+## Relationship to the build bootstrap
+
+See [README_BUILD.md](README_BUILD.md) for the shared Normal/Test runtime builder,
+and [Matching_Build_Bootstrap.zip](Matching_Build_Bootstrap.zip) for its source bundle.
+
+The build bootstrap and the comparison workflow are separate execution paths.
+The bootstrap's `operation_config.json` selects Normal/Test build isolation.
+It does not select the comparison program's inputs or threshold.
+The bootstrap builds and verifies a host-local image; it does not publish it
+or trigger comparison. The existing comparison workflow uses its own GHCR/LFS
+runtime resolution and rebuild logic.
+
+Test bootstrap images place models under `/workspace/matching_test/models/`.
+The current comparison workflow expects `/workspace/matching/models/`.
+It is not automatically wired to consume those test images.
+
+## Other configuration and retained files
+
+`matching/runtime_config.json` belongs to a separate persistence-test job in
+`signal_alignment.yml`. A push changing that file runs the persistence job;
+its `mode: test` invokes `matching/test_persistence.py`. It does not start the
+issue-triggered comparison or select the bootstrap mode.
+
+The persistence script is not part of comparison execution. Its current
+`inputs()` check applies a 10,000-byte minimum to every required file, including
+the much smaller Dockerfile and requirements file. Those inputs fail that check;
+do not interpret this auxiliary test as a validated comparison startup path.
+
+`matching/trigger.json` is legacy and is not read by the active comparison job.
+`matching/Signal_matching_dataset.zip` is a retained source archive; comparison
+uses the extracted candidate images. `matching/obsolete/bootstrap.py` is not
+the active comparison entry point.
+
+This README describes source behavior reviewed on October 12, 2026. Writing it
+does not execute a comparison or validate its similarity threshold.
