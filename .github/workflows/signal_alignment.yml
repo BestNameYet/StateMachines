@@ -41,6 +41,9 @@ jobs:
           if mode not in ('normal','test'): raise SystemExit('Invalid mode')
           with open(os.environ['GITHUB_OUTPUT'],'a') as f: f.write('mode='+mode+'\n')
           PY
+      - name: Prepare configured test workspace
+        if: steps.config.outputs.mode == 'test'
+        run: mkdir -p matching_test
       - name: Set up Python 3.10 for isolated dependency acquisition
         if: steps.config.outputs.mode == 'test'
         uses: actions/setup-python@v5
