@@ -25,8 +25,7 @@ def sha(p):
     return h.hexdigest()
 
 def main():
-    assert not TEST.exists(), "Test directory already exists"
-    TEST.mkdir()
+    assert TEST.is_dir() and not any(TEST.iterdir()), "Test workspace must exist and be empty"
     checks = []
     report = ROOT / "matching-test-checklist.json"
     try:
