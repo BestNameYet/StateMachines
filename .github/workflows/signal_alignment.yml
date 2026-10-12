@@ -1,22 +1,21 @@
 name: Matching Image Comparison
 
 on:
-  pull_request:
+  issues:
     types: [opened]
-    branches: [main]
 
 permissions:
-  contents: write
+  contents: read
   packages: read
-  pull-requests: write
+  issues: write
 
 concurrency:
-  group: matching-pr-${{ github.event.pull_request.number }}
+  group: matching-issue-${{ github.event.issue.number }}
   cancel-in-progress: false
 
 jobs:
   compare:
-    if: startsWith(github.event.pull_request.head.ref, 'matching-trigger/') && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.issue.title == 'matching-trigger'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current image sets and comparison program
@@ -24,7 +23,6 @@ jobs:
         env:
           GIT_LFS_SKIP_SMUDGE: '1'
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           lfs: false
 
       - name: Authenticate to GitHub Container Registry
@@ -69,21 +67,28 @@ jobs:
           if-no-files-found: ignore
 
 
-      - name: Close request and delete temporary branch
+      - name: Post result and close trigger issue
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BRANCH: ${{ github.event.pull_request.head.ref }}
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         shell: bash
         run: |
           set -euo pipefail
-          gh api --method PATCH "repos/${GH_REPO}/pulls/${PR_NUMBER}" -f state=closed
-          current_sha="$(gh api "repos/${GH_REPO}/git/ref/heads/${BRANCH}" --jq '.object.sha')"
-          if [ "$current_sha" = "$EXPECTED_SHA" ]; then
-            gh api --method DELETE "repos/${GH_REPO}/git/refs/heads/${BRANCH}"
-          else
-            echo "Branch changed after PR opened; preserving it to avoid deleting newer work."
-          fi
+          {
+            echo "Matching image comparison: **${JOB_STATUS}**"
+            echo
+            echo "Workflow run: ${RUN_URL}"
+            if test -s matching/metrics.md; then
+              echo
+              cat matching/metrics.md
+            else
+              echo
+              echo "No comparison report was generated. Inspect workflow logs."
+            fi
+          } > /tmp/matching-issue-comment.md
+          gh issue comment "${ISSUE_NUMBER}" --repo "${GH_REPO}" --body-file /tmp/matching-issue-comment.md
+          gh issue close "${ISSUE_NUMBER}" --repo "${GH_REPO}" --reason completed
