@@ -1,13 +1,15 @@
-name: Signal Alignment Pipeline
+name: Matching Environment Bootstrap
 
 on:
   push:
     paths:
-      - 'matching/datasets/**'
+      - 'matching/bootstrap.py'
+      - 'matching/models/**'
+      - '.github/workflows/signal_alignment.yml'
   workflow_dispatch:
 
 jobs:
-  evaluate-telemetry:
+  bootstrap:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -27,16 +29,16 @@ jobs:
           mkdir -p matching/models
           # Fetch lightweight spatial detector (~1.2MB) if missing
           if [ ! -f "matching/models/spatial_detector.onnx" ]; then
-            curl -sSL "https://raw.githubusercontent.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/master/models/onnx/version-RFB-320.onnx" \
+            curl -fsSL "https://raw.githubusercontent.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/master/models/onnx/version-RFB-320.onnx" \
                  -o "matching/models/spatial_detector.onnx"
           fi
           # Fetch lightweight latent feature encoder (~4.2MB) if missing
           if [ ! -f "matching/models/feature_encoder.onnx" ]; then
-            curl -sSL "https://raw.githubusercontent.com/onnx/models/main/validated/vision/body_analysis/arcface/model/arcfaceresnet100-8.onnx" \
+            curl -fsSL "https://raw.githubusercontent.com/onnx/models/main/validated/vision/body_analysis/arcface/model/arcfaceresnet100-8.onnx" \
                  -o "matching/models/feature_encoder.onnx" || \
-            curl -sSL "https://huggingface.co/qualcomm/MobileFaceNet/resolve/main/MobileFaceNet.onnx" \
+            curl -fsSL "https://huggingface.co/qualcomm/MobileFaceNet/resolve/main/MobileFaceNet.onnx" \
                  -o "matching/models/feature_encoder.onnx"
           fi
-      - name: Execute Alignment Pipeline
+      - name: Initialize workspace and model sessions
         run: |
-          python matching/state_machine.py
+          python matching/bootstrap.py
