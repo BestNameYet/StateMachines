@@ -8,6 +8,8 @@ import json
 import os
 import subprocess
 
+from matching_branch_cleanup import delete_test_branch
+
 
 def api(endpoint, method="GET", fields=()):
     command = ["gh", "api", "-X", method, endpoint]
@@ -46,12 +48,11 @@ def run_test(test_config, repo):
               "initial_exists": None, "created": False, "verified": False,
               "outcome": "FAILED"}
     try:
-        record["initial_exists"] = branch_exists(repo, branch)
-        print(f"Branch exists: {'YES' if record['initial_exists'] else 'NO'}", flush=True)
-        if record["initial_exists"]:
-            raise RuntimeError(
-                f"Branch {branch} already exists. Run the separate cleanup component first."
-            )
+        cleanup_result = delete_test_branch({"cleanup": {"branch": branch}}, repo)
+        record["cleanup"] = cleanup_result
+        record["initial_exists"] = cleanup_result["initial_exists"]
+        if cleanup_result["outcome"] not in ("DELETED", "NO_ACTION_REQUIRED"):
+            raise RuntimeError(f"Cleanup failed: {cleanup_result}")
 
         base = require(f"repos/{repo}/git/ref/heads/{base_branch}")
         sha = base["object"]["sha"]
