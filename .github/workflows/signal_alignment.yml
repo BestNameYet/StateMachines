@@ -15,18 +15,22 @@ jobs:
   bootstrap:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout Code and Git LFS assets
         uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: 'pip'
-          cache-dependency-path: 'matching/requirements.txt'
-      - name: Install Runtime Dependencies
+      - name: Install Runtime Dependencies from stored wheels only
+        shell: bash
         run: |
-          pip install --upgrade pip
-          pip install -r matching/requirements.txt
+          set -euo pipefail
+          git lfs pull --include='matching/wheels/*,matching/models/*'
+          test -n "$(find matching/wheels -maxdepth 1 -name '*.whl' -print -quit)"
+          python -m pip install --no-index --find-links=matching/wheels -r matching/requirements.txt
+          python -c 'import onnxruntime, numpy, PIL; print("Offline dependency imports passed")'
       - name: Provision and validate ONNX models
         shell: bash
         run: |
