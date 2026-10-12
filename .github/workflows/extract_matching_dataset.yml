@@ -26,11 +26,9 @@ jobs:
 
       - name: Validate and extract 28 JPEGs
         shell: bash
-        env:
-          SIGNAL_ZIP_PASSWORD: ${{ secrets.SIGNAL_ZIP_PASSWORD }}
         run: |
           python - <<'PY'
-          import os, re, zipfile
+          import re, zipfile
           from pathlib import Path
 
           source = Path('matching/Signal_matching_dataset.zip')
@@ -39,7 +37,6 @@ jobs:
           if not source.is_file():
               raise SystemExit(f'Missing archive: {source}')
 
-          password = os.environ.get('SIGNAL_ZIP_PASSWORD', '').encode() or None
           with zipfile.ZipFile(source) as archive:
               entries = [i for i in archive.infolist() if not i.is_dir()]
               matches = {}
@@ -56,10 +53,10 @@ jobs:
               verified = {}
               for name in sorted(expected):
                   info = matches[name]
-                  if info.flag_bits & 1 and password is None:
-                      raise SystemExit('Encrypted archive requires SIGNAL_ZIP_PASSWORD secret')
+                  if info.flag_bits & 1:
+                      raise SystemExit('Archive contains encrypted entries; expected unencrypted ZIP')
                   try:
-                      data = archive.read(info, pwd=password)
+                      data = archive.read(info)
                   except (RuntimeError, ValueError, zipfile.BadZipFile) as error:
                       raise SystemExit(f'Unable to read {name}: {type(error).__name__}') from None
                   if not data.startswith(b'\xff\xd8\xff') or not data.endswith(b'\xff\xd9'):
