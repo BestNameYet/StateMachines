@@ -1,0 +1,42 @@
+name: Signal Alignment Pipeline
+
+on:
+  push:
+    paths:
+      - 'matching/datasets/**'
+  workflow_dispatch:
+
+jobs:
+  evaluate-telemetry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: 'matching/requirements.txt'
+      - name: Install Runtime Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r matching/requirements.txt
+      - name: Ensure Model Weights Exist
+        run: |
+          mkdir -p matching/models
+          # Fetch lightweight spatial detector (~1.2MB) if missing
+          if [ ! -f "matching/models/spatial_detector.onnx" ]; then
+            curl -sSL "https://raw.githubusercontent.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB/master/models/onnx/version-RFB-320.onnx" \
+                 -o "matching/models/spatial_detector.onnx"
+          fi
+          # Fetch lightweight latent feature encoder (~4.2MB) if missing
+          if [ ! -f "matching/models/feature_encoder.onnx" ]; then
+            curl -sSL "https://raw.githubusercontent.com/onnx/models/main/validated/vision/body_analysis/arcface/model/arcfaceresnet100-8.onnx" \
+                 -o "matching/models/feature_encoder.onnx" || \
+            curl -sSL "https://huggingface.co/qualcomm/MobileFaceNet/resolve/main/MobileFaceNet.onnx" \
+                 -o "matching/models/feature_encoder.onnx"
+          fi
+      - name: Execute Alignment Pipeline
+        run: |
+          python matching/state_machine.py
