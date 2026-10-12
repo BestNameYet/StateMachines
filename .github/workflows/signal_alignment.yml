@@ -4,8 +4,12 @@ on:
   issues:
     types: [opened]
   push:
+    branches:
+      - main
+      - test/matching-runtime-archive
     paths:
       - 'matching/runtime_config.json'
+      - '.github/workflows/signal_alignment.yml'
 
 permissions:
   contents: write
@@ -34,9 +38,21 @@ jobs:
           if mode not in ('normal','test'): raise SystemExit('Invalid mode')
           with open(os.environ['GITHUB_OUTPUT'],'a') as f: f.write('mode='+mode+'\n')
           PY
-      - name: Test remote Git LFS persistence
+      - name: Set up Python 3.10 for isolated dependency acquisition
         if: steps.config.outputs.mode == 'test'
-        run: python matching/test_persistence.py
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Run configured isolated dependency archive and Docker test
+        if: steps.config.outputs.mode == 'test'
+        run: python matching_test_runtime.py
+      - name: Upload isolated test verification checklist
+        if: always() && steps.config.outputs.mode == 'test'
+        uses: actions/upload-artifact@v4
+        with:
+          name: matching-test-checklist
+          path: matching-test-checklist.json
+          if-no-files-found: error
 
   compare:
     if: github.event.issue.title == 'matching-trigger'
