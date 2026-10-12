@@ -6,7 +6,7 @@ on:
       - 'matching/trigger.json'
 
 permissions:
-  contents: read
+  contents: write
   packages: read
 
 jobs:
@@ -76,3 +76,32 @@ jobs:
           name: matching-comparison-report
           path: matching/metrics.md
           if-no-files-found: ignore
+
+  reset_trigger:
+    needs: [gate, compare]
+    if: always() && needs.gate.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reset consumed trigger and timestamp
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Only reset the trigger that started this run; never overwrite a newer request.
+          original="$(gh api "repos/${GH_REPO}/contents/matching/trigger.json?ref=${GITHUB_SHA}")"
+          original_sha="$(jq -r '.sha' <<< "$original")"
+          current="$(gh api "repos/${GH_REPO}/contents/matching/trigger.json?ref=main")"
+          current_sha="$(jq -r '.sha' <<< "$current")"
+          if [ "$original_sha" != "$current_sha" ]; then
+            echo "Trigger changed since this run started; leaving newer request untouched."
+            exit 0
+          fi
+          updated="$(jq -n --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{timestamp: $timestamp, run: false}')"
+          encoded="$(printf '%s\n' "$updated" | base64 -w0)"
+          gh api --method PUT "repos/${GH_REPO}/contents/matching/trigger.json" \
+            -f message="Reset consumed matching trigger" \
+            -f content="$encoded" \
+            -f sha="$current_sha" \
+            -f branch=main
