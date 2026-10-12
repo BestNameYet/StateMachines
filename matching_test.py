@@ -26,15 +26,6 @@ def require(endpoint, method="GET", fields=()):
     return json.loads(output) if output else {}
 
 
-def branch_exists(repo, branch):
-    code, output, error = api(f"repos/{repo}/git/ref/heads/{branch}")
-    if code == 0:
-        return True
-    if "404" in error or "Not Found" in error or "not found" in error.lower():
-        return False
-    raise RuntimeError(f"Cannot check branch {branch}: {error or output}")
-
-
 def run_test(test_config, repo):
     """Run branch preparation using only the test configuration object."""
     branch = test_config["branch"]
@@ -66,12 +57,12 @@ def run_test(test_config, repo):
                  ("content", ""), ("branch", branch)))
 
         file = require(f"repos/{repo}/contents/{directory_marker}?ref={branch}")
-        if file.get("type") != "file" or not branch_exists(repo, branch):
-            raise RuntimeError("Created test branch or workspace failed verification")
+        if file.get("type") != "file":
+            raise RuntimeError("Created test workspace failed verification")
 
         record["verified"] = True
         record["outcome"] = "READY"
-        print("Verified configured test branch and workspace", flush=True)
+        print("Verified configured test workspace", flush=True)
     except Exception as exc:
         record["error"] = str(exc)
         print(f"Controlled failure: {exc}", flush=True)
