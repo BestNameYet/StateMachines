@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Prepare the isolated branch and workspace for container-image creation testing.
+"""Container image creation test — UNDER CONSTRUCTION.
 
-This component currently prepares the test environment only; it does not test a container image or run production persistence.
-The matching_test branch is deliberately left in place for inspection/cleanup.
+Implemented: clean and prepare an isolated test branch and workspace.
+Not implemented: create a container image or verify the resulting image.
+The disposable test branch is left in place for inspection/cleanup.
 """
 import json
 import os
@@ -27,7 +28,7 @@ def require(endpoint, method="GET", fields=()):
 
 
 def run_container_image_creation_test(test_config, repo):
-    """Run branch preparation using only the test configuration object."""
+    """Run the implemented preparation stage; image creation remains unimplemented."""
     branch = test_config["branch"]
     location = test_config["location"]
     base_branch = test_config.get("base_branch", "main")
@@ -37,7 +38,9 @@ def run_container_image_creation_test(test_config, repo):
     directory_marker = f"{location.rstrip('/')}/.gitkeep"
     record = {"branch": branch, "workspace": directory_marker,
               "initial_exists": None, "created": False, "verified": False,
-              "outcome": "FAILED"}
+              "outcome": "FAILED",
+              "test_complete": False,
+              "pending_stages": ["container_image_creation", "container_image_verification"]}
     try:
         cleanup_result = delete_test_branch(test_config, repo)
         record["cleanup"] = cleanup_result
@@ -61,13 +64,13 @@ def run_container_image_creation_test(test_config, repo):
             raise RuntimeError("Created test workspace failed verification")
 
         record["verified"] = True
-        record["outcome"] = "READY"
-        print("Verified configured test workspace", flush=True)
+        record["outcome"] = "PARTIALLY_IMPLEMENTED"
+        print("Workspace preparation verified; container image creation test remains UNDER CONSTRUCTION", flush=True)
     except Exception as exc:
         record["error"] = str(exc)
         print(f"Controlled failure: {exc}", flush=True)
     print(json.dumps(record, indent=2), flush=True)
-    return 0 if record["outcome"] == "READY" else 1
+    return 0 if record["outcome"] == "PARTIALLY_IMPLEMENTED" else 1
 
 
 def main():
