@@ -1,0 +1,60 @@
+name: Extract matching dataset
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'matching/datasets/incoming/*.zip'
+permissions:
+  contents: write
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Extract and validate filtered synthetic dataset
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          from hashlib import sha256
+          import csv, io
+          incoming = Path('matching/datasets/incoming/synthetic_face_photo_dataset_filtered.zip')
+          destination = Path('matching/datasets/telemetry_batch')
+          if not incoming.is_file():
+              raise SystemExit(f'Missing input archive: {incoming}')
+          with ZipFile(incoming) as z:
+              names = z.namelist()
+              images = sorted(n for n in names if n.startswith('photos/') and n.lower().endswith('.jpg'))
+              if len(images) != 28:
+                  raise SystemExit(f'Expected 28 JPEG images; got {len(images)}')
+              if len(set(Path(n).name for n in images)) != 28:
+                  raise SystemExit('Duplicate destination basenames')
+              unexpected = [n for n in names if n not in images and n not in ('manifest.csv', 'README.txt')]
+              if unexpected:
+                  raise SystemExit(f'Unexpected ZIP entries: {unexpected}')
+              destination.mkdir(parents=True, exist_ok=True)
+              for name in images:
+                  data = z.read(name)
+                  if not data.startswith(bytes.fromhex('ffd8ff')):
+                      raise SystemExit(f'Invalid JPEG signature: {name}')
+                  output = destination / Path(name).name
+                  if output.exists() and output.read_bytes() != data:
+                      raise SystemExit(f'Refusing to overwrite different content: {output}')
+                  output.write_bytes(data)
+                  if sha256(output.read_bytes()).digest() != sha256(data).digest():
+                      raise SystemExit(f'Failed verification: {output}')
+              print(f'Extracted and byte-verified {len(images)} JPEGs')
+          PY
+      - name: Commit extracted images
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add matching/datasets/telemetry_batch/*.jpg
+          if ! git diff --cached --quiet; then
+            git commit -m 'Extract verified synthetic matching dataset'
+            git push
+          fi
