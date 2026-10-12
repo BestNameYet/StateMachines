@@ -10,7 +10,7 @@ def github_api(method, endpoint):
     return result.returncode, (result.stdout or "").strip(), (result.stderr or "").strip()
 
 def delete_test_branch(config, repository, *, api=github_api, log=print):
-    branch = config["cleanup"]["branch"]
+    branch = config["branch"]
     if branch != "matching_test":
         raise ValueError("Only the disposable matching_test branch may be deleted")
     endpoint = f"repos/{repository}/git/ref/heads/{branch}"
@@ -50,7 +50,7 @@ def delete_test_branch(config, repository, *, api=github_api, log=print):
 
 def main():
     settings = json.loads(Path("matching/operation_config.json").read_text())
-    record = delete_test_branch(settings, os.environ["GITHUB_REPOSITORY"])
+    record = delete_test_branch(settings["cleanup"], os.environ["GITHUB_REPOSITORY"])
     print(json.dumps(record, indent=2))
     return 1 if record["outcome"] == "FAILED" else 0
 
