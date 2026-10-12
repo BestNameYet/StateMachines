@@ -8,6 +8,8 @@ The disposable test branch is left in place for inspection/cleanup.
 import json
 import os
 import subprocess
+import tempfile
+from pathlib import Path
 
 from matching_branch_cleanup import delete_test_branch
 
@@ -25,6 +27,42 @@ def require(endpoint, method="GET", fields=()):
     if code:
         raise RuntimeError(f"GitHub {method} {endpoint} failed: {error or output}")
     return json.loads(output) if output else {}
+
+
+def prepare_build_environment(test_config, repo):
+    """Check out the isolated test branch into a dedicated local Docker build context."""
+    branch = test_config["branch"]
+    runner_temp = Path(os.environ.get("RUNNER_TEMP", tempfile.gettempdir()))
+    runner_temp.mkdir(parents=True, exist_ok=True)
+    context = Path(tempfile.mkdtemp(prefix="matching-image-build-", dir=runner_temp))
+    env = os.environ.copy()
+    env["GIT_LFS_SKIP_SMUDGE"] = "1"
+    try:
+        subprocess.run(
+            ["gh", "repo", "clone", repo, str(context), "--",
+             "--branch", branch, "--single-branch"],
+            env=env, check=True, capture_output=True, text=True,
+        )
+        checked_out_branch = subprocess.run(
+            ["git", "-C", str(context), "branch", "--show-current"],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip()
+        if checked_out_branch != branch:
+            raise RuntimeError(f"Expected {branch}, checked out {checked_out_branch}")
+        expected = context / test_config["location"] / ".gitkeep"
+        if not expected.is_file():
+            raise RuntimeError(f"Test workspace marker missing: {expected}")
+        if not (context / "matching" / "Dockerfile.runtime").is_file():
+            raise RuntimeError("Test branch lacks matching/Dockerfile.runtime")
+        commit = subprocess.run(
+            ["git", "-C", str(context), "rev-parse", "HEAD"],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip()
+        return {"build_context": str(context), "branch": branch, "commit": commit}
+    except Exception:
+        import shutil
+        shutil.rmtree(context, ignore_errors=True)
+        raise
 
 
 def partially_completed_not_fully_realized_container_image_creation_test_under_construction(test_config, repo):
@@ -63,9 +101,10 @@ def partially_completed_not_fully_realized_container_image_creation_test_under_c
         if file.get("type") != "file":
             raise RuntimeError("Created test workspace failed verification")
 
+        record["build_environment"] = prepare_build_environment(test_config, repo)
         record["verified"] = True
         record["outcome"] = "PARTIALLY_IMPLEMENTED"
-        print("Workspace preparation verified; container image creation test remains UNDER CONSTRUCTION", flush=True)
+        print("Test branch checked out as isolated build context; image creation is not executed", flush=True)
     except Exception as exc:
         record["error"] = str(exc)
         print(f"Controlled failure: {exc}", flush=True)
