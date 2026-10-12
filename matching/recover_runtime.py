@@ -69,8 +69,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--destination", type=Path, required=True,
                         help="Filesystem staging directory; must not exist")
-    parser.add_argument("--persist-git-lfs", action="store_true",
-                        help="Commit verified models and wheels to origin/main using original Git LFS procedure")
     args = parser.parse_args()
     if sys.version_info[:2] != (3, 10):
         raise SystemExit("Acquisition requires Python 3.10 to download compatible wheels")
@@ -119,13 +117,21 @@ def main() -> None:
                 raise RuntimeError(f"Wheel changed during acquisition: {file}")
         staging.rename(destination)
         print(f"Acquired verified build inputs: {destination}", flush=True)
-        if args.persist_git_lfs:
-            persist_git_lfs(destination)
+        persist_git_lfs(destination)
         print(json.dumps(inventory, indent=2))
     finally:
         if staging.exists():
             shutil.rmtree(staging)
 
+
+
+def verify_remote_commit(repo: Path) -> None:
+    local = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip()
+    remote = subprocess.check_output(
+        ["git", "-C", str(repo), "ls-remote", "origin", "refs/heads/main"], text=True
+    ).split()[0]
+    if local != remote:
+        raise RuntimeError(f"Remote persistence verification failed: local={local} remote={remote}")
 
 
 def persist_git_lfs(destination: Path) -> None:
@@ -146,12 +152,15 @@ def persist_git_lfs(destination: Path) -> None:
     shutil.copy2(source / "recovery-inventory.json", ROOT / "recovery-inventory.json")
     run(["git", "-C", str(repo), "add", "--",
          "matching/models", "matching/wheels",
-         "matching/recovery-inventory.json", ".gitattributes"])
+         "matching/recovery-inventory.json", ".gitattributes",
+         "matching/models/.gitattributes", "matching/wheels/.gitattributes"])
     # No unrelated changes are staged by this procedure.
     staged = subprocess.run(["git", "-C", str(repo), "diff", "--cached", "--quiet"],
                             check=False)
     if staged.returncode == 0:
-        print("Verified LFS build inputs already committed; no push required")
+        run(["git", "-C", str(repo), "push", "origin", "HEAD:main"])
+        verify_remote_commit(repo)
+        print("Verified LFS build inputs already committed and remote branch synchronized")
         return
     if staged.returncode != 1:
         raise RuntimeError("Cannot inspect staged Git changes")
@@ -159,6 +168,7 @@ def persist_git_lfs(destination: Path) -> None:
          "-c", "user.email=41898282+github-actions[bot]@users.noreply.github.com",
          "commit", "-m", "Persist verified matching models and wheels via Git LFS"])
     run(["git", "-C", str(repo), "push", "origin", "HEAD:main"])
+    verify_remote_commit(repo)
     print("Persisted verified model and wheel files via Git LFS to origin/main")
 
 
