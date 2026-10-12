@@ -60,7 +60,8 @@ class VectorAdapter:
         if roi is None:
             roi = raw_img  # Fallback to direct frame if no region isolated
         aligned = roi.resize((112, 112))
-        arr = np.array(aligned, dtype=np.float32).transpose(2, 0, 1)
+        # The encoder expects NHWC: [batch, height, width, RGB channels].
+        arr = np.array(aligned, dtype=np.float32)
         arr = (arr - 127.5) / 128.0
         tensor = np.expand_dims(arr, axis=0)
         raw_output = self.enc_session.run(None, {self.enc_input_name: tensor})[0][0]
