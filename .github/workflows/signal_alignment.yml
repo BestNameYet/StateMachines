@@ -3,9 +3,12 @@ name: Matching Image Comparison
 on:
   issues:
     types: [opened]
+  push:
+    paths:
+      - 'matching/runtime_config.json'
 
 permissions:
-  contents: read
+  contents: write
   packages: write
   issues: write
 
@@ -14,6 +17,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  persistence_test:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Read configuration
+        id: config
+        run: |
+          python - <<'PY'
+          import json,os
+          config=json.load(open('matching/runtime_config.json'))
+          mode=config['mode']
+          if mode not in ('normal','test'): raise SystemExit('Invalid mode')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f: f.write('mode='+mode+'\n')
+          PY
+      - name: Test remote Git LFS persistence
+        if: steps.config.outputs.mode == 'test'
+        run: python matching/test_persistence.py
+
   compare:
     if: github.event.issue.title == 'matching-trigger'
     runs-on: ubuntu-latest
