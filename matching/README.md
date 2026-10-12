@@ -98,3 +98,19 @@ The workflow uploads it as `matching-container-image-creation-result`, including
 controlled failure report if the test cannot finish. Changes to the test, manifest,
 configuration, helpers, Dockerfile, or component workflow trigger this test on `main`;
 manual dispatch is also available.
+
+## Build mode setting
+
+Set top-level `mode` in `matching/operation_config.json` to `"test"` or
+`"normal"`. The committed setting remains `"test"` to preserve existing behavior.
+
+- `test` selects the existing isolated test function: branch cleanup and creation,
+  manifest acquisition, Docker build, and post-build container verification.
+- `normal` selects the `normal` settings object: manifest acquisition and Docker
+  build from the current checkout, without test-branch operations or a post-build
+  verification container. Both modes write the configured JSON report.
+- Missing or unsupported modes print the current configuration and a corrected
+  example, then exit with a controlled failure.
+
+Publisher checksum checks and the Dockerfile's build-time dependency/model checks
+remain in both modes. Neither mode publishes the runner-local image.

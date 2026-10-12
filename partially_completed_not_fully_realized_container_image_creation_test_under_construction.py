@@ -65,8 +65,8 @@ def prepare_build_environment(test_config, repo):
         raise
 
 
-def create_and_verify_container(prepared, image):
-    """Build the image and check packages and ONNX loading without image comparison."""
+def create_container(prepared, image):
+    """Build the image; verification is a separate operation."""
     subprocess.run([
         "docker", "build", "--file", prepared["dockerfile"],
         "--build-arg", "PYTHON_VERSION=" + prepared["python_version"],
@@ -75,6 +75,11 @@ def create_and_verify_container(prepared, image):
     image_id = subprocess.check_output(
         ["docker", "image", "inspect", "--format", "{{.Id}}", image], text=True
     ).strip()
+    return {"image": image, "image_id": image_id}
+
+
+def verify_container(prepared, container):
+    image_id = container["image_id"]
     verification = """
 import json, sys
 from pathlib import Path
@@ -102,8 +107,11 @@ print(json.dumps({"python_version": actual, "packages": {
     print(result.stdout, flush=True)
     if result.stderr:
         print(result.stderr, flush=True)
-    return {"image": image, "image_id": image_id,
-            "verification": json.loads(result.stdout)}
+    return {**container, "verification": json.loads(result.stdout)}
+
+
+def create_and_verify_container(prepared, image):
+    return verify_container(prepared, create_container(prepared, image))
 
 
 def partially_completed_not_fully_realized_container_image_creation_test_under_construction(test_config, repo):
@@ -163,10 +171,44 @@ def partially_completed_not_fully_realized_container_image_creation_test_under_c
     return 0 if record["test_complete"] else 1
 
 
+def normal(operation_config, repo):
+    """Build from the current checkout without disposable-branch or runtime tests."""
+    record = {"mode": "normal", "outcome": "FAILED", "verification_executed": False}
+    try:
+        record["source_commit"] = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True
+        ).strip()
+        record["manifest_context"] = prepare_manifest_context(Path.cwd(), operation_config["manifest"])
+        record["container"] = create_container(record["manifest_context"], operation_config["image"])
+        record["outcome"] = "COMPLETE"
+    except Exception as exc:
+        record["error"] = str(exc)
+        print(f"Controlled failure: {exc}", flush=True)
+    report = Path(operation_config["report"])
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(record, indent=2), flush=True)
+    return 0 if record["outcome"] == "COMPLETE" else 1
+
+
+def run_mode(settings, repo):
+    mode = settings.get("mode")
+    if mode not in ("test", "normal"):
+        print("Invalid mode: allowed values are test and normal.", flush=True)
+        print(json.dumps(settings, indent=2), flush=True)
+        print("Example corrected configuration:", flush=True)
+        print(json.dumps({**settings, "mode": "test"}, indent=2), flush=True)
+        return 1
+    if mode == "normal":
+        return normal(settings["normal"], repo)
+    return partially_completed_not_fully_realized_container_image_creation_test_under_construction(
+        settings["partially completed not fully realized container image creation test under construction"], repo
+    )
+
+
 def main():
-    from pathlib import Path
     settings = json.loads(Path("matching/operation_config.json").read_text())
-    return partially_completed_not_fully_realized_container_image_creation_test_under_construction(settings["partially completed not fully realized container image creation test under construction"], os.environ["GITHUB_REPOSITORY"])
+    return run_mode(settings, os.environ["GITHUB_REPOSITORY"])
 
 
 if __name__ == "__main__":
