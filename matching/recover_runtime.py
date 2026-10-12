@@ -69,6 +69,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--destination", type=Path, required=True,
                         help="Filesystem staging directory; must not exist")
+    parser.add_argument("--no-git-persist", action="store_true", help="Acquire in isolated directory without pushing production inputs")
     args = parser.parse_args()
     if sys.version_info[:2] != (3, 10):
         raise SystemExit("Acquisition requires Python 3.10 to download compatible wheels")
@@ -117,7 +118,8 @@ def main() -> None:
                 raise RuntimeError(f"Wheel changed during acquisition: {file}")
         staging.rename(destination)
         print(f"Acquired verified build inputs: {destination}", flush=True)
-        persist_git_lfs(destination)
+        if not args.no_git_persist:
+            persist_git_lfs(destination)
         print(json.dumps(inventory, indent=2))
     finally:
         if staging.exists():
