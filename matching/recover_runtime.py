@@ -141,8 +141,7 @@ def persist_git_lfs(destination: Path) -> None:
     repo = ROOT.parent
     run(["git", "-C", str(repo), "lfs", "install", "--local"])
     # Explicitly track binary outputs as LFS objects, as in the original workflow.
-    run(["git", "-C", str(repo), "lfs", "track", "matching/models/*.onnx"])
-    run(["git", "-C", str(repo), "lfs", "track", "matching/wheels/*.whl"])
+    # The repository already contains the original LFS tracking attributes.\n    # Do not regenerate them or introduce new persistence structure.
     source = destination / "matching"
     for subdir, pattern in (("models", "*.onnx"), ("wheels", "*.whl")):
         target = ROOT / subdir
@@ -151,10 +150,10 @@ def persist_git_lfs(destination: Path) -> None:
             shutil.copy2(file, target / file.name)
     shutil.copy2(source / "recovery-inventory.json", ROOT / "recovery-inventory.json")
     run(["git", "-C", str(repo), "add", "--",
-         "matching/models", "matching/wheels",
-         "matching/recovery-inventory.json", ".gitattributes",
-         "matching/models/.gitattributes", "matching/wheels/.gitattributes"])
-    # No unrelated changes are staged by this procedure.
+         "matching/models/spatial_detector.onnx",
+         "matching/models/feature_encoder.onnx",
+         "matching/wheels", "matching/recovery-inventory.json"])
+    # The original workflow stages only its specific persistence outputs.
     staged = subprocess.run(["git", "-C", str(repo), "diff", "--cached", "--quiet"],
                             check=False)
     if staged.returncode == 0:
