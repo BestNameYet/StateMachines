@@ -1,14 +1,32 @@
 name: Matching Image Comparison
 
 on:
-  workflow_dispatch:
+  push:
+    paths:
+      - 'matching/trigger.json'
 
 permissions:
   contents: read
   packages: read
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON trigger
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e 'type == "object" and (keys | sort) == (["run", "timestamp"] | sort) and (.run | type == "boolean") and (.timestamp | type == "string")' matching/trigger.json > /dev/null
+          echo "enabled=$(jq -r '.run' matching/trigger.json)" >> "$GITHUB_OUTPUT"
+
   compare:
+    needs: gate
+    if: needs.gate.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout current image sets and comparison program
