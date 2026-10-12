@@ -1,9 +1,11 @@
-name: Matching Environment Bootstrap
+name: Matching Image Comparison
 
 on:
   push:
     paths:
-      - 'matching/bootstrap.py'
+      - 'matching/state_machine.py'
+      - 'matching/datasets/anchor/**'
+      - 'matching/datasets/telemetry_batch/**'
       - '.github/workflows/signal_alignment.yml'
   workflow_dispatch:
 
@@ -12,10 +14,10 @@ permissions:
   packages: read
 
 jobs:
-  bootstrap:
+  compare:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout matching scripts without downloading LFS assets
+      - name: Checkout current image sets and comparison program
         uses: actions/checkout@v4
         env:
           GIT_LFS_SKIP_SMUDGE: '1'
@@ -29,17 +31,36 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Initialize using prebuilt Python and ONNX runtime
+      - name: Compare current anchor against telemetry batch using prebuilt runtime
         shell: bash
         run: |
           set -euo pipefail
           docker run --rm \
             --mount "type=bind,src=${{ github.workspace }},dst=/repo" \
             --workdir /repo \
+            --env GITHUB_STEP_SUMMARY=/repo/matching/metrics.md \
             --entrypoint /bin/sh \
             ghcr.io/bestnameyet/statemachines-matching-runtime@sha256:42120a7434505e51189977362dcec4467367257cff6d29210dc6a85c5ba6f3ad \
             -ec '
               cp /workspace/matching/models/spatial_detector.onnx matching/models/spatial_detector.onnx
               cp /workspace/matching/models/feature_encoder.onnx matching/models/feature_encoder.onnx
-              python matching/bootstrap.py
+              python matching/state_machine.py
             '
+
+      - name: Publish comparison report in GitHub Actions summary
+        if: always()
+        shell: bash
+        run: |
+          if test -s matching/metrics.md; then
+            cat matching/metrics.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No comparison report produced. Check execution logs (including missing anchor images)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload comparison report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matching-comparison-report
+          path: matching/metrics.md
+          if-no-files-found: ignore
