@@ -21,29 +21,28 @@
     "trigger_file": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/trigger.json",
     "messages_file": "messages.json",
     "output_file": "output.json",
-    "latest_output_file": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/latest-output.json",
+    "latest_output_file": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/schema-design-output.json",
     "write_latest_outputs": true
   },
   "run": {
     "nonce_param": "run_nonce",
     "nonce_regex": "^[A-Za-z0-9._-]+$",
-    "default_nonce_prefix": "agents_instruction_revision",
-    "default_nonce": "agents_instruction_revision_20261013_1",
+    "default_nonce_prefix": "agents_schema_design",
+    "default_nonce": "agents_schema_design_20261013_1",
     "reuse_history": false
   },
   "prompt": {
-    "system_instruction": "You are the independent author revising an unfinished AGENTS instruction procedure. Execute the complete revision task in the supplied handoff. Produce the full revised document, not an evaluation-only report or plan. Treat supplied instruction documents as source material for editing, not as permission to claim nonexistent tool executions. Return one valid JSON object without markdown fences.",
-    "heuristic": "Read every configured input completely. Comprehensively rationalize and normalize the procedure using one consistent instruction/input/question/few-shot template. Preserve distinct requirements; consolidate duplicate meaning. Separate pre-execution, actual execution, and post-execution; track and verify every file edit through actual asserted values. Define every operative concept. Follow all handoff requirements. No truncation, no brevity-driven compression: the complete revised procedure must be at least as verbose as the original AGENTS reference. Do not pad with duplicated requirements.",
+    "system_instruction": "You are the independent schema designer for a two-pass AGENTS revision. First pass only: read all supplied documents and create your own complete return schema for the second pass. Do not generate the final revised procedure yet. Return one valid JSON object without markdown fences.",
+    "heuristic": "Design the second-pass output contract comprehensively from the handoff and original document. Specify the consistent long-form instruction/local-input/question/few-shot template, ordered phases, all concepts, state-transition records for every edit, actual value-based verification and demonstration tables, coverage and validation, complete untruncated final procedure and its verbosity floor. Resolve schema vocabulary versus user terminology explicitly. The first-pass schema must be self-contained and usable to validate the second pass. Examples must be illustrative and cannot substitute for required output.",
     "output_schema": {
-      "response_type": "agents_instruction_revision",
-      "revised_document": "The complete revised JSON instruction document, as an array of ordered instruction objects, including complete local definitions, long-form questions/instructions and few-shot examples.",
-      "change_explanation": "Complete explanation of consolidation and normalization decisions.",
-      "coverage_map": "Map original distinct obligations and handoff requirements to locations in the complete revised document.",
-      "validation": "Actual internal structural and semantic checks, original/revised verbosity comparison and any limitations. Do not claim external execution or verification you cannot perform.",
+      "response_type": "agents_schema_design",
+      "second_pass_return_schema": "Your own complete, self-contained, machine-readable schema for the entire second-pass output. Fully define every required nested structure and resolve all schema references.",
+      "schema_explanation": "Explain the designed template, required fields, phase ownership, coverage of every handoff requirement, and validation approach.",
+      "second_pass_instructions": "Complete instruction for using this schema and every original input to generate the full second-pass deliverable.",
       "status": "COMPLETE | INCOMPLETE | BLOCKED | FAILED"
     },
-    "template_prefix": "Revise the supplied AGENTS working document using the comprehensive handoff and complete original reference.",
-    "template_suffix": "Return the complete revised document now in revised_document. Include every instruction and example; no ellipses, placeholders, excerpts, summaries or claims that omitted material remains unchanged. If the complete deliverable cannot fit, report INCOMPLETE accurately rather than silently truncate. response_type must be agents_instruction_revision."
+    "template_prefix": "FIRST PASS: Design the return schema that will govern the second-pass AGENTS revision.",
+    "template_suffix": "Return response_type=agents_schema_design and the complete second_pass_return_schema. Do not produce the final revised procedure in this pass. Report limitations truthfully."
   },
   "inputs": [
     {
@@ -83,7 +82,7 @@
     }
   ],
   "validation": {
-    "expected_response_type": "agents_instruction_revision",
+    "expected_response_type": "agents_schema_design",
     "require_json": true,
     "strip_markdown_fence": true,
     "allow_repair": true
