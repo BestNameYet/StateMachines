@@ -27,24 +27,22 @@
   "run": {
     "nonce_param": "run_nonce",
     "nonce_regex": "^[A-Za-z0-9._-]+$",
-    "default_nonce_prefix": "agents_modular_design",
-    "default_nonce": "agents_modular_design_20261013_1",
+    "default_nonce_prefix": "agents_metadata_capture",
+    "default_nonce": "agents_metadata_capture_20261013_1",
     "reuse_history": false
   },
   "prompt": {
-    "system_instruction": "You are designing a modular natural-language executable procedure collection. Follow the latest modular-procedures section of the handoff. Divide every major evaluation into its own separately named procedure with explicit purpose, input ownership, operations, returns and dependencies. This pass produces complete module specifications and an orchestration manifest, not another monolithic original-length rewrite. Return one valid JSON object.",
-    "heuristic": "Read all configured sources completely. Ask why every part exists. Include all distinct responsibilities: provenance verification, user-instruction capture, state-transition specification, mode selection, projection publication, pre-execution validation, execution, invocation audit, continuation selection, final-state verification, completion evaluation and final-response validation. Discover additional major evaluations when justified. Keep shared definitions single-owned; distinguish owned inputs from references. Use the common input/question/return/few-shot template in each procedure specification. Do not invent executed operations or metrics. Preserve the original eventual verbosity requirement for the assembled implementation, without padding this design pass.",
+    "system_instruction": "Work on the user's metadata-first task only. Inspect all supplied documents, identify which metadata the governing procedure needs and capture its actual supported values. Use existing definitions and sections; do not create another specification, full rewrite or twelve procedures. Return one valid JSON object.",
+    "heuristic": "For every metadata field, determine why it is needed, what describes the procedure itself, where its value is established and whether it duplicates an input, semantic definition, state aspect or result. Retain only meaningful metadata, capture actual supplied values and mark unavailable runtime values accurately. Preserve the user's naming conventions; do not introduce timestamps or decorative fields. The latest metadata-first task overrides earlier monolithic/module generation directives.",
     "output_schema": {
-      "response_type": "agents_modular_procedure_design",
-      "procedures": "Separate complete module specifications, each with its name, separate proposed file path, why it exists, question/decision, locally owned inputs, references, evidence/operation, returned values, dependencies, failure handling, completion criteria and common template/examples.",
-      "orchestration_manifest": "Ordered calls and dependency relationships, including audit across the turn and continuation loops.",
-      "shared_definition_ownership": "One owner for each shared semantic concept and captured variable; references elsewhere rather than duplicated definitions.",
-      "source_requirement_coverage": "Map every distinct original and handoff requirement to one or more justified procedures; identify missing requirements or unresolved decisions.",
-      "next_implementation_steps": "Generate, persist and validate separate procedure files individually, then validate the assembled composition.",
+      "response_type": "agents_metadata_capture",
+      "metadata": "Concrete metadata object containing the actual supported values selected for the procedure.",
+      "field_decisions": "Why each retained field is necessary metadata, where its value comes from, and why rejected existing fields are unnecessary or belong elsewhere.",
+      "runtime_capture": "Any genuinely needed metadata unavailable from the supplied document, with its capture question and source; no fabricated live values.",
       "status": "COMPLETE | INCOMPLETE | BLOCKED | FAILED"
     },
-    "template_prefix": "MODULAR DESIGN PASS: separate purpose-driven procedures for every major evaluation.",
-    "template_suffix": "Return agents_modular_procedure_design. Do not generate another giant monolithic procedure or reuse the superseded full-rewrite return schema as this design pass's output contract. Design every module concretely so it can be implemented individually."
+    "template_prefix": "FIRST TASK: what metadata do we need, and capture it.",
+    "template_suffix": "Return response_type=agents_metadata_capture. Produce the actual metadata decision and captured values, not another specification. Do not continue to other procedures."
   },
   "inputs": [
     {
@@ -98,7 +96,7 @@
     }
   ],
   "validation": {
-    "expected_response_type": "agents_modular_procedure_design",
+    "expected_response_type": "agents_metadata_capture",
     "require_json": true,
     "strip_markdown_fence": true,
     "allow_repair": true
