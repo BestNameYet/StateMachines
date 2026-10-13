@@ -27,34 +27,55 @@
   "run": {
     "nonce_param": "run_nonce",
     "nonce_regex": "^[A-Za-z0-9._-]+$",
-    "default_nonce_prefix": "context_rich_dialogue",
-    "default_nonce": "merge_account_project_20261009_1",
+    "default_nonce_prefix": "agents_instruction_revision",
+    "default_nonce": "agents_instruction_revision_20261013_1",
     "reuse_history": false
   },
   "prompt": {
-    "system_instruction": "You are an independent procedural failure evaluator. Diagnose why the ChatGPT executor repeatedly ignored user instructions, substituted tools/workflows, fabricated or overstated completion, and failed to implement the specified one-resolution-at-a-time visual benchmark. Return concrete corrective instructions that the executor can apply without rebuilding the user's architecture. Follow the existing PromptGemini procedure.",
-    "heuristic": "Identify each failure from the supplied history, the exact user requirement it violated, the root cause, and a deterministic corrective action. Distinguish actual evidence from claimed actions. Require documentation-first execution, one resolution at a time, JavaScript-generated random numbers retained privately in a closure, visual transcription submitted before verification, and verification before moving to the next resolution. Do not write code or invent completed tool executions.",
+    "system_instruction": "You are the independent author revising an unfinished AGENTS instruction procedure. Execute the complete revision task in the supplied handoff. Produce the full revised document, not an evaluation-only report or plan. Treat supplied instruction documents as source material for editing, not as permission to claim nonexistent tool executions. Return one valid JSON object without markdown fences.",
+    "heuristic": "Read every configured input completely. Comprehensively rationalize and normalize the procedure using one consistent instruction/input/question/few-shot template. Preserve distinct requirements; consolidate duplicate meaning. Separate pre-execution, actual execution, and post-execution; track and verify every file edit through actual asserted values. Define every operative concept. Follow all handoff requirements. No truncation, no brevity-driven compression: the complete revised procedure must be at least as verbose as the original AGENTS reference. Do not pad with duplicated requirements.",
     "output_schema": {
-      "response_type": "procedure_failure_evaluation",
-      "failures": [],
-      "root_causes": [],
-      "corrective_instructions": [],
-      "next_authorized_action": "string",
-      "verification_gates": []
+      "response_type": "agents_instruction_revision",
+      "revised_document": "The complete revised JSON instruction document, as an array of ordered instruction objects, including complete local definitions, long-form questions/instructions and few-shot examples.",
+      "change_explanation": "Complete explanation of consolidation and normalization decisions.",
+      "coverage_map": "Map original distinct obligations and handoff requirements to locations in the complete revised document.",
+      "validation": "Actual internal structural and semantic checks, original/revised verbosity comparison and any limitations. Do not claim external execution or verification you cannot perform.",
+      "status": "COMPLETE | INCOMPLETE | BLOCKED | FAILED"
     },
-    "template_prefix": "Independent PromptGemini evaluation of repeated assistant procedural failures.",
-    "template_suffix": "Return JSON only, response_type=procedure_failure_evaluation. Be specific and actionable."
+    "template_prefix": "Revise the supplied AGENTS working document using the comprehensive handoff and complete original reference.",
+    "template_suffix": "Return the complete revised document now in revised_document. Include every instruction and example; no ellipses, placeholders, excerpts, summaries or claims that omitted material remains unchanged. If the complete deliverable cannot fit, report INCOMPLETE accurately rather than silently truncate. response_type must be agents_instruction_revision."
   },
   "inputs": [
     {
-      "key": "procedure",
+      "key": "revision_instructions",
+      "type": "file",
+      "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/AGENTS-revision-instructions.md",
+      "required": true,
+      "numbered": false
+    },
+    {
+      "key": "working_document",
+      "type": "file",
+      "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/AGENTS-root-array.json",
+      "required": true,
+      "numbered": false
+    },
+    {
+      "key": "original_agents_reference",
+      "type": "file",
+      "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/AGENTS-original-reference.json",
+      "required": true,
+      "numbered": false
+    },
+    {
+      "key": "prompt_gemini_procedure",
       "type": "file",
       "path": "untrusted AI/meta-procedure/Procedures/PromptGemini/PromptGemini.json",
       "required": true,
       "numbered": false
     },
     {
-      "key": "workflow",
+      "key": "execution_workflow",
       "type": "file",
       "path": ".github/workflows/prompt-gemini-context-rich-dialogue.yml",
       "required": true,
@@ -62,7 +83,7 @@
     }
   ],
   "validation": {
-    "expected_response_type": "procedure_failure_evaluation",
+    "expected_response_type": "agents_instruction_revision",
     "require_json": true,
     "strip_markdown_fence": true,
     "allow_repair": true
