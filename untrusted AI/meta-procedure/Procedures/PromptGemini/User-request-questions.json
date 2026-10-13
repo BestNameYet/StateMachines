@@ -20,12 +20,8 @@
     "return": "${targetDataIntent}"
   },
   {
-    "question": "Does ${userIntent} require demonstrating compliance through actual actions and evidence? <boolean>: ${requiresAccountability}",
+    "instruction": "Determine whether ${userIntent} requires demonstrating compliance through actual actions and evidence. <boolean>: ${requiresAccountability}",
     "return": "${requiresAccountability}"
-  },
-  {
-    "question": "Does ${userIntent} require performing operations, changing data, using tools, or producing a concrete deliverable? <boolean>: ${requiresFidelity}",
-    "return": "${requiresFidelity}"
   },
   {
     "switch": [
@@ -34,12 +30,25 @@
         "return": "accountability"
       },
       {
-        "elseIf": "${requiresFidelity} == true",
-        "return": "fidelity"
-      },
-      {
-        "else": true,
-        "return": "minimal"
+        "else": [
+          {
+            "instruction": "Determine whether ${userIntent} requires performing operations, changing data, using tools, or producing a concrete deliverable. <boolean>: ${requiresFidelity}",
+            "return": "${requiresFidelity}"
+          },
+          {
+            "switch": [
+              {
+                "if": "${requiresFidelity} == true",
+                "return": "fidelity"
+              },
+              {
+                "else": true,
+                "return": "minimal"
+              }
+            ],
+            "return": "${mode}"
+          }
+        ]
       }
     ],
     "return": "${mode}",
