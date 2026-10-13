@@ -211,3 +211,61 @@ First-pass deliverable: a complete, self-contained, machine-readable return sche
 The second pass must receive the actual first-pass schema as an additional required input, together with all original configured files. It must produce the full revised procedure and accompanying deliverables conforming to that schema. It must not invent a replacement schema or treat a schema proposal as the revised procedure. The no-brevity and original-document verbosity floor applies to the full second-pass procedure, not padding the first-pass schema.
 
 An earlier single-pass rewrite request may already be executing; it is superseded and must not be treated as either the approved first-pass schema or a schema-conforming second-pass result.
+
+
+## Exact instruction-section template and acceptance criteria
+
+The purpose of the template is to make the procedure executable and predictable: the agent reads the relevant definitions, performs the stated operation, supplies the requested values, and can compare its response with a useful example. Symmetry means those roles are represented in the same way in every instruction section, not merely that headings look similar.
+
+The previous handoff left too much of this structure to inference. Treat poor output as evidence to examine the instruction and handoff, not an excuse to blame the downstream agent. Identify exactly which requirement was missing, ambiguous or conflicting, correct that requirement, and rerun against the same acceptance criteria.
+
+### Canonical section structure
+
+Use a plain-language instruction title whose value is an ordered array with exactly these three entries:
+
+1. An object named inputs containing the local variable definitions first.
+2. An object named questions containing the ordered question records that perform the instruction and capture its requested values.
+3. An object named examples containing consistently structured few-shot records.
+
+Each question record contains exactly:
+- question: complete plain-language wording that tells the agent what operation to perform, where to obtain the values, and what to inspect or compare when relevant. Reference definitions with ${name.definition} and previously captured values with ${name}.
+- return: the actual value binding or structured collection to capture from that question. This is a return specification, not a claim that the operation occurred.
+
+Do not add a second rule, capture designation, destination map, variable registry, purpose wrapper or duplicate definition to the section. Necessary explanation belongs in the long-form question and its single owning definition. The questions should be operational enough that answering them requires the actual task operation rather than a yes/no completion assertion.
+
+Each example record contains exactly:
+- scenario: concrete illustrative circumstances.
+- suppliedInputs: concrete values available before answering, with ordinary JSON types preserved.
+- expectedReturn: the captured or returned values expected in those circumstances.
+- explanation: why those values and that decision follow from the instruction, including the evidence required or the limitation.
+
+Use at least two genuinely useful examples per section: a normal case and a materially different edge, failure or not-applicable case. Examples do not supply live evidence and do not constitute another authoritative definition. Avoid repeating the same example in multiple sections.
+
+A section with no newly captured local variable has an empty inputs object; it refers to already defined values rather than define them again. A return-only section therefore follows the same template as a capture section. Semantic reference material is outside the instruction sequence and contains untyped plain-language definitions. General document metadata is not an instruction section and should stay minimal.
+
+The phase groups are ordered arrays of those same instruction-section objects. Use plain-language names for the pre-execution, execution/recovery and post-execution groups. The mode selection instruction belongs before publication of the initial projection. Its mode alternatives are distinct semantics of that decision, not another competing section template; describe them once in the profile definition or a single referenced semantic definition and have the capture question use them.
+
+This exact template supersedes inconsistent section layouts in the draft and earlier handoff. Preserve the substance of earlier requirements while removing their duplicate or conflicting representation.
+
+### Acceptance tests for the output
+
+Review the actual second-pass file, not its self-reported checklist:
+- Every instruction section has the same ordered inputs/questions/examples structure.
+- Every question has complete operational text and a return binding.
+- Every typed variable is defined exactly once in its owning local inputs and has a capture question and return.
+- Variables reused by later sections are references; their definitions are not copied.
+- All variable and definition references resolve. There are no dangling invocation-schema references.
+- Every concept needed to understand the procedure is defined, with no redundant synonyms or unexplained jargon.
+- Non-variable instruction titles and semantics use plain language; variable references use the existing designator. No invented notation or routing metadata.
+- Mode selection remains distinct from state change and uses the captured rationale.
+- The user request has its own section, including verbatim prompt, interpretation, goal and scope.
+- Initial, desired and observed final values remain distinct, paired with the correct aspect and basis. Multi-aspect and fixed-aspect cases are covered.
+- Every persistent file edit has identity, purpose and desired-state linkage; the final comparison presentation includes actual inspected values and evidence.
+- Verification acts on the asserted values and target state. No completion questionnaires or copied desired values masquerade as verification.
+- Projection publication precedes substantive execution; actual execution/recovery sits between the capture and observation phases.
+- The complete selected-profile result, invocation audit and profile/status suffix close the final three-element contract without lost inputs or hidden omissions.
+- Each instruction section contains useful normal and edge/failure examples in the exact common example structure.
+- The complete revised procedure satisfies the original verbosity floor through necessary definitions, explanation and examples rather than repeated content.
+- The actual output matches the first-pass return schema as well as these substantive template requirements. Schema compliance alone cannot excuse missing template structure.
+
+If a requirement fails, cite the exact output location and the missed requirement, then revise the handoff to remove the responsible ambiguity and perform an authorized corrective pass. Preserve each pass's output for comparison. Do not rename a deficient output as complete or change the acceptance criteria to fit it.
