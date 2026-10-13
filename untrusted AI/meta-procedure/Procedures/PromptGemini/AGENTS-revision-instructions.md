@@ -326,3 +326,15 @@ Return an ordered orchestration manifest explaining dependencies and when each p
 Define shared concepts once and reference them across procedure files. Defining each module independently does not authorize copying the same variable or semantic definition into every module. Make ownership and reference resolution explicit without per-variable invented routing metadata.
 
 Deliver a modular design with individually named procedure specifications and an orchestration manifest. The follow-up implementation can generate and validate each procedure separately, then validate their composition. Do not claim that a module specification is its executed implementation or that this decomposition pass completed the full rewrite.
+
+## Current task: metadata first, then proceed only when directed
+
+The user's latest instruction supersedes the earlier full rewrite, module implementation and module-specification generation requests for the next pass. Work ONLY on metadata.
+
+First inspect the supplied procedure documents and decide what metadata is actually needed for this instruction procedure. Explain each retained field's purpose and why it is metadata rather than a user input, state aspect, instruction, semantic definition or execution-result value. Use the existing definitions and sections as the specification; do not create another specification stage.
+
+Then capture the actual metadata values supported by the supplied files. Produce the concrete metadata object, with the necessary capture questions/definitions only where a value must be obtained at runtime rather than taken from the document. Identify where each captured value comes from. Do not invent live provenance, current execution timestamps or other unsupported values; mark unavailable runtime values accurately.
+
+Prefer the minimum meaningful metadata that describes or identifies the governing procedure. Do not add decorative fields, duplicate goal/scope/state inputs, another provenance wrapper, or repeat definitions. Distinguish the document's identifier/version/applicability/purpose from live user-request and state-change information where relevant. Choose fields on their actual role, not merely because they already exist.
+
+Return the metadata decision and captured object now. Do not generate any of the remaining procedures, do not generate another whole-document schema, and do not claim that metadata capture completes the full procedure revision.
