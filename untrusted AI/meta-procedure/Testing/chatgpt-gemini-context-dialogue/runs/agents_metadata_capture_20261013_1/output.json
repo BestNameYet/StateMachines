@@ -1,0 +1,74 @@
+{
+  "response_type": "agents_metadata_capture",
+  "metadata": {
+    "responseType": "customInstruction",
+    "instructionId": "jwrsAdaptiveSelectorWithToolAudit",
+    "version": "4.8-project-1.2",
+    "purpose": "Define the instruction framework for projecting user requests into JWRS, carrying out tasks, and reporting execution outcomes and evidence.",
+    "instructionScope": "everyUserPrompt",
+    "schemaNotation": "Custom descriptive schemas: keys declares named fields; additional keys controls extra fields. Translate these descriptions to standard JSON Schema before using a JSON Schema validator."
+  },
+  "field_decisions": {
+    "retained_fields": {
+      "responseType": {
+        "reason": "Identifies the structural category of the governing artifact so executing interpreters recognize it as a procedural custom instruction rather than an execution result or data record.",
+        "source": "AGENTS-root-array.json line 4 (also AGENTS-original-reference.json line 3 as response_type)."
+      },
+      "instructionId": {
+        "reason": "Provides the persistent, unique canonical identifier for this specific governing procedure across revisions and environments.",
+        "source": "AGENTS-root-array.json line 5 (also AGENTS-original-reference.json line 4 as instruction_id)."
+      },
+      "version": {
+        "reason": "Establishes the document release revision baseline to prevent version drift between working drafts and project references.",
+        "source": "AGENTS-root-array.json line 6 (and AGENTS-original-reference.json line 5)."
+      },
+      "purpose": {
+        "reason": "Articulates the concise, self-contained procedural mandate of the document itself: projecting requests into JWRS, executing in the same turn, auditing tools, and returning verified evidence.",
+        "source": "AGENTS-root-array.json line 7."
+      },
+      "instructionScope": {
+        "reason": "Defines the boundary conditions under which this governing instruction applies (every user prompt), distinguishing procedure applicability from prompt-specific operational scopes.",
+        "source": "AGENTS-root-array.json line 8 (and AGENTS-original-reference.json line 6 as scope)."
+      },
+      "schemaNotation": {
+        "reason": "Resolves the schema dialect rule directly within document metadata, explaining that keys and additionalKeys describe schema structure without violating the constraint against reintroducing properties into the working document.",
+        "source": "AGENTS-root-array.json line 9."
+      }
+    },
+    "rejected_and_relocated_fields": {
+      "agentsMdProvenance": {
+        "reason": "Rejected as a static metadata wrapper. Live backing file and library IDs change per retrieval and duplicate pre-execution inputs."
+      },
+      "authoritativeFile_and_mirror": {
+        "reason": "Belongs in the operational 'Load the Governing Instruction' section as an inspection reference rather than document-level metadata."
+      },
+      "userGoal_and_scope": {
+        "reason": "These are prompt-specific inputs captured under 'Interpret the User Request', not static procedure metadata."
+      },
+      "basis_and_fixed": {
+        "reason": "These are dynamic state-change inputs belonging strictly in 'Describe the State Change'."
+      },
+      "profile_and_selectionRationale": {
+        "reason": "These belong exclusively to the mode selection decision process."
+      },
+      "timestamps_and_decorative_headers": {
+        "reason": "Explicitly forbidden by guidance to prevent ungrounded synthetic values and decoration."
+      }
+    }
+  },
+  "runtime_capture": {
+    "governingInstructionFileId": {
+      "necessity": "Identifies the current physical backing file in the runtime Library; cannot be statically hardcoded because file overwrites generate new identifiers.",
+      "status": "UNAVAILABLE_AT_REST",
+      "capture_question": "What is the current backing file ID returned by live retrieval of the governing instruction?",
+      "source": "Runtime retrieval metadata of /AGENTS.md from the active environment interface."
+    },
+    "governingInstructionLibraryFileId": {
+      "necessity": "Identifies the persistent Library record; distinct from the backing file ID and cannot be fabricated from historical reference snapshots.",
+      "status": "UNAVAILABLE_AT_REST",
+      "capture_question": "What is the persistent Library record ID returned by the same live retrieval of the governing instruction?",
+      "source": "Runtime retrieval metadata of /AGENTS.md from the active environment interface."
+    }
+  },
+  "status": "COMPLETE"
+}
