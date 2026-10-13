@@ -94,3 +94,52 @@ The working document may still contain many non-variable camelCase fields, repea
 8. Save a revised document as a separate reviewable file, retaining the original working draft. Provide a concise change explanation and the actual checks performed.
 
 The user has authorized the comprehensive correction. Do the work, not merely a proposal or explanation. Do not invent completion, invoke tools that were not actually called, or claim that mechanical validity proves semantic coherence.
+
+
+## Required phase separation and long-form instruction design
+
+Reorganize the document into an ordered set of verbal instructions that an agent can understand and perform. Do not produce only a schema, compressed field inventory, naming table or collection of placeholders. Each instruction must explain in full sentences what to do, why the requested input matters where needed, where its value comes from, how to capture it, what to return, and which subsequent instruction uses or verifies it. Keep this explanation in the owning instruction rather than repeat it in several sections. Its local input definitions and questions should make the explanation executable.
+
+Use separate, visibly identifiable pre-execution and post-execution instruction groups. Place actual execution and recovery between them. These are instruction-group titles, not invented camelCase variables or per-variable phase metadata.
+
+### Pre-execution: establish and publish the requested change
+
+Pre-execution captures the request and the verified starting information before performing the substantive task. It records what is currently true and what the user wants to become true. It cannot contain an observed final value or a claim of completed execution.
+
+Put the following owning objects in this group:
+- Governing-instruction retrieval: define and capture governingInstructionFileId, governingInstructionLibraryFileId and instructionScope. Read the complete current applicable instruction; obtain identifiers from that retrieval, not memory. Do not add a duplicate provenance wrapper.
+- User request: define and capture userPromptVerbatim, userPromptInterpretation, userGoal and scope. This is its own object, separate from state change. Preserve the exact prompt and all operative limits.
+- State change: define and capture basis, aspect, currentValue, desiredValue, fixed, procedure and delivery. Use the already captured user goal and scope. Establish current values from inspected authoritative information; desired values come from the user's requirements. Keep each affected aspect paired with its current and desired values. Repeat the aspect questions for every affected aspect. Capture the aspects and values that remain fixed.
+- Mode selection: define and capture selectionRationale and profile inside the separate selector object. Select a profile using the mode descriptions. Preserve the ordered selection array. Neither profile nor the selector is a state aspect.
+- Projection publication: assemble and visibly print the complete JWRS from those captures, including the exact original prompt, actual instruction identifiers and an explicit return contract. Return captured inputs as required by their questions. Expand the required return schema for execution; a reference to an internal schema definition is not a substitute for the printed contract.
+
+Define any genuinely necessary additional projection input locally and give it a capture question and return. Do not add a typed variable merely to name a container or phase. For a request with no state change, explain how its state questions are treated without inventing a target or pretending a change occurred.
+
+### Execution: perform the requested work and collect evidence
+
+After publishing the projection, perform the user's actual request in the prescribed environment. Use the pre-execution captures to guide the work. Keep exact user constraints and execution identity. Record actual invocation information as tools are called, including required instruction-retrieval calls. Recovery and continuation occur here while obligations remain executable.
+
+An invocation audit is collected throughout the turn; it is finalized and returned after execution. It is not a pre-execution list of planned calls. Explain this timing rather than adding conflicting phase labels to its definition.
+
+### Post-execution: observe and return what actually happened
+
+Post-execution inspects resulting state, reports actual results, finalizes evidence and selects a truthful completion status. It must not overwrite the captured initial or desired values.
+
+Put the following owning objects in this group:
+- Observed state: define and capture finalValue for each affected aspect, reusing the aspect identifier. Inspect every fixed aspect as well. Compare observed changed values against desiredValue and preserved values against currentValue. An intended value, generated example or attempted command is not an observation.
+- Execution result: define and capture result. Return the actual answer or deliverable, observed state information, evidence, deviations and remaining work as required by the selected profile. Reuse pre-execution captures where needed rather than redefine them.
+- Invocation audit: define verbatimToolInvocations once at its collection-owning instruction and explain its post-execution finalization. Capture and return actual records, not plans or reconstructed equivalents. Avoid a second definition solely because collection begins earlier.
+- Completion status: define and capture status using the final observed execution state after authorized continuation ends. Reuse profile; do not select or define it again.
+- Final response assembly: return exactly three elements: the full selected-profile result; the invocation-audit object; and the profile/status suffix. Questions that capture and return a variable already constitute use; final assembly is an additional consumer when applicable, not a prerequisite for calling an input used.
+
+### Define every concept the instructions require
+
+The rewritten procedure must not rely on unexplained jargon, abbreviated concepts or unspoken links between sections. Inventory every operative concept in the long-form instructions and questions, then verify that it has one clear definition or an explicit reference to its owning definition. This includes authority, current versus persistent identifiers, user interpretation, goal, scope, basis, aspect, current value, desired value, fixed, procedure, delivery, selection rationale, profile, projection, return contract, actual execution, observation, evidence, continuation, result, invocation record and final status.
+
+Use untyped plain-language semantic definitions for non-variable concepts. Place typed variable definitions inside the instruction object where the variable is first captured, immediately before its questions. Later phases refer to that definition and captured value rather than copy it. Do not introduce synonyms as new concepts, redefine basis as source, or repeat the same definition under different casing.
+
+Make definitions complete enough to guide an agent without reproducing the same instruction in several places. Keep the deliberately simple fixed definition at four words: "These aspects remain unchanged." Explain preservation and verification in the relevant long-form instruction rather than expanding that definition.
+
+Every instruction section must use the same local-input/question/few-shot template. Include representative pre-execution captures, actual execution, and post-execution observations in the examples so the phases cannot be confused. Examples must be explicitly illustrative; they are never evidence that the live task was performed.
+
+Verify phase coverage, ownership, definition completeness, paired state values, distinct initial/desired/final values, actual execution between phases, and the final return contract across the entire rewritten procedure.
