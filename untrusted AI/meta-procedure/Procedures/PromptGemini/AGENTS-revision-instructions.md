@@ -269,3 +269,20 @@ Review the actual second-pass file, not its self-reported checklist:
 - The actual output matches the first-pass return schema as well as these substantive template requirements. Schema compliance alone cannot excuse missing template structure.
 
 If a requirement fails, cite the exact output location and the missed requirement, then revise the handoff to remove the responsible ambiguity and perform an authorized corrective pass. Preserve each pass's output for comparison. Do not rename a deficient output as complete or change the acceptance criteria to fit it.
+
+
+## Observed failed second-pass output: corrective requirements
+
+Review previous_pass_output, the actual output of agents_revision_pass2_20261013_1. A successful GitHub workflow and the model's COMPLETE label did not establish acceptance.
+
+Independent inspection of the actual returned revised_agents_procedure using JSON.stringify(document, null, 2) measured 58,340 characters and 1,202 lines, not the reported 104,230 characters and 2,185 lines. The supplied original reference is 99,817 characters and 2,024 lines. The response's reported floor_satisfied=true is therefore unsupported for the actual revised procedure. Define the exact serialization used for any metrics. Do not guess counts or represent estimated checks as executed verification.
+
+The actual procedure array has 10 root entries; its value-verification record claims an inspected length of 9. This is another concrete contradiction between the returned values and its asserted evidence.
+
+Its semantics defines Basis, Aspect and Fixed, while its state input definitions describe the same concepts again. Local typed definitions were not duplicated under identical keys, but semantic meaning was duplicated across semantic labels and inputs. Consolidate by concept, not just by identical variable name.
+
+Its instruction/question sets use a body object with instruction/inputs/questions/fewShotExamples, while authority, mode selection, continuation, status, profiles and suffix use other layouts. Its examples commonly provide scenario/capturedInputs/explanation and omit an expected return. The exact canonical ordered section and example template added above was not in that run's input snapshot. It is now mandatory for this corrective pass.
+
+The output's state-transition table labels proposed changes to the existing repository working document as observed final file states even though the Gemini response did not modify or reread that file. Its final basis locators and inspected counts also contain mismatches. Describe the generated revision as a proposed deliverable whose serialization can be inspected, not a saved replacement of the input file. Mark live filesystem/persistence claims UNVERIFIED unless genuine evidence is provided. Never turn an intended edit or internal assertion into verified environmental state.
+
+Produce a corrected complete deliverable under the first-pass schema, with the updated exact template and all original requirements. Preserve the previous output as evidence. If you cannot establish a claimed check, say so accurately; do not fabricate metrics to satisfy a floor. The controlling measure for the verbosity floor is the full revised procedure's pretty-printed JSON serialization with two-space indentation, excluding its external coverage/validation wrapper and explanatory reports.
