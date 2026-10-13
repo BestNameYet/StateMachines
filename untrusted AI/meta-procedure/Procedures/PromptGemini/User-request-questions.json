@@ -20,7 +20,29 @@
     "return": "${targetDataIntent}"
   },
   {
-    "question": "There is not one heuristic for handling every user intent. Choose one mode from three options for handling ${userIntent} this time. Does the intent require correcting or checking a prior failure, disputed result, unsupported claim, or adherence to a prescribed procedure where compliance must be explicitly demonstrated? If yes, choose accountability. Otherwise, does the intent require carrying out operations, changing data, using tools, or producing a concrete deliverable? If yes, choose fidelity. Otherwise, choose minimal. Accountability is triggered by the need to demonstrate correspondence between requirements, actual actions, and evidence; fidelity is triggered by faithful performance of the requested work without that additional accountability requirement. <\"accountability\" | \"fidelity\" | \"minimal\">: ${mode}",
-    "return": "${mode}"
+    "question": "Does ${userIntent} require demonstrating compliance through actual actions and evidence? <boolean>: ${requiresAccountability}",
+    "return": "${requiresAccountability}"
+  },
+  {
+    "question": "Does ${userIntent} require performing operations, changing data, using tools, or producing a concrete deliverable? <boolean>: ${requiresFidelity}",
+    "return": "${requiresFidelity}"
+  },
+  {
+    "switch": [
+      {
+        "if": "${requiresAccountability} == true",
+        "return": "accountability"
+      },
+      {
+        "elseIf": "${requiresFidelity} == true",
+        "return": "fidelity"
+      },
+      {
+        "else": true,
+        "return": "minimal"
+      }
+    ],
+    "return": "${mode}",
+    "type": "<\"accountability\" | \"fidelity\" | \"minimal\">"
   }
 ]
