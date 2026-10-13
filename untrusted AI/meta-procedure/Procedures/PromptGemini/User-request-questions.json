@@ -24,54 +24,63 @@
     "return": "${userIntent}"
   },
   {
-    "instruction": "Here are nine examples. Match ${userIntent} to the example that it most resembles or could be rewritten to resemble without changing its meaning. Select the mode associated with that example. <\"accountability\" | \"fidelity\" | \"minimal\">: ${mode}",
+    "instruction": "Here are nine examples. Match ${userIntent} to the example that it most resembles or could be rewritten to resemble without changing its meaning. Return the selected labeled example object. <{\"<A-I>\": {\"userIntent\": <string>, \"mode\": <\"accountability\" | \"fidelity\" | \"minimal\">}}>: ${matchedExample}",
     "examples": [
       {
-        "example": 1,
-        "userIntent": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened.",
-        "mode": "accountability"
+        "A": {
+          "userIntent": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened.",
+          "mode": "accountability"
+        }
       },
       {
-        "example": 2,
-        "userIntent": "Follow these instructions exactly. Do not replace existing files, create additional files, or omit any operation. Report which operations succeeded.",
-        "mode": "accountability"
+        "B": {
+          "userIntent": "Follow these instructions exactly. Do not replace existing files, create additional files, or omit any operation. Report which operations succeeded.",
+          "mode": "accountability"
+        }
       },
       {
-        "example": 3,
-        "userIntent": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do.",
-        "mode": "accountability"
+        "C": {
+          "userIntent": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do.",
+          "mode": "accountability"
+        }
       },
       {
-        "example": 4,
-        "userIntent": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes.",
-        "mode": "fidelity"
+        "D": {
+          "userIntent": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes.",
+          "mode": "fidelity"
+        }
       },
       {
-        "example": 5,
-        "userIntent": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file.",
-        "mode": "fidelity"
+        "E": {
+          "userIntent": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file.",
+          "mode": "fidelity"
+        }
       },
       {
-        "example": 6,
-        "userIntent": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory.",
-        "mode": "fidelity"
+        "F": {
+          "userIntent": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory.",
+          "mode": "fidelity"
+        }
       },
       {
-        "example": 7,
-        "userIntent": "What does JSON stand for?",
-        "mode": "minimal"
+        "G": {
+          "userIntent": "What does JSON stand for?",
+          "mode": "minimal"
+        }
       },
       {
-        "example": 8,
-        "userIntent": "Explain the difference between a JSON object and a JSON array.",
-        "mode": "minimal"
+        "H": {
+          "userIntent": "Explain the difference between a JSON object and a JSON array.",
+          "mode": "minimal"
+        }
       },
       {
-        "example": 9,
-        "userIntent": "Which of these two names sounds more appropriate for a software project?",
-        "mode": "minimal"
+        "I": {
+          "userIntent": "Which of these two names sounds more appropriate for a software project?",
+          "mode": "minimal"
+        }
       }
     ],
-    "return": "${mode}"
+    "return": "${matchedExample}"
   }
 ]
