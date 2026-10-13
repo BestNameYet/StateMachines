@@ -20,23 +20,23 @@
     "return": "${targetDataIntent}"
   },
   {
-    "instruction": "State the user intent. <string> (less than 100 words): ${userIntent}",
+    "instruction": "Restate the user intent already captured in ${userIntent}, not the user prompt. <string> (less than 100 words): ${userIntent}",
     "return": "${userIntent}"
   },
   {
     "instruction": "Here are nine examples. Match ${userIntent} to the example that it most resembles or could be rewritten to resemble without changing its meaning. Return the selected labeled example object. <{\"<A-I>\": <string>}>: ${matchedExample}",
     "examples": [
       {
-        "E": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file."
+        "E": "Produce a finished spreadsheet calculating monthly revenue, expenses, profit, and annual totals."
       },
       {
-        "C": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do."
+        "C": "Correct the failed implementation and compare the actual work with the previously stated commitments."
       },
       {
-        "B": "Follow these instructions exactly. Do not replace existing files, create additional files, or omit any operation. Report which operations succeeded."
+        "B": "Carry out the specified operations exactly, preserve existing files, create no additional files, omit no operation, and report which operations succeeded."
       },
       {
-        "F": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+        "F": "Produce a complete JSON inventory from the requested information extracted from the specified files."
       },
       {
         "H": "Explain the difference between a JSON object and a JSON array."
@@ -45,13 +45,13 @@
         "D": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
       },
       {
-        "I": "Which of these two names sounds more appropriate for a software project?"
+        "I": "Judge which of two proposed names is more appropriate for a software project."
       },
       {
-        "A": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened."
+        "A": "Verify whether the claimed file commit exists in the actual repository and report what actually happened."
       },
       {
-        "G": "What does JSON stand for?"
+        "G": "Explain the meaning of the abbreviation JSON."
       }
     ],
     "return": "${matchedExample}"
