@@ -201,3 +201,13 @@ Do not substitute summaries, ellipses, placeholders, abbreviated instructions, o
 If a single model response cannot contain the entire deliverable, use the available artifact/output mechanism or a clearly ordered continuation procedure that preserves all content. Do not silently truncate, declare partial output complete, or replace the requested full procedure with a shorter outline.
 
 Verify before delivery that the revised procedure preserves all distinct original obligations, supplies all requested phase/state/verification/template requirements, contains useful few-shot examples for every instruction section, and meets or exceeds the original reference's verbosity. Report the actual comparison measures and any outstanding limitation. A size check alone is not proof of semantic completeness; review the substantive coverage as well.
+
+## Two-pass execution: schema design before document generation
+
+The first pass must read every configured source and design its own complete return schema for the second pass's output. It must not rewrite the final procedure in the first pass.
+
+First-pass deliverable: a complete, self-contained, machine-readable return schema for the entire second-pass result, plus the explanation needed to apply and validate it. Decide the second-pass structure from the user's actual requirements, not from the previous assistant's inconsistent structure. Define the uniform instruction/input/question/few-shot template; ordered phases; local ownership of definitions; every required output artifact; the edit/state verification table; coverage and validation evidence; and truthful completion/limitation reporting. Ensure the complete revised document can be returned without truncation. Distinguish schema vocabulary from the procedure's terminology rather than conceal a nonstandard schema.
+
+The second pass must receive the actual first-pass schema as an additional required input, together with all original configured files. It must produce the full revised procedure and accompanying deliverables conforming to that schema. It must not invent a replacement schema or treat a schema proposal as the revised procedure. The no-brevity and original-document verbosity floor applies to the full second-pass procedure, not padding the first-pass schema.
+
+An earlier single-pass rewrite request may already be executing; it is superseded and must not be treated as either the approved first-pass schema or a schema-conforming second-pass result.
