@@ -1,0 +1,1583 @@
+{
+  "response_type": "agents_modular_procedure_design",
+  "procedures": [
+    {
+      "name": "Verify Provenance",
+      "file_path": "procedures/01_verify_provenance.json",
+      "why_it_exists": "Establishes authoritative ground truth for instruction execution, binds live runtime identifiers directly from retrieval metadata, and prevents execution under hallucinated, stale, or substituted authority.",
+      "question_or_decision": "What is the authoritative governing instruction, what are its live metadata identifiers, and what is its operational applicability scope?",
+      "locally_owned_inputs": {
+        "governingInstructionFileId": {
+          "definition": "The current backing file ID returned by live retrieval of the governing instruction. Read the complete current instruction, capture this ID from its retrieval metadata, and return the exact value. Return null only when unavailable; never infer or reuse an old ID.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "governingInstructionLibraryFileId": {
+          "definition": "The persistent Library record ID returned by the same live retrieval of the governing instruction. Capture and return its exact value, independently of the backing file ID. Return null only when unavailable; never infer or substitute a different identifier.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "instructionScope": {
+          "definition": "The prompts or contexts in which the governing instruction applies. This describes instruction applicability, independently of the scope of a requested change.",
+          "type": "string"
+        }
+      },
+      "references": {},
+      "evidence_and_operation": "Inspect the active environment and retrieve /AGENTS.md from the ChatGPT Library root (or mirror fallback if Library is inaccessible). Inspect API headers and retrieval metadata to extract file_id and library_file_id. Do not parse file content for these identifiers.",
+      "returned_values": {
+        "governingInstructionFileId": "${governingInstructionFileId}",
+        "governingInstructionLibraryFileId": "${governingInstructionLibraryFileId}",
+        "instructionScope": "${instructionScope}"
+      },
+      "dependencies": [],
+      "failure_handling": "If live retrieval fails or does not provide metadata (e.g. running in an isolated subshell or mirror), set governingInstructionFileId and governingInstructionLibraryFileId to null. Never substitute Google Drive or third-party IDs as Library IDs. If the file cannot be read at all, report the access blocker.",
+      "completion_criteria": "The governing instruction is loaded and read; exact metadata IDs or explicit nulls are captured without fabrication; applicability scope is bound.",
+      "specification_template": {
+        "instruction": "Load the Governing Instruction",
+        "inputs": {
+          "governingInstructionFileId": {
+            "definition": "The current backing file ID returned by live retrieval of the governing instruction. Read the complete current instruction, capture this ID from its retrieval metadata, and return the exact value. Return null only when unavailable; never infer or reuse an old ID.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "governingInstructionLibraryFileId": {
+            "definition": "The persistent Library record ID returned by the same live retrieval of the governing instruction. Capture and return its exact value, independently of the backing file ID. Return null only when unavailable; never infer or substitute a different identifier.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instructionScope": {
+            "definition": "The prompts or contexts in which the governing instruction applies. This describes instruction applicability, independently of the scope of a requested change.",
+            "type": "string"
+          }
+        },
+        "questions": [
+          {
+            "question": "What is the ${governingInstructionFileId.definition}?",
+            "return": "${governingInstructionFileId}"
+          },
+          {
+            "question": "What is the ${governingInstructionLibraryFileId.definition}?",
+            "return": "${governingInstructionLibraryFileId}"
+          },
+          {
+            "question": "What is the ${instructionScope.definition}?",
+            "return": "${instructionScope}"
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "Live ChatGPT Library retrieval exposing distinct backing and library IDs",
+            "suppliedInputs": {
+              "retrievalMetadata": {
+                "file_id": "file_000000005104820c8cb3f5fc0731d877",
+                "library_file_id": "libfile_b6b39702befc8191a23fdb2b219b132e"
+              }
+            },
+            "expectedReturn": {
+              "governingInstructionFileId": "file_000000005104820c8cb3f5fc0731d877",
+              "governingInstructionLibraryFileId": "libfile_b6b39702befc8191a23fdb2b219b132e",
+              "instructionScope": "everyUserPrompt"
+            },
+            "explanation": "Extracts real IDs from metadata directly without alteration or inference."
+          },
+          {
+            "scenario": "Isolated runner without Library API access using mirror file",
+            "suppliedInputs": {
+              "retrievalMetadata": null,
+              "source": "Google Drive mirror"
+            },
+            "expectedReturn": {
+              "governingInstructionFileId": null,
+              "governingInstructionLibraryFileId": null,
+              "instructionScope": "everyUserPrompt"
+            },
+            "explanation": "When Library metadata is unavailable, explicit null is returned rather than inventing an ID or copying a Drive ID."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Gather User Instructions",
+      "file_path": "procedures/02_gather_user_instructions.json",
+      "why_it_exists": "Captures and preserves the verbatim user prompt character-for-character to serve as permanent supreme authority over downstream projections and interpretations, while defining interpreted goals and operational scope.",
+      "question_or_decision": "What did the user request verbatim, what is the operative interpretation, what is the desired objective, and what are the explicit boundaries and exclusions?",
+      "locally_owned_inputs": {
+        "userPromptVerbatim": {
+          "definition": "The exact original user prompt, preserved character for character without correction, paraphrase, or substitution. An interpretation may accompany it but cannot replace it; the original prompt governs when interpretation differs.",
+          "type": "string"
+        },
+        "userPromptInterpretation": {
+          "definition": "The interpreted operative meaning of the user prompt, preserving its requested actions, conditions, and constraints. The verbatim prompt remains authoritative if this interpretation is wrong.",
+          "type": "string"
+        },
+        "userGoal": {
+          "definition": "The desired overall outcome expressed by the user request. Establish it before choosing the basis and affected aspects. This is the canonical desired-outcome definition used by profile projection schemas.",
+          "type": "string"
+        },
+        "scope": {
+          "definition": "The members, portions, quantities and limits covered by the requested change. Preserve user-defined selections and exclusions. Record requirements for procedure, fixed and delivery under their corresponding names.",
+          "type": "object"
+        }
+      },
+      "references": {},
+      "evidence_and_operation": "Read the incoming turn request directly from the conversation trigger or user message. Copy every character into userPromptVerbatim. Analyze operative intent to construct userPromptInterpretation, userGoal, and structured scope.",
+      "returned_values": {
+        "userPromptVerbatim": "${userPromptVerbatim}",
+        "userPromptInterpretation": "${userPromptInterpretation}",
+        "userGoal": "${userGoal}",
+        "scope": "${scope}"
+      },
+      "dependencies": [],
+      "failure_handling": "If user prompt contains syntax errors, typographical issues, or confusing phrasing, preserve verbatim characters exactly in userPromptVerbatim; address clarifications and interpretations strictly within userPromptInterpretation.",
+      "completion_criteria": "Verbatim prompt is captured unaltered; operative goal and interpretation are clearly stated; boundaries and exclusions are recorded.",
+      "specification_template": {
+        "instruction": "Interpret the User Request",
+        "inputs": {
+          "userPromptVerbatim": {
+            "definition": "The exact original user prompt, preserved character for character without correction, paraphrase, or substitution. An interpretation may accompany it but cannot replace it; the original prompt governs when interpretation differs.",
+            "type": "string"
+          },
+          "userPromptInterpretation": {
+            "definition": "The interpreted operative meaning of the user prompt, preserving its requested actions, conditions, and constraints. The verbatim prompt remains authoritative if this interpretation is wrong.",
+            "type": "string"
+          },
+          "userGoal": {
+            "definition": "The desired overall outcome expressed by the user request. Establish it before choosing the basis and affected aspects. This is the canonical desired-outcome definition used by profile projection schemas.",
+            "type": "string"
+          },
+          "scope": {
+            "definition": "The members, portions, quantities and limits covered by the requested change. Preserve user-defined selections and exclusions. Record requirements for procedure, fixed and delivery under their corresponding names.",
+            "type": "object"
+          }
+        },
+        "questions": [
+          {
+            "question": "What is the ${userPromptVerbatim.definition}?",
+            "return": "${userPromptVerbatim}"
+          },
+          {
+            "question": "What is the ${userPromptInterpretation.definition}?",
+            "return": "${userPromptInterpretation}"
+          },
+          {
+            "question": "What is the ${userGoal.definition}?",
+            "return": "${userGoal}"
+          },
+          {
+            "question": "What is the ${scope.definition}?",
+            "return": {
+              "scope": "${scope}"
+            }
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "Multi-operation request with strict negative constraints",
+            "suppliedInputs": {
+              "rawPrompt": "Update config.json to increase timeout to 30s. Do not change retryCount or baseUrl."
+            },
+            "expectedReturn": {
+              "userPromptVerbatim": "Update config.json to increase timeout to 30s. Do not change retryCount or baseUrl.",
+              "userPromptInterpretation": "Modify timeout attribute to 30 seconds in config.json while strictly preserving retryCount and baseUrl unchanged.",
+              "userGoal": "Increase client timeout setting in configuration.",
+              "scope": {
+                "targetFile": "config.json",
+                "modifiedFields": [
+                  "timeout"
+                ],
+                "excludedFields": [
+                  "retryCount",
+                  "baseUrl"
+                ]
+              }
+            },
+            "explanation": "Preserves the prompt text without alterations and formalizes positive targets and negative constraints in scope."
+          },
+          {
+            "scenario": "Factual query with no modifications",
+            "suppliedInputs": {
+              "rawPrompt": "Explain the difference between HMAC and digital signatures."
+            },
+            "expectedReturn": {
+              "userPromptVerbatim": "Explain the difference between HMAC and digital signatures.",
+              "userPromptInterpretation": "Provide an explanation contrasting symmetric HMAC authentication with asymmetric digital signatures.",
+              "userGoal": "Explain cryptographic distinction between HMAC and digital signatures.",
+              "scope": {
+                "responseChannel": "chat",
+                "resourceModifications": []
+              }
+            },
+            "explanation": "Handles zero-mutation conversational request with verbatim fidelity and empty modification scope."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Specify State Transitions",
+      "file_path": "procedures/03_specify_state_transitions.json",
+      "why_it_exists": "Identifies the authoritative basis, affected aspects, established initial values, desired end conditions, fixed invariant values, execution environment, and delivery format before changes occur, making assertions verifiable.",
+      "question_or_decision": "What authoritative basis establishes state, which aspects change from what initial values to what desired values, what aspects remain fixed, and what runtime environment or delivery format is prescribed?",
+      "locally_owned_inputs": {
+        "basis": {
+          "definition": "The authoritative information reference from which state and aspect values are established and verified. Record its locator type and exact locator. Inspect the identified information before asserting a state or aspect value. Define this concept here only; elsewhere refer to ${basis} or ${basis.definition}.",
+          "type": "object",
+          "required": [
+            "locatorType",
+            "locator"
+          ],
+          "keys": {
+            "locatorType": {
+              "type": "string"
+            },
+            "locator": {
+              "type": "string"
+            }
+          }
+        },
+        "aspect": {
+          "definition": "The name or qualified locator of the particular feature or relationship of the basis whose value is to change. Repeat the aspect and value questions for each affected aspect.",
+          "type": "string"
+        },
+        "currentValue": {
+          "definition": "The verified value of the named aspect before execution, established by inspecting the basis. Preserve its actual JSON type.",
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "desiredValue": {
+          "definition": "The value or condition required for the same named aspect by the user request. Preserve its intended JSON type.",
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "fixed": {
+          "definition": "These aspects remain unchanged.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "aspect",
+              "currentValue"
+            ],
+            "keys": {
+              "aspect": {
+                "type": "string"
+              },
+              "currentValue": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "object",
+                  "array",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "procedure": {
+          "definition": "The prescribed actor, runtime, transport, procedure and verification actor for execution. Preserve requirements whose identity determines the requested outcome; a substitute environment does not prove an identity-specific result. Use null when no procedure is prescribed.",
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "delivery": {
+          "definition": "A structured description of the requested result form, location, and accessibility. Record only requirements supplied by the user or applicable instructions.",
+          "type": "object"
+        }
+      },
+      "references": {
+        "userGoal": "Owned by 02_gather_user_instructions",
+        "scope": "Owned by 02_gather_user_instructions"
+      },
+      "evidence_and_operation": "Inspect the authoritative basis reference (e.g. read the target file or environment state) to observe and verify currentValue before execution. Derive desiredValue directly from ${userGoal} and ${scope}. Inspect unchanged aspects to populate fixed. Capture procedure and delivery constraints.",
+      "returned_values": {
+        "basis": "${basis}",
+        "aspect": "${aspect}",
+        "currentValue": "${currentValue}",
+        "desiredValue": "${desiredValue}",
+        "fixed": "${fixed}",
+        "procedure": "${procedure}",
+        "delivery": "${delivery}"
+      },
+      "dependencies": [
+        "02_gather_user_instructions"
+      ],
+      "failure_handling": "If the basis cannot be read, report basis inaccessibility and mark currentValue unverified. If the request involves no file or environmental mutations, set aspect, currentValue, and desiredValue to null, and record environmental stability under fixed.",
+      "completion_criteria": "Authoritative basis locator recorded; initial values observed from live basis inspection; desired values mapped; fixed invariants established; procedure and delivery captured.",
+      "specification_template": {
+        "instruction": "Describe the State Change",
+        "inputs": {
+          "basis": {
+            "definition": "The authoritative information reference from which state and aspect values are established and verified. Record its locator type and exact locator. Inspect the identified information before asserting a state or aspect value. Define this concept here only; elsewhere refer to ${basis} or ${basis.definition}.",
+            "type": "object",
+            "required": [
+              "locatorType",
+              "locator"
+            ],
+            "keys": {
+              "locatorType": {
+                "type": "string"
+              },
+              "locator": {
+                "type": "string"
+              }
+            }
+          },
+          "aspect": {
+            "definition": "The name or qualified locator of the particular feature or relationship of the basis whose value is to change. Repeat the aspect and value questions for each affected aspect.",
+            "type": "string"
+          },
+          "currentValue": {
+            "definition": "The verified value of the named aspect before execution, established by inspecting the basis. Preserve its actual JSON type.",
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "object",
+              "array",
+              "null"
+            ]
+          },
+          "desiredValue": {
+            "definition": "The value or condition required for the same named aspect by the user request. Preserve its intended JSON type.",
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "object",
+              "array",
+              "null"
+            ]
+          },
+          "fixed": {
+            "definition": "These aspects remain unchanged.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "aspect",
+                "currentValue"
+              ],
+              "keys": {
+                "aspect": {
+                  "type": "string"
+                },
+                "currentValue": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "object",
+                    "array",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "procedure": {
+            "definition": "The prescribed actor, runtime, transport, procedure and verification actor for execution. Preserve requirements whose identity determines the requested outcome; a substitute environment does not prove an identity-specific result. Use null when no procedure is prescribed.",
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "delivery": {
+            "definition": "A structured description of the requested result form, location, and accessibility. Record only requirements supplied by the user or applicable instructions.",
+            "type": "object"
+          }
+        },
+        "questions": [
+          {
+            "question": "What is the ${basis.definition}?",
+            "return": "${basis}"
+          },
+          {
+            "question": "What is the ${aspect.definition}?",
+            "return": {
+              "aspect": "${aspect}"
+            }
+          },
+          {
+            "question": "What are the ${currentValue.definition} and ${desiredValue.definition}?",
+            "return": {
+              "currentValue": "${currentValue}",
+              "desiredValue": "${desiredValue}"
+            }
+          },
+          {
+            "question": "What is the ${fixed.definition}?",
+            "return": {
+              "fixed": "${fixed}"
+            }
+          },
+          {
+            "question": "What is the ${procedure.definition}?",
+            "return": {
+              "procedure": "${procedure}"
+            }
+          },
+          {
+            "question": "What is the ${delivery.definition}?",
+            "return": {
+              "delivery": "${delivery}"
+            }
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "File property update with invariant preservation",
+            "suppliedInputs": {
+              "inspectedFile": "/app/config.json",
+              "content": "{\"timeout\": 5000, \"retryCount\": 3, \"baseUrl\": \"https://api.domain.com\"}"
+            },
+            "expectedReturn": {
+              "basis": {
+                "locatorType": "filePath",
+                "locator": "/app/config.json"
+              },
+              "aspect": "timeout",
+              "currentValue": 5000,
+              "desiredValue": 30000,
+              "fixed": [
+                {
+                  "aspect": "retryCount",
+                  "currentValue": 3
+                },
+                {
+                  "aspect": "baseUrl",
+                  "currentValue": "https://api.domain.com"
+                }
+              ],
+              "procedure": {
+                "runtime": "node20",
+                "tool": "fileEditor"
+              },
+              "delivery": {
+                "format": "savedFile",
+                "path": "/app/config.json"
+              }
+            },
+            "explanation": "Captures pre-execution value 5000 from live inspection, records desired value 30000, and binds invariants into fixed."
+          },
+          {
+            "scenario": "Purely conversational request with zero mutations",
+            "suppliedInputs": {
+              "target": "knowledgeBase"
+            },
+            "expectedReturn": {
+              "basis": {
+                "locatorType": "knowledgeBase",
+                "locator": "standardLibrary"
+              },
+              "aspect": "fileState",
+              "currentValue": null,
+              "desiredValue": null,
+              "fixed": [
+                {
+                  "aspect": "workspaceFilesystem",
+                  "currentValue": "unmodified"
+                }
+              ],
+              "procedure": null,
+              "delivery": {
+                "format": "textResponse",
+                "channel": "stdout"
+              }
+            },
+            "explanation": "Correctly represents no-state-change operations without inventing artificial targets."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Select Execution Mode",
+      "file_path": "procedures/04_select_execution_mode.json",
+      "why_it_exists": "Decides the execution profile—accountability, fidelity, or minimal—governing the projection schema and result structure independently of state transitions.",
+      "question_or_decision": "Based on the operative prompt meaning, constraints, and delivery requirements, which single execution profile governs this turn?",
+      "locally_owned_inputs": {
+        "selectionRationale": {
+          "definition": "The interpreted operative meaning, requirements and execution conditions of the user prompt used to evaluate the mode rules.",
+          "type": "string"
+        },
+        "profile": {
+          "definition": "Exactly one execution profile selected by the complete mode selector: accountability, fidelity or minimal. Apply its instruction, projection schema and result schema together.",
+          "type": "string",
+          "enum": [
+            "accountability",
+            "fidelity",
+            "minimal"
+          ]
+        }
+      },
+      "references": {
+        "userPromptVerbatim": "Owned by 02_gather_user_instructions",
+        "userPromptInterpretation": "Owned by 02_gather_user_instructions"
+      },
+      "evidence_and_operation": "Evaluate ${userPromptInterpretation} against the ordered profile conditions: (1) accountability if strict compliance, specified procedures, prior failures, corrections, or disputed claims are emphasized; (2) fidelity if substantive multi-operation execution, tool use, or concrete deliverables are required; (3) minimal for routine questions, explanations, or conversation.",
+      "returned_values": {
+        "selectionRationale": "${selectionRationale}",
+        "profile": "${profile}"
+      },
+      "dependencies": [
+        "02_gather_user_instructions"
+      ],
+      "failure_handling": "Never default silently without rationale; synthesize selectionRationale before binding profile. Do not ask user permission merely to select a profile.",
+      "completion_criteria": "selectionRationale is explicitly formulated and returned; exactly one profile is selected.",
+      "specification_template": {
+        "instruction": "Select the Execution Mode",
+        "inputs": {
+          "selectionRationale": {
+            "definition": "The interpreted operative meaning, requirements and execution conditions of the user prompt used to evaluate the mode rules.",
+            "type": "string"
+          },
+          "profile": {
+            "definition": "Exactly one execution profile selected by the complete mode selector: accountability, fidelity or minimal. Apply its instruction, projection schema and result schema together.",
+            "type": "string",
+            "enum": [
+              "accountability",
+              "fidelity",
+              "minimal"
+            ]
+          }
+        },
+        "questions": [
+          {
+            "question": "What is the ${selectionRationale.definition}?",
+            "return": "${selectionRationale}"
+          },
+          {
+            "question": "Using ${selectionRationale} and the mode descriptions, what is the ${profile.definition}?",
+            "return": "${profile}"
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "Prior failure correction requiring explicit commitment accounting",
+            "suppliedInputs": {
+              "userPrompt": "Your previous fix broke the build. Repair the build script and prove that each commitment is satisfied."
+            },
+            "expectedReturn": {
+              "selectionRationale": "The user cites a previous failure, requests a correction, and demands proof of commitments and adherence to constraints.",
+              "profile": "accountability"
+            },
+            "explanation": "Selects accountability profile because the prompt focuses on prior failure correction and verification of commitments."
+          },
+          {
+            "scenario": "Multi-file code refactoring and test suite execution",
+            "suppliedInputs": {
+              "userPrompt": "Refactor the authentication middleware to use async/await and execute npm test."
+            },
+            "expectedReturn": {
+              "selectionRationale": "The request demands multi-step substantive execution, tool interaction, and file modification without prior failure dispute.",
+              "profile": "fidelity"
+            },
+            "explanation": "Selects fidelity profile because the primary obligation is concrete execution and deliverable generation."
+          },
+          {
+            "scenario": "Standard conceptual query",
+            "suppliedInputs": {
+              "userPrompt": "What is the difference between JSON and YAML?"
+            },
+            "expectedReturn": {
+              "selectionRationale": "The request is an ordinary factual explanation requiring no tool invocations or environmental state change.",
+              "profile": "minimal"
+            },
+            "explanation": "Selects minimal profile to avoid unnecessary accounting overhead for conversational inquiries."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Construct and Publish Projection",
+      "file_path": "procedures/05_construct_and_publish_projection.json",
+      "why_it_exists": "Enforces the mandatory JWRS First-Print phase gate: publishes the complete, standalone JSON projection containing the verbatim prompt, live provenance, profile-specific fields, and an expanded three-element return schema before any substantive execution.",
+      "question_or_decision": "How is the complete JSON With Return Schema (JWRS) projection assembled and visibly printed before task operations begin?",
+      "locally_owned_inputs": {
+        "projectionPublicationTimestamp": {
+          "definition": "ISO 8601 timestamp marking the visible publication of the JWRS projection prior to substantive execution.",
+          "type": "string"
+        }
+      },
+      "references": {
+        "governingInstructionFileId": "Owned by 01_verify_provenance",
+        "governingInstructionLibraryFileId": "Owned by 01_verify_provenance",
+        "userPromptVerbatim": "Owned by 02_gather_user_instructions",
+        "userGoal": "Owned by 02_gather_user_instructions",
+        "scope": "Owned by 02_gather_user_instructions",
+        "profile": "Owned by 04_select_execution_mode"
+      },
+      "evidence_and_operation": "Assemble all captured inputs into the schema corresponding to ${profile}. Expand the returnSchema contract to require exactly three items: [selected profile result schema, verbatimToolInvocations audit schema, universal suffix schema]. Visibly print the standalone JSON object as the initial user-visible response content.",
+      "returned_values": {
+        "projectionPublicationTimestamp": "${projectionPublicationTimestamp}",
+        "jwrsProjectionPublished": true
+      },
+      "dependencies": [
+        "01_verify_provenance",
+        "02_gather_user_instructions",
+        "03_specify_state_transitions",
+        "04_select_execution_mode"
+      ],
+      "failure_handling": "If substantive execution is attempted before publication, halt and publish projection first. If userPromptVerbatim is paraphrased or provenance IDs are missing, abort assembly and refresh from source procedures.",
+      "completion_criteria": "Valid standalone JWRS object is printed as the very first output content; contains exact verbatim prompt, live provenance IDs, and expanded 3-element return schema.",
+      "specification_template": {
+        "instruction": "Publish JWRS Projection",
+        "inputs": {
+          "projectionPublicationTimestamp": {
+            "definition": "ISO 8601 timestamp marking the visible publication of the JWRS projection prior to substantive execution.",
+            "type": "string"
+          }
+        },
+        "questions": [
+          {
+            "question": "What is the ${projectionPublicationTimestamp.definition}?",
+            "return": "${projectionPublicationTimestamp}"
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "Publishing fidelity projection before execution",
+            "suppliedInputs": {
+              "profile": "fidelity",
+              "userPromptVerbatim": "Build the project.",
+              "governingInstructionFileId": "file_000000005104820c8cb3f5fc0731d877",
+              "governingInstructionLibraryFileId": "libfile_b6b39702befc8191a23fdb2b219b132e",
+              "userGoal": "Build project artifacts.",
+              "scope": {
+                "target": "all"
+              }
+            },
+            "expectedReturn": {
+              "projectionPublicationTimestamp": "2026-10-14T12:00:00Z"
+            },
+            "explanation": "Validates that projection publication is executed and timestamped before any compiler or tool is invoked."
+          },
+          {
+            "scenario": "Minimal profile conversational projection",
+            "suppliedInputs": {
+              "profile": "minimal",
+              "userPromptVerbatim": "Hello",
+              "governingInstructionFileId": null,
+              "governingInstructionLibraryFileId": null,
+              "userGoal": "Greet user."
+            },
+            "expectedReturn": {
+              "projectionPublicationTimestamp": "2026-10-14T12:00:05Z"
+            },
+            "explanation": "Outputs minimal JWRS projection cleanly without tool execution preambles."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Validate Pre-Execution Specification",
+      "file_path": "procedures/06_validate_pre_execution_specification.json",
+      "why_it_exists": "Performs formal pre-flight checks on the published JWRS projection and state specification prior to any substantive mutation, ensuring reference resolution, constraint preservation, and schema integrity.",
+      "question_or_decision": "Does the published projection conform to all governing rules, resolve all internal references without dangling keys, preserve exact prompt text, and declare a valid 3-element return contract?",
+      "locally_owned_inputs": {
+        "preExecutionValidationStatus": {
+          "definition": "Outcome of pre-execution specification validation: PASSED or FAILED.",
+          "type": "string",
+          "enum": [
+            "PASSED",
+            "FAILED"
+          ]
+        },
+        "preExecutionValidationFindings": {
+          "definition": "List of discrepancies or validation errors detected in the pre-execution projection.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "references": {
+        "userPromptVerbatim": "Owned by 02_gather_user_instructions",
+        "governingInstructionFileId": "Owned by 01_verify_provenance",
+        "profile": "Owned by 04_select_execution_mode"
+      },
+      "evidence_and_operation": "Inspect the generated JWRS projection against: (1) exact match with raw incoming prompt; (2) non-fabricated provenance IDs; (3) returnSchema minItems=maxItems=3 with selected profile result, tool audit, and suffix; (4) zero references to deleted #/$defs/invocation; (5) valid custom descriptive schema keys syntax.",
+      "returned_values": {
+        "preExecutionValidationStatus": "${preExecutionValidationStatus}",
+        "preExecutionValidationFindings": "${preExecutionValidationFindings}"
+      },
+      "dependencies": [
+        "01_verify_provenance",
+        "02_gather_user_instructions",
+        "03_specify_state_transitions",
+        "04_select_execution_mode",
+        "05_construct_and_publish_projection"
+      ],
+      "failure_handling": "If validation fails (e.g. projection truncated, returnSchema misconfigured, prompt normalized), halt before task execution. Re-project an authorized corrected JWRS and publish before proceeding.",
+      "completion_criteria": "All pre-execution gates pass; status is PASSED; preExecutionValidationFindings is empty.",
+      "specification_template": {
+        "instruction": "Validate Pre-Execution Specification",
+        "inputs": {
+          "preExecutionValidationStatus": {
+            "definition": "Outcome of pre-execution specification validation: PASSED or FAILED.",
+            "type": "string",
+            "enum": [
+              "PASSED",
+              "FAILED"
+            ]
+          },
+          "preExecutionValidationFindings": {
+            "definition": "List of discrepancies or validation errors detected in the pre-execution projection.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "questions": [
+          {
+            "question": "What are the ${preExecutionValidationStatus.definition} and ${preExecutionValidationFindings.definition}?",
+            "return": {
+              "preExecutionValidationStatus": "${preExecutionValidationStatus}",
+              "preExecutionValidationFindings": "${preExecutionValidationFindings}"
+            }
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "Fully conforming fidelity projection pre-flight",
+            "suppliedInputs": {
+              "projectionChecked": {
+                "profile": "fidelity",
+                "userPromptVerbatim": "Execute tests",
+                "returnSchema": {
+                  "minItems": 3,
+                  "maxItems": 3
+                }
+              }
+            },
+            "expectedReturn": {
+              "preExecutionValidationStatus": "PASSED",
+              "preExecutionValidationFindings": []
+            },
+            "explanation": "Confirms complete conformance with phase gate and return schema requirements."
+          },
+          {
+            "scenario": "Defective projection missing third returnSchema element",
+            "suppliedInputs": {
+              "projectionChecked": {
+                "profile": "fidelity",
+                "returnSchema": {
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              }
+            },
+            "expectedReturn": {
+              "preExecutionValidationStatus": "FAILED",
+              "preExecutionValidationFindings": [
+                "returnSchema specifies 2 items instead of mandatory 3-element contract"
+              ]
+            },
+            "explanation": "Flags discrepancy immediately so reprojection can occur before any task operation runs."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Execute Requested Operations",
+      "file_path": "procedures/07_execute_requested_operations.json",
+      "why_it_exists": "Executes the substantive operations demanded by the user in the same turn, strictly respecting prescribed execution identity (runtime, transport, environment) without unauthorized substitution.",
+      "question_or_decision": "What concrete tool commands and operations fulfill the user's request while adhering strictly to execution identity and runtime constraints?",
+      "locally_owned_inputs": {
+        "result": {
+          "definition": "The actual answer or deliverable produced by execution, with evidence and any unfulfilled requirements needed to interpret it truthfully.",
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        }
+      },
+      "references": {
+        "procedure": "Owned by 03_specify_state_transitions",
+        "scope": "Owned by 02_gather_user_instructions",
+        "userGoal": "Owned by 02_gather_user_instructions"
+      },
+      "evidence_and_operation": "Dispatch authorized tools, modify files, run tests, or formulate calculations during the active turn. Maintain prescribed execution identities (e.g. if Chromium or bash is prescribed, do not substitute Node.js or manual simulation). Record raw outputs directly.",
+      "returned_values": {
+        "result": "${result}"
+      },
+      "dependencies": [
+        "05_construct_and_publish_projection",
+        "06_validate_pre_execution_specification"
+      ],
+      "failure_handling": "If an operation fails, do not abort prematurely or declare immediate failure; invoke the Execution Continuation Selector to pursue authorized recovery within the prescribed environment.",
+      "completion_criteria": "All requested operations are executed or routed to continuation; deliverable or substantive result is generated.",
+      "specification_template": {
+        "instruction": "Capture the Execution Result",
+        "inputs": {
+          "result": {
+            "definition": "The actual answer or deliverable produced by execution, with evidence and any unfulfilled requirements needed to interpret it truthfully.",
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "object",
+              "array",
+              "null"
+            ]
+          }
+        },
+        "questions": [
+          {
+            "question": "What is the ${result.definition}?",
+            "return": "${result}"
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "File edit and verification execution result",
+            "suppliedInputs": {
+              "actionTaken": "Updated config.json timeout to 30000ms",
+              "toolOutput": "File written successfully; 34 lines"
+            },
+            "expectedReturn": {
+              "result": {
+                "updatedPath": "config.json",
+                "bytesWritten": 1042,
+                "summary": "Timeout configuration successfully set to 30000ms."
+              }
+            },
+            "explanation": "Captures the substantive outcome and concrete evidence of the performed operation."
+          },
+          {
+            "scenario": "Factual answer deliverable",
+            "suppliedInputs": {
+              "userQuery": "What is 2 + 2?"
+            },
+            "expectedReturn": {
+              "result": "4"
+            },
+            "explanation": "Direct factual answer deliverable captured under result."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Record Invocation Audit",
+      "file_path": "procedures/08_record_invocation_audit.json",
+      "why_it_exists": "Provides an auditable chronological record of actual tool calls executed across the turn, sanitizing secrets and ensuring unexecuted plans or syntax examples are never misrepresented as tool calls.",
+      "question_or_decision": "What live tool calls occurred during the current turn, what were their verbatim parameters and observed outcomes, and are all credentials redacted?",
+      "locally_owned_inputs": {
+        "verbatimToolInvocations": {
+          "definition": "Chronological audit of ACTUAL tool calls executed in the current turn. Examples, plans, drafts, and unexecuted commands are not tool calls. Emptied to [] if no tool calls occurred.",
+          "type": "array",
+          "rules": {
+            "purpose": "Audit ACTUAL tool calls in the current turn chronologically; examples, plans, drafts and unexecuted commands are not tool calls.",
+            "rules": [
+              "Record calls in execution order (sequence 1, 2, ...) including instruction-loading calls when observed.",
+              "Preserve actual tool name and exact accessible call arguments as invocationVerbatim. Record nested executed commands separately where observed; invent none.",
+              "For CLI preserve actual command string, flags, quoting, script path, and known working directory. Do not replace history with an equivalent command.",
+              "For HTTP preserve method, URL, response status or transport error; wait for an outcome before recording success.",
+              "If exact input is unavailable or protected, set invocationVerbatim:null with unavailableReason; never present a reconstruction as verbatim.",
+              "Never reveal secrets, cookies, passwords, or tokens.",
+              "With no tool calls, return verbatimToolInvocations:[]. Exclude earlier-turn calls unless separately requested."
+            ],
+            "objectFormat": {
+              "required": [
+                "sequence",
+                "tool",
+                "invocationVerbatim",
+                "outcome"
+              ],
+              "optional": [
+                "commandLineVerbatim",
+                "cwd",
+                "httpMethod",
+                "url",
+                "unavailableReason",
+                "evidence"
+              ],
+              "outcome": "Object with status succeeded|failed|blocked|unfinished|unknown; optionally http status, response excerpt, error. Only record observed facts."
+            }
+          }
+        }
+      },
+      "references": {},
+      "evidence_and_operation": "Maintain an append-only log of every tool execution dispatched throughout the turn (including initial instruction loading if tool-mediated). Format each entry according to objectFormat rules. Redact all authorization keys, bearer tokens, and secrets.",
+      "returned_values": {
+        "verbatimToolInvocations": "${verbatimToolInvocations}"
+      },
+      "dependencies": [],
+      "failure_handling": "If arguments cannot be safely revealed or were partially obscured by runtime security, set invocationVerbatim: null and specify unavailableReason. If zero tool calls occurred, return [].",
+      "completion_criteria": "Audit array contains exact chronological records for all executed tools or is cleanly empty; no secrets leaked; no plans or examples included.",
+      "specification_template": {
+        "instruction": "Capture the Invocation Audit",
+        "inputs": {
+          "verbatimToolInvocations": {
+            "definition": "Chronological audit of ACTUAL tool calls executed in the current turn. Examples, plans, drafts, and unexecuted commands are not tool calls. Emptied to [] if no tool calls occurred.",
+            "type": "array"
+          }
+        },
+        "questions": [
+          {
+            "question": "What is the ${verbatimToolInvocations.definition}?",
+            "return": "${verbatimToolInvocations}"
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "Live CLI tool execution with stdout capture",
+            "suppliedInputs": {
+              "executedCommand": "git status --short",
+              "directory": "/repo",
+              "exitCode": 0,
+              "output": " M config.json"
+            },
+            "expectedReturn": {
+              "verbatimToolInvocations": [
+                {
+                  "sequence": 1,
+                  "tool": "container.exec",
+                  "invocationVerbatim": "{\"cmd\":[\"git\",\"status\",\"--short\"]}",
+                  "commandLineVerbatim": "git status --short",
+                  "cwd": "/repo",
+                  "outcome": {
+                    "status": "succeeded",
+                    "responseExcerpt": " M config.json"
+                  }
+                }
+              ]
+            },
+            "explanation": "Captures sequence, verbatim tool command, and observed execution outcome."
+          },
+          {
+            "scenario": "Turn with zero external tool calls",
+            "suppliedInputs": {
+              "toolsExecuted": []
+            },
+            "expectedReturn": {
+              "verbatimToolInvocations": []
+            },
+            "explanation": "Returns empty array when no tools are invoked during the turn."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Select Execution Continuation",
+      "file_path": "procedures/09_select_execution_continuation.json",
+      "why_it_exists": "Evaluates outstanding obligations and obstacles during execution across the 34 defined continuation scenarios, preventing premature termination and ensuring authorized recovery or independent task continuation.",
+      "question_or_decision": "Given current outstanding obligations, observed tool outcomes, and binding user constraints, what authorized operation can still be performed before ending execution?",
+      "locally_owned_inputs": {
+        "continuationAction": {
+          "definition": "The selected recovery, independent continuation, or termination action chosen by applying continuation principles C01-C34.",
+          "type": "string"
+        },
+        "continuationRationale": {
+          "definition": "The operational reasoning justifying continuation or termination under active constraints.",
+          "type": "string"
+        }
+      },
+      "references": {
+        "userGoal": "Owned by 02_gather_user_instructions",
+        "procedure": "Owned by 03_specify_state_transitions"
+      },
+      "evidence_and_operation": "Compare observed tool outcomes against the 34 continuation scenarios. If an action fails, check if an alternative authorized method exists (C04), if independent work remains (C02), if a prerequisite can be acquired (C09), or if recovery must remain strictly within a prescribed environment (C05, C33). Select continuationAction.",
+      "returned_values": {
+        "continuationAction": "${continuationAction}",
+        "continuationRationale": "${continuationRationale}"
+      },
+      "dependencies": [
+        "02_gather_user_instructions",
+        "03_specify_state_transitions",
+        "07_execute_requested_operations"
+      ],
+      "failure_handling": "If all authorized recovery methods fail and no independent tasks remain, terminate continuation and transition to status evaluation (C31). Never switch runtimes when a specific testing runtime is prescribed.",
+      "completion_criteria": "The next authorized operation is selected and executed, or execution legitimately ceases with all recovery exhausted.",
+      "specification_template": {
+        "instruction": "Select Execution Continuation",
+        "inputs": {
+          "continuationAction": {
+            "definition": "The selected recovery, independent continuation, or termination action chosen by applying continuation principles C01-C34.",
+            "type": "string"
+          },
+          "continuationRationale": {
+            "definition": "The operational reasoning justifying continuation or termination under active constraints.",
+            "type": "string"
+          }
+        },
+        "questions": [
+          {
+            "question": "What are the ${continuationAction.definition} and ${continuationRationale.definition}?",
+            "return": {
+              "continuationAction": "${continuationAction}",
+              "continuationRationale": "${continuationRationale}"
+            }
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "Tool fails but alternative authorized method exists (Scenario C04)",
+            "suppliedInputs": {
+              "initialAttempt": "curl fetch failed with ECONNREFUSED",
+              "availableAlternatives": [
+                "container bash script reading local cache"
+              ]
+            },
+            "expectedReturn": {
+              "continuationAction": "EXECUTE_ALTERNATIVE_METHOD",
+              "continuationRationale": "Method was not prescribed by user; primary tool failed, but an authorized alternative can retrieve the required data."
+            },
+            "explanation": "Prevents premature surrender by switching to an available authorized alternative."
+          },
+          {
+            "scenario": "Prescribed runtime fails (Scenario C33)",
+            "suppliedInputs": {
+              "prescribedRuntime": "Chromium headless",
+              "failure": "Renderer crashed",
+              "unauthorizedAlternative": "Simulate using Node.js fetch"
+            },
+            "expectedReturn": {
+              "continuationAction": "RETRY_WITHIN_PRESCRIBED_RUNTIME",
+              "continuationRationale": "Prescribed execution actor is mandatory and cannot be substituted; recovery must occur within Chromium."
+            },
+            "explanation": "Enforces non-substitution of identity-specific execution environments."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Verify Resulting State",
+      "file_path": "procedures/10_verify_resulting_state.json",
+      "why_it_exists": "Performs post-execution verification on asserted values by inspecting live environmental state, comparing final values against desired values for modified aspects, and ensuring fixed aspects remained preserved.",
+      "question_or_decision": "What are the observed final values of all changed and fixed aspects when inspected against authoritative bases, and do they match desired values?",
+      "locally_owned_inputs": {
+        "finalValue": {
+          "definition": "The observed value of the named aspect after execution, established by inspecting the actual resulting state. Capture for every changed aspect and every aspect listed in fixed. Never substitute ${desiredValue} for an unobserved value.",
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "object",
+            "array",
+            "null"
+          ]
+        },
+        "stateVerificationRecords": {
+          "definition": "Structured accounting records associating each file edit or aspect with its target, initial value, desired value, observed final value, initial and final basis, verification operation, observed evidence, and comparison outcome.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "aspect",
+              "desiredValue",
+              "observedFinalValue",
+              "comparisonOutcome"
+            ],
+            "keys": {
+              "aspect": {
+                "type": "string"
+              },
+              "desiredValue": {},
+              "observedFinalValue": {},
+              "comparisonOutcome": {
+                "type": "string",
+                "enum": [
+                  "MATCH",
+                  "DISCREPANCY",
+                  "UNVERIFIED"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "references": {
+        "basis": "Owned by 03_specify_state_transitions",
+        "aspect": "Owned by 03_specify_state_transitions",
+        "currentValue": "Owned by 03_specify_state_transitions",
+        "desiredValue": "Owned by 03_specify_state_transitions",
+        "fixed": "Owned by 03_specify_state_transitions"
+      },
+      "evidence_and_operation": "Inspect the final state of the target entity using the authoritative final basis. Extract actual observed values. Compare changed aspects against ${desiredValue}; compare fixed aspects against established ${currentValue}. Populate stateVerificationRecords.",
+      "returned_values": {
+        "finalValue": "${finalValue}",
+        "stateVerificationRecords": "${stateVerificationRecords}"
+      },
+      "dependencies": [
+        "03_specify_state_transitions",
+        "07_execute_requested_operations"
+      ],
+      "failure_handling": "Never copy desiredValue into finalValue. If the target cannot be re-inspected, mark comparisonOutcome as UNVERIFIED with the blocker recorded. If a discrepancy exists, record DISCREPANCY honestly.",
+      "completion_criteria": "All affected and fixed aspects are inspected against authoritative bases; comparison outcomes are evaluated strictly on observed evidence.",
+      "specification_template": {
+        "instruction": "Inspect the Resulting State",
+        "inputs": {
+          "finalValue": {
+            "definition": "The observed value of the named aspect after execution, established by inspecting the actual resulting state. Capture for every changed aspect and every aspect listed in fixed. Never substitute ${desiredValue} for an unobserved value.",
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "object",
+              "array",
+              "null"
+            ]
+          },
+          "stateVerificationRecords": {
+            "definition": "Structured accounting records associating each file edit or aspect with its target, initial value, desired value, observed final value, initial and final basis, verification operation, observed evidence, and comparison outcome.",
+            "type": "array"
+          }
+        },
+        "questions": [
+          {
+            "question": "What is the ${finalValue.definition}?",
+            "return": {
+              "aspect": "${aspect}",
+              "finalValue": "${finalValue}"
+            }
+          },
+          {
+            "question": "What is the ${stateVerificationRecords.definition}?",
+            "return": "${stateVerificationRecords}"
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "Live file read verification matching desired state",
+            "suppliedInputs": {
+              "aspect": "timeout",
+              "desiredValue": 30000,
+              "readBackPayload": "{\"timeout\": 30000, \"retryCount\": 3}"
+            },
+            "expectedReturn": {
+              "finalValue": 30000,
+              "stateVerificationRecords": [
+                {
+                  "aspect": "timeout",
+                  "desiredValue": 30000,
+                  "observedFinalValue": 30000,
+                  "comparisonOutcome": "MATCH"
+                }
+              ]
+            },
+            "explanation": "Verifies that read-back state from disk matches desiredValue."
+          },
+          {
+            "scenario": "Observed mismatch between requested and resulting state",
+            "suppliedInputs": {
+              "aspect": "timeout",
+              "desiredValue": 30000,
+              "readBackPayload": "{\"timeout\": 15000}"
+            },
+            "expectedReturn": {
+              "finalValue": 15000,
+              "stateVerificationRecords": [
+                {
+                  "aspect": "timeout",
+                  "desiredValue": 30000,
+                  "observedFinalValue": 15000,
+                  "comparisonOutcome": "DISCREPANCY"
+                }
+              ]
+            },
+            "explanation": "Truthfully records observed discrepancy rather than assuming success."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Evaluate Completion Status",
+      "file_path": "procedures/11_evaluate_completion_status.json",
+      "why_it_exists": "Evaluates overall task execution against observed evidence to select exactly one final status: COMPLETE, INCOMPLETE, BLOCKED, or FAILED, preventing false claims of completion based on partial progress or unverified assertions.",
+      "question_or_decision": "What is the truthful final execution status supported by the observed environmental evidence and verification records?",
+      "locally_owned_inputs": {
+        "status": {
+          "definition": "The final execution status selected from observed results using status selector. COMPLETE requires the requested outcome and evidence; otherwise select INCOMPLETE, BLOCKED or FAILED as applicable.",
+          "type": "string",
+          "enum": [
+            "COMPLETE",
+            "INCOMPLETE",
+            "BLOCKED",
+            "FAILED"
+          ]
+        }
+      },
+      "references": {
+        "stateVerificationRecords": "Owned by 10_verify_resulting_state",
+        "verbatimToolInvocations": "Owned by 08_record_invocation_audit",
+        "result": "Owned by 07_execute_requested_operations"
+      },
+      "evidence_and_operation": "Inspect ${stateVerificationRecords} and execution deliverables. (1) COMPLETE if and only if all requested operations and outcomes are accomplished and verified by evidence; (2) INCOMPLETE if operations remain unfinished or partially performed; (3) BLOCKED if an external dependency or credential prevents execution; (4) FAILED if execution was attempted but recovery was exhausted without achieving the result.",
+      "returned_values": {
+        "status": "${status}"
+      },
+      "dependencies": [
+        "07_execute_requested_operations",
+        "08_record_invocation_audit",
+        "09_select_execution_continuation",
+        "10_verify_resulting_state"
+      ],
+      "failure_handling": "Never assign COMPLETE if any verification outcome is DISCREPANCY or UNVERIFIED, or if substantive work was omitted.",
+      "completion_criteria": "Exactly one status is selected based strictly on verified evidence.",
+      "specification_template": {
+        "instruction": "Determine Completion Status",
+        "inputs": {
+          "status": {
+            "definition": "The final execution status selected from observed results using status selector. COMPLETE requires the requested outcome and evidence; otherwise select INCOMPLETE, BLOCKED or FAILED as applicable.",
+            "type": "string",
+            "enum": [
+              "COMPLETE",
+              "INCOMPLETE",
+              "BLOCKED",
+              "FAILED"
+            ]
+          }
+        },
+        "questions": [
+          {
+            "question": "What is the ${status.definition}?",
+            "return": "${status}"
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "All obligations satisfied with matching verification",
+            "suppliedInputs": {
+              "verificationSummary": "All 3 edits verified MATCH, test suite passed 100%"
+            },
+            "expectedReturn": {
+              "status": "COMPLETE"
+            },
+            "explanation": "Selects COMPLETE because requested outcome is supported by live evidence."
+          },
+          {
+            "scenario": "Mandatory secret missing preventing execution",
+            "suppliedInputs": {
+              "verificationSummary": "Database migration blocked by missing API token"
+            },
+            "expectedReturn": {
+              "status": "BLOCKED"
+            },
+            "explanation": "Selects BLOCKED because an external prerequisite is genuinely unavailable."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Assemble and Validate Final Response",
+      "file_path": "procedures/12_assemble_and_validate_final_response.json",
+      "why_it_exists": "Enforces the mandatory three-element array execution contract: [full selected-profile result, verbatimToolInvocations audit, universal profile/status suffix], validating that no fields are lost or unclosed.",
+      "question_or_decision": "How is the final response packaged into an exact 3-element JSON array matching the return contract?",
+      "locally_owned_inputs": {
+        "responseAssemblyTimestamp": {
+          "definition": "ISO 8601 timestamp marking the final assembly and validation of the 3-element execution result array.",
+          "type": "string"
+        }
+      },
+      "references": {
+        "profile": "Owned by 04_select_execution_mode",
+        "result": "Owned by 07_execute_requested_operations",
+        "verbatimToolInvocations": "Owned by 08_record_invocation_audit",
+        "status": "Owned by 11_evaluate_completion_status",
+        "stateVerificationRecords": "Owned by 10_verify_resulting_state"
+      },
+      "evidence_and_operation": "Construct the exact three-element JSON array: Item 1 is the profile result containing ${result} (plus observedChanges/deviations if accountability/fidelity); Item 2 is the audit object {\"verbatimToolInvocations\": ${verbatimToolInvocations}}; Item 3 is the universal suffix {\"profile\": ${profile}, \"status\": ${status}}. Validate that minItems=maxItems=3.",
+      "returned_values": {
+        "finalExecutionResultArray": [
+          "${selectedProfileResult}",
+          {
+            "verbatimToolInvocations": "${verbatimToolInvocations}"
+          },
+          {
+            "profile": "${profile}",
+            "status": "${status}"
+          }
+        ],
+        "responseAssemblyTimestamp": "${responseAssemblyTimestamp}"
+      },
+      "dependencies": [
+        "04_select_execution_mode",
+        "07_execute_requested_operations",
+        "08_record_invocation_audit",
+        "10_verify_resulting_state",
+        "11_evaluate_completion_status"
+      ],
+      "failure_handling": "If the array length is not 3, or if the audit object is missing its wrapper key, re-assemble to satisfy the exact schema before returning.",
+      "completion_criteria": "The three-element array is constructed, structurally validated, and returned as the terminal deliverable.",
+      "specification_template": {
+        "instruction": "Assemble and Validate Final Response",
+        "inputs": {
+          "responseAssemblyTimestamp": {
+            "definition": "ISO 8601 timestamp marking the final assembly and validation of the 3-element execution result array.",
+            "type": "string"
+          }
+        },
+        "questions": [
+          {
+            "question": "What is the ${responseAssemblyTimestamp.definition}?",
+            "return": "${responseAssemblyTimestamp}"
+          }
+        ],
+        "examples": [
+          {
+            "scenario": "Standard 3-element response array closure",
+            "suppliedInputs": {
+              "profile": "fidelity",
+              "result": {
+                "file": "updated"
+              },
+              "verbatimToolInvocations": [],
+              "status": "COMPLETE"
+            },
+            "expectedReturn": {
+              "responseAssemblyTimestamp": "2026-10-14T12:05:00Z"
+            },
+            "explanation": "Confirms closure of the 3-element array return contract."
+          },
+          {
+            "scenario": "Accountability profile response with deviations",
+            "suppliedInputs": {
+              "profile": "accountability",
+              "result": {
+                "file": "partial"
+              },
+              "verbatimToolInvocations": [
+                {
+                  "sequence": 1,
+                  "tool": "fileEditor",
+                  "invocationVerbatim": "write()",
+                  "outcome": {
+                    "status": "failed"
+                  }
+                }
+              ],
+              "status": "FAILED"
+            },
+            "expectedReturn": {
+              "responseAssemblyTimestamp": "2026-10-14T12:05:15Z"
+            },
+            "explanation": "Ensures failed turns still strictly close under the 3-element contract with audit and suffix."
+          }
+        ]
+      }
+    }
+  ],
+  "orchestration_manifest": {
+    "execution_phases": [
+      {
+        "phase": "PRE_EXECUTION",
+        "description": "Establish provenance, capture user prompt, model state changes, choose mode, publish visible JWRS projection, and validate pre-flight criteria prior to any substantive operations.",
+        "call_order": [
+          "01_verify_provenance",
+          "02_gather_user_instructions",
+          "03_specify_state_transitions",
+          "04_select_execution_mode",
+          "05_construct_and_publish_projection",
+          "06_validate_pre_execution_specification"
+        ],
+        "phase_gate": "Must publish the complete standalone JSON JWRS projection visibly to the user and validate that preExecutionValidationStatus is PASSED before substantive execution begins."
+      },
+      {
+        "phase": "EXECUTION_AND_RECOVERY",
+        "description": "Perform substantive operations in the active turn, audit tool calls continuously, and apply continuation scenarios when hurdles occur.",
+        "call_order": [
+          "07_execute_requested_operations",
+          "08_record_invocation_audit (continuous logging)",
+          "09_select_execution_continuation (loop as needed while work remains)"
+        ],
+        "phase_gate": "Substantive execution concludes only when all requested work is accomplished or continuation confirms no authorized actions remain."
+      },
+      {
+        "phase": "POST_EXECUTION_VERIFICATION_AND_ASSEMBLY",
+        "description": "Inspect resulting state, finalize tool audit log, select truthful completion status, and deliver the 3-element execution result array.",
+        "call_order": [
+          "10_verify_resulting_state",
+          "08_record_invocation_audit (finalization)",
+          "11_evaluate_completion_status",
+          "12_assemble_and_validate_final_response"
+        ],
+        "phase_gate": "Final response must match the 3-element return schema contract: [selected profile result, verbatimToolInvocations audit, universal profile/status suffix]."
+      }
+    ],
+    "continuation_loop_rules": {
+      "trigger": "Invoked whenever an operation fails, is blocked, produces only intermediate progress, or when independent obligations remain.",
+      "reprojection_gate": "If continuation requires a material change to published commitments or operations, publish a corrected JWRS projection visibly before executing changed operations (Scenario C28)."
+    },
+    "audit_lifecycle": {
+      "start": "Tool audit collection begins with initial instruction loading.",
+      "accumulation": "Appends records chronologically for all tool calls throughout the turn.",
+      "finalization": "Sanitizes and freezes verbatimToolInvocations in post-execution before final response packaging."
+    }
+  },
+  "shared_definition_ownership": {
+    "authoritative_owners": {
+      "governingInstructionFileId": "01_verify_provenance",
+      "governingInstructionLibraryFileId": "01_verify_provenance",
+      "instructionScope": "01_verify_provenance",
+      "userPromptVerbatim": "02_gather_user_instructions",
+      "userPromptInterpretation": "02_gather_user_instructions",
+      "userGoal": "02_gather_user_instructions",
+      "scope": "02_gather_user_instructions",
+      "basis": "03_specify_state_transitions",
+      "aspect": "03_specify_state_transitions",
+      "currentValue": "03_specify_state_transitions",
+      "desiredValue": "03_specify_state_transitions",
+      "fixed": "03_specify_state_transitions",
+      "procedure": "03_specify_state_transitions",
+      "delivery": "03_specify_state_transitions",
+      "selectionRationale": "04_select_execution_mode",
+      "profile": "04_select_execution_mode",
+      "projectionPublicationTimestamp": "05_construct_and_publish_projection",
+      "preExecutionValidationStatus": "06_validate_pre_execution_specification",
+      "preExecutionValidationFindings": "06_validate_pre_execution_specification",
+      "result": "07_execute_requested_operations",
+      "verbatimToolInvocations": "08_record_invocation_audit",
+      "continuationAction": "09_select_execution_continuation",
+      "continuationRationale": "09_select_execution_continuation",
+      "finalValue": "10_verify_resulting_state",
+      "stateVerificationRecords": "10_verify_resulting_state",
+      "status": "11_evaluate_completion_status",
+      "responseAssemblyTimestamp": "12_assemble_and_validate_final_response"
+    },
+    "semantic_concept_owners": {
+      "AI Natural-Language Executor": "Global Semantics (AI natural-language executor)",
+      "JSON With Return Schema": "Global Semantics (JSON projection with return schema)",
+      "Same Turn": "Global Semantics (Single conversational response cycle)",
+      "Correct Form": "Global Semantics (Standalone JSON JWRS satisfying selected profile)",
+      "First Print": "Global Semantics (Initial substantive user-visible output)",
+      "Definition Resolution": "Global Semantics (Resolve definitions from local owning inputs)",
+      "Basis": "03_specify_state_transitions (Authoritative information reference)",
+      "Aspect": "03_specify_state_transitions (Named feature or parameter of basis)",
+      "Fixed": "03_specify_state_transitions (These aspects remain unchanged.)",
+      "Execution Identity": "03_specify_state_transitions (Non-substitutable runtime/transport)",
+      "Verbatim Tool Invocation": "08_record_invocation_audit (Chronological audit of live tool calls)"
+    },
+    "consolidation_and_prohibition_rules": [
+      "The term 'source' is eliminated; 'basis' is the sole authoritative term for state reference.",
+      "The term 'property' is eliminated; 'aspect' is the sole term for state features.",
+      "The term 'invariants' is eliminated; 'fixed' is defined strictly as 'These aspects remain unchanged.'",
+      "Dangling references to #/$defs/invocation are eliminated; verbatimToolInvocations owns its schema.",
+      "No variable is defined in more than one module; non-owning modules reference variables via ${name}."
+    ]
+  },
+  "source_requirement_coverage": [
+    {
+      "requirement_id": "REQ-01",
+      "description": "Load governing instruction and bind live provenance identifiers without fabrication",
+      "assigned_procedures": [
+        "01_verify_provenance"
+      ],
+      "coverage_notes": "Captures governingInstructionFileId and governingInstructionLibraryFileId directly from retrieval metadata."
+    },
+    {
+      "requirement_id": "REQ-02",
+      "description": "Preserve exact verbatim user prompt and operative constraints",
+      "assigned_procedures": [
+        "02_gather_user_instructions"
+      ],
+      "coverage_notes": "Captures userPromptVerbatim character-for-character alongside interpretation, userGoal, and scope."
+    },
+    {
+      "requirement_id": "REQ-03",
+      "description": "Model state transitions with basis, aspect, current/desired values, and invariant fixed aspects",
+      "assigned_procedures": [
+        "03_specify_state_transitions"
+      ],
+      "coverage_notes": "Enforces paired aspect/current/desired values, explicit basis locators, and 4-word definition of fixed."
+    },
+    {
+      "requirement_id": "REQ-04",
+      "description": "Select exactly one execution profile independently of state changes",
+      "assigned_procedures": [
+        "04_select_execution_mode"
+      ],
+      "coverage_notes": "Separates mode selector into distinct procedure owning selectionRationale and profile."
+    },
+    {
+      "requirement_id": "REQ-05",
+      "description": "Publish complete standalone JSON JWRS before substantive task operations (First Print)",
+      "assigned_procedures": [
+        "05_construct_and_publish_projection",
+        "06_validate_pre_execution_specification"
+      ],
+      "coverage_notes": "Enforces the mandatory first-print phase gate and validates expanded 3-element return schema before work starts."
+    },
+    {
+      "requirement_id": "REQ-06",
+      "description": "Execute requested operations in the same turn preserving execution identity",
+      "assigned_procedures": [
+        "07_execute_requested_operations"
+      ],
+      "coverage_notes": "Performs substantive work within prescribed runtime/transport; forbids runtime substitutions."
+    },
+    {
+      "requirement_id": "REQ-07",
+      "description": "Maintain chronological, verbatim, sanitized audit of live tool invocations",
+      "assigned_procedures": [
+        "08_record_invocation_audit"
+      ],
+      "coverage_notes": "Owned by dedicated module; collects live calls across turn, redacts secrets, outputs [] if none."
+    },
+    {
+      "requirement_id": "REQ-08",
+      "description": "Apply execution continuation across 34 scenarios to avoid premature termination",
+      "assigned_procedures": [
+        "09_select_execution_continuation"
+      ],
+      "coverage_notes": "Governs recovery, independent branch execution, and reprojection gates before termination."
+    },
+    {
+      "requirement_id": "REQ-09",
+      "description": "Verify resulting state against asserted values and authoritative bases",
+      "assigned_procedures": [
+        "10_verify_resulting_state"
+      ],
+      "coverage_notes": "Compares final values against desired values and fixed values against initial values without copying."
+    },
+    {
+      "requirement_id": "REQ-10",
+      "description": "Evaluate final completion status from observed evidence",
+      "assigned_procedures": [
+        "11_evaluate_completion_status"
+      ],
+      "coverage_notes": "Selects COMPLETE, INCOMPLETE, BLOCKED, or FAILED based strictly on verified evidence."
+    },
+    {
+      "requirement_id": "REQ-11",
+      "description": "Deliver final result under exact 3-element return contract",
+      "assigned_procedures": [
+        "12_assemble_and_validate_final_response"
+      ],
+      "coverage_notes": "Packages [selected profile result, verbatimToolInvocations audit, universal suffix]."
+    }
+  ],
+  "next_implementation_steps": [
+    "Step 1: Generate individual procedure specification JSON files for all 12 modules according to their designated file paths under procedures/.",
+    "Step 2: Implement automated syntactic and referential validation across all 12 procedure files to ensure zero dangling references and verify symmetrical inputs/questions/examples structure.",
+    "Step 3: Generate the root composition manifest linking the modular procedures into the unified execution pipeline.",
+    "Step 4: Execute comprehensive integration verification asserting total line/character verbosity floors, scenario coverage (C01-C34), and 3-element contract closure."
+  ],
+  "status": "COMPLETE"
+}
