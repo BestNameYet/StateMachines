@@ -1,7 +1,7 @@
 [
   {
-    "question": "Repeat the user prompt verbatim. <string>: ${verbatimUserPrompt}",
-    "return": "${verbatimUserPrompt}"
+    "question": "Restate the user intent. <string>: ${userIntent}",
+    "return": "${userIntent}"
   },
   {
     "question": "Decide the implicit and explicit user intent expressed in the user prompt in the context of this chat. State it in fewer than 100 words. <string> (less than 100 words): ${userIntent}",
@@ -20,23 +20,23 @@
     "return": "${targetDataIntent}"
   },
   {
-    "instruction": "Restate the user intent already captured in ${userIntent}, not the user prompt. <string> (less than 100 words): ${userIntent}",
+    "instruction": "State the user intent. <string> (less than 100 words): ${userIntent}",
     "return": "${userIntent}"
   },
   {
     "instruction": "Here are nine examples. Match ${userIntent} to the example that it most resembles or could be rewritten to resemble without changing its meaning. Return the selected labeled example object. <{\"<A-I>\": <string>}>: ${matchedExample}",
     "examples": [
       {
-        "E": "Produce a finished spreadsheet calculating monthly revenue, expenses, profit, and annual totals."
+        "E": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file."
       },
       {
-        "C": "Correct the failed implementation and compare the actual work with the previously stated commitments."
+        "C": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do."
       },
       {
-        "B": "Carry out the specified operations exactly, preserve existing files, create no additional files, omit no operation, and report which operations succeeded."
+        "B": "Follow these instructions exactly. Do not replace existing files, create additional files, or omit any operation. Report which operations succeeded."
       },
       {
-        "F": "Produce a complete JSON inventory from the requested information extracted from the specified files."
+        "F": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
       },
       {
         "H": "Explain the difference between a JSON object and a JSON array."
@@ -45,13 +45,13 @@
         "D": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
       },
       {
-        "I": "Judge which of two proposed names is more appropriate for a software project."
+        "I": "Which of these two names sounds more appropriate for a software project?"
       },
       {
-        "A": "Verify whether the claimed file commit exists in the actual repository and report what actually happened."
+        "A": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened."
       },
       {
-        "G": "Explain the meaning of the abbreviation JSON."
+        "G": "What does JSON stand for?"
       }
     ],
     "return": "${matchedExample}"
