@@ -27,22 +27,21 @@
   "run": {
     "nonce_param": "run_nonce",
     "nonce_regex": "^[A-Za-z0-9._-]+$",
-    "default_nonce_prefix": "agents_metadata_capture",
-    "default_nonce": "agents_metadata_capture_20261013_1",
+    "default_nonce_prefix": "agents_provenance_revision",
+    "default_nonce": "agents_provenance_revision_20261013_1",
     "reuse_history": false
   },
   "prompt": {
-    "system_instruction": "Work on the user's metadata-first task only. Inspect all supplied documents, identify which metadata the governing procedure needs and capture its actual supported values. Use existing definitions and sections; do not create another specification, full rewrite or twelve procedures. Return one valid JSON object.",
-    "heuristic": "For every metadata field, determine why it is needed, what describes the procedure itself, where its value is established and whether it duplicates an input, semantic definition, state aspect or result. Retain only meaningful metadata, capture actual supplied values and mark unavailable runtime values accurately. Preserve the user's naming conventions; do not introduce timestamps or decorative fields. The latest metadata-first task overrides earlier monolithic/module generation directives.",
+    "system_instruction": "Revise ONLY the supplied Governing Instruction Provenance section. The user calls the governing-instruction section and its provenance capture the same responsibility. Use their existing contents and definitions as the specification. Produce the actual complete revised section, not another specification or a full-document rewrite.",
+    "heuristic": "Consolidate the supplied authority location information and capture questions into one Governing Instruction Provenance procedure. Identify and fully read the applicable current governing instruction, capture and verify actual current backing file ID and persistent Library ID from live retrieval metadata, and handle unavailable metadata truthfully. Preserve relevant applicability information without duplicating the removed metadata section. Define necessary inputs locally once, ask capture questions using ${name.definition}, return captured values using ${name}, and include useful normal and failure/mirror examples. Use plain-language instruction titles and the existing input/question/example structure. Do not introduce a redundant provenance wrapper or unneeded fields. Do not invent current identifiers or live execution; this pass revises the instruction, not performs host Library retrieval.",
     "output_schema": {
-      "response_type": "agents_metadata_capture",
-      "metadata": "Concrete metadata object containing the actual supported values selected for the procedure.",
-      "field_decisions": "Why each retained field is necessary metadata, where its value comes from, and why rejected existing fields are unnecessary or belong elsewhere.",
-      "runtime_capture": "Any genuinely needed metadata unavailable from the supplied document, with its capture question and source; no fabricated live values.",
+      "response_type": "agents_provenance_revision",
+      "revised_section": "Complete revised Governing Instruction Provenance procedure, including local input definitions, operational capture questions with returns, and purposeful examples.",
+      "revision_notes": "Explain consolidation and any necessary changes from the supplied section.",
       "status": "COMPLETE | INCOMPLETE | BLOCKED | FAILED"
     },
-    "template_prefix": "FIRST TASK: what metadata do we need, and capture it.",
-    "template_suffix": "Return response_type=agents_metadata_capture. Produce the actual metadata decision and captured values, not another specification. Do not continue to other procedures."
+    "template_prefix": "NEXT SECTION: Governing Instruction Provenance.",
+    "template_suffix": "Return the actual complete revised section only with its revision notes. Do not revise metadata or any other section. The latest trigger overrides earlier broad or metadata-only tasks."
   },
   "inputs": [
     {
@@ -81,22 +80,15 @@
       "numbered": false
     },
     {
-      "key": "first_pass_schema",
-      "type": "file",
-      "path": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/runs/agents_schema_design_20261013_1/output.json",
-      "required": true,
-      "numbered": false
-    },
-    {
-      "key": "previous_pass_output",
-      "type": "file",
-      "path": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/runs/agents_revision_pass2_20261013_1/output.json",
+      "key": "section_to_revise",
+      "type": "literal",
+      "value": "{\n  \"authority\": {\n    \"Load the Governing Instruction\": {\n      \"primary\": \"Current account-level custom instruction\",\n      \"authoritativeFile\": \"/AGENTS.md\",\n      \"fileLocation\": \"ChatGPT Library root\",\n      \"mirror\": {\n        \"provider\": \"Google Drive\",\n        \"file_id\": \"1mOA-U6vw6luQslJxvWffPghl9TTNw3hE\",\n        \"url\": \"https://drive.google.com/file/d/1mOA-U6vw6luQslJxvWffPghl9TTNw3hE/view?usp=drivesdk\"\n      }\n    }\n  },\n  \"capture\": {\n    \"Load the Governing Instruction\": {\n      \"inputs\": {\n        \"governingInstructionFileId\": {\n          \"definition\": \"The current backing file ID returned by live retrieval of the governing instruction. Read the complete current instruction, capture this ID from its retrieval metadata, and return the exact value. Return null only when unavailable; never infer or reuse an old ID.\",\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"governingInstructionLibraryFileId\": {\n          \"definition\": \"The persistent Library record ID returned by the same live retrieval of the governing instruction. Capture and return its exact value, independently of the backing file ID. Return null only when unavailable; never infer or substitute a different identifier.\",\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"instructionScope\": {\n          \"definition\": \"The prompts or contexts in which the governing instruction applies. This describes instruction applicability, independently of the scope of a requested change.\",\n          \"type\": \"string\"\n        }\n      },\n      \"questions\": [\n        {\n          \"question\": \"What is the ${governingInstructionFileId.definition}?\",\n          \"return\": \"${governingInstructionFileId}\"\n        },\n        {\n          \"question\": \"What is the ${governingInstructionLibraryFileId.definition}?\",\n          \"return\": \"${governingInstructionLibraryFileId}\"\n        },\n        {\n          \"question\": \"What is the ${instructionScope.definition}?\",\n          \"return\": \"${instructionScope}\"\n        }\n      ]\n    }\n  }\n}",
       "required": true,
       "numbered": false
     }
   ],
   "validation": {
-    "expected_response_type": "agents_metadata_capture",
+    "expected_response_type": "agents_provenance_revision",
     "require_json": true,
     "strip_markdown_fence": true,
     "allow_repair": true
