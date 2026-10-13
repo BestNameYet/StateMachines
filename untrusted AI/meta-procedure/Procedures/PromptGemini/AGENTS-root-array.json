@@ -24,6 +24,135 @@
   {
     "Do These Instructions Before Executing the User Request": [
       {
+        "Interpret the User Request": [
+          {
+            "inputs": {
+              "verbatimUserPrompt": {
+                "definition": "The user prompt repeated exactly, character for character.",
+                "type": "string"
+              },
+              "userIntent": {
+                "definition": "The implicit and explicit intent expressed by the user prompt in the context of this chat, including the desired change to data.",
+                "type": "string",
+                "maxWordsExclusive": 100
+              },
+              "targetFiles": {
+                "definition": "The names of the files containing the data the user wants changed. For file creation, the names to be given to the created files.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "targetDataLocations": {
+                "definition": "The file names and byte ranges identifying the data to be changed. Byte offsets are zero-based in the inspected file bytes: frombyte is inclusive and tobyte is exclusive. An insertion uses equal offsets; a new empty file uses 0 and 0. Establish offsets from inspected bytes rather than guessing.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "filename",
+                    "location"
+                  ],
+                  "keys": {
+                    "filename": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "object",
+                      "required": [
+                        "frombyte",
+                        "tobyte"
+                      ],
+                      "keys": {
+                        "frombyte": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "tobyte": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "questions": [
+              {
+                "question": "Repeat the user prompt verbatim.",
+                "return": "${verbatimUserPrompt}"
+              },
+              {
+                "question": "Decide the implicit and explicit user intent expressed in the user prompt in the context of this chat. State it in fewer than 100 words.",
+                "return": "${userIntent}"
+              },
+              {
+                "question": "A user intent always includes a desire to change data. Examine ${userIntent}. List the files that contain the data the user wants changed. For file creation, list the names that will be given to the created files.",
+                "return": "${targetFiles}"
+              },
+              {
+                "question": "List the locations of the data that will be changed in ${targetFiles}, using the byte-range convention in ${targetDataLocations.definition}.",
+                "return": "${targetDataLocations}"
+              }
+            ]
+          },
+          {
+            "examples": [
+              {
+                "scenario": "Replace one byte in an existing file.",
+                "suppliedInputs": {
+                  "prompt": "Change B to Z in letters.txt.",
+                  "inspectedFileBytes": "ABC"
+                },
+                "expectedReturn": {
+                  "verbatimUserPrompt": "Change B to Z in letters.txt.",
+                  "userIntent": "Replace B with Z in letters.txt.",
+                  "targetFiles": [
+                    "letters.txt"
+                  ],
+                  "targetDataLocations": [
+                    {
+                      "filename": "letters.txt",
+                      "location": {
+                        "frombyte": 1,
+                        "tobyte": 2
+                      }
+                    }
+                  ]
+                },
+                "explanation": "The inspected ASCII byte B occupies the half-open range [1,2). These values are illustrative."
+              },
+              {
+                "scenario": "Create a new file.",
+                "suppliedInputs": {
+                  "prompt": "Create notes.txt containing Hello.",
+                  "fileDoesNotExist": true
+                },
+                "expectedReturn": {
+                  "verbatimUserPrompt": "Create notes.txt containing Hello.",
+                  "userIntent": "Create notes.txt and write Hello into it.",
+                  "targetFiles": [
+                    "notes.txt"
+                  ],
+                  "targetDataLocations": [
+                    {
+                      "filename": "notes.txt",
+                      "location": {
+                        "frombyte": 0,
+                        "tobyte": 0
+                      }
+                    }
+                  ]
+                },
+                "explanation": "Creation starts at an empty byte range. The requested new content is supplied by the prompt."
+              }
+            ]
+          }
+        ]
+      },
+      {
         "Load the Governing Instruction": {
           "inputs": {
             "governingInstructionFileId": {
@@ -57,48 +186,6 @@
             {
               "question": "What is the ${instructionScope.definition}?",
               "return": "${instructionScope}"
-            }
-          ]
-        }
-      },
-      {
-        "Interpret the User Request": {
-          "inputs": {
-            "userPromptVerbatim": {
-              "definition": "The exact original user prompt, preserved character for character without correction, paraphrase, or substitution. An interpretation may accompany it but cannot replace it; the original prompt governs when interpretation differs.",
-              "type": "string"
-            },
-            "userPromptInterpretation": {
-              "definition": "The interpreted operative meaning of the user prompt, preserving its requested actions, conditions, and constraints. The verbatim prompt remains authoritative if this interpretation is wrong.",
-              "type": "string"
-            },
-            "userGoal": {
-              "definition": "The desired overall outcome expressed by the user request. Establish it before choosing the basis and affected aspects. This is the canonical desired-outcome definition used by profile projection schemas.",
-              "type": "string"
-            },
-            "scope": {
-              "definition": "The members, portions, quantities and limits covered by the requested change. Preserve user-defined selections and exclusions. Record requirements for procedure, fixed and delivery under their corresponding names.",
-              "type": "object"
-            }
-          },
-          "questions": [
-            {
-              "question": "What is the ${userPromptVerbatim.definition}?",
-              "return": "${userPromptVerbatim}"
-            },
-            {
-              "question": "What is the ${userPromptInterpretation.definition}?",
-              "return": "${userPromptInterpretation}"
-            },
-            {
-              "question": "What is the ${userGoal.definition}?",
-              "return": "${userGoal}"
-            },
-            {
-              "question": "What is the ${scope.definition}?",
-              "return": {
-                "scope": "${scope}"
-              }
             }
           ]
         }
@@ -184,12 +271,20 @@
             "delivery": {
               "definition": "A structured description of the requested result form, location, and accessibility. Record only requirements supplied by the user or applicable instructions.",
               "type": "object"
+            },
+            "scope": {
+              "definition": "The members, portions, quantities and limits covered by the requested change. Preserve user-defined selections and exclusions. Record requirements for procedure, fixed and delivery under their corresponding names.",
+              "type": "object"
             }
           },
           "questions": [
             {
               "question": "What is the ${basis.definition}?",
               "return": "${basis}"
+            },
+            {
+              "question": "What is the ${scope.definition}?",
+              "return": "${scope}"
             },
             {
               "question": "What is the ${aspect.definition}?",
@@ -393,7 +488,7 @@
     ]
   },
   {
-    "governingRule": "For EVERY user prompt, first load the applicable governing instruction, interpret the prompt, and select exactly one profile. BEFORE ANY substantive task operation or other user-visible content, FIRST PRINT one complete valid JSON JWRS using that profile's projection schema, with the EXACT original user prompt in ${userPromptVerbatim} and an explicit return schema. The initial JWRS MUST also include ${governingInstructionFileId} and ${governingInstructionLibraryFileId} with the actual current Library file_id and library_file_id for /AGENTS.md as supplied by the retrieval interface; do not fabricate or reuse stale identifiers. Sole local override: both the initial JWRS return schema and final result array must have exactly three items (min items=max items=3): [full selected-profile result, {${verbatimToolInvocations}:[...]}, universal {profile,status}]. THEN EXECUTE the projected user request during the SAME turn, preserving its objective, ordered operations, targets, constraints, execution environment, and required evidence. The original prompt controls if the projection is wrong. A failed method requires authorized recovery within any prescribed method or environment; it does not authorize substituting a different test. A projection, plan, script, attempted invocation, or status declaration is not performance or proof of the requested outcome. Apply continuation and status selectors, then return the three-element execution result array."
+    "governingRule": "For EVERY user prompt, first load the applicable governing instruction, interpret the prompt, and select exactly one profile. BEFORE ANY substantive task operation or other user-visible content, FIRST PRINT one complete valid JSON JWRS using that profile's projection schema, with the EXACT original user prompt in ${verbatimUserPrompt} and an explicit return schema. The initial JWRS MUST also include ${governingInstructionFileId} and ${governingInstructionLibraryFileId} with the actual current Library file_id and library_file_id for /AGENTS.md as supplied by the retrieval interface; do not fabricate or reuse stale identifiers. Sole local override: both the initial JWRS return schema and final result array must have exactly three items (min items=max items=3): [full selected-profile result, {${verbatimToolInvocations}:[...]}, universal {profile,status}]. THEN EXECUTE the projected user request during the SAME turn, preserving its objective, ordered operations, targets, constraints, execution environment, and required evidence. The original prompt controls if the projection is wrong. A failed method requires authorized recovery within any prescribed method or environment; it does not authorize substituting a different test. A projection, plan, script, attempted invocation, or status declaration is not performance or proof of the requested outcome. Apply continuation and status selectors, then return the three-element execution result array."
   },
   {
     "verbatimToolInvocations": {
@@ -422,7 +517,7 @@
             "profile": {
               "const": "fidelity"
             },
-            "userGoal": {
+            "userIntent": {
               "type": "string"
             },
             "operations": {
@@ -440,8 +535,8 @@
             "returnSchema": {
               "description": "The explicit execution-result JSON Schema, containing the three-element prefix items: fidelity result schema, ${verbatimToolInvocations} audit object schema, and universal suffix schema (min items=max items=3)."
             },
-            "userPromptVerbatim": {
-              "inputRef": "userPromptVerbatim"
+            "verbatimUserPrompt": {
+              "inputRef": "verbatimUserPrompt"
             },
             "governingInstructionFileId": {
               "inputRef": "governingInstructionFileId"
@@ -528,8 +623,8 @@
             "returnSchema": {
               "description": "The explicit execution-result JSON Schema, containing the three-element prefix items: accountability result schema, ${verbatimToolInvocations} audit object schema, and universal suffix schema (min items=max items=3)."
             },
-            "userPromptVerbatim": {
-              "inputRef": "userPromptVerbatim"
+            "verbatimUserPrompt": {
+              "inputRef": "verbatimUserPrompt"
             },
             "governingInstructionFileId": {
               "inputRef": "governingInstructionFileId"
@@ -621,14 +716,14 @@
             "profile": {
               "const": "minimal"
             },
-            "userGoal": {
+            "userIntent": {
               "type": "string"
             },
             "returnSchema": {
               "description": "The explicit execution-result JSON Schema, containing the three-element prefix items: minimal result schema, ${verbatimToolInvocations} audit object schema, and universal suffix schema (min items=max items=3)."
             },
-            "userPromptVerbatim": {
-              "inputRef": "userPromptVerbatim"
+            "verbatimUserPrompt": {
+              "inputRef": "verbatimUserPrompt"
             },
             "governingInstructionFileId": {
               "inputRef": "governingInstructionFileId"
@@ -846,7 +941,7 @@
         {
           "id": "C34",
           "name": "Printed projection is a mandatory phase gate",
-          "principle": "Before any user-requested substantive task operation, the initial user-visible response must contain the complete selected-profile JWRS with exact ${userPromptVerbatim}. A plan or tool activity cannot replace the first print, and the first print cannot replace actual execution afterward."
+          "principle": "Before any user-requested substantive task operation, the initial user-visible response must contain the complete selected-profile JWRS with exact ${verbatimUserPrompt}. A plan or tool activity cannot replace the first print, and the first print cannot replace actual execution afterward."
         }
       ],
       "crossScenarioRules": [
@@ -904,7 +999,7 @@
       "Select exactly one instruction style according to the user's prose prompt.",
       "FIRST PRINT: The first substantive user-visible content MUST be a complete valid JSON JWRS in the selected profile's exact projection schema. Do not preface it with commentary, a plan, or status narration. Only required non-executing instruction-source retrieval and interpretation may precede it.",
       "RECORD SOURCE PROVENANCE: The FIRST printed JWRS MUST contain ${governingInstructionFileId} and ${governingInstructionLibraryFileId}. Copy each exactly from metadata returned when retrieving the current ChatGPT Library /AGENTS.md. The backing file_id may change after an overwrite; the library_file_id identifies the stable Library record. If a value is unavailable (including a mirror-only fallback), use JSON null rather than guessing or substituting a Google Drive file ID.",
-      "The first printed JWRS MUST contain ${userPromptVerbatim} with the EXACT current user prompt text, and an explicit return schema for the three-element execution-result array (min items=max items=3), composed of: (1) the selected style's result schema, (2) the ${verbatimToolInvocations} audit schema, and (3) the universal suffix schema.",
+      "The first printed JWRS MUST contain ${verbatimUserPrompt} with the EXACT current user prompt text, and an explicit return schema for the three-element execution-result array (min items=max items=3), composed of: (1) the selected style's result schema, (2) the ${verbatimToolInvocations} audit schema, and (3) the universal suffix schema.",
       "Preserve the user's operative meaning, targets, quantities, scope, sequence, conditions, permissions, prohibitions, and requested output as faithfully as possible.",
       "Use available authoritative context to resolve references without silently inventing requirements or substituting operations.",
       "A user request to TEST a named runtime or transport is defined by that named runtime or transport; a result from a different runtime or transport cannot satisfy the test, regardless of functional equivalence.",
@@ -1088,8 +1183,8 @@
             }
           }
         },
-        "userPromptVerbatim": {
-          "inputRef": "userPromptVerbatim"
+        "verbatimUserPrompt": {
+          "inputRef": "verbatimUserPrompt"
         },
         "governingInstructionFileId": {
           "inputRef": "governingInstructionFileId"
