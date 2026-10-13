@@ -28,12 +28,12 @@
     "nonce_param": "run_nonce",
     "nonce_regex": "^[A-Za-z0-9._-]+$",
     "default_nonce_prefix": "agents_revision_pass2",
-    "default_nonce": "agents_revision_pass2_20261013_1",
+    "default_nonce": "agents_revision_corrective_20261013_1",
     "reuse_history": false
   },
   "prompt": {
     "system_instruction": "You are the independent author executing PASS TWO of the AGENTS revision. Read the complete first-pass schema and all five original inputs. Generate the entire revised procedure and accompanying deliverables conforming to the first-pass schema. Return one complete valid JSON object. Do not generate another schema instead of the document. Do not claim external tool execution or verification unavailable to you.",
-    "heuristic": "Follow every handoff requirement. Use the generated second_pass_return_schema as the output contract. Its generic object allowance for revised procedure sections is not permission to omit the requested template: every instruction/question set must include long-form plain-language instructions, local inputs with definitions, actual capture questions and returns, and consistently structured useful few-shot examples. Keep pre-execution, actual execution/recovery, and post-execution distinct and ordered. Track every file edit and its purpose tied to desired state; specify and demonstrate actual value-based verification and tables. Consolidate duplicated concepts, keep basis defined once, fixed as These aspects remain unchanged, and no invented routing metadata. Request-and-return constitutes variable use. Preserve complete instructions and exceed or meet the original reference verbosity without repetitive padding. For evidence you cannot inspect, record UNVERIFIED and the limitation rather than fabricate observed values.",
+    "heuristic": "Follow every handoff requirement. Use the generated second_pass_return_schema as the output contract. Its generic object allowance for revised procedure sections is not permission to omit the requested template: every instruction/question set must include long-form plain-language instructions, local inputs with definitions, actual capture questions and returns, and consistently structured useful few-shot examples. Keep pre-execution, actual execution/recovery, and post-execution distinct and ordered. Track every file edit and its purpose tied to desired state; specify and demonstrate actual value-based verification and tables. Consolidate duplicated concepts, keep basis defined once, fixed as These aspects remain unchanged, and no invented routing metadata. Request-and-return constitutes variable use. Preserve complete instructions and exceed or meet the original reference verbosity without repetitive padding. For evidence you cannot inspect, record UNVERIFIED and the limitation rather than fabricate observed values. Read the updated handoff's Exact instruction-section template and Observed failed second-pass output sections. They correct ambiguity in the earlier handoff. Apply the exact ordered three-entry inputs/questions/examples section template to every instruction section. Include suppliedInputs, expectedReturn and explanation in every example. Do not duplicate concepts between semantics and typed local definitions. Do not fabricate verbosity or verification metrics, or claim the input repository file was modified. The actual pretty-printed revised procedure alone must meet the verbosity floor.",
     "output_schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "title": "SecondPassAgentsRevisionDeliverable",
@@ -470,7 +470,7 @@
       }
     },
     "template_prefix": "SECOND PASS: generate the full revised AGENTS procedure under the first-pass schema.",
-    "template_suffix": "Return response_type=revised_agents_procedure_deliverable. Include the entire revised_agents_procedure and all required schema fields. No truncation, ellipses, missing examples, shortened outlines or placeholders. The uniform section template is mandatory even though the schema's generic section objects do not enforce its nested shape. Treat illustrative example evidence as illustrative, not live verification. Apply the schema and handoff together."
+    "template_suffix": "Return response_type=revised_agents_procedure_deliverable. Include the entire revised_agents_procedure and all required schema fields. No truncation, ellipses, missing examples, shortened outlines or placeholders. The uniform section template is mandatory even though the schema's generic section objects do not enforce its nested shape. Treat illustrative example evidence as illustrative, not live verification. Apply the schema and handoff together. This is a corrective pass using actual prior output as evidence; produce the full corrected document, not a patch or discussion. State unexecuted checks as unverified rather than estimate them."
   },
   "inputs": [
     {
@@ -512,6 +512,13 @@
       "key": "first_pass_schema",
       "type": "file",
       "path": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/runs/agents_schema_design_20261013_1/output.json",
+      "required": true,
+      "numbered": false
+    },
+    {
+      "key": "previous_pass_output",
+      "type": "file",
+      "path": "untrusted AI/meta-procedure/Testing/chatgpt-gemini-context-dialogue/runs/agents_revision_pass2_20261013_1/output.json",
       "required": true,
       "numbered": false
     }
