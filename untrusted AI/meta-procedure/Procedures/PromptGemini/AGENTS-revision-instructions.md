@@ -184,3 +184,20 @@ Examples:
 If an assertion cannot be verified, mark that transition unverified and identify the missing evidence or blocker. Continue available authorized verification work. Never classify the whole task as verified merely because some rows passed.
 
 The rewritten procedure must define any genuinely needed edit-purpose, identity, comparison or evidence variables locally, request and return them, and connect them to the state-transition records without adding duplicate definitions or unsupported routing metadata. Include few-shot examples demonstrating a successful value comparison, an observed mismatch, and unavailable verification evidence.
+
+
+## No truncation, no brevity, and full explanatory detail
+
+The user explicitly requires no truncation and no brevity-driven compression. The final revised procedure must be at least as verbose as the original authoritative AGENTS document, not merely as verbose as the shortened working draft. The complete original is provided alongside this handoff as AGENTS-original-reference.json.
+
+Read that reference in full. It was copied from the current Library /AGENTS.md, version 7: persistent Library identifier libfile_b6b39702befc8191a23fdb2b219b132e, backing file identifier file_000000005104820c8cb3f5fc0731d877. The source retrieval covered all 2,024 lines and 99,817 characters. These identify this supplied reference snapshot; they are not identifiers to reuse as current provenance in future executions.
+
+The original demonstrates the required level of explanatory detail. Its length is a floor, not a reason to restore duplicated requirements. Replace redundancy with clear, complete definitions, long-form instructions, explicit relationships between captured values and actions, and carefully developed few-shot examples. Do not pad the result with repetition to meet the verbosity requirement.
+
+The purpose is to eliminate obscurity for the executing agent. Explain every operative concept and instruction sufficiently that an agent does not have to guess its meaning, ownership, timing, dependency, verification method or return placement. Do not omit necessary context because it seems obvious to the author.
+
+Do not substitute summaries, ellipses, placeholders, abbreviated instructions, omitted sections, samples of the requested document, or statements that remaining content is unchanged. Return the complete revised document and complete required accompanying explanation. Internal variable-reference notation remains valid; it must resolve to actual complete definitions rather than conceal missing content.
+
+If a single model response cannot contain the entire deliverable, use the available artifact/output mechanism or a clearly ordered continuation procedure that preserves all content. Do not silently truncate, declare partial output complete, or replace the requested full procedure with a shorter outline.
+
+Verify before delivery that the revised procedure preserves all distinct original obligations, supplies all requested phase/state/verification/template requirements, contains useful few-shot examples for every instruction section, and meets or exceeds the original reference's verbosity. Report the actual comparison measures and any outstanding limitation. A size check alone is not proof of semantic completeness; review the substantive coverage as well.
