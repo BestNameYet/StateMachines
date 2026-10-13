@@ -77,24 +77,46 @@
                 }
               },
               "targetDataIntent": {
-                "definition": "For each location in ${targetData}, the exact words in ${userIntent} that require that change. targetDataIndex is the zero-based index of the associated location; userIntentWords contains exact quotations from the captured intent.",
+                "definition": "For each location in ${targetData}, pair that location with the exact words from ${userIntent} requiring its change.",
                 "type": "array",
                 "items": {
                   "type": "object",
                   "required": [
-                    "targetDataIndex",
-                    "userIntentWords"
+                    "location",
+                    "intent"
                   ],
                   "keys": {
-                    "targetDataIndex": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "userIntentWords": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
+                    "location": {
+                      "type": "object",
+                      "required": [
+                        "filename",
+                        "location"
+                      ],
+                      "keys": {
+                        "filename": {
+                          "type": "string"
+                        },
+                        "location": {
+                          "type": "object",
+                          "required": [
+                            "frombyte",
+                            "tobyte"
+                          ],
+                          "keys": {
+                            "frombyte": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "tobyte": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        }
                       }
+                    },
+                    "intent": {
+                      "type": "string"
                     }
                   }
                 }
@@ -126,10 +148,14 @@
                   ],
                   "targetDataIntent": [
                     {
-                      "targetDataIndex": 0,
-                      "userIntentWords": [
-                        "Replace B with Z"
-                      ]
+                      "location": {
+                        "filename": "letters.txt",
+                        "location": {
+                          "frombyte": 1,
+                          "tobyte": 2
+                        }
+                      },
+                      "intent": "Replace B with Z"
                     }
                   ]
                 },
@@ -158,11 +184,14 @@
                   ],
                   "targetDataIntent": [
                     {
-                      "targetDataIndex": 0,
-                      "userIntentWords": [
-                        "Create notes.txt",
-                        "write Hello into it"
-                      ]
+                      "location": {
+                        "filename": "notes.txt",
+                        "location": {
+                          "frombyte": 0,
+                          "tobyte": 0
+                        }
+                      },
+                      "intent": "Create notes.txt write Hello into it"
                     }
                   ]
                 },
