@@ -104,23 +104,23 @@
           {
             "questions": [
               {
-                "question": "Repeat the user prompt verbatim.",
+                "question": "Repeat the user prompt verbatim. <string>: ${verbatimUserPrompt}",
                 "return": "${verbatimUserPrompt}"
               },
               {
-                "question": "Decide the implicit and explicit user intent expressed in the user prompt in the context of this chat. State it in fewer than 100 words.",
+                "question": "Decide the implicit and explicit user intent expressed in the user prompt in the context of this chat. State it in fewer than 100 words. <string> (less than 100 words): ${userIntent}",
                 "return": "${userIntent}"
               },
               {
-                "question": "A user intent always includes a desire to change data. Examine ${userIntent}. List the files that contain the data the user wants changed. For file creation, list the names that will be given to the created files.",
+                "question": "A user intent always includes a desire to change data. Examine ${userIntent}. List the files that contain the data the user wants changed. For file creation, list the names that will be given to the created files. <Array<filename>>: ${targetFiles}",
                 "return": "${targetFiles}"
               },
               {
-                "question": "List the locations of the data that will be changed in ${targetFiles}, using the byte-range convention in ${targetData.definition}.",
+                "question": "List the locations of the data that will be changed in ${targetFiles}, using the byte-range convention in ${targetData.definition}. <Array<{filename: filename, location: {frombyte: integer, tobyte: integer}}>>: ${targetData}",
                 "return": "${targetData}"
               },
               {
-                "question": "For each location in ${targetData}, list the specific words in ${userIntent} that require that change.",
+                "question": "For each location in ${targetData}, list the specific words in ${userIntent} that require that change. <Array<{targetDataIndex: integer, userIntentWords: Array<string>}>>: ${targetDataIntent}",
                 "return": "${targetDataIntent}"
               }
             ]
