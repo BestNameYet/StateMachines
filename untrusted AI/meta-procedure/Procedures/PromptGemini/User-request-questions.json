@@ -20,38 +20,54 @@
     "return": "${targetDataIntent}"
   },
   {
-    "instruction": "Determine whether ${userIntent} requires demonstrating compliance through actual actions and evidence. <boolean>: ${requiresAccountability}",
-    "return": "${requiresAccountability}"
-  },
-  {
-    "switch": [
+    "instruction": "State the user intent: ${userIntent}. Here are nine examples. Match ${userIntent} to the example that it most resembles or could be rewritten to resemble without changing its meaning. Select the mode associated with that example. <\"accountability\" | \"fidelity\" | \"minimal\">: ${mode}",
+    "examples": [
       {
-        "if": "${requiresAccountability} == true",
-        "return": "accountability"
+        "example": 1,
+        "userIntent": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened.",
+        "mode": "accountability"
       },
       {
-        "else": [
-          {
-            "instruction": "Determine whether ${userIntent} requires performing operations, changing data, using tools, or producing a concrete deliverable. <boolean>: ${requiresFidelity}",
-            "return": "${requiresFidelity}"
-          },
-          {
-            "switch": [
-              {
-                "if": "${requiresFidelity} == true",
-                "return": "fidelity"
-              },
-              {
-                "else": true,
-                "return": "minimal"
-              }
-            ],
-            "return": "${mode}"
-          }
-        ]
+        "example": 2,
+        "userIntent": "Follow these instructions exactly. Do not replace existing files, create additional files, or omit any operation. Report which operations succeeded.",
+        "mode": "accountability"
+      },
+      {
+        "example": 3,
+        "userIntent": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do.",
+        "mode": "accountability"
+      },
+      {
+        "example": 4,
+        "userIntent": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes.",
+        "mode": "fidelity"
+      },
+      {
+        "example": 5,
+        "userIntent": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file.",
+        "mode": "fidelity"
+      },
+      {
+        "example": 6,
+        "userIntent": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory.",
+        "mode": "fidelity"
+      },
+      {
+        "example": 7,
+        "userIntent": "What does JSON stand for?",
+        "mode": "minimal"
+      },
+      {
+        "example": 8,
+        "userIntent": "Explain the difference between a JSON object and a JSON array.",
+        "mode": "minimal"
+      },
+      {
+        "example": 9,
+        "userIntent": "Which of these two names sounds more appropriate for a software project?",
+        "mode": "minimal"
       }
     ],
-    "return": "${mode}",
-    "type": "<\"accountability\" | \"fidelity\" | \"minimal\">"
+    "return": "${mode}"
   }
 ]
