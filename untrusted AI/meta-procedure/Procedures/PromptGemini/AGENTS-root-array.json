@@ -75,6 +75,29 @@
                     }
                   }
                 }
+              },
+              "targetDataIntent": {
+                "definition": "For each location in ${targetData}, the exact words in ${userIntent} that require that change. targetDataIndex is the zero-based index of the associated location; userIntentWords contains exact quotations from the captured intent.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "targetDataIndex",
+                    "userIntentWords"
+                  ],
+                  "keys": {
+                    "targetDataIndex": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "userIntentWords": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
               }
             }
           },
@@ -96,7 +119,10 @@
                 "question": "List the locations of the data that will be changed in ${targetFiles}, using the byte-range convention in ${targetData.definition}.",
                 "return": "${targetData}"
               },
-              "For each location in ${targetData}, list the specific words in ${userIntent} that require that change."
+              {
+                "question": "For each location in ${targetData}, list the specific words in ${userIntent} that require that change.",
+                "return": "${targetDataIntent}"
+              }
             ]
           },
           {
@@ -121,6 +147,14 @@
                         "tobyte": 2
                       }
                     }
+                  ],
+                  "targetDataIntent": [
+                    {
+                      "targetDataIndex": 0,
+                      "userIntentWords": [
+                        "Replace B with Z"
+                      ]
+                    }
                   ]
                 },
                 "explanation": "The inspected ASCII byte B occupies the half-open range [1,2). These values are illustrative."
@@ -144,6 +178,15 @@
                         "frombyte": 0,
                         "tobyte": 0
                       }
+                    }
+                  ],
+                  "targetDataIntent": [
+                    {
+                      "targetDataIndex": 0,
+                      "userIntentWords": [
+                        "Create notes.txt",
+                        "write Hello into it"
+                      ]
                     }
                   ]
                 },
