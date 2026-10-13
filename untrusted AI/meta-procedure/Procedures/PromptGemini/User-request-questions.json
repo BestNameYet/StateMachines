@@ -19,56 +19,54 @@
     "question": "For each location in ${targetData}, list the specific words in ${userIntent} that require that change. <Array<{\"location\": {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>}, \"intent\": <string>}>>: ${targetDataIntent}",
     "return": "${targetDataIntent}"
   },
-  {
-    "instructions": [
-      {
-        "instruction": "Restate the user intent. <string> (less than 100 words): ${userIntent}",
-        "return": "${userIntent}"
-      },
-      {
-        "instruction": "Here are nine examples. Iterate over the examples array and decide what the intent was for each promptText, then match to the example where the intent most resembles ${userIntent} or could be rewritten to resemble it without changing its meaning. Return the selected example object. <{\"example\": <integer>, \"promptText\": <string>}>: ${matchedExample}",
-        "examples": [
-          {
-            "example": 1,
-            "promptText": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file."
-          },
-          {
-            "example": 2,
-            "promptText": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do."
-          },
-          {
-            "example": 3,
-            "promptText": "Follow these instructions exactly. Do not replace existing files, create additional files, or omit any operation. Report which operations succeeded."
-          },
-          {
-            "example": 4,
-            "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
-          },
-          {
-            "example": 5,
-            "promptText": "Explain the difference between a JSON object and a JSON array."
-          },
-          {
-            "example": 6,
-            "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
-          },
-          {
-            "example": 7,
-            "promptText": "Which of these two names sounds more appropriate for a software project?"
-          },
-          {
-            "example": 8,
-            "promptText": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened."
-          },
-          {
-            "example": 9,
-            "promptText": "What does JSON stand for?"
-          }
-        ],
-        "return": "${matchedExample}"
-      }
-    ]
-  },
+  [
+    {
+      "instruction": "Restate the user intent. <string> (less than 100 words): ${userIntent}",
+      "return": "${userIntent}"
+    },
+    {
+      "instruction": "Here are nine examples. Iterate over the examples array and decide what the intent was for each promptText, then match to the example where the intent most resembles ${userIntent} or could be rewritten to resemble it without changing its meaning. Return the selected example object. <{\"example\": <integer>, \"promptText\": <string>}>: ${matchedExample}",
+      "examples": [
+        {
+          "example": 1,
+          "promptText": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file."
+        },
+        {
+          "example": 2,
+          "promptText": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do."
+        },
+        {
+          "example": 3,
+          "promptText": "Follow these instructions exactly. Do not replace existing files, create additional files, or omit any operation. Report which operations succeeded."
+        },
+        {
+          "example": 4,
+          "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+        },
+        {
+          "example": 5,
+          "promptText": "Explain the difference between a JSON object and a JSON array."
+        },
+        {
+          "example": 6,
+          "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+        },
+        {
+          "example": 7,
+          "promptText": "Which of these two names sounds more appropriate for a software project?"
+        },
+        {
+          "example": 8,
+          "promptText": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened."
+        },
+        {
+          "example": 9,
+          "promptText": "What does JSON stand for?"
+        }
+      ],
+      "return": "${matchedExample}"
+    }
+  ],
   {
     "instruction": "Find the value for the \"example\" key found in ${matchedExample}. Find the matching key in the lookup table. The value of the matching key is the mode you will use. <\"accountability\" | \"fidelity\" | \"minimal\">: ${mode}",
     "lookupTable": {
