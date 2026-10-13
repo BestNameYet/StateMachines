@@ -43,14 +43,15 @@
                   "type": "string"
                 }
               },
-              "targetDataLocations": {
-                "definition": "The file names and byte ranges identifying the data to be changed. Byte offsets are zero-based in the inspected file bytes: frombyte is inclusive and tobyte is exclusive. An insertion uses equal offsets; a new empty file uses 0 and 0. Establish offsets from inspected bytes rather than guessing.",
+              "targetData": {
+                "definition": "The file names and byte ranges identifying the data to be changed. Byte offsets are zero-based in the inspected file bytes: frombyte is inclusive and tobyte is exclusive. An insertion uses equal offsets; a new empty file uses 0 and 0. Establish offsets from inspected bytes rather than guessing. For each location, intentWords contains the exact words or phrases in ${userIntent} that require that specific change. Each entry must be quoted from the captured intent; do not paraphrase or invent justification.",
                 "type": "array",
                 "items": {
                   "type": "object",
                   "required": [
                     "filename",
-                    "location"
+                    "location",
+                    "intentWords"
                   ],
                   "keys": {
                     "filename": {
@@ -71,6 +72,12 @@
                           "type": "integer",
                           "minimum": 0
                         }
+                      }
+                    },
+                    "intentWords": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
                       }
                     }
                   }
@@ -93,8 +100,8 @@
                 "return": "${targetFiles}"
               },
               {
-                "question": "List the locations of the data that will be changed in ${targetFiles}, using the byte-range convention in ${targetDataLocations.definition}.",
-                "return": "${targetDataLocations}"
+                "question": "List the locations of the data that will be changed in ${targetFiles}, using the byte-range convention in ${targetData.definition}. For each location, list in intentWords the specific exact words from ${userIntent} that require that change.",
+                "return": "${targetData}"
               }
             ]
           },
@@ -112,13 +119,16 @@
                   "targetFiles": [
                     "letters.txt"
                   ],
-                  "targetDataLocations": [
+                  "targetData": [
                     {
                       "filename": "letters.txt",
                       "location": {
                         "frombyte": 1,
                         "tobyte": 2
-                      }
+                      },
+                      "intentWords": [
+                        "Replace B with Z"
+                      ]
                     }
                   ]
                 },
@@ -136,13 +146,17 @@
                   "targetFiles": [
                     "notes.txt"
                   ],
-                  "targetDataLocations": [
+                  "targetData": [
                     {
                       "filename": "notes.txt",
                       "location": {
                         "frombyte": 0,
                         "tobyte": 0
-                      }
+                      },
+                      "intentWords": [
+                        "Create notes.txt",
+                        "write Hello into it"
+                      ]
                     }
                   ]
                 },
