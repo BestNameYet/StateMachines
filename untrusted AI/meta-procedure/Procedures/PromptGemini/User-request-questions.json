@@ -24,40 +24,49 @@
     "return": "${userIntent}"
   },
   {
-    "instruction": "Here are nine examples. Match ${userIntent} to the example that it most resembles or could be rewritten to resemble without changing its meaning. Return the selected labeled example object. <{\"<A-I>\": <string>}>: ${matchedExample}",
+    "instruction": "Here are nine examples. Match ${userIntent} to the example that it most resembles or could be rewritten to resemble without changing its meaning. Return the selected example object. <{\"Example\": <integer>, \"example\": <string>}>: ${matchedExample}",
     "examples": [
       {
-        "E": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file."
+        "Example": 5,
+        "example": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file."
       },
       {
-        "C": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do."
+        "Example": 3,
+        "example": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do."
       },
       {
-        "B": "Follow these instructions exactly. Do not replace existing files, create additional files, or omit any operation. Report which operations succeeded."
+        "Example": 2,
+        "example": "Follow these instructions exactly. Do not replace existing files, create additional files, or omit any operation. Report which operations succeeded."
       },
       {
-        "F": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+        "Example": 6,
+        "example": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
       },
       {
-        "H": "Explain the difference between a JSON object and a JSON array."
+        "Example": 8,
+        "example": "Explain the difference between a JSON object and a JSON array."
       },
       {
-        "D": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+        "Example": 4,
+        "example": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
       },
       {
-        "I": "Which of these two names sounds more appropriate for a software project?"
+        "Example": 9,
+        "example": "Which of these two names sounds more appropriate for a software project?"
       },
       {
-        "A": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened."
+        "Example": 1,
+        "example": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened."
       },
       {
-        "G": "What does JSON stand for?"
+        "Example": 7,
+        "example": "What does JSON stand for?"
       }
     ],
     "return": "${matchedExample}"
   },
   {
-    "instruction": "Select the mode from the key of ${matchedExample}: A, B, or C selects accountability; D, E, or F selects fidelity; G, H, or I selects minimal. <\"accountability\" | \"fidelity\" | \"minimal\">: ${mode}",
+    "instruction": "Select the mode from the \"Example\" key of ${matchedExample}: 1, 2, or 3 selects accountability; 4, 5, or 6 selects fidelity; 7, 8, or 9 selects minimal. <\"accountability\" | \"fidelity\" | \"minimal\">: ${mode}",
     "return": "${mode}"
   }
 ]
