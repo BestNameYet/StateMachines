@@ -20,10 +20,10 @@
     "return": "${targetDataIntent}"
   },
   {
-    "instruction": "State the user intent. <string> (less than 100 words): ${userIntent}",
-    "return": "${userIntent}"
-  },
-  {
+    "restateUserIntent": {
+      "instruction": "Restate the user intent. <string> (less than 100 words): ${userIntent}",
+      "return": "${userIntent}"
+    },
     "instruction": "Here are nine examples. Iterate over the examples array and decide what the intent was for each promptText, then match to the example where the intent most resembles ${userIntent} or could be rewritten to resemble it without changing its meaning. Return the selected example object. <{\"example\": <integer>, \"promptText\": <string>}>: ${matchedExample}",
     "examples": [
       {
