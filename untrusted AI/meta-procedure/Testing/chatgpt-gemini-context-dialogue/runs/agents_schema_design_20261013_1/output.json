@@ -1,0 +1,441 @@
+{
+  "response_type": "agents_schema_design",
+  "second_pass_return_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "SecondPassAgentsRevisionDeliverable",
+    "description": "Authoritative, complete machine-readable contract governing the second-pass AGENTS procedure revision and execution deliverable.",
+    "type": "object",
+    "required": [
+      "response_type",
+      "revised_agents_procedure",
+      "state_transition_accounting_and_verification",
+      "semantic_concept_inventory",
+      "captured_variable_lifecycle_matrix",
+      "coverage_and_validation_report",
+      "status"
+    ],
+    "properties": {
+      "response_type": {
+        "type": "string",
+        "const": "revised_agents_procedure_deliverable"
+      },
+      "revised_agents_procedure": {
+        "type": "array",
+        "description": "Complete, untruncated natural-language executable procedure array meeting or exceeding the original AGENTS document character and line floors.",
+        "minItems": 8,
+        "items": {
+          "type": "object",
+          "description": "Constituent procedure section: metadata, authority declaration, semantics, pre-execution phases, execution core, post-execution phases, continuation selector, status selector, profile specifications, or universal suffix."
+        }
+      },
+      "state_transition_accounting_and_verification": {
+        "type": "object",
+        "description": "Mandatory state-transition accounting and value verification covering every persistent file edit, initial/desired/final values, basis citations, and verified evidence.",
+        "required": [
+          "transitions_table",
+          "value_verification_records",
+          "fixed_aspects_preservation_records",
+          "discrepancy_and_unverified_records"
+        ],
+        "properties": {
+          "transitions_table": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "edit_sequence",
+                "target_file_or_entity",
+                "aspect",
+                "edit_purpose",
+                "initial_value",
+                "desired_value",
+                "observed_final_value",
+                "initial_basis",
+                "final_basis",
+                "verification_operation",
+                "observed_evidence",
+                "comparison_outcome"
+              ],
+              "properties": {
+                "edit_sequence": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "target_file_or_entity": {
+                  "type": "string"
+                },
+                "aspect": {
+                  "type": "string"
+                },
+                "edit_purpose": {
+                  "type": "string"
+                },
+                "initial_value": {},
+                "desired_value": {},
+                "observed_final_value": {},
+                "initial_basis": {
+                  "type": "object",
+                  "required": [
+                    "locatorType",
+                    "locator"
+                  ],
+                  "properties": {
+                    "locatorType": {
+                      "type": "string"
+                    },
+                    "locator": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "final_basis": {
+                  "type": "object",
+                  "required": [
+                    "locatorType",
+                    "locator"
+                  ],
+                  "properties": {
+                    "locatorType": {
+                      "type": "string"
+                    },
+                    "locator": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "verification_operation": {
+                  "type": "string"
+                },
+                "observed_evidence": {
+                  "type": "string"
+                },
+                "comparison_outcome": {
+                  "type": "string",
+                  "enum": [
+                    "MATCH",
+                    "DISCREPANCY",
+                    "UNVERIFIED"
+                  ]
+                }
+              }
+            }
+          },
+          "value_verification_records": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "assertion_id",
+                "target",
+                "asserted_value",
+                "verification_method",
+                "inspected_raw_value",
+                "evaluation",
+                "blocker_or_missing_evidence"
+              ],
+              "properties": {
+                "assertion_id": {
+                  "type": "string"
+                },
+                "target": {
+                  "type": "string"
+                },
+                "asserted_value": {},
+                "verification_method": {
+                  "type": "string"
+                },
+                "inspected_raw_value": {},
+                "evaluation": {
+                  "type": "string",
+                  "enum": [
+                    "VERIFIED",
+                    "FAILED",
+                    "UNVERIFIED"
+                  ]
+                },
+                "blocker_or_missing_evidence": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          },
+          "fixed_aspects_preservation_records": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "aspect",
+                "established_initial_value",
+                "observed_final_value",
+                "preservation_verified",
+                "basis_inspected"
+              ],
+              "properties": {
+                "aspect": {
+                  "type": "string"
+                },
+                "established_initial_value": {},
+                "observed_final_value": {},
+                "preservation_verified": {
+                  "type": "boolean"
+                },
+                "basis_inspected": {
+                  "type": "object",
+                  "required": [
+                    "locatorType",
+                    "locator"
+                  ],
+                  "properties": {
+                    "locatorType": {
+                      "type": "string"
+                    },
+                    "locator": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "discrepancy_and_unverified_records": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "target",
+                "aspect",
+                "discrepancy_type",
+                "details",
+                "impact_on_final_status"
+              ],
+              "properties": {
+                "target": {
+                  "type": "string"
+                },
+                "aspect": {
+                  "type": "string"
+                },
+                "discrepancy_type": {
+                  "type": "string",
+                  "enum": [
+                    "MISMATCH",
+                    "UNVERIFIED_EVIDENCE",
+                    "UNMET_PREREQUISITE"
+                  ]
+                },
+                "details": {
+                  "type": "string"
+                },
+                "impact_on_final_status": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "semantic_concept_inventory": {
+        "type": "array",
+        "description": "Comprehensive audit of all 24+ core operative concepts, ensuring authoritative single-location ownership and zero redundant synonyms.",
+        "items": {
+          "type": "object",
+          "required": [
+            "concept_name",
+            "owning_section",
+            "plain_language_definition",
+            "synonyms_deprecated_or_prohibited",
+            "referencing_sections"
+          ],
+          "properties": {
+            "concept_name": {
+              "type": "string"
+            },
+            "owning_section": {
+              "type": "string"
+            },
+            "plain_language_definition": {
+              "type": "string"
+            },
+            "synonyms_deprecated_or_prohibited": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "referencing_sections": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "captured_variable_lifecycle_matrix": {
+        "type": "array",
+        "description": "Audit of all captured typed variables verifying the local definition, capture question, return, and consumers.",
+        "items": {
+          "type": "object",
+          "required": [
+            "variable_identifier",
+            "type",
+            "owning_instruction_section",
+            "local_definition_present",
+            "capture_question_verbatim",
+            "capture_return_binding",
+            "downstream_consumers_or_closure_element"
+          ],
+          "properties": {
+            "variable_identifier": {
+              "type": "string"
+            },
+            "type": {
+              "type": [
+                "string",
+                "array"
+              ]
+            },
+            "owning_instruction_section": {
+              "type": "string"
+            },
+            "local_definition_present": {
+              "type": "boolean"
+            },
+            "capture_question_verbatim": {
+              "type": "string"
+            },
+            "capture_return_binding": {},
+            "downstream_consumers_or_closure_element": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "coverage_and_validation_report": {
+        "type": "object",
+        "description": "Substantive evaluation of prompt instructions, character/line verbosity metrics, and architectural integrity.",
+        "required": [
+          "verbosity_metrics",
+          "substantive_obligations_audit",
+          "schema_notation_resolution",
+          "continuation_and_status_alignment",
+          "untruncated_closure_verified"
+        ],
+        "properties": {
+          "verbosity_metrics": {
+            "type": "object",
+            "required": [
+              "original_line_count_floor",
+              "original_char_count_floor",
+              "revised_line_count",
+              "revised_char_count",
+              "floor_satisfied"
+            ],
+            "properties": {
+              "original_line_count_floor": {
+                "type": "integer",
+                "const": 2024
+              },
+              "original_char_count_floor": {
+                "type": "integer",
+                "const": 99817
+              },
+              "revised_line_count": {
+                "type": "integer"
+              },
+              "revised_char_count": {
+                "type": "integer"
+              },
+              "floor_satisfied": {
+                "type": "boolean"
+              }
+            }
+          },
+          "substantive_obligations_audit": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "obligation_title",
+                "status",
+                "verification_evidence"
+              ],
+              "properties": {
+                "obligation_title": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "MET",
+                    "UNMET",
+                    "PARTIALLY_MET"
+                  ]
+                },
+                "verification_evidence": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "schema_notation_resolution": {
+            "type": "object",
+            "required": [
+              "custom_keys_rule_documented",
+              "standard_json_schema_properties_reconciliation"
+            ],
+            "properties": {
+              "custom_keys_rule_documented": {
+                "type": "string"
+              },
+              "standard_json_schema_properties_reconciliation": {
+                "type": "string"
+              }
+            }
+          },
+          "continuation_and_status_alignment": {
+            "type": "object",
+            "required": [
+              "continuation_scenarios_count",
+              "few_shot_examples_present",
+              "status_selector_criteria_aligned"
+            ],
+            "properties": {
+              "continuation_scenarios_count": {
+                "type": "integer",
+                "minimum": 34
+              },
+              "few_shot_examples_present": {
+                "type": "boolean"
+              },
+              "status_selector_criteria_aligned": {
+                "type": "boolean"
+              }
+            }
+          },
+          "untruncated_closure_verified": {
+            "type": "boolean"
+          }
+        }
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "COMPLETE",
+          "INCOMPLETE",
+          "BLOCKED",
+          "FAILED"
+        ]
+      }
+    }
+  },
+  "schema_explanation": "This schema enforces the complete requirements of the two-pass AGENTS revision. It establishes a machine-readable contract for the second-pass output across five pillars: (1) 'revised_agents_procedure' houses the untruncated, fully articulated JSON array structured around the symmetrical template [long-form plain-language instruction, inputs object with local definitions, capture questions returning ${variable}, and purposeful few-shot examples]. (2) 'state_transition_accounting_and_verification' models the mandatory transition records for every file edit, separating initial basis from final verification basis, and enforcing actual value-based inspection rather than completion assertions. (3) 'semantic_concept_inventory' ensures all 24+ core concepts (basis, aspect, fixed, userPromptVerbatim, etc.) have single authoritative homes, strictly eliminating synonyms such as 'source' and 'property'. (4) 'captured_variable_lifecycle_matrix' audits every typed variable to ensure zero orphaned definitions, verified capture questions, and usage closure. (5) 'coverage_and_validation_report' enforces the line (2,024) and character (99,817) verbosity floor derived from AGENTS-original-reference.json, verifies all 34 continuation scenarios, reconciles custom 'keys' vs standard JSON Schema 'properties', and confirms complete closure of the three-element return contract.",
+  "second_pass_instructions": "To execute the second pass: (1) Consume this schema as the governing output structure alongside all five input artifacts. (2) Generate 'revised_agents_procedure' in full, expanding all sections into rich natural language instructions that explain what, why, source, capture, return, and downstream consumers for every concept. Ensure few-shot examples (normal case, edge/failure case) are restored in every question set. (3) Do not truncate or compress; maintain explanatory verbosity exceeding 99,817 characters. (4) Map all file transitions into 'state_transition_accounting_and_verification', providing actual observed values, locator-based basis objects, and comparison outcomes. (5) Populate the inventory and lifecycle matrices verifying zero dangling references (specifically eliminating #/$defs/invocation breakage). (6) Output one single, valid, untruncated JSON deliverable matching 'revised_agents_procedure_deliverable'.",
+  "status": "COMPLETE"
+}
