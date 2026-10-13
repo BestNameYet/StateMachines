@@ -143,3 +143,44 @@ Make definitions complete enough to guide an agent without reproducing the same 
 Every instruction section must use the same local-input/question/few-shot template. Include representative pre-execution captures, actual execution, and post-execution observations in the examples so the phases cannot be confused. Examples must be explicitly illustrative; they are never evidence that the live task was performed.
 
 Verify phase coverage, ownership, definition completeness, paired state values, distinct initial/desired/final values, actual execution between phases, and the final return contract across the entire rewritten procedure.
+
+
+## Mandatory state-transition accounting and value verification
+
+The state-transition design must cover every file edit made during execution. Do not account only for the initial requested artifact or the last saved file. Include files created, modified, renamed, moved or deleted, including scripts, configuration, documentation and other persistent files changed to achieve the request.
+
+For each file edit, capture the exact file identity or locator, the affected aspect, its established initial value, the desired value or condition, and the purpose of that edit. Tie the purpose directly to the desired value and the user's overall goal. A list of filenames or a claim that an edit was made does not explain the transition. Preserve the association when several edits affect one file or when one desired outcome requires edits to multiple files.
+
+Distinguish the basis establishing the initial state from the basis inspected to establish the final state. Both are uses of the same defined basis concept, not separate synonymous concepts. Preserve enough identity and version information to identify precisely which state was inspected. A pre-edit source, local staging file or old version cannot by itself establish the final saved state.
+
+### Post-execution state comparison
+
+After execution, revisit every tracked transition and present its values together in an easy-to-inspect table or equivalent clear representation. Include:
+- Exact file or target.
+- Named aspect and purpose of the edit.
+- Initial value.
+- Desired value or condition.
+- Observed final value.
+- Basis used to establish the initial value and basis used to verify the final value.
+- The actual verification operation and supporting observed evidence.
+- The comparison outcome and any discrepancy.
+
+Reuse the pre-execution records rather than invent a second set of desired values after execution. Include fixed aspects and verify their preservation. Cover intermediate file edits as well as the final deliverable; where later edits supersede earlier states, identify the sequence and verify the final result against the obligations of the tracked edits.
+
+### Verification must use the asserted values
+
+Verification is the purpose of tracking the transitions. A question asking whether an action was done, an assistant's yes/no answer, a status label, a successful invocation, or a self-authored completion statement is insufficient.
+
+Take the actual values asserted in each transition and submit them to the relevant inspection or check. Read the actual saved file and compare its contents against the required value; query the actual target state; run the prescribed behavior with the captured inputs and observe its outputs; or use the corresponding authoritative operation for that aspect. Use the user's required verification method and environment.
+
+Compare observed evidence with the captured desired value or condition. For a fixed aspect, compare the final observed value with its established initial value. Report the observed value and comparison evidence even when they differ from the desired result. Do not fill the final-value column by copying the desired-value column.
+
+Examples:
+- An edit is intended to set a configuration timeout to 30 seconds. Read the resulting saved configuration, capture the actual timeout value, and compare that value with 30 seconds. The verification checks the asserted setting rather than asking whether the edit occurred.
+- An edit is intended to change a function's output for a specified input. Execute the prescribed function in the required environment with that actual input, capture the output, and compare it with the captured desired output. File existence or a successful save is not evidence of the behavior.
+- A rename is intended to move a specific file to a specified path without altering its contents. Inspect both the required path state and the preserved contents; verify both assertions.
+- A fixed configuration value must stay unchanged while another aspect is edited. Read the final configuration and compare that fixed value with the established initial value.
+
+If an assertion cannot be verified, mark that transition unverified and identify the missing evidence or blocker. Continue available authorized verification work. Never classify the whole task as verified merely because some rows passed.
+
+The rewritten procedure must define any genuinely needed edit-purpose, identity, comparison or evidence variables locally, request and return them, and connect them to the state-transition records without adding duplicate definitions or unsupported routing metadata. Include few-shot examples demonstrating a successful value comparison, an observed mismatch, and unavailable verification evidence.
