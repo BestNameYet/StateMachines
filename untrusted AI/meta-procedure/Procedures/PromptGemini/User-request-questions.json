@@ -20,11 +20,7 @@
     "return": "${targetDataIntent}"
   },
   {
-    "restateUserIntent": {
-      "instruction": "Restate the user intent. <string> (less than 100 words): ${userIntent}",
-      "return": "${userIntent}"
-    },
-    "instruction": "Here are nine examples. Iterate over the examples array and decide what the intent was for each promptText, then match to the example where the intent most resembles ${userIntent} or could be rewritten to resemble it without changing its meaning. Return the selected example object. <{\"example\": <integer>, \"promptText\": <string>}>: ${matchedExample}",
+    "instruction": "Restate the user intent. <string> (less than 100 words): ${userIntent} Here are nine examples. Iterate over the examples array and decide what the intent was for each promptText, then match to the example where the intent most resembles ${userIntent} or could be rewritten to resemble it without changing its meaning. Return the selected example object. <{\"example\": <integer>, \"promptText\": <string>}>: ${matchedExample}",
     "examples": [
       {
         "example": 1,
@@ -63,7 +59,10 @@
         "promptText": "What does JSON stand for?"
       }
     ],
-    "return": "${matchedExample}"
+    "return": {
+      "userIntent": "${userIntent}",
+      "matchedExample": "${matchedExample}"
+    }
   },
   {
     "instruction": "Select the mode from the \"example\" key of ${matchedExample}: 2, 3, or 8 selects accountability; 1, 4, or 6 selects fidelity; 5, 7, or 9 selects minimal. <\"accountability\" | \"fidelity\" | \"minimal\">: ${mode}",
