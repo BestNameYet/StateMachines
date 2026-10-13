@@ -27,8 +27,14 @@
     "instruction": "Here are nine examples. Match ${userIntent} to the example that it most resembles or could be rewritten to resemble without changing its meaning. Return the selected labeled example object. <{\"<A-I>\": {\"userIntent\": <string>, \"mode\": <\"accountability\" | \"fidelity\" | \"minimal\">}}>: ${matchedExample}",
     "examples": [
       {
-        "A": {
-          "userIntent": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened.",
+        "E": {
+          "userIntent": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file.",
+          "mode": "fidelity"
+        }
+      },
+      {
+        "C": {
+          "userIntent": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do.",
           "mode": "accountability"
         }
       },
@@ -39,33 +45,9 @@
         }
       },
       {
-        "C": {
-          "userIntent": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do.",
-          "mode": "accountability"
-        }
-      },
-      {
-        "D": {
-          "userIntent": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes.",
-          "mode": "fidelity"
-        }
-      },
-      {
-        "E": {
-          "userIntent": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file.",
-          "mode": "fidelity"
-        }
-      },
-      {
         "F": {
           "userIntent": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory.",
           "mode": "fidelity"
-        }
-      },
-      {
-        "G": {
-          "userIntent": "What does JSON stand for?",
-          "mode": "minimal"
         }
       },
       {
@@ -75,12 +57,34 @@
         }
       },
       {
+        "D": {
+          "userIntent": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes.",
+          "mode": "fidelity"
+        }
+      },
+      {
         "I": {
           "userIntent": "Which of these two names sounds more appropriate for a software project?",
+          "mode": "minimal"
+        }
+      },
+      {
+        "A": {
+          "userIntent": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened.",
+          "mode": "accountability"
+        }
+      },
+      {
+        "G": {
+          "userIntent": "What does JSON stand for?",
           "mode": "minimal"
         }
       }
     ],
     "return": "${matchedExample}"
+  },
+  {
+    "instruction": "Select the mode using the \"mode\" key in the example object returned in ${matchedExample}. <\"accountability\" | \"fidelity\" | \"minimal\">: ${mode}",
+    "return": "${mode}"
   }
 ]
