@@ -286,3 +286,43 @@ Its instruction/question sets use a body object with instruction/inputs/question
 The output's state-transition table labels proposed changes to the existing repository working document as observed final file states even though the Gemini response did not modify or reread that file. Its final basis locators and inspected counts also contain mismatches. Describe the generated revision as a proposed deliverable whose serialization can be inspected, not a saved replacement of the input file. Mark live filesystem/persistence claims UNVERIFIED unless genuine evidence is provided. Never turn an intended edit or internal assertion into verified environmental state.
 
 Produce a corrected complete deliverable under the first-pass schema, with the updated exact template and all original requirements. Preserve the previous output as evidence. If you cannot establish a claimed check, say so accurately; do not fabricate metrics to satisfy a floor. The controlling measure for the verbosity floor is the full revised procedure's pretty-printed JSON serialization with two-space indentation, excluding its external coverage/validation wrapper and explanatory reports.
+
+
+## Modular procedures instead of another monolithic revision
+
+The user's latest instruction supersedes generating the entire procedure as one monolithic second-pass document. Divide the work into separate procedures, one for every distinct major evaluation or operation. First determine why each part exists: the obligation it protects, the question it answers, the evidence it requires, and the result it supplies to the next procedure. Separation is by responsibility, not by arbitrary page or token boundaries.
+
+For this pass, produce a modular procedure design and a separate, complete specification for each module. Do not try to generate the full original-length implementation of every module in this single response. That previously caused unreliable size claims, truncation risk and inconsistent structure. The complete eventual procedure collection must preserve the original detail and verbosity requirement; it is not a requirement to pad this decomposition pass.
+
+Required distinct procedures, subject to additional responsibilities discovered from the full sources:
+1. Verify provenance: establish which governing instruction is authoritative and current; read it completely; inspect and capture actual identifiers. Its purpose is to prevent stale, substituted or invented authority.
+2. Gather user instructions: preserve the original prompt and capture interpretation, goal, scope, ordering, limits, procedure and delivery requirements. Its purpose is faithful execution of the actual request rather than an assistant-invented task.
+3. Specify state transitions: identify the authoritative basis, target/aspects, established current values, desired values, fixed values and purpose of every planned file edit. Its purpose is to make requested changes explicit and later verifiable.
+4. Select execution mode: choose exactly one profile from the operative request. Its purpose is to select the appropriate projection and result requirements, independently of state tracking.
+5. Construct and publish the projection: assemble captured inputs and expanded return contract before substantive execution. Its purpose is a complete visible execution specification.
+6. Validate the pre-execution specification: check completeness, resolved references, source/current-value evidence, user constraints, phase order and return contract. Its purpose is to detect an incorrect or unexecutable projection before acting; the original request controls corrections. This must be separate from post-execution verification.
+7. Execute the requested operations: perform actual authorized work using captured state and user requirements. Its purpose is achievement of the requested outcome, not another plan.
+8. Record the invocation audit: collect actual calls and observed outcomes throughout the turn and finalize the audit afterward. Its purpose is truthful execution accountability; do not mistake planned calls for performed operations.
+9. Select execution continuation: evaluate outstanding obligations after observed successes, failures or blockers and choose the next useful authorized action. Its purpose is to avoid premature termination or unauthorized method substitution.
+10. Verify resulting state: inspect actual final values for every changed and fixed aspect, compare against desired or preserved values, and demonstrate every edit/purpose/value/basis/evidence association. Its purpose is outcome verification using actual asserted values, not completion questionnaires.
+11. Evaluate completion status: decide COMPLETE, INCOMPLETE, BLOCKED or FAILED only after continuation ends and verification is evaluated. Its purpose is truthful overall outcome classification, distinct from a local tool result.
+12. Assemble and validate the final response: return the full selected-profile result, audit and profile/status suffix under the exact three-element contract. Its purpose is complete, inspectable reporting with no lost values or unsupported claims.
+
+Review the full sources for any additional major evaluation requiring its own procedure. Merge responsibilities only when they are genuinely the same evaluation; do not reintroduce conceptual duplicates.
+
+For each separate procedure specify:
+- Its plain-language name and proposed separate file path.
+- Why it exists and which distinct obligation it satisfies.
+- The question or decision it performs.
+- Inputs it owns and captures, versus references to values already captured by another procedure.
+- The required evidence and actual operation performed.
+- Its returned values and the procedures that receive them.
+- Preconditions, failure/recovery cases and completion conditions.
+- The same local-input/operational-question/return/few-shot template established earlier.
+- Useful example scenarios to implement later, including the normal and edge/failure case.
+
+Return an ordered orchestration manifest explaining dependencies and when each procedure is called. Provenance precedes interpretation; interpretation and state specification precede mode/projection validation; publication precedes substantive execution; audit spans the turn; continuation runs as needed; final verification precedes completion classification and final response validation.
+
+Define shared concepts once and reference them across procedure files. Defining each module independently does not authorize copying the same variable or semantic definition into every module. Make ownership and reference resolution explicit without per-variable invented routing metadata.
+
+Deliver a modular design with individually named procedure specifications and an orchestration manifest. The follow-up implementation can generate and validate each procedure separately, then validate their composition. Do not claim that a module specification is its executed implementation or that this decomposition pass completed the full rewrite.
