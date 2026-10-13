@@ -1,74 +1,106 @@
 {
-  "response_type": "agents_metadata_capture",
-  "metadata": {
-    "responseType": "customInstruction",
-    "instructionId": "jwrsAdaptiveSelectorWithToolAudit",
-    "version": "4.8-project-1.2",
-    "purpose": "Define the instruction framework for projecting user requests into JWRS, carrying out tasks, and reporting execution outcomes and evidence.",
-    "instructionScope": "everyUserPrompt",
-    "schemaNotation": "Custom descriptive schemas: keys declares named fields; additional keys controls extra fields. Translate these descriptions to standard JSON Schema before using a JSON Schema validator."
-  },
-  "field_decisions": {
-    "retained_fields": {
-      "responseType": {
-        "reason": "Identifies the structural category of the governing artifact so executing interpreters recognize it as a procedural custom instruction rather than an execution result or data record.",
-        "source": "AGENTS-root-array.json line 4 (also AGENTS-original-reference.json line 3 as response_type)."
+  "response_type": "agents_provenance_revision",
+  "revised_section": {
+    "Load the Governing Instruction": [
+      {
+        "inputs": {
+          "governingInstructionFileId": {
+            "definition": "The current backing file ID returned by live retrieval of the governing instruction. Read the complete current instruction, capture this ID from its retrieval metadata, and return the exact value. Return null only when unavailable; never infer or reuse an old ID.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "governingInstructionLibraryFileId": {
+            "definition": "The persistent Library record ID returned by the same live retrieval of the governing instruction. Capture and return its exact value, independently of the backing file ID. Return null only when unavailable; never infer or substitute a different identifier.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instructionScope": {
+            "definition": "The prompts or contexts in which the governing instruction applies. This describes instruction applicability, independently of the scope of a requested change.",
+            "type": "string"
+          }
+        }
       },
-      "instructionId": {
-        "reason": "Provides the persistent, unique canonical identifier for this specific governing procedure across revisions and environments.",
-        "source": "AGENTS-root-array.json line 5 (also AGENTS-original-reference.json line 4 as instruction_id)."
+      {
+        "questions": [
+          {
+            "question": "Locate the primary governing instruction file /AGENTS.md at ChatGPT Library root (or the authorized Google Drive mirror file ID 1mOA-U6vw6luQslJxvWffPghl9TTNw3hE if the Library root is inaccessible), read the complete instruction, and inspect its live retrieval metadata. What is the ${governingInstructionFileId.definition}?",
+            "return": "${governingInstructionFileId}"
+          },
+          {
+            "question": "From the same live retrieval metadata of the governing instruction (/AGENTS.md in ChatGPT Library root), what is the ${governingInstructionLibraryFileId.definition}?",
+            "return": "${governingInstructionLibraryFileId}"
+          },
+          {
+            "question": "Having fully read the complete text of the governing instruction, what is the ${instructionScope.definition}?",
+            "return": "${instructionScope}"
+          }
+        ]
       },
-      "version": {
-        "reason": "Establishes the document release revision baseline to prevent version drift between working drafts and project references.",
-        "source": "AGENTS-root-array.json line 6 (and AGENTS-original-reference.json line 5)."
-      },
-      "purpose": {
-        "reason": "Articulates the concise, self-contained procedural mandate of the document itself: projecting requests into JWRS, executing in the same turn, auditing tools, and returning verified evidence.",
-        "source": "AGENTS-root-array.json line 7."
-      },
-      "instructionScope": {
-        "reason": "Defines the boundary conditions under which this governing instruction applies (every user prompt), distinguishing procedure applicability from prompt-specific operational scopes.",
-        "source": "AGENTS-root-array.json line 8 (and AGENTS-original-reference.json line 6 as scope)."
-      },
-      "schemaNotation": {
-        "reason": "Resolves the schema dialect rule directly within document metadata, explaining that keys and additionalKeys describe schema structure without violating the constraint against reintroducing properties into the working document.",
-        "source": "AGENTS-root-array.json line 9."
+      {
+        "examples": [
+          {
+            "scenario": "Live retrieval of the primary governing instruction /AGENTS.md from the ChatGPT Library root succeeds, providing complete current retrieval metadata.",
+            "suppliedInputs": {
+              "primarySource": "/AGENTS.md",
+              "fileLocation": "ChatGPT Library root",
+              "retrievalMetadata": {
+                "file_id": "file_000000005104820c8cb3f5fc0731d877",
+                "library_file_id": "libfile_b6b39702befc8191a23fdb2b219b132e",
+                "declaredScope": "every_user_prompt"
+              }
+            },
+            "expectedReturn": {
+              "governingInstructionFileId": "file_000000005104820c8cb3f5fc0731d877",
+              "governingInstructionLibraryFileId": "libfile_b6b39702befc8191a23fdb2b219b132e",
+              "instructionScope": "every_user_prompt"
+            },
+            "explanation": "The governing instruction was read in full from the primary Library location. Live retrieval metadata provided both distinct identifiers: the current backing file ID and the stable persistent Library record ID. Both are recorded truthfully, and the declared applicability scope is captured."
+          },
+          {
+            "scenario": "The primary ChatGPT Library root is inaccessible; the governing instruction is retrieved from the authorized Google Drive mirror (file ID 1mOA-U6vw6luQslJxvWffPghl9TTNw3hE), providing the full text but no ChatGPT Library retrieval metadata.",
+            "suppliedInputs": {
+              "primarySource": "ChatGPT Library root (inaccessible)",
+              "mirrorSource": {
+                "provider": "Google Drive",
+                "file_id": "1mOA-U6vw6luQslJxvWffPghl9TTNw3hE",
+                "url": "https://drive.google.com/file/d/1mOA-U6vw6luQslJxvWffPghl9TTNw3hE/view?usp=drivesdk"
+              },
+              "retrievalMetadata": null,
+              "declaredScope": "every_user_prompt"
+            },
+            "expectedReturn": {
+              "governingInstructionFileId": null,
+              "governingInstructionLibraryFileId": null,
+              "instructionScope": "every_user_prompt"
+            },
+            "explanation": "When relying on a mirror fallback or when live Library retrieval metadata is absent, governingInstructionFileId and governingInstructionLibraryFileId must be returned as null. The Google Drive file ID must not be substituted for Library identifiers, and stale identifiers must not be inferred. The scope is captured from the full instruction text."
+          },
+          {
+            "scenario": "Live retrieval from ChatGPT Library root returns the backing file ID, but the persistent Library record ID is not exposed in the host retrieval metadata.",
+            "suppliedInputs": {
+              "primarySource": "/AGENTS.md",
+              "fileLocation": "ChatGPT Library root",
+              "retrievalMetadata": {
+                "file_id": "file_0000000099887766554433221100aabb",
+                "library_file_id": null,
+                "declaredScope": "every_user_prompt"
+              }
+            },
+            "expectedReturn": {
+              "governingInstructionFileId": "file_0000000099887766554433221100aabb",
+              "governingInstructionLibraryFileId": null,
+              "instructionScope": "every_user_prompt"
+            },
+            "explanation": "The backing file ID is captured directly from live metadata, while the unexposed library_file_id is truthfully returned as null. Missing identifiers are never fabricated or backfilled from memory or past versions."
+          }
+        ]
       }
-    },
-    "rejected_and_relocated_fields": {
-      "agentsMdProvenance": {
-        "reason": "Rejected as a static metadata wrapper. Live backing file and library IDs change per retrieval and duplicate pre-execution inputs."
-      },
-      "authoritativeFile_and_mirror": {
-        "reason": "Belongs in the operational 'Load the Governing Instruction' section as an inspection reference rather than document-level metadata."
-      },
-      "userGoal_and_scope": {
-        "reason": "These are prompt-specific inputs captured under 'Interpret the User Request', not static procedure metadata."
-      },
-      "basis_and_fixed": {
-        "reason": "These are dynamic state-change inputs belonging strictly in 'Describe the State Change'."
-      },
-      "profile_and_selectionRationale": {
-        "reason": "These belong exclusively to the mode selection decision process."
-      },
-      "timestamps_and_decorative_headers": {
-        "reason": "Explicitly forbidden by guidance to prevent ungrounded synthetic values and decoration."
-      }
-    }
+    ]
   },
-  "runtime_capture": {
-    "governingInstructionFileId": {
-      "necessity": "Identifies the current physical backing file in the runtime Library; cannot be statically hardcoded because file overwrites generate new identifiers.",
-      "status": "UNAVAILABLE_AT_REST",
-      "capture_question": "What is the current backing file ID returned by live retrieval of the governing instruction?",
-      "source": "Runtime retrieval metadata of /AGENTS.md from the active environment interface."
-    },
-    "governingInstructionLibraryFileId": {
-      "necessity": "Identifies the persistent Library record; distinct from the backing file ID and cannot be fabricated from historical reference snapshots.",
-      "status": "UNAVAILABLE_AT_REST",
-      "capture_question": "What is the persistent Library record ID returned by the same live retrieval of the governing instruction?",
-      "source": "Runtime retrieval metadata of /AGENTS.md from the active environment interface."
-    }
-  },
+  "revision_notes": "Consolidated the separate root-level authority location record and the pre-execution capture questions into one procedure section under the plain-language title 'Load the Governing Instruction'. Reconciled authority location details (primary /AGENTS.md at ChatGPT Library root and Google Drive mirror fallback) directly into the operational question wording and example scenarios, eliminating redundant wrappers. Structured the section strictly conforming to the canonical three-element ordered array: inputs (defining governingInstructionFileId, governingInstructionLibraryFileId, and instructionScope locally once), questions (operational capture inquiries referencing ${name.definition} and returning ${name}), and examples (standardized records with scenario, suppliedInputs, expectedReturn, and explanation covering normal Library retrieval, mirror fallback with truthful null metadata, and partial metadata exposure).",
   "status": "COMPLETE"
 }

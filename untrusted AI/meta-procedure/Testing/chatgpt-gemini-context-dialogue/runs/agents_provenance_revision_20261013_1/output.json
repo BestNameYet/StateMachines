@@ -1,0 +1,106 @@
+{
+  "response_type": "agents_provenance_revision",
+  "revised_section": {
+    "Load the Governing Instruction": [
+      {
+        "inputs": {
+          "governingInstructionFileId": {
+            "definition": "The current backing file ID returned by live retrieval of the governing instruction. Read the complete current instruction, capture this ID from its retrieval metadata, and return the exact value. Return null only when unavailable; never infer or reuse an old ID.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "governingInstructionLibraryFileId": {
+            "definition": "The persistent Library record ID returned by the same live retrieval of the governing instruction. Capture and return its exact value, independently of the backing file ID. Return null only when unavailable; never infer or substitute a different identifier.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instructionScope": {
+            "definition": "The prompts or contexts in which the governing instruction applies. This describes instruction applicability, independently of the scope of a requested change.",
+            "type": "string"
+          }
+        }
+      },
+      {
+        "questions": [
+          {
+            "question": "Locate the primary governing instruction file /AGENTS.md at ChatGPT Library root (or the authorized Google Drive mirror file ID 1mOA-U6vw6luQslJxvWffPghl9TTNw3hE if the Library root is inaccessible), read the complete instruction, and inspect its live retrieval metadata. What is the ${governingInstructionFileId.definition}?",
+            "return": "${governingInstructionFileId}"
+          },
+          {
+            "question": "From the same live retrieval metadata of the governing instruction (/AGENTS.md in ChatGPT Library root), what is the ${governingInstructionLibraryFileId.definition}?",
+            "return": "${governingInstructionLibraryFileId}"
+          },
+          {
+            "question": "Having fully read the complete text of the governing instruction, what is the ${instructionScope.definition}?",
+            "return": "${instructionScope}"
+          }
+        ]
+      },
+      {
+        "examples": [
+          {
+            "scenario": "Live retrieval of the primary governing instruction /AGENTS.md from the ChatGPT Library root succeeds, providing complete current retrieval metadata.",
+            "suppliedInputs": {
+              "primarySource": "/AGENTS.md",
+              "fileLocation": "ChatGPT Library root",
+              "retrievalMetadata": {
+                "file_id": "file_000000005104820c8cb3f5fc0731d877",
+                "library_file_id": "libfile_b6b39702befc8191a23fdb2b219b132e",
+                "declaredScope": "every_user_prompt"
+              }
+            },
+            "expectedReturn": {
+              "governingInstructionFileId": "file_000000005104820c8cb3f5fc0731d877",
+              "governingInstructionLibraryFileId": "libfile_b6b39702befc8191a23fdb2b219b132e",
+              "instructionScope": "every_user_prompt"
+            },
+            "explanation": "The governing instruction was read in full from the primary Library location. Live retrieval metadata provided both distinct identifiers: the current backing file ID and the stable persistent Library record ID. Both are recorded truthfully, and the declared applicability scope is captured."
+          },
+          {
+            "scenario": "The primary ChatGPT Library root is inaccessible; the governing instruction is retrieved from the authorized Google Drive mirror (file ID 1mOA-U6vw6luQslJxvWffPghl9TTNw3hE), providing the full text but no ChatGPT Library retrieval metadata.",
+            "suppliedInputs": {
+              "primarySource": "ChatGPT Library root (inaccessible)",
+              "mirrorSource": {
+                "provider": "Google Drive",
+                "file_id": "1mOA-U6vw6luQslJxvWffPghl9TTNw3hE",
+                "url": "https://drive.google.com/file/d/1mOA-U6vw6luQslJxvWffPghl9TTNw3hE/view?usp=drivesdk"
+              },
+              "retrievalMetadata": null,
+              "declaredScope": "every_user_prompt"
+            },
+            "expectedReturn": {
+              "governingInstructionFileId": null,
+              "governingInstructionLibraryFileId": null,
+              "instructionScope": "every_user_prompt"
+            },
+            "explanation": "When relying on a mirror fallback or when live Library retrieval metadata is absent, governingInstructionFileId and governingInstructionLibraryFileId must be returned as null. The Google Drive file ID must not be substituted for Library identifiers, and stale identifiers must not be inferred. The scope is captured from the full instruction text."
+          },
+          {
+            "scenario": "Live retrieval from ChatGPT Library root returns the backing file ID, but the persistent Library record ID is not exposed in the host retrieval metadata.",
+            "suppliedInputs": {
+              "primarySource": "/AGENTS.md",
+              "fileLocation": "ChatGPT Library root",
+              "retrievalMetadata": {
+                "file_id": "file_0000000099887766554433221100aabb",
+                "library_file_id": null,
+                "declaredScope": "every_user_prompt"
+              }
+            },
+            "expectedReturn": {
+              "governingInstructionFileId": "file_0000000099887766554433221100aabb",
+              "governingInstructionLibraryFileId": null,
+              "instructionScope": "every_user_prompt"
+            },
+            "explanation": "The backing file ID is captured directly from live metadata, while the unexposed library_file_id is truthfully returned as null. Missing identifiers are never fabricated or backfilled from memory or past versions."
+          }
+        ]
+      }
+    ]
+  },
+  "revision_notes": "Consolidated the separate root-level authority location record and the pre-execution capture questions into one procedure section under the plain-language title 'Load the Governing Instruction'. Reconciled authority location details (primary /AGENTS.md at ChatGPT Library root and Google Drive mirror fallback) directly into the operational question wording and example scenarios, eliminating redundant wrappers. Structured the section strictly conforming to the canonical three-element ordered array: inputs (defining governingInstructionFileId, governingInstructionLibraryFileId, and instructionScope locally once), questions (operational capture inquiries referencing ${name.definition} and returning ${name}), and examples (standardized records with scenario, suppliedInputs, expectedReturn, and explanation covering normal Library retrieval, mirror fallback with truthful null metadata, and partial metadata exposure).",
+  "status": "COMPLETE"
+}
