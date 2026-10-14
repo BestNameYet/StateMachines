@@ -49,30 +49,20 @@ function setValues(state, values) {
   }
 }
 
-function captureInput(state, screens, input) {
-  if (input === undefined) {
-    throw new Error("A new input value is required for the current render.");
+function applyValidatedValues(state, values) {
+  if (!values || typeof values !== "object" || Array.isArray(values)) {
+    throw new Error("Workflow must pass prevalidated values as a field/value object.");
   }
-  const screen = screens[state.render - 1];
-  if (!Array.isArray(screen)) {
-    throw new Error("Cannot accept input for render " + state.render + ".");
+  const entries = Object.entries(values);
+  for (const [key] of entries) {
+    if (key === "render" || !Object.hasOwn(state, key)) {
+      throw new Error("Workflow supplied a value for an unknown or controller-owned field: " + key);
+    }
   }
-  const returnEntry = screen.find(entry => entry[0] === "return");
-  const match = returnEntry && typeof returnEntry[1] === "string"
-    ? returnEntry[1].match(/^\$\{([A-Za-z_$][\w$]*)\}$/)
-    : null;
-  if (!match) {
-    throw new Error("The current screen must return one state field placeholder.");
-  }
-  const field = match[1];
-  if (!Object.hasOwn(state, field)) {
-    throw new Error("The return field is missing from state: " + field);
-  }
-  state[field] = input;
-  return field;
+  for (const [key, value] of entries) state[key] = value;
 }
 
-function transition(state, transitionMap, screens, input) {
+function transition(state, transitionMap, screens, validatedValues) {
   if (!state || typeof state !== "object" || Array.isArray(state)) {
     throw new Error("Transition requires a state object.");
   }
@@ -81,7 +71,7 @@ function transition(state, transitionMap, screens, input) {
   }
 
   const initializing = state.render === null;
-  if (!initializing) captureInput(state, screens, input);
+  if (!initializing) applyValidatedValues(state, validatedValues);
 
   const currentRender = state.render;
   const definition = transitionMap.transitions.find(item =>
@@ -122,9 +112,9 @@ if (require.main === module) {
   const state = JSON.parse(fs.readFileSync(path.join(__dirname, config.state), "utf8"));
   const transitionMap = JSON.parse(fs.readFileSync(path.join(__dirname, config.transitions), "utf8"));
   const template = JSON.parse(fs.readFileSync(path.join(__dirname, config.instructionRender), "utf8"));
-  const input = process.argv.length > 2 ? JSON.parse(process.argv[2]) : undefined;
-  const issueContent = transition(state, transitionMap, template.screens, input);
+  const validatedValues = process.argv.length > 2 ? JSON.parse(process.argv[2]) : undefined;
+  const issueContent = transition(state, transitionMap, template.screens, validatedValues);
   if (issueContent !== null) process.stdout.write(issueContent + "\n");
 }
 
-module.exports = { captureInput, evaluateCondition, transition };
+module.exports = { applyValidatedValues, evaluateCondition, transition };
