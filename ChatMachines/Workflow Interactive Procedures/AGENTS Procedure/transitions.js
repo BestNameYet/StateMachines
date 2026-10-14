@@ -62,27 +62,30 @@ function parseValuesJson(valuesJson) {
     throw new Error("Workflow must pass prevalidated values as JSON text.");
   }
 
-  let values;
+  let pair;
   try {
-    values = JSON.parse(valuesJson);
+    pair = JSON.parse(valuesJson);
   } catch (error) {
     throw new Error("Workflow values must be valid JSON: " + error.message);
   }
-  if (!values || typeof values !== "object" || Array.isArray(values)) {
-    throw new Error("Workflow values JSON must be an object of state fields.");
+  if (
+    !pair ||
+    typeof pair !== "object" ||
+    Array.isArray(pair) ||
+    typeof pair["$key"] !== "string" ||
+    !Object.hasOwn(pair, "value")
+  ) {
+    throw new Error('Workflow values JSON must have the shape {"$key":"stateField","value":...}.');
   }
-  return values;
+  return [pair["$key"], pair.value];
 }
 
 function applyValidatedValues(state, valuesJson) {
-  const values = parseValuesJson(valuesJson);
-  const entries = Object.entries(values);
-  for (const [key] of entries) {
-    if (key === "render" || !Object.hasOwn(state, key)) {
-      throw new Error("Workflow supplied a value for an unknown or controller-owned field: " + key);
-    }
+  const [key, value] = parseValuesJson(valuesJson);
+  if (key === "render" || !Object.hasOwn(state, key)) {
+    throw new Error("Workflow supplied a value for an unknown or controller-owned field: " + key);
   }
-  for (const [key, value] of entries) state[key] = value;
+  state[key] = value;
 }
 
 function transition(state, valuesJson) {
