@@ -1,19 +1,16 @@
 [
   {
     "instructionnumber": 1,
-    "instructiontitle": "Capture the verbatim user prompt.",
     "instruction": "Repeat the user prompt verbatim. <string>: ${verbatimUserPrompt}",
     "return": "${verbatimUserPrompt}"
   },
   {
     "instructionnumber": 2,
-    "instructiontitle": "Determine the user intent.",
     "instruction": "Decide the implicit and explicit user intent expressed in the user prompt in the context of this chat. State it in fewer than 100 words. <string> (less than 100 words): ${userIntent}",
     "return": "${userIntent}"
   },
   {
     "instructionnumber": 3,
-    "instructiontitle": "Decide if the user intent triggers minimal mode.",
     "instruction": "Decide if the intent expressed in ${userIntent} resembles the intent of one of these examples or could be rewritten to resemble it without changing its meaning. If a match is found, set ${exampleMatch} = true. If no match is found, set ${exampleMatch} = false. <boolean>: ${exampleMatch}",
     "examples": [
       {
@@ -41,7 +38,6 @@
   },
   {
     "instructionnumber": 4,
-    "instructiontitle": "Resolve Minimal Mode Switch, if True enter Minimal Mode, Else Proceed.",
     "instruction": "If ${exampleMatch} = true, follow the procedure in this object. If ${exampleMatch} = false, skip the procedure and proceed to the next instruction.",
     "procedure": [
       {
@@ -62,25 +58,21 @@
   },
   {
     "instructionnumber": 5,
-    "instructiontitle": "Decide which files must be mutated or created for the user intent.",
     "instruction": "A user intent always includes a desire to change data. Examine ${userIntent}. List the files that contain the data the user wants changed. For file creation, list the names that will be given to the created files. <Array<filename>>: ${targetFiles}",
     "return": "${targetFiles}"
   },
   {
     "instructionnumber": 6,
-    "instructiontitle": "Generate requirements by mapping user intent to data changes.",
     "instruction": "List the locations of the data that will be changed in ${targetFiles}. Include a brief description of the planned change and the specific intent from ${userIntent} requiring it for each location. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirements}",
     "return": "${requirements}"
   },
   {
     "instructionnumber": 7,
-    "instructiontitle": "Restate the user intent for example matching.",
     "instruction": "Restate the user intent. <string> (less than 100 words): ${userIntent}",
     "return": "${userIntent}"
   },
   {
     "instructionnumber": 8,
-    "instructiontitle": "Match the user intent to the closest example without changing its meaning.",
     "instruction": "Here are nine examples. Iterate over the examples array and decide what the intent was for each promptText, then match to the example where the intent most resembles ${userIntent} or could be rewritten to resemble it without changing its meaning. Return the selected example object. <{\"example\": <integer>, \"promptText\": <string>}>: ${matchedExample}",
     "examples": [
       {
@@ -124,7 +116,6 @@
   },
   {
     "instructionnumber": 9,
-    "instructiontitle": "Determine the execution mode by looking up the matched example number.",
     "instruction": "Find the value for the \"example\" key found in ${matchedExample}. Find the matching key in the lookup table. The value of the matching key is the mode you will use. <\"accountability\" | \"fidelity\" | \"minimal\">: ${mode}",
     "lookupTable": {
       "1": "fidelity",
@@ -141,13 +132,11 @@
   },
   {
     "instructionnumber": 10,
-    "instructiontitle": "Input the selected execution mode.",
     "instruction": "Input ${mode}. <string>: ${mode}",
     "return": "${mode}"
   },
   {
     "instructionnumber": 11,
-    "instructiontitle": "If the mode is fidelity, execute the requirements and return the changes; otherwise, skip.",
     "instruction": "If ${mode} = \"fidelity\", follow the procedure in this object. Else discontinue this step and proceed to the next step.",
     "procedure": [
       {
@@ -168,7 +157,6 @@
   },
   {
     "instructionnumber": 12,
-    "instructiontitle": "If the mode is accountability, execute and assess the requirements, correct unfinished or unapproved changes, and repeat until zero outstanding requirements.",
     "instruction": "If ${mode} = \"accountability\", follow the procedure in this object.",
     "procedure": [
       {
