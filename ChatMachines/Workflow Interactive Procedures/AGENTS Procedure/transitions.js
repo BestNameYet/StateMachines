@@ -77,10 +77,11 @@ function parseValuesJson(valuesJson) {
 function applyValidatedValues(state, valuesJson) {
   const values = parseValuesJson(valuesJson);
   const entries = Object.entries(values).map(([variable, value]) => {
-    if (!/^\$[A-Za-z_][\w$]*$/.test(variable)) {
-      throw new Error("Workflow variable names must start with $: " + variable);
+    const match = variable.match(/^\$(?:\{([A-Za-z_][\w$]*)\}|([A-Za-z_][\w$]*))$/);
+    if (!match) {
+      throw new Error("Workflow variable names must use $name or ${name}: " + variable);
     }
-    return [variable.slice(1), value];
+    return [match[1] || match[2], value];
   });
 
   for (const [key] of entries) {
