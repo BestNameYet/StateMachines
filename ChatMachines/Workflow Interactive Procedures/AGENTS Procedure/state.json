@@ -12,5 +12,155 @@
   "requirementsCompleted": null,
   "changeAssessment": null,
   "completionAssessment": null,
-  "rescissionRequirements": null
+  "rescissionRequirements": null,
+  "transitions": [
+    {
+      "render": 0,
+      "next": 1
+    },
+    {
+      "render": 1,
+      "next": 2
+    },
+    {
+      "render": 2,
+      "next": 3
+    },
+    {
+      "render": 3,
+      "next": [
+        {
+          "if": "${exampleMatch} = true",
+          "render": 4
+        },
+        {
+          "if": "${exampleMatch} = false",
+          "render": 7
+        }
+      ]
+    },
+    {
+      "render": 4,
+      "next": 5
+    },
+    {
+      "render": 5,
+      "next": 6
+    },
+    {
+      "render": 6,
+      "next": null
+    },
+    {
+      "render": 7,
+      "next": 8
+    },
+    {
+      "render": 8,
+      "next": 9
+    },
+    {
+      "render": 9,
+      "next": 10
+    },
+    {
+      "render": 10,
+      "next": 11
+    },
+    {
+      "render": 11,
+      "next": 12
+    },
+    {
+      "render": 12,
+      "next": 13
+    },
+    {
+      "render": 13,
+      "next": [
+        {
+          "if": "${mode} = \"fidelity\"",
+          "render": 14
+        },
+        {
+          "if": "${mode} != \"fidelity\"",
+          "render": 17
+        }
+      ]
+    },
+    {
+      "render": 14,
+      "next": 15
+    },
+    {
+      "render": 15,
+      "next": 16
+    },
+    {
+      "render": 16,
+      "next": null
+    },
+    {
+      "render": 17,
+      "next": [
+        {
+          "if": "${mode} = \"accountability\"",
+          "render": 18
+        },
+        {
+          "if": "${mode} != \"accountability\"",
+          "render": null
+        }
+      ]
+    },
+    {
+      "render": 18,
+      "next": 19
+    },
+    {
+      "render": 19,
+      "next": 20
+    },
+    {
+      "render": 20,
+      "next": 21
+    },
+    {
+      "render": 21,
+      "next": 22
+    },
+    {
+      "render": 22,
+      "next": 23
+    },
+    {
+      "render": 23,
+      "next": 24
+    },
+    {
+      "render": 24,
+      "next": 25
+    },
+    {
+      "render": 25,
+      "next": 26
+    },
+    {
+      "render": 26,
+      "next": 27
+    },
+    {
+      "render": 27,
+      "next": [
+        {
+          "if": "${requirements}.length = 0",
+          "render": null
+        },
+        {
+          "if": "${requirements}.length > 0",
+          "render": 20
+        }
+      ]
+    }
+  ]
 }
