@@ -2,6 +2,13 @@ name: Selenium Server test
 run-name: Selenium test · ${{ github.event_name }} · ${{ github.run_number }}
 
 on:
+  workflow_call:
+    inputs:
+      runner_script:
+        description: 'Repository-owned Node.js runner to execute'
+        required: false
+        type: string
+        default: 'ChatMachines/SeleniumServer/run.cjs'
   workflow_dispatch:
     inputs:
       request_json:
@@ -28,6 +35,7 @@ jobs:
       SELENIUM_IMAGE: selenium/standalone-chromium:4.51.0-20261010
       SELENIUM_REMOTE_URL: http://127.0.0.1:4444
       SELENIUM_OUTPUT_DIR: selenium-results
+      RUNNER_SCRIPT: ${{ inputs.runner_script || 'ChatMachines/SeleniumServer/run.cjs' }}
     steps:
       - uses: actions/checkout@v7.0.1
         with:
@@ -67,7 +75,7 @@ jobs:
           if (!ready) throw new Error('Selenium Server did not become ready within 90 seconds');
           JS
       - name: Run requested browser actions
-        run: node ChatMachines/SeleniumServer/run.cjs
+        run: node "$RUNNER_SCRIPT"
       - name: Collect server logs
         if: always()
         shell: bash

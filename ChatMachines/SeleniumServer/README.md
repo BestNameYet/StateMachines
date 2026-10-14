@@ -55,3 +55,7 @@ The `selenium-results-RUN_ID-ATTEMPT` artifact contains `result.json`, step scre
 Node.js 24 is configured in the workflow. Install dependencies in this folder with `npm install --ignore-scripts`. Run dependency-free runner tests with `node --test runner.test.cjs`. With a separately running Selenium endpoint, use `SELENIUM_REMOTE_URL=http://127.0.0.1:4444 node run.cjs`; by default outputs go to `selenium-results/` at the current working directory. `REQUEST_JSON` overrides event-based inputs for a direct local invocation.
 
 The standalone Docker image and Selenium client versions are pinned in the workflow and package.json. The workflow binds its browser session to the temporary GitHub runner; it does not attach to another person's open browser.
+
+## Reusing the browser environment
+
+Another workflow in this repository can call this workflow with `uses: ./.github/workflows/selenium-server.yml` and provide `runner_script`, a repository-owned Node.js test script. The default remains `ChatMachines/SeleniumServer/run.cjs`. Called scripts use `SELENIUM_REMOTE_URL` and `SELENIUM_OUTPUT_DIR`, and can resolve the installed client relative to this project's package.json. `audio-clip-selector-test.yml` uses this route for the 81-recording browser harness. Manual and repository-dispatch JSON actions remain unchanged.

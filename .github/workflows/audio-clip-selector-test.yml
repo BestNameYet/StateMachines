@@ -1,0 +1,22 @@
+name: Audio clip selector tests
+run-name: Audio clip selector · ${{ github.event_name }} · ${{ github.run_number }}
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [audio-selector-test]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audio-clip-selector-test.yml'
+      - '.github/workflows/selenium-server.yml'
+      - 'ChatMachines/AudioClipSelector/**'
+
+permissions:
+  contents: read
+
+jobs:
+  audio-selector:
+    uses: ./.github/workflows/selenium-server.yml
+    with:
+      runner_script: ChatMachines/AudioClipSelector/test.cjs
