@@ -1,0 +1,93 @@
+name: Selenium Server test
+run-name: Selenium test · ${{ github.event_name }} · ${{ github.run_number }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      request_json:
+        description: 'Complete request JSON; leave blank to use the committed request.json'
+        required: false
+        type: string
+        default: ''
+  repository_dispatch:
+    types: [selenium-test]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/selenium-server.yml'
+      - 'ChatMachines/SeleniumServer/**'
+
+permissions:
+  contents: read
+
+jobs:
+  selenium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SELENIUM_IMAGE: selenium/standalone-chromium:4.51.0-20261010
+      SELENIUM_REMOTE_URL: http://127.0.0.1:4444
+      SELENIUM_OUTPUT_DIR: selenium-results
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+      - name: Validate runner behavior
+        run: node --test ChatMachines/SeleniumServer/runner.test.cjs
+      - name: Install Selenium client
+        run: npm install --ignore-scripts --no-audit --no-fund --prefix ChatMachines/SeleniumServer
+      - name: Start local test page and Selenium Server with Chromium
+        shell: bash
+        run: |
+          mkdir -p "$SELENIUM_OUTPUT_DIR"
+          python3 -m http.server 8080 --bind 127.0.0.1 > "$SELENIUM_OUTPUT_DIR/http-server.log" 2>&1 &
+          echo "$!" > "$SELENIUM_OUTPUT_DIR/http-server.pid"
+          docker run --detach --name selenium-server --network host --shm-size 2g \
+            --env SE_NODE_MAX_SESSIONS=1 --env SE_NODE_SESSION_TIMEOUT=180 \
+            "$SELENIUM_IMAGE"
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import {setTimeout} from 'node:timers/promises';
+          const deadline=Date.now()+90000;
+          let ready=false;
+          while (Date.now()<deadline) {
+            try {
+              const response=await fetch(process.env.SELENIUM_REMOTE_URL+'/status',{signal:AbortSignal.timeout(3000)});
+              const status=await response.json();
+              if (response.ok && status.value?.ready) {
+                fs.writeFileSync(process.env.SELENIUM_OUTPUT_DIR+'/selenium-status.json',JSON.stringify(status,null,2));
+                ready=true;break;
+              }
+            } catch {}
+            await setTimeout(1000);
+          }
+          if (!ready) throw new Error('Selenium Server did not become ready within 90 seconds');
+          JS
+      - name: Run requested browser actions
+        run: node ChatMachines/SeleniumServer/run.cjs
+      - name: Collect server logs
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$SELENIUM_OUTPUT_DIR"
+          docker logs selenium-server > "$SELENIUM_OUTPUT_DIR/selenium-server.log" 2>&1 || true
+          docker inspect selenium-server > "$SELENIUM_OUTPUT_DIR/container.json" 2>&1 || true
+      - name: Upload screenshots and results
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: selenium-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: selenium-results/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Stop temporary services
+        if: always()
+        shell: bash
+        run: |
+          docker rm --force selenium-server || true
+          if [ -f "$SELENIUM_OUTPUT_DIR/http-server.pid" ]; then
+            kill "$(cat "$SELENIUM_OUTPUT_DIR/http-server.pid")" || true
+          fi
