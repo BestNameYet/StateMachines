@@ -57,10 +57,25 @@ function setValues(state, values) {
   }
 }
 
-function applyValidatedValues(state, values) {
-  if (!values || typeof values !== "object" || Array.isArray(values)) {
-    throw new Error("Workflow must pass prevalidated values as a field/value object.");
+function parseValuesJson(valuesJson) {
+  if (typeof valuesJson !== "string") {
+    throw new Error("Workflow must pass prevalidated values as JSON text.");
   }
+
+  let values;
+  try {
+    values = JSON.parse(valuesJson);
+  } catch (error) {
+    throw new Error("Workflow values must be valid JSON: " + error.message);
+  }
+  if (!values || typeof values !== "object" || Array.isArray(values)) {
+    throw new Error("Workflow values JSON must be an object of state fields.");
+  }
+  return values;
+}
+
+function applyValidatedValues(state, valuesJson) {
+  const values = parseValuesJson(valuesJson);
   const entries = Object.entries(values);
   for (const [key] of entries) {
     if (key === "render" || !Object.hasOwn(state, key)) {
@@ -70,7 +85,7 @@ function applyValidatedValues(state, values) {
   for (const [key, value] of entries) state[key] = value;
 }
 
-function transition(state, validatedValues) {
+function transition(state, valuesJson) {
   if (!state || typeof state !== "object" || Array.isArray(state)) {
     throw new Error("Transition requires a state object.");
   }
@@ -81,7 +96,7 @@ function transition(state, validatedValues) {
   }
 
   const initializing = state.render === null;
-  if (!initializing) applyValidatedValues(state, validatedValues);
+  if (!initializing) applyValidatedValues(state, valuesJson);
 
   const currentRender = state.render;
   const definition = transitionMap.transitions.find(item =>
@@ -120,8 +135,8 @@ function transition(state, validatedValues) {
 if (require.main === module) {
   const config = loadConfig();
   const state = JSON.parse(fs.readFileSync(path.join(__dirname, config.state), "utf8"));
-  const validatedValues = process.argv.length > 2 ? JSON.parse(process.argv[2]) : undefined;
-  const issueContent = transition(state, validatedValues);
+  const valuesJson = process.argv[2];
+  const issueContent = transition(state, valuesJson);
   if (issueContent !== null) process.stdout.write(issueContent + "\n");
 }
 
