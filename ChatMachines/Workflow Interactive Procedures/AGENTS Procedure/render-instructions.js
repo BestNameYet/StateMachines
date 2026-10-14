@@ -1,6 +1,14 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
+function loadScreens() {
+  const configPath = path.join(__dirname, "config.json");
+  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  const templatePath = path.join(__dirname, config.instructionRender);
+  const template = JSON.parse(fs.readFileSync(templatePath, "utf8"));
+  return template.screens;
+}
+
 function render(entries) {
   return "{\n" + entries.map((entry) =>
     "  " + JSON.stringify(entry[0]) + ": " +
@@ -20,7 +28,7 @@ function renderScreen(screens, renderNumber) {
   return render(screens[screenIndex]);
 }
 
-function renderState(state, screens) {
+function renderState(state, screens = loadScreens()) {
   if (!state || typeof state !== "object" || Array.isArray(state)) {
     throw new Error("Renderer requires a state object.");
   }
@@ -30,8 +38,7 @@ function renderState(state, screens) {
 if (require.main === module) {
   const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
   const state = JSON.parse(fs.readFileSync(path.join(__dirname, config.state), "utf8"));
-  const template = JSON.parse(fs.readFileSync(path.join(__dirname, config.instructionRender), "utf8"));
-  process.stdout.write(renderState(state, template.screens) + "\n");
+  process.stdout.write(renderState(state) + "\n");
 }
 
-module.exports = { render, renderScreen, renderState };
+module.exports = { loadScreens, render, renderScreen, renderState };
