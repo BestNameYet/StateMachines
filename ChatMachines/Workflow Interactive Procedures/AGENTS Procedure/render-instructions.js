@@ -8,18 +8,49 @@ function render(entries) {
   ).join(",\n") + "\n}";
 }
 
-function renderScreen(screens, screenIndex) {
-  if (!Number.isInteger(screenIndex) || !Array.isArray(screens[screenIndex])) {
-    throw new Error("Screen index is out of range.");
+function renderScreen(screens, renderNumber) {
+  const screenIndex = renderNumber - 1;
+  if (
+    !Number.isInteger(renderNumber) ||
+    renderNumber < 1 ||
+    !Array.isArray(screens[screenIndex])
+  ) {
+    throw new Error("Render number is out of range.");
   }
   return render(screens[screenIndex]);
 }
 
-if (require.main === module) {
-  const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
-  const template = JSON.parse(fs.readFileSync(path.join(__dirname, config.instructionRender), "utf8"));
-  if (process.argv[2] === undefined) throw new Error("Supply a zero-based screen index.");
-  process.stdout.write(renderScreen(template.screens, Number(process.argv[2])) + "\n");
+function renderState(state, screens) {
+  if (!state || typeof state !== "object" || Array.isArray(state)) {
+    throw new Error("Renderer requires a state object.");
+  }
+  return renderScreen(screens, state.render);
 }
 
-module.exports = { render, renderScreen };
+function initialize(state, screens) {
+  if (!state || typeof state !== "object" || Array.isArray(state)) {
+    throw new Error("Initialization requires a state object.");
+  }
+  if (state.render !== null) {
+    throw new Error("Initialization requires state.render to be null.");
+  }
+
+  for (const key of Object.keys(state)) {
+    if (key !== "render") state[key] = null;
+  }
+
+  state.render = 1;
+  return renderState(state, screens);
+}
+
+if (require.main === module) {
+  const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
+  const state = JSON.parse(fs.readFileSync(path.join(__dirname, config.state), "utf8"));
+  const template = JSON.parse(fs.readFileSync(path.join(__dirname, config.instructionRender), "utf8"));
+  const output = state.render === null
+    ? initialize(state, template.screens)
+    : renderState(state, template.screens);
+  process.stdout.write(output + "\n");
+}
+
+module.exports = { render, renderScreen, renderState, initialize };
