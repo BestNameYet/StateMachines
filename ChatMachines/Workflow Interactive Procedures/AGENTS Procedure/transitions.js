@@ -49,7 +49,30 @@ function setValues(state, values) {
   }
 }
 
-function transition(state, transitionMap, screens, event) {
+function captureInput(state, screens, input) {
+  if (input === undefined) {
+    throw new Error("A new input value is required for the current render.");
+  }
+  const screen = screens[state.render - 1];
+  if (!Array.isArray(screen)) {
+    throw new Error("Cannot accept input for render " + state.render + ".");
+  }
+  const returnEntry = screen.find(entry => entry[0] === "return");
+  const match = returnEntry && typeof returnEntry[1] === "string"
+    ? returnEntry[1].match(/^\$\{([A-Za-z_$][\w$]*)\}$/)
+    : null;
+  if (!match) {
+    throw new Error("The current screen must return one state field placeholder.");
+  }
+  const field = match[1];
+  if (!Object.hasOwn(state, field)) {
+    throw new Error("The return field is missing from state: " + field);
+  }
+  state[field] = input;
+  return field;
+}
+
+function transition(state, transitionMap, screens, input) {
   if (!state || typeof state !== "object" || Array.isArray(state)) {
     throw new Error("Transition requires a state object.");
   }
@@ -57,11 +80,14 @@ function transition(state, transitionMap, screens, event) {
     throw new Error("Transition map must contain a transitions array.");
   }
 
+  const initializing = state.render === null;
+  if (!initializing) captureInput(state, screens, input);
+
   const currentRender = state.render;
   const definition = transitionMap.transitions.find(item =>
     Object.hasOwn(item, "render") &&
     item.render === currentRender &&
-    (item.on === undefined || item.on === event)
+    (item.on === undefined || (initializing && item.on === "initialize"))
   );
   if (!definition) throw new Error("No transition found for render " + currentRender + ".");
 
@@ -96,9 +122,9 @@ if (require.main === module) {
   const state = JSON.parse(fs.readFileSync(path.join(__dirname, config.state), "utf8"));
   const transitionMap = JSON.parse(fs.readFileSync(path.join(__dirname, config.transitions), "utf8"));
   const template = JSON.parse(fs.readFileSync(path.join(__dirname, config.instructionRender), "utf8"));
-  const event = state.render === null ? "initialize" : undefined;
-  const issueContent = transition(state, transitionMap, template.screens, event);
+  const input = process.argv.length > 2 ? JSON.parse(process.argv[2]) : undefined;
+  const issueContent = transition(state, transitionMap, template.screens, input);
   if (issueContent !== null) process.stdout.write(issueContent + "\n");
 }
 
-module.exports = { evaluateCondition, transition };
+module.exports = { captureInput, evaluateCondition, transition };
