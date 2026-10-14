@@ -32,3 +32,9 @@ Use a fresh issue for every run. Append instructions, agent returns, and validat
 ## Implementation status
 
 This README records the agreed convention. The workflow, persisted state file, mapping, renderer, and validator have not yet been implemented in this folder.
+
+## Rendering instructions and the final report
+
+Use two separate render objects. The instruction render object presents what the agent must do and return. The final-report render object presents the instruction number, the approved output title, and contextual labels followed by their corresponding ${variableName} values. Output titles belong in the final report, not in the instruction set.
+
+For each loop iteration, append a new section headed "Loop ${loopNumber}". Render a new instance of the applicable instruction report using that iteration's values. Include only instructions and values actually used in that loop iteration; do not repeat unrelated instructions or values. Preserve prior loop sections so the report records each iteration in order.
