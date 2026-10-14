@@ -2,6 +2,14 @@ const fs = require("node:fs");
 const path = require("node:path");
 const renderer = require("./render-instructions.js");
 
+function loadConfig() {
+  return JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
+}
+
+function loadTransitionMap(config = loadConfig()) {
+  return JSON.parse(fs.readFileSync(path.join(__dirname, config.transitions), "utf8"));
+}
+
 function resolvePath(state, expression) {
   const match = expression.match(/^\$\{([A-Za-z_$][\w$]*)\}(\.length)?$/);
   if (!match) throw new Error("Unsupported transition expression: " + expression);
@@ -62,11 +70,13 @@ function applyValidatedValues(state, values) {
   for (const [key, value] of entries) state[key] = value;
 }
 
-function transition(state, transitionMap, screens, validatedValues) {
+function transition(state, validatedValues) {
   if (!state || typeof state !== "object" || Array.isArray(state)) {
     throw new Error("Transition requires a state object.");
   }
-  if (!transitionMap || !Array.isArray(transitionMap.transitions)) {
+
+  const transitionMap = loadTransitionMap();
+  if (!Array.isArray(transitionMap.transitions)) {
     throw new Error("Transition map must contain a transitions array.");
   }
 
@@ -92,7 +102,7 @@ function transition(state, transitionMap, screens, validatedValues) {
         ) {
           throw new Error("Unsupported renderer call in transition.");
         }
-        return renderer.renderState(state, screens);
+        return renderer.renderState(state);
       } else {
         throw new Error("Unsupported transition action.");
       }
@@ -104,17 +114,15 @@ function transition(state, transitionMap, screens, validatedValues) {
     throw new Error("Transition for render " + currentRender + " has no next state.");
   }
   state.render = selectNext(state, definition.next);
-  return state.render === null ? null : renderer.renderState(state, screens);
+  return state.render === null ? null : renderer.renderState(state);
 }
 
 if (require.main === module) {
-  const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
+  const config = loadConfig();
   const state = JSON.parse(fs.readFileSync(path.join(__dirname, config.state), "utf8"));
-  const transitionMap = JSON.parse(fs.readFileSync(path.join(__dirname, config.transitions), "utf8"));
-  const template = JSON.parse(fs.readFileSync(path.join(__dirname, config.instructionRender), "utf8"));
   const validatedValues = process.argv.length > 2 ? JSON.parse(process.argv[2]) : undefined;
-  const issueContent = transition(state, transitionMap, template.screens, validatedValues);
+  const issueContent = transition(state, validatedValues);
   if (issueContent !== null) process.stdout.write(issueContent + "\n");
 }
 
-module.exports = { applyValidatedValues, evaluateCondition, transition };
+module.exports = { applyValidatedValues, evaluateCondition, loadTransitionMap, transition };
