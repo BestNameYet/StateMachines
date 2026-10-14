@@ -27,394 +27,145 @@
     },
     {
       "render": 1,
-      "actions": [
-        {
-          "set": {
-            "verbatimUserPrompt": "${verbatimUserPrompt}",
-            "render": 2
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 2
     },
     {
       "render": 2,
-      "actions": [
-        {
-          "set": {
-            "userIntent": "${userIntent}",
-            "render": 3
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 3
     },
     {
       "render": 3,
-      "actions": [
+      "next": [
         {
-          "set": {
-            "exampleMatch": "${exampleMatch}",
-            "render": 4
-          }
+          "if": "${exampleMatch} = true",
+          "render": 4
         },
         {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
+          "if": "${exampleMatch} = false",
+          "render": 7
         }
       ]
+    },
+    {
+      "render": 4,
+      "next": 5
     },
     {
       "render": 5,
-      "actions": [
-        {
-          "set": {
-            "userIntent": "${userIntent}",
-            "render": 6
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 6
     },
     {
       "render": 6,
-      "actions": [
-        {
-          "set": {
-            "render": 7
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": null
     },
     {
       "render": 7,
-      "actions": [
-        {
-          "set": {
-            "minimalResult": "${minimalResult}",
-            "render": null
-          }
-        }
-      ]
+      "next": 8
     },
     {
       "render": 8,
-      "actions": [
-        {
-          "set": {
-            "targetFiles": "${targetFiles}",
-            "render": 9
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 9
     },
     {
       "render": 9,
-      "actions": [
-        {
-          "set": {
-            "requirements": "${requirements}",
-            "render": 10
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 10
     },
     {
       "render": 10,
-      "actions": [
-        {
-          "set": {
-            "userIntent": "${userIntent}",
-            "render": 11
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 11
     },
     {
       "render": 11,
-      "actions": [
-        {
-          "set": {
-            "matchedExample": "${matchedExample}",
-            "render": 12
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 12
     },
     {
       "render": 12,
-      "actions": [
-        {
-          "set": {
-            "mode": "${mode}",
-            "render": 13
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 13
     },
     {
       "render": 13,
-      "actions": [
+      "next": [
         {
-          "set": {
-            "mode": "${mode}",
-            "render": 14
-          }
+          "if": "${mode} = \"fidelity\"",
+          "render": 14
         },
         {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
+          "if": "${mode} != \"fidelity\"",
+          "render": 17
         }
       ]
+    },
+    {
+      "render": 14,
+      "next": 15
     },
     {
       "render": 15,
-      "actions": [
-        {
-          "set": {
-            "requirements": "${requirements}",
-            "render": 16
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 16
     },
     {
       "render": 16,
-      "actions": [
-        {
-          "set": {
-            "render": 17
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": null
     },
     {
       "render": 17,
-      "actions": [
+      "next": [
         {
-          "set": {
-            "changeList": "${changeList}",
-            "render": null
-          }
+          "if": "${mode} = \"accountability\"",
+          "render": 18
+        },
+        {
+          "if": "${mode} != \"accountability\"",
+          "render": null
         }
       ]
+    },
+    {
+      "render": 18,
+      "next": 19
     },
     {
       "render": 19,
-      "actions": [
-        {
-          "set": {
-            "requirementsCompleted": "${requirementsCompleted}",
-            "render": 20
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 20
     },
     {
       "render": 20,
-      "actions": [
-        {
-          "set": {
-            "requirements": "${requirements}",
-            "render": 21
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 21
     },
     {
       "render": 21,
-      "actions": [
-        {
-          "set": {
-            "render": 22
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 22
     },
     {
       "render": 22,
-      "actions": [
-        {
-          "set": {
-            "changeList": "${changeList}",
-            "render": 23
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 23
     },
     {
       "render": 23,
-      "actions": [
-        {
-          "set": {
-            "changeAssessment": "${changeAssessment}",
-            "render": 24
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 24
     },
     {
       "render": 24,
-      "actions": [
-        {
-          "set": {
-            "completionAssessment": "${completionAssessment}",
-            "render": 25
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 25
     },
     {
       "render": 25,
-      "actions": [
-        {
-          "set": {
-            "requirementsCompleted": "${requirementsCompleted}",
-            "render": 26
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 26
     },
     {
       "render": 26,
-      "actions": [
-        {
-          "set": {
-            "rescissionRequirements": "${rescissionRequirements}",
-            "render": 27
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "next": 27
     },
     {
       "render": 27,
-      "actions": [
+      "next": [
         {
-          "set": {
-            "requirements": "${requirements}",
-            "render": 28
-          }
+          "if": "${requirements}.length = 0",
+          "render": null
         },
         {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
+          "if": "${requirements}.length > 0",
+          "render": 20
         }
       ]
     }
