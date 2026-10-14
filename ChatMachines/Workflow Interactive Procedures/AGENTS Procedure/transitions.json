@@ -1,8 +1,29 @@
 {
+  "definitions": {
+    "inputValues": "Every state property except render."
+  },
   "transitions": [
     {
-      "render": 0,
-      "next": 1
+      "on": "initialize",
+      "render": null,
+      "actions": [
+        {
+          "set": {
+            "inputValues": null
+          }
+        },
+        {
+          "set": {
+            "render": 1
+          }
+        },
+        {
+          "call": {
+            "renderer": "render-instructions.js",
+            "argument": "state"
+          }
+        }
+      ]
     },
     {
       "render": 1,
