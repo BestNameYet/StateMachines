@@ -57,11 +57,37 @@ function setValues(state, values) {
   }
 }
 
-function applyValidatedValues(state, values) {
-  if (!values || typeof values !== "object" || Array.isArray(values)) {
-    throw new Error("Workflow must pass prevalidated values as a field/value object.");
+function parseAssignment(assignment) {
+  if (typeof assignment !== "string") {
+    throw new Error("Each workflow value must be a variable=value string.");
   }
-  const entries = Object.entries(values);
+  const separator = assignment.indexOf("=");
+  if (separator <= 0) {
+    throw new Error("Workflow value must use variable=value form.");
+  }
+
+  const key = assignment.slice(0, separator).trim();
+  if (!/^[A-Za-z_$][\w$]*$/.test(key)) {
+    throw new Error("Invalid state variable in workflow value: " + key);
+  }
+
+  const rawValue = assignment.slice(separator + 1);
+  let value = rawValue;
+  try {
+    value = JSON.parse(rawValue);
+  } catch {
+    // Plain text values are passed through unchanged.
+  }
+  return [key, value];
+}
+
+function applyValidatedValues(state, assignments) {
+  const list = typeof assignments === "string" ? [assignments] : assignments;
+  if (!Array.isArray(list) || list.length === 0) {
+    throw new Error("Workflow must pass one or more prevalidated variable=value strings.");
+  }
+
+  const entries = list.map(parseAssignment);
   for (const [key] of entries) {
     if (key === "render" || !Object.hasOwn(state, key)) {
       throw new Error("Workflow supplied a value for an unknown or controller-owned field: " + key);
