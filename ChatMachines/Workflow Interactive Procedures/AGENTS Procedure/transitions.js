@@ -75,10 +75,17 @@ function parseValuesJson(valuesJson) {
 }
 
 function applyValidatedValues(state, valuesJson) {
-  const entries = Object.entries(parseValuesJson(valuesJson));
+  const values = parseValuesJson(valuesJson);
+  const entries = Object.entries(values).map(([variable, value]) => {
+    if (!/^\$[A-Za-z_][\w$]*$/.test(variable)) {
+      throw new Error("Workflow variable names must start with $: " + variable);
+    }
+    return [variable.slice(1), value];
+  });
+
   for (const [key] of entries) {
     if (key === "render" || !Object.hasOwn(state, key)) {
-      throw new Error("Workflow supplied a value for an unknown or controller-owned field: " + key);
+      throw new Error("Workflow supplied a value for an unknown or controller-owned field: $" + key);
     }
   }
   for (const [key, value] of entries) state[key] = value;
