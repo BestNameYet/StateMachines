@@ -11,11 +11,11 @@ Actions → Audio clip selector tests → Run workflow. A push changing this fol
 - Exactly 81 unique recordings, checked against a separate manifest with audio SHA-256 hashes.
 - One native, trusted label-button click for each of the 81 clips, alternating Main speaker and Other.
 - At every click: the actual audio source, visible filename, active index, event-time clip identity, in-memory label, browser storage, counters, and complete expected label map agree.
-- All 81 listening→buffer→next transitions, including no early transition during the two-second buffer and clean completion after clip 81.
+- All 81 save→immediate-next transitions, with no timer or buffer wait after a selection and clean completion after clip 81.
 - All 81 MP3 sources load and actually start playback in Chromium.
 - CSV and JSON export contents, refresh persistence, backup restoration, invalid-backup rejection, filtering, search, clear, and next-unassigned navigation.
-- Pause/resume during listening and buffer, replay, previous/next, an unanswered clip, label changes during buffer, keyboard labels, storage failures, and browser playback errors.
-- A separate unmodified-clock check measures an actual 15-second listening window and at least two seconds between the pause and the next playback.
+- Pause/resume during listening and buffer, replay, previous/next, an unanswered clip, selections during buffer, keyboard labels, storage failures, and browser playback errors.
+- A separate unmodified-clock check measures an unanswered 15-second listening window and at least two seconds between the pause and the next playback. A separate native-clock test checks that selection advances immediately.
 
 The exhaustive sweep uses a frozen, explicitly advanced test clock for application timing, while audio decoding/playback and label clicks remain real browser operations. Native audio time is not accelerated. The real-time check uses the production clock. The report separates these evidence types; it does not claim 81 complete excerpts played for their full lengths.
 
@@ -32,3 +32,7 @@ The exhaustive sweep uses a frozen, explicitly advanced test clock for applicati
 - Screenshots, browser console logs, and final DOM where available.
 
 The page is served locally inside the job at port 8080. The workflow installs dependencies only in `ChatMachines/SeleniumServer/`. Node 24 and FFmpeg-free browser playback are provided by the existing environment.
+
+## Selection behavior
+
+Choosing Main speaker or Other saves the current clip before starting the next one immediately, including when the queue is paused or in its buffer. The final choice stops playback and completes the queue. Without a choice, the 15-second window and two-second buffer still apply. Use Previous to revise an earlier choice.
