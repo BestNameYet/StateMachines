@@ -34,7 +34,7 @@ SCENARIOS = {
         "routing": "Select the closest matching example and follow the accountability path. Do not claim changes that were not actually saved."
     },
     "repeated-accountability": {
-        "prompt": "Verify each requested file edit against the saved files, identify any missing or incorrect changes, and correct them.",
+        "prompt": "Verify the requested changes to people.json, settings.json, notes.txt, and summary.json against the saved fixture files; identify missing or incorrect changes and correct them.",
         "routing": "Select the accountability path. On the first repeated requirements decision, return the outstanding requirements once; when the same decision recurs, return an empty array so the loop halts. Do not claim changes that were not actually saved."
     },
 }
