@@ -11,7 +11,6 @@ const screens = renderer.loadScreens();
 const inputs = screens.map(inputsFor);
 const fixture = JSON.parse(fs.readFileSync(path.join(__dirname,'fixture-manifest.json'),'utf8'));
 const sessions = new Map();
-function readState() {return JSON.parse(fs.readFileSync(path.join(__dirname,config.state),'utf8'));}
 function send(res,status,value) {res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(value));}
 function view(session) {
   const entries = screens[session.state.render-1] || [];
@@ -41,7 +40,7 @@ const server=http.createServer(async(req,res)=>{
     const url=new URL(req.url,'http://localhost');
     if(req.method==='GET'&&url.pathname==='/'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});return res.end(fs.readFileSync(path.join(__dirname,'interface.html')));}
     if(req.method==='POST'&&url.pathname==='/api/start'){
-      const state=readState();state.render=null;
+      const state={};
       const session={id:crypto.randomUUID(),state,done:false,newFiles:[...fixture.newFiles],history:[]};
       transition(state,transitionMap);sessions.set(session.id,session);return send(res,200,view(session));
     }
