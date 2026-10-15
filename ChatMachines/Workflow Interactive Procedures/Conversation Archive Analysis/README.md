@@ -206,3 +206,33 @@ Recommend which questions to pursue first and write the specific prompts needed.
 ## Resuming this project
 
 Read this README, retrieve the current source, and inspect existing project outputs before creating new work. Continue from verified saved progress. The AGENTS interactive procedure remains at ../AGENTS Procedure/README.md; use its existing mechanisms for this analysis, preserving the distinction between procedure infrastructure and this archive-analysis project.
+
+## Parallel Gemini execution substrate
+
+The runner is in parallel-gemini/. Its workflow is .github/workflows/conversation-parallel-gemini.yml (Conversation Parallel Gemini).
+
+Supply an array of repository-relative text file or directory paths and one shared instruction. Each path becomes an independent Gemini matrix job. Jobs run concurrently up to maxParallel (1–16, default 4); one failed job does not cancel the others. Directory paths include their non-hidden UTF-8 files recursively. Symlinks, binary files, missing paths, and assignments over 1,000,000 source bytes are rejected rather than silently truncated. This byte bound is an input limit, not a model token guarantee.
+
+The worker uses repository secret GEMINI_API_KEY and optional repository variable GEMINI_MODEL. It calls the same generateContent endpoint and default model as the existing Gemini integration. The worker analyzes and writes results; it does not edit assigned source files, delegate recursively, subdivide an archive, or decide the analysis strategy.
+
+Start manually in Actions → Conversation Parallel Gemini → Run workflow. Enter paths as a JSON array, instruction as text, and maxParallel as an integer. Alternatively edit and commit parallel-gemini/trigger.json to main:
+
+```json
+{
+  "timestamp": "<fresh ISO timestamp>",
+  "enabled": true,
+  "paths": ["path/to/part-1.json", "path/to/part-2.json"],
+  "instruction": "Analyze the assigned material and cite original locations.",
+  "maxParallel": 2
+}
+```
+
+The placeholders above must be replaced with existing repository paths. Only a commit changing the enabled trigger launches API jobs; ordinary source changes run tests. Set enabled to false to disable a trigger update. A trigger does not automatically import the Library archive. Do not commit private conversation content just to satisfy the repository-path input; approve appropriate source storage before archive ingestion.
+
+Each task saves prompt.txt, source-manifest.json (paths, byte counts, SHA-256 hashes), response.txt, and result.json. Incomplete model answers are failures, not completed analyses. Each result identifies its assignment and source commit. Credentials are sent in a header and excluded from stored prompts and results.
+
+Actions uploads separate task artifacts plus parallel-gemini-collected, whose index.json lists every planned assignment, including failed or missing results. A task failure retains successful neighbors. The collection is an outcome index, not a semantic synthesis or proof of analysis quality. Artifacts expire after 30 days; preserve selected long-term results separately when needed.
+
+Run focused checks with python parallel-gemini/test_run_task.py. These cover assignment boundaries, source manifests, safe diagnostics, API behavior, incomplete responses, plan validation, and overlapping independent workers with isolated outputs. Mocked tests do not establish live Gemini behavior.
+
+Choose meaningful work units and common context before using this substrate for the large archive. Chunking, evidence review, coverage, and final synthesis remain analysis-design tasks described above. The AGENTS Procedure governs the build and later analysis; the parallel workflow is the execution substrate for independent assignments.
