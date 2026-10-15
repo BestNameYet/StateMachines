@@ -76,7 +76,13 @@ The AGENTS Selenium setup GitHub Actions workflow installs Node and Python, inst
 
 Start a run using the AGENTS Procedure issue template. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction, captured values, and return schema as a comment. The full procedure is not posted.
 
-Reply with only the instruction's declared JSON return, optionally inside a JSON code fence. For a string return, submit a JSON string; for a Boolean, submit true or false; for an array or object, submit that array or object directly. There is no request-number field or values wrapper. The workflow binds the validated return to the declared variable internally. Steps with no captured return accept {} after their instruction is completed. File records may designate new files with newFile: true.
+Reply using ${variableName}: value, where value is JSON of the declared type. For example:
+
+```text
+${userIntent}: "The user wants to know what JSON stands for."
+```
+
+Do not add a request number or values wrapper. The workflow validates the supplied variable name and the value, then updates that state variable. Steps with no captured return accept {} after their instruction is completed. File records may designate new files with newFile: true.
 
 Each valid return updates the issue state through the transition function. Hidden decisions execute immediately; the next visible instruction is posted. Validation errors do not advance the state. The workflow keeps comment-processing identifiers internally; they are not part of the submitted return schema.
 
