@@ -10,6 +10,16 @@ This folder is a sibling of AGENTS Procedure under ChatMachines/Workflow Interac
 
 This README records goals and proposed methods. The archive has not been inspected for this project; no findings, date coverage, diagnoses, or completeness claims have been established.
 
+## Procedure for the analysis
+
+Use the existing AGENTS Procedure to carry out this archive analysis. Follow its README to start and complete the interactive run, supply the values requested by each rendered instruction, and let the existing workflow control transitions.
+
+Location: `ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/`
+
+[AGENTS Procedure folder](https://github.com/BestNameYet/StateMachines/tree/main/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure)
+
+[AGENTS Procedure README](https://github.com/BestNameYet/StateMachines/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/README.md)
+
 ## Source archive
 
 User-provided Library reference:
@@ -195,4 +205,4 @@ Recommend which questions to pursue first and write the specific prompts needed.
 
 ## Resuming this project
 
-Read this README, retrieve the current source, and inspect existing project outputs before creating new work. Continue from verified saved progress. The AGENTS interactive procedure remains at ../AGENTS Procedure/README.md; use its existing mechanisms when requested, preserving the distinction between procedure infrastructure and this archive-analysis project.
+Read this README, retrieve the current source, and inspect existing project outputs before creating new work. Continue from verified saved progress. The AGENTS interactive procedure remains at ../AGENTS Procedure/README.md; use its existing mechanisms for this analysis, preserving the distinction between procedure infrastructure and this archive-analysis project.
