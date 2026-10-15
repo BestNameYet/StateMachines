@@ -31,9 +31,9 @@ function handleSubmit(session,data) {
   newFiles.forEach(x=>validate(x,{type:'string',format:'file-reference'},'newFiles',{...context,newFile:true}));
   for(const input of expected){const key='$'+input.name;if(!Object.hasOwn(values,key))throw Error('Missing input: '+key);validate(values[key],input.schema,key,context);}
   const before=structuredClone(session.state), draft=structuredClone(session.state);
-  const output=transition(draft,transitionMap,JSON.stringify(values));
+  const result=transition(draft,transitionMap,JSON.stringify(values));
   session.history.push({render:before.render,loopNumber:before.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
-  session.state=draft;session.newFiles=newFiles;session.done=output===null;
+  session.state=result==='halt'?draft:result;session.newFiles=newFiles;session.done=result==='halt';
   return view(session);
 }
 const server=http.createServer(async(req,res)=>{
