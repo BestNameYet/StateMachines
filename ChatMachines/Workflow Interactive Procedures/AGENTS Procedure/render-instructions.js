@@ -47,8 +47,7 @@ function renderState(state, screens = loadScreens()) {
 }
 
 if (require.main === module) {
-  const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
-  const state = JSON.parse(fs.readFileSync(path.join(__dirname, config.state), "utf8"));
+  const state = JSON.parse(process.argv[2] || "{}");
   process.stdout.write(renderState(state) + "\n");
 }
 
