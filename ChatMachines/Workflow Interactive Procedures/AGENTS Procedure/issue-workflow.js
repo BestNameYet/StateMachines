@@ -85,7 +85,7 @@ async function main() {
   const route='/contents/'+relative.split('/').map(encodeURIComponent).join('/');
   const stored=await api('GET',route,undefined,true);
   const issue=await api('GET','/issues/'+number);
-  const acknowledged=/### Procedure acknowledgement\s+[-*] \[[xX]\] I acknowledge and agree to follow the behavioral requirements of the AGENTS Procedure\./.test(issue.body||'');
+  const acknowledged=/### Procedure acknowledgement\s+[-*] \[[xX]\] \S/.test(issue.body||'');
   const identified=stored || /^AGENTS Procedure(?:\s|$)/.test(issue.title) || acknowledged;
   if(!identified)return;
   if(!stored && !acknowledged)throw Error('Acknowledge the AGENTS Procedure behavioral requirements before starting.');
