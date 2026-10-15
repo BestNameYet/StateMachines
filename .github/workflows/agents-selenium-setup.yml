@@ -1,0 +1,38 @@
+name: AGENTS Selenium setup
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/agents-selenium-setup.yml'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/**'
+
+permissions:
+  contents: read
+
+jobs:
+  browser-setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Selenium
+        run: python -m pip install -r selenium/requirements.txt
+      - name: Verify browser and initial form
+        run: python selenium/smoke.py
+      - name: Preserve setup diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agents-selenium-setup
+          path: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/artifacts/
+          if-no-files-found: ignore
