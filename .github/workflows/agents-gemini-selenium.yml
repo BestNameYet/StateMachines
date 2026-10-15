@@ -2,7 +2,9 @@ name: AGENTS Gemini Selenium
 
 on:
   push:
+    branches: [main]
     paths:
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/workflows/gemini-selenium/trigger.json'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/gemini.py'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/test_gemini.py'
       - '.github/workflows/agents-gemini-selenium.yml'
@@ -35,6 +37,39 @@ jobs:
         working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve live run trigger
+        id: trigger
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_SCENARIO: ${{ inputs.scenario }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const {execFileSync} = require('node:child_process');
+          const relative = 'workflows/gemini-selenium/trigger.json';
+          const repoPath = 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/' + relative;
+          let live = process.env.EVENT_NAME === 'workflow_dispatch';
+          const scenario = process.env.INPUT_SCENARIO || 'minimal';
+          if (!live) {
+            const before = process.env.BEFORE_SHA;
+            const changed = before && !/^0+$/.test(before)
+              ? execFileSync('git', ['diff', '--name-only', before, process.env.HEAD_SHA], {encoding:'utf8'}).split('\n')
+              : [];
+            if (changed.includes(repoPath)) {
+              const trigger = JSON.parse(fs.readFileSync(relative, 'utf8'));
+              if (typeof trigger.enabled !== 'boolean' || typeof trigger.timestamp !== 'string' || Number.isNaN(Date.parse(trigger.timestamp))) {
+                throw Error('Trigger requires an enabled Boolean and valid timestamp string.');
+              }
+              live = trigger.enabled;
+            }
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'live=' + live + '\nscenario=' + scenario + '\n');
+          NODE
 
       - uses: actions/setup-node@v4
         with:
@@ -55,7 +90,7 @@ jobs:
           python selenium/test_gemini.py
 
       - name: Run Gemini and Selenium scenario
-        if: github.event_name == 'workflow_dispatch'
+        if: steps.trigger.outputs.live == 'true'
         env:
           GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
@@ -64,13 +99,13 @@ jobs:
             echo "Repository variable GEMINI_API_KEY is required."
             exit 1
           fi
-          python selenium/gemini.py --scenario "${{ inputs.scenario }}" --artifacts "selenium/artifacts/run-${GITHUB_RUN_ID}-${{ inputs.scenario }}"
+          python selenium/gemini.py --scenario "${{ steps.trigger.outputs.scenario }}" --artifacts "selenium/artifacts/run-${GITHUB_RUN_ID}-${{ steps.trigger.outputs.scenario }}"
 
       - name: Upload procedure evidence and screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: agents-gemini-selenium-${{ inputs.scenario }}-${{ github.run_id }}
+          name: agents-gemini-selenium-${{ steps.trigger.outputs.scenario }}-${{ github.run_id }}
           path: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/artifacts/
           if-no-files-found: warn
           retention-days: 30
