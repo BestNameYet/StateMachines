@@ -1,6 +1,6 @@
 {
   "state": {
-    "render": 9,
+    "render": 10,
     "verbatimUserPrompt": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Gemini-handoff.md.  Us the AGENT Procedure interactive as described in the handoff in lieu of the custom instruction.",
     "userIntent": "Use the existing AGENTS Procedure interactive flow to carry out the Gemini/Selenium integration described in Gemini-handoff.md instead of the custom instruction.",
     "exampleMatch": false,
@@ -23,7 +23,48 @@
         "newFile": false
       }
     ],
-    "requirements": null,
+    "requirements": [
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/gemini.py",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create the standalone Gemini adapter and Selenium control loop. Read the current instruction and return schema, request only declared values from Gemini using the repository's documented GEMINI_API_KEY and GEMINI_MODEL settings, submit through browser.py, retry structural validation errors with their actual text, and stop only on completion or halt. Save per-screen prompt/response/submission/state evidence and screenshots without secrets.",
+        "intent": "Finish connecting Gemini to the existing HTML interface through Selenium as required by Gemini-handoff.md.",
+        "operator": "CREATE"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/test_gemini.py",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create focused tests for Gemini response parsing, exact declared-variable enforcement, validation-error recovery, terminal handling, and evidence capture using a mocked API boundary.",
+        "intent": "Verify the new adapter's correctness without treating a simulated model response as live Gemini execution.",
+        "operator": "CREATE"
+      },
+      {
+        "filename": ".github/workflows/agents-gemini-selenium.yml",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create a manually runnable GitHub Actions workflow that installs the existing Node/Python/Selenium dependencies, runs documented scenario paths through the Gemini/Selenium harness with configured repository variables, and uploads run evidence and screenshots as artifacts.",
+        "intent": "Provide an authorized, repeatable execution path for live Gemini/Selenium runs and the requested render screenshots.",
+        "operator": "CREATE"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+        "frombyte": 2018,
+        "tobyte": 2248,
+        "description": "Replace the implementation-status sentence so it reflects the connected Gemini/Selenium harness after verified implementation.",
+        "intent": "Keep the authoritative procedure README accurate about the handoff deliverable's implementation status.",
+        "operator": "REPLACE"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+        "frombyte": 10264,
+        "tobyte": 10264,
+        "description": "Append concise instructions for configuring and running the Gemini/Selenium harness, its scenario coverage, evidence artifacts, screenshots, and the distinction between live execution and mocked tests.",
+        "intent": "Document the new harness and how to verify its live execution, as required to keep the procedure usable.",
+        "operator": "APPEND"
+      }
+    ],
     "matchedExample": null,
     "mode": null,
     "changeList": null,
@@ -34,8 +75,8 @@
     "loopNumber": null
   },
   "done": false,
-  "request": 5,
-  "lastCommentId": 6188255564,
+  "request": 6,
+  "lastCommentId": 6188269804,
   "newFiles": [
     "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/gemini.py",
     "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/test_gemini.py",
@@ -166,6 +207,130 @@
           }
         ],
         "requirements": null,
+        "matchedExample": null,
+        "mode": null,
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null
+      }
+    },
+    {
+      "request": 5,
+      "render": 9,
+      "loopNumber": null,
+      "values": {
+        "$requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/gemini.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create the standalone Gemini adapter and Selenium control loop. Read the current instruction and return schema, request only declared values from Gemini using the repository's documented GEMINI_API_KEY and GEMINI_MODEL settings, submit through browser.py, retry structural validation errors with their actual text, and stop only on completion or halt. Save per-screen prompt/response/submission/state evidence and screenshots without secrets.",
+            "intent": "Finish connecting Gemini to the existing HTML interface through Selenium as required by Gemini-handoff.md.",
+            "operator": "CREATE"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/test_gemini.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create focused tests for Gemini response parsing, exact declared-variable enforcement, validation-error recovery, terminal handling, and evidence capture using a mocked API boundary.",
+            "intent": "Verify the new adapter's correctness without treating a simulated model response as live Gemini execution.",
+            "operator": "CREATE"
+          },
+          {
+            "filename": ".github/workflows/agents-gemini-selenium.yml",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create a manually runnable GitHub Actions workflow that installs the existing Node/Python/Selenium dependencies, runs documented scenario paths through the Gemini/Selenium harness with configured repository variables, and uploads run evidence and screenshots as artifacts.",
+            "intent": "Provide an authorized, repeatable execution path for live Gemini/Selenium runs and the requested render screenshots.",
+            "operator": "CREATE"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 2018,
+            "tobyte": 2248,
+            "description": "Replace the implementation-status sentence so it reflects the connected Gemini/Selenium harness after verified implementation.",
+            "intent": "Keep the authoritative procedure README accurate about the handoff deliverable's implementation status.",
+            "operator": "REPLACE"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 10264,
+            "tobyte": 10264,
+            "description": "Append concise instructions for configuring and running the Gemini/Selenium harness, its scenario coverage, evidence artifacts, screenshots, and the distinction between live execution and mocked tests.",
+            "intent": "Document the new harness and how to verify its live execution, as required to keep the procedure usable.",
+            "operator": "APPEND"
+          }
+        ]
+      },
+      "state": {
+        "render": 10,
+        "verbatimUserPrompt": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Gemini-handoff.md.  Us the AGENT Procedure interactive as described in the handoff in lieu of the custom instruction.",
+        "userIntent": "Use the existing AGENTS Procedure interactive flow to carry out the Gemini/Selenium integration described in Gemini-handoff.md instead of the custom instruction.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/gemini.py",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/test_gemini.py",
+            "newFile": true
+          },
+          {
+            "filename": ".github/workflows/agents-gemini-selenium.yml",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "newFile": false
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/gemini.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create the standalone Gemini adapter and Selenium control loop. Read the current instruction and return schema, request only declared values from Gemini using the repository's documented GEMINI_API_KEY and GEMINI_MODEL settings, submit through browser.py, retry structural validation errors with their actual text, and stop only on completion or halt. Save per-screen prompt/response/submission/state evidence and screenshots without secrets.",
+            "intent": "Finish connecting Gemini to the existing HTML interface through Selenium as required by Gemini-handoff.md.",
+            "operator": "CREATE"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/test_gemini.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create focused tests for Gemini response parsing, exact declared-variable enforcement, validation-error recovery, terminal handling, and evidence capture using a mocked API boundary.",
+            "intent": "Verify the new adapter's correctness without treating a simulated model response as live Gemini execution.",
+            "operator": "CREATE"
+          },
+          {
+            "filename": ".github/workflows/agents-gemini-selenium.yml",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create a manually runnable GitHub Actions workflow that installs the existing Node/Python/Selenium dependencies, runs documented scenario paths through the Gemini/Selenium harness with configured repository variables, and uploads run evidence and screenshots as artifacts.",
+            "intent": "Provide an authorized, repeatable execution path for live Gemini/Selenium runs and the requested render screenshots.",
+            "operator": "CREATE"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 2018,
+            "tobyte": 2248,
+            "description": "Replace the implementation-status sentence so it reflects the connected Gemini/Selenium harness after verified implementation.",
+            "intent": "Keep the authoritative procedure README accurate about the handoff deliverable's implementation status.",
+            "operator": "REPLACE"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 10264,
+            "tobyte": 10264,
+            "description": "Append concise instructions for configuring and running the Gemini/Selenium harness, its scenario coverage, evidence artifacts, screenshots, and the distinction between live execution and mocked tests.",
+            "intent": "Document the new harness and how to verify its live execution, as required to keep the procedure usable.",
+            "operator": "APPEND"
+          }
+        ],
         "matchedExample": null,
         "mode": null,
         "changeList": null,
