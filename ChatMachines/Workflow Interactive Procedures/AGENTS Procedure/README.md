@@ -115,6 +115,10 @@ Configure the GitHub Actions repository variable `GEMINI_API_KEY`; optionally se
 - `accountability` selects the accountability path.
 - `repeated-accountability` exercises the accountability loop.
 
-The workflow first runs the existing Node tests and the focused Gemini adapter tests, then starts the local interface and headless browser for the selected live scenario. It uploads the run log and screenshots as a downloadable Actions artifact. Source pushes run the test checks without calling Gemini.
+The workflow first runs the existing Node tests and the focused Gemini adapter tests, then starts the local interface and headless browser for the selected live scenario. It uploads the run log and screenshots as a downloadable Actions artifact. Source pushes run the test checks without calling Gemini unless the commit changes workflows/gemini-selenium/trigger.json with enabled set to true.
 
 The interface collects procedure returns; it does not edit repository files. If a live scenario reaches an instruction to execute file requirements, the harness records a screenshot and an execution-blocked result, then stops at that screen. It does not claim those changes or later completion values. The mocked adapter tests verify response parsing, declared-variable checks, validation-error recovery, terminal handling, and evidence capture; they do not prove a live Gemini run. The existing interface tests cover the procedure's 23 renders across its documented paths.
+
+## Commit trigger for Gemini Selenium
+
+The workflow trigger is workflows/gemini-selenium/trigger.json in this procedure directory. It contains timestamp (an ISO timestamp string) and enabled (a Boolean). Commit a fresh timestamp with enabled: true to main to start a live minimal scenario. Set enabled: false to disable live execution for a trigger update. Unrelated commits do not start live Gemini even if the stored Boolean remains true. Manual scenario selection remains available through workflow_dispatch.
