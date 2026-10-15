@@ -13,7 +13,7 @@ const fixture = JSON.parse(fs.readFileSync(path.join(__dirname,'fixture-manifest
 const sessions = new Map();
 function send(res,status,value) {res.writeHead(status,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(value));}
 function view(session) {
-  const entries = screens[session.state.render-1] || [];
+  const entries = renderer.entriesForState(session.state,screens,session.toolInvocations || []);
   const properties = Object.fromEntries((inputs[session.state.render-1] || []).map(x=>['$'+x.name,x.schema]));
   return {id:session.id,render:session.state.render,done:session.done,entries,inputs:inputs[session.state.render-1] || [],returnSchema:{type:'object',properties,required:Object.keys(properties),additionalProperties:false},state:session.state,newFiles:session.newFiles,fixture,history:session.history};
 }
@@ -31,8 +31,11 @@ function handleSubmit(session,data) {
   for(const input of expected){const key='$'+input.name;if(!Object.hasOwn(values,key))throw Error('Missing input: '+key);validate(values[key],input.schema,key,input.name==='targetFiles'?{...context,newFiles:[]}:context);}
   if(Object.hasOwn(values,'$targetFiles'))newFiles=values.$targetFiles.filter(file=>file.newFile).map(file=>file.filename);
   const before=structuredClone(session.state), draft=structuredClone(session.state);
-  applyValidatedValues(draft,JSON.stringify(values));
+  const appliedValues={...values};
+  delete appliedValues.$toolInvocations;
+  applyValidatedValues(draft,JSON.stringify(appliedValues));
   const result=map(draft);
+  if(Object.hasOwn(values,'$toolInvocations'))session.toolInvocations=[...(session.toolInvocations || []),...structuredClone(values.$toolInvocations)];
   session.history.push({render:before.render,loopNumber:before.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
   session.state=result==='halt'?draft:result;session.newFiles=newFiles;session.done=result==='halt';
   return view(session);
@@ -43,7 +46,7 @@ const server=http.createServer(async(req,res)=>{
     if(req.method==='GET'&&url.pathname==='/'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});return res.end(fs.readFileSync(path.join(__dirname,'interface.html')));}
     if(req.method==='POST'&&url.pathname==='/api/start'){
       const state={};
-      const session={id:crypto.randomUUID(),state,done:false,newFiles:[...fixture.newFiles],history:[]};
+      const session={id:crypto.randomUUID(),state,done:false,newFiles:[...fixture.newFiles],history:[],toolInvocations:[]};
       map(state);sessions.set(session.id,session);return send(res,200,view(session));
     }
     if(req.method==='POST'&&url.pathname==='/api/submit'){
