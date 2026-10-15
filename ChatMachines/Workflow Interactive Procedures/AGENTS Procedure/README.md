@@ -74,7 +74,7 @@ The AGENTS Selenium setup GitHub Actions workflow installs Node and Python, inst
 
 ## Render the procedure to issues
 
-Start a run using the AGENTS Procedure issue template. The workflow supplies a timestamp when the template title is unchanged, initializes a separate state, and posts the current instruction, captured values, and return schema as a comment. The full procedure is not posted.
+Start a run using the AGENTS Procedure issue template. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction, captured values, and return schema as a comment. The full procedure is not posted.
 
 Reply with a JSON comment, optionally inside a JSON code fence. Use the request number shown in the instruction comment:
 
@@ -92,3 +92,5 @@ Each valid return updates that issue's state through transition(state, valuesJso
 Each run is saved as issue-runs/<issue-number>.json with the state, current request number, input history, and state snapshots. The state itself retains its existing input fields, render number, and loop counter. Workflow runs for the same issue are serialized, and the runner reads pending JSON comments in order. Bot comments do not trigger another processing cycle. Terminal runs post completion and close the issue while preserving its history. No Gemini calls or Selenium runs are made by this workflow.
 
 Run the local issue adapter checks with node issue-workflow.test.js. They verify the adapter without creating an actual GitHub issue.
+
+The issue form includes a Procedure identifier so a run is recognized even when its initial title is changed. Existing runs are also identified by their saved run record. The canonical title uses the issue creation timestamp, so correcting a title never changes the run's timestamp. Title-edit events only enforce the title and do not advance the procedure.
