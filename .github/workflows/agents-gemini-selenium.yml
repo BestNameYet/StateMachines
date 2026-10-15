@@ -1,0 +1,70 @@
+name: AGENTS Gemini Selenium
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: Procedure path to exercise
+        required: true
+        type: choice
+        default: minimal
+        options:
+          - minimal
+          - fidelity
+          - accountability
+          - repeated-accountability
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agents-gemini-selenium-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  run-procedure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Selenium
+        run: python -m pip install -r selenium/requirements.txt
+
+      - name: Run existing procedure tests
+        run: |
+          node transitions.test.js
+          node interface.test.js
+          node issue-workflow.test.js
+          python -m unittest selenium.test_gemini
+
+      - name: Run Gemini and Selenium scenario
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "Repository variable GEMINI_API_KEY is required."
+            exit 1
+          fi
+          python selenium/gemini.py --scenario "${{ inputs.scenario }}" --artifacts "selenium/artifacts/run-${GITHUB_RUN_ID}-${{ inputs.scenario }}"
+
+      - name: Upload procedure evidence and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agents-gemini-selenium-${{ inputs.scenario }}-${{ github.run_id }}
+          path: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/artifacts/
+          if-no-files-found: warn
+          retention-days: 30
