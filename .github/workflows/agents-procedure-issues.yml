@@ -1,0 +1,54 @@
+name: AGENTS Procedure issues
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+  push:
+    paths:
+      - '.github/workflows/agents-procedure-issues.yml'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow*.js'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check issue adapter
+        working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+        run: node issue-workflow.test.js
+
+  render-issue:
+    if: >-
+      github.event_name != 'push' &&
+      !github.event.issue.pull_request &&
+      startsWith(github.event.issue.title, 'AGENTS Procedure') &&
+      (github.event_name == 'issues' || github.event.comment.user.type != 'Bot')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: agents-procedure-issue-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Advance issue state and render instruction
+        working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node issue-workflow.js
