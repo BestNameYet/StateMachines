@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const {compileTransitionMap,applyValidatedValues} = require('./transitions.js');
-const {loadScreens} = require('./render-instructions.js');
+const {loadScreens,entriesForState} = require('./render-instructions.js');
 const {inputsFor, validate} = require('./validator.js');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));
 const map = compileTransitionMap(JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8')));
@@ -15,7 +15,7 @@ const fence = value => {
 function startRun(issue) {
   const state={};
   const result=map(state);
-  return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[]};
+  return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],toolInvocations:[]};
 }
 function applyReturn(record,payload,fileRoot) {
   if(record.done)throw Error('This run has finished.');
@@ -31,8 +31,11 @@ function applyReturn(record,payload,fileRoot) {
     values['$'+field.name]=payload.value;
   }
   const draft=structuredClone(record.state);
-  applyValidatedValues(draft,JSON.stringify(values));
+  const appliedValues={...values};
+  delete appliedValues.$toolInvocations;
+  applyValidatedValues(draft,JSON.stringify(appliedValues));
   const result=map(draft);
+  if(Object.hasOwn(values,'$toolInvocations'))record.toolInvocations=[...(record.toolInvocations || []),...structuredClone(values.$toolInvocations)];
   record.history.push({request:record.request,render:record.state.render,loopNumber:record.state.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
   record.state=result==='halt'?draft:result;
   if(payload.variable==='targetFiles')record.newFiles=payload.value.filter(file=>file.newFile).map(file=>file.filename);
@@ -50,7 +53,7 @@ function parseReturn(body) {
 function renderIssue(record,issueNumber) {
   const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':named-return -->';
   if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
-  const instruction=Object.fromEntries(screens[record.state.render-1]);
+  const instruction=Object.fromEntries(entriesForState(record.state,screens,record.toolInvocations || []));
   return marker+'\n## Render '+record.state.render+'\n\n'+fence(instruction)+
     '\n\n<details><summary>Captured values</summary>\n\n'+fence({state:record.state})+'\n\n</details>';
 }
