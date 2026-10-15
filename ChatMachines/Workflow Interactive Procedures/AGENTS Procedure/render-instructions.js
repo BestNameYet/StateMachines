@@ -8,8 +8,8 @@ function loadScreens() {
   const template = JSON.parse(fs.readFileSync(templatePath, "utf8"));
   const lookupPath = path.join(__dirname, config.instructionLookup);
   const lookup = JSON.parse(fs.readFileSync(lookupPath, "utf8"));
-  return template.screens.map((positions, screenIndex) => {
-    const renderNumber = String(screenIndex + 1);
+  return template.map(({ render: renderNumber, positions }) => {
+    renderNumber = String(renderNumber);
     return positions.map(position => {
       const element = lookup[renderNumber]?.[position];
       if (!Number.isInteger(position) || !Array.isArray(element)) {
