@@ -92,11 +92,11 @@ jobs:
       - name: Run Gemini and Selenium scenario
         if: steps.trigger.outputs.live == 'true'
         env:
-          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
         run: |
           if [ -z "$GEMINI_API_KEY" ]; then
-            echo "Repository variable GEMINI_API_KEY is required."
+            echo "Repository secret GEMINI_API_KEY is required."
             exit 1
           fi
           python selenium/gemini.py --scenario "${{ steps.trigger.outputs.scenario }}" --artifacts "selenium/artifacts/run-${GITHUB_RUN_ID}-${{ steps.trigger.outputs.scenario }}"
