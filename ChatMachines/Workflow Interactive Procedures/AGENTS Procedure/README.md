@@ -74,7 +74,7 @@ The AGENTS Selenium setup GitHub Actions workflow installs Node and Python, inst
 
 ## Render the procedure to issues
 
-Start a run using the AGENTS Procedure issue template. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction, captured values, and return schema as a comment. The full procedure is not posted.
+Start a run using the AGENTS Procedure issue template. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction and captured values as a comment. The full procedure is not posted.
 
 Reply using ${variableName}: value, where value is JSON of the declared type. For example:
 
@@ -99,3 +99,5 @@ The caller loads transitions.json and supplies its parsed object as transitionMa
 transition(state, transitionMap, valuesJson) returns the next state object, or the string halt at a terminal destination. It does not render. Internally it indexes render and entry addresses, processes hidden calls and decisions, follows pointers, and accepts nested sequence arrays. Exhausted selected arrays, null items, and null return destinations resolve to halt. The transition map omits null render fields; only a non-null render value returns a renderable state. Missing or malformed addresses remain errors rather than being silently treated as completion.
 
 The GitHub workflow runner is the caller. It writes the returned state into the issue's run file before posting its instruction. At halt it preserves the final updated state, records completion, and does not render another instruction. The HTML adapter consumes the same result contract. Initialization still receives the state object loaded from state.json and the caller-supplied transition map.
+
+Issue comments render the procedure's instruction directly. Its declared return variable and type define the response; no additional generated return-schema block or reply envelope is posted. Replies use ${variableName}: value. Structural validation remains based on the procedure's declared types.
