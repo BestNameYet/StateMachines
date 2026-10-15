@@ -60,76 +60,31 @@
       ]
     },
     {
-      "render": 3,
-      "actions": [
-        {
-          "set": {
-            "exampleMatch": "${exampleMatch}",
-            "render": 4
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "exampleMatch": "${exampleMatch}",
+      "render": 3
     },
     {
-      "render": 4,
-      "next": [
+      "Boolean": "${exampleMatch}",
+      "return": {
+        "true": "onTrue",
+        "false": "continue"
+      }
+    },
+    {
+      "onTrue": [
         {
-          "if": "${exampleMatch} = true",
+          "render": 4
+        },
+        {
+          "userIntent": "${userIntent}",
           "render": 5
         },
         {
-          "if": "${exampleMatch} = false",
-          "render": 8
-        }
-      ]
-    },
-    {
-      "render": 5,
-      "actions": [
-        {
-          "set": {
-            "userIntent": "${userIntent}",
-            "render": 6
-          }
+          "render": 6
         },
         {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
-    },
-    {
-      "render": 6,
-      "actions": [
-        {
-          "set": {
-            "render": 7
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
-    },
-    {
-      "render": 7,
-      "actions": [
-        {
-          "set": {
-            "minimalResult": "${minimalResult}",
-            "render": null
-          }
+          "minimalResult": "${minimalResult}",
+          "render": 7
         }
       ]
     },
