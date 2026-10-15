@@ -41,7 +41,7 @@ From this directory, run:
 node interface-server.js
 ```
 
-Open http://127.0.0.1:3000. Each page load starts a separate in-memory run from the state template. Submit or Enter sends the expected values through the existing transition(state, valuesJson) contract; Shift+Enter inserts a newline. The interface does not change transitions.js or add interface fields to its state. Server restart discards these interface sessions.
+Open http://127.0.0.1:3000. Each page load starts a separate in-memory run from the state template. Submit or Enter sends the expected values through the existing transition(state, transitionMap, valuesJson) contract; Shift+Enter inserts a newline. The interface does not change transitions.js or add interface fields to its state. Server restart discards these interface sessions.
 
 Instruction keys and values are resolved using Instruction-render.json and Instruction-lookup.json. Input controls and JSON return schemas are derived from the explicit types already present in the instruction text. Structural checks include strings, integers, Booleans, arrays, required object fields, byte ranges, and relative file references. They do not judge whether a response is semantically correct.
 
@@ -87,10 +87,12 @@ Reply with a JSON comment, optionally inside a JSON code fence. Use the request 
 }
 ```
 
-Each valid return updates that issue's state through transition(state, valuesJson). Hidden decisions execute immediately; the next visible instruction is posted. Steps with no captured return accept an empty values object. Validation errors are posted without advancing the state. The request number rejects replies to old instructions, including earlier loop iterations. File references are checked relative to the repository root; include an optional newFiles array or newFile: true on a record when creating files.
+Each valid return updates that issue's state through transition(state, transitionMap, valuesJson). Hidden decisions execute immediately; the next visible instruction is posted. Steps with no captured return accept an empty values object. Validation errors are posted without advancing the state. The request number rejects replies to old instructions, including earlier loop iterations. File references are checked relative to the repository root; include an optional newFiles array or newFile: true on a record when creating files.
 
 Each run is saved as issue-runs/<issue-number>.json with the state, current request number, input history, and state snapshots. The state itself retains its existing input fields, render number, and loop counter. Workflow runs for the same issue are serialized, and the runner reads pending JSON comments in order. Bot comments do not trigger another processing cycle. Terminal runs post completion and close the issue while preserving its history. No Gemini calls or Selenium runs are made by this workflow.
 
 Run the local issue adapter checks with node issue-workflow.test.js. They verify the adapter without creating an actual GitHub issue.
 
 The issue form includes a Procedure identifier so a run is recognized even when its initial title is changed. Existing runs are also identified by their saved run record. The canonical title uses the issue creation timestamp, so correcting a title never changes the run's timestamp. Title-edit events only enforce the title and do not advance the procedure.
+
+The caller loads transitions.json and supplies its parsed object as transitionMap. Initialization calls transition(state, transitionMap); subsequent returns use transition(state, transitionMap, valuesJson). The transition function no longer locates or reads its own transition map.
