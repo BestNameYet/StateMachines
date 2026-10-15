@@ -167,8 +167,8 @@ function transition(state, transitionMap, valuesJson) {
       }
       continue;
     }
-    if (Object.hasOwn(item,"render")) {
-      return finish(item.render === null ? "halt" : structuredClone(working));
+    if (Object.hasOwn(item,"render") && item.render !== null) {
+      return finish(structuredClone(working));
     }
     position.index++;
   }
