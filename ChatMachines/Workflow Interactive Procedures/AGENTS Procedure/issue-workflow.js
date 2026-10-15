@@ -15,8 +15,8 @@ const fence = value => {
 };
 function startRun(issue) {
   const state=stateTemplate();
-  transition(state,transitionMap);
-  return {state,done:false,request:1,lastCommentId:0,newFiles:[],history:[],originalRequest:issue.body||''};
+  const result=transition(state,transitionMap);
+  return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],originalRequest:issue.body||''};
 }
 function requestSchema(record) {
   const fields=inputsFor(screens[record.state.render-1]);
@@ -45,9 +45,9 @@ function applyReturn(record,payload,fileRoot) {
     validate(values[key],field.schema,key,context);
   }
   const draft=structuredClone(record.state);
-  const content=transition(draft,transitionMap,JSON.stringify(values));
+  const result=transition(draft,transitionMap,JSON.stringify(values));
   record.history.push({request:record.request,render:record.state.render,loopNumber:record.state.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
-  record.state=draft;record.done=content===null;record.newFiles=newFiles;record.request++;
+  record.state=result==='halt'?draft:result;record.done=result==='halt';record.newFiles=newFiles;record.request++;
 }
 function parseReturn(body) {
   const text=body.trim();
