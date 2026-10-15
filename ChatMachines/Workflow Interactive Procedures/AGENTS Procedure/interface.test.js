@@ -27,13 +27,18 @@ async function main(){
   let state=(await start()).data,trace=[],passes=0;
   while(!state.done){trace.push(state.render);assert(trace.length<80);const values={};for(const field of state.inputs)values['$'+field.name]=sample(field.schema);
    if(state.render===3)values.$exampleMatch=kind==='minimal';
-   if(state.render===8)values.$targetFiles=['people.json','settings.json','notes.txt','summary.json'];
+   if(state.render===8)values.$targetFiles=['people.json','settings.json','notes.txt','summary.json'].map(filename=>({filename,newFile:filename==='summary.json'}));
    if(state.render===9||state.render===12||state.render===16)values.$requirements=[record];
    if(state.render===11)values.$matchedExample={example:kind==='fidelity'?1:2,promptText:'Test intent'};
    if(state.render===14||state.render===18)values.$changeList=[record];
    if(state.render===21)values.$requirementsCompleted=[record];
    if(state.render===23){passes++;values.$requirements=kind==='repeat'&&passes===1?[record]:[];}
-   if(state.render===9){const bad=await submit(state,{'$requirements':[{...record,frombyte:'0'}]});assert.equal(bad.status,400);}
+   if(state.render===9){assert(state.newFiles.includes('summary.json'));const bad=await submit(state,{'$requirements':[{...record,frombyte:'0'}]});assert.equal(bad.status,400);}
+   if(state.render===8){
+    assert.equal((await submit(state,{'$targetFiles':['missing.json']})).status,400);
+    assert.equal((await submit(state,{'$targetFiles':[{filename:'missing.json',newFile:false}]})).status,400);
+    assert.equal((await submit(state,{'$targetFiles':[{filename:'../escape.json',newFile:true}]})).status,400);
+   }
    const result=await submit(state,values);assert.equal(result.status,200,JSON.stringify(result.data));state=result.data;
   }
   traces[kind]=trace;
