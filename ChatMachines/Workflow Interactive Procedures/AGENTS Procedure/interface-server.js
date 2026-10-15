@@ -24,11 +24,12 @@ function handleSubmit(session,data) {
   if (!values || typeof values !== 'object' || Array.isArray(values)) throw Error('Values must be an object.');
   const expected=inputs[session.state.render-1], keys=expected.map(x=>'$'+x.name);
   for(const key of Object.keys(values))if(!keys.includes(key))throw Error('Unexpected input: '+key);
-  const newFiles=data.newFiles ?? session.newFiles;
+  let newFiles=data.newFiles ?? session.newFiles;
   if(!Array.isArray(newFiles)||newFiles.some(x=>typeof x!=='string'))throw Error('New files must be an array of filenames.');
   const context={root:path.join(__dirname,fixture.root),newFiles};
   newFiles.forEach(x=>validate(x,{type:'string',format:'file-reference'},'newFiles',{...context,newFile:true}));
-  for(const input of expected){const key='$'+input.name;if(!Object.hasOwn(values,key))throw Error('Missing input: '+key);validate(values[key],input.schema,key,context);}
+  for(const input of expected){const key='$'+input.name;if(!Object.hasOwn(values,key))throw Error('Missing input: '+key);validate(values[key],input.schema,key,input.name==='targetFiles'?{...context,newFiles:[]}:context);}
+  if(Object.hasOwn(values,'$targetFiles'))newFiles=values.$targetFiles.filter(file=>file.newFile).map(file=>file.filename);
   const before=structuredClone(session.state), draft=structuredClone(session.state);
   applyValidatedValues(draft,JSON.stringify(values));
   const result=map(draft);
