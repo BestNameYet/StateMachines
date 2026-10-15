@@ -18,15 +18,27 @@ The parallelizer is already built. Do not include rebuilding it as an outstandin
 
 ## 1. Retrieve and establish the source — sequential foundation
 
-- [ ] Retrieve the linked Library archive and record its current identity, version, filename, size, and hash.
-- [ ] Inspect its actual format, contents, date coverage, branches, attachments, and any parsing problems.
-- [ ] Preserve an unchanged source and document where source and derived data will be held.
+- [x] Retrieve the linked Library archive and record its current identity, version, filename, size, and hash.
+- [x] Inspect its actual format, contents, date coverage, branches, attachments, and any parsing problems.
+- [x] Preserve an unchanged source and document where source and derived data will be held.
 - [ ] Determine how the workers will access the material. The current substrate accepts repository paths; Library access/import is not built into it. Resolve this before launching archive jobs, without automatically committing private conversations.
-- [ ] Establish whether 2024–2025 and present-day material are both available; identify missing comparison sources.
+- [x] Establish whether 2024–2025 and present-day material are both available; identify missing comparison sources.
 
 Output: source manifest, format/coverage report, and an explicit worker-access arrangement.
 
 Do not subdivide based only on the file's apparent size or assume the archive contains the complete account.
+
+### Stage 1 inspection result — October 15, 2026
+
+Source inspection is complete except worker access. All 14 conversation shards parsed: 1,334 conversations, 36,200 messages. Observed message dates span August 25, 2024 through August 5, 2026; current October usage needs additional material. Attachment bytes are absent. Preserve six repeated message-ID occurrences, including one ID with differing payloads, during extraction.
+
+Recoverable reports:
+
+- Library /source-manifest.json — libfile_0751e5c2be588191abda62f417f9a79d
+- Library /inspection-report.md — libfile_bb250c290264819199e658d45b71f994
+- Original source remains libfile_8eeefed45af881919c1fdb5c15604019; SHA-256 b3baf3917796412b5096c21fad7356c6dba84aa916e38a68453c6a328b23b5f4.
+
+Worker-access integration remains unchecked: the parallelizer has no Library-to-worker materialization route. No personal conversation text was committed to GitHub. No extraction, chunking, labeling, or semantic analysis has been performed. See [AGENTS inspection run #14](https://github.com/BestNameYet/StateMachines/issues/14).
 
 ## 2. Extract each conversation and verify completeness — first preparation step
 
