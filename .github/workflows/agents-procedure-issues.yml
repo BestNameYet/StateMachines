@@ -2,7 +2,7 @@ name: AGENTS Procedure issues
 
 on:
   issues:
-    types: [opened]
+    types: [opened, edited]
   issue_comment:
     types: [created]
   push:
@@ -30,7 +30,6 @@ jobs:
     if: >-
       github.event_name != 'push' &&
       !github.event.issue.pull_request &&
-      startsWith(github.event.issue.title, 'AGENTS Procedure') &&
       (github.event_name == 'issues' || github.event.comment.user.type != 'Bot')
     runs-on: ubuntu-latest
     timeout-minutes: 5
