@@ -41,7 +41,7 @@ From this directory, run:
 node interface-server.js
 ```
 
-Open http://127.0.0.1:3000. Each page load starts a separate in-memory run from an empty state object through the transition map. Submit or Enter sends the expected values through the existing transition(state, transitionMap, valuesJson) contract; Shift+Enter inserts a newline. The interface does not change transitions.js or add interface fields to its state. Server restart discards these interface sessions.
+Open http://127.0.0.1:3000. Each page load starts a separate in-memory run from an empty state object through the transition map. Submit or Enter sends the expected values through the compiled map(state) contract; Shift+Enter inserts a newline. The interface does not change transitions.js or add interface fields to its state. Server restart discards these interface sessions.
 
 Instruction keys and values are resolved using Instruction-render.json and Instruction-lookup.json. Input controls and JSON return schemas are derived from the explicit types already present in the instruction text. Structural checks include strings, integers, Booleans, arrays, required object fields, byte ranges, and relative file references. They do not judge whether a response is semantically correct.
 
@@ -84,7 +84,7 @@ ${userIntent}: "The user wants to know what JSON stands for."
 
 Do not add a request number or values wrapper. The workflow validates the supplied variable name and the value, then updates that state variable. Steps with no captured return accept {} after their instruction is completed. File records may designate new files with newFile: true.
 
-Each valid return updates the issue state through the transition function. Hidden decisions execute immediately; the next visible instruction is posted. Validation errors do not advance the state. The workflow keeps comment-processing identifiers internally; they are not part of the submitted return schema.
+Each valid return updates the issue state through the transition function. Compiled hidden decisions execute immediately; the next visible instruction is posted. Validation errors do not advance the state. The workflow keeps comment-processing identifiers internally; they are not part of the submitted return schema.
 
 Each run is saved as issue-runs/<issue-number>.json with the state, current request number, input history, and state snapshots. The state itself retains its existing input fields, render number, and loop counter. Workflow runs for the same issue are serialized, and the runner reads pending JSON comments in order. Bot comments do not trigger another processing cycle. Terminal runs post completion and close the issue while preserving its history. No Gemini calls or Selenium runs are made by this workflow.
 
@@ -92,14 +92,14 @@ Run the local issue adapter checks with node issue-workflow.test.js. They verify
 
 The issue form includes a Procedure identifier so a run is recognized even when its initial title is changed. Existing runs are also identified by their saved run record. The canonical title uses the issue creation timestamp, so correcting a title never changes the run's timestamp. Title-edit events only enforce the title and do not advance the procedure.
 
-The caller loads transitions.json and supplies its parsed object as transitionMap. Initialization calls transition(state, transitionMap); subsequent returns use transition(state, transitionMap, valuesJson). The transition function no longer locates or reads its own transition map. There is no separate state.json or state config entry.
+The caller loads transitions.json and compiles it once: const map = compileTransitionMap(transitions). The result is a state-to-state operator. Initialize with map({}); for subsequent returns, apply validated inputs to the previous state and call map(state). There is no separate state.json or state config entry.
 
 The transition CLI accepts a JSON state as its first argument (default {}), with optional values JSON as its second argument, and prints the next state or halt. The renderer CLI accepts the JSON state as its first argument. Neither CLI reads or writes a shared state template.
 
 ## Transition result contract
 
-transition(state, transitionMap, valuesJson) returns the next state object, or the string halt at a terminal destination. It does not render. Internally it indexes render and entry addresses, processes hidden calls and decisions, follows pointers, and accepts nested sequence arrays. Exhausted selected arrays, null items, and null return destinations resolve to halt. The transition map omits null render fields; only a non-null render value returns a renderable state. Missing or malformed addresses remain errors rather than being silently treated as completion.
+compileTransitionMap(transitions) returns a function map(state). Compilation builds executable state transformations and connects sequence successors, Boolean destinations, branches, and entry pointers from the JSON. The resulting operator returns the next state object, or the string halt at a terminal destination. It does not render or walk JSON items during invocation. Nested sequence arrays are resolved during compilation. Exhausted selected arrays, null items, and null return destinations resolve to halt. The transition map omits null render fields; only a non-null render value returns a renderable state. Missing or malformed addresses remain errors rather than being silently treated as completion.
 
-The GitHub workflow runner is the caller. It writes the returned state into the issue's run file before posting its instruction. At halt it preserves the final updated state, records completion, and does not render another instruction. The HTML adapter consumes the same result contract. Initialization calls transition({}, transitionMap). The first map item defines the initial input fields and render; no separate state template is loaded. The workflow persists each resulting run state.
+The GitHub workflow runner is the caller. It writes the returned state into the issue's run file before posting its instruction. At halt it preserves the final updated state, records completion, and does not render another instruction. The HTML adapter consumes the same result contract. Initialization calls map({}). The first map item defines the initial input fields and render; no separate state template is loaded. The workflow persists each resulting run state.
 
 Issue comments render the procedure's instruction directly. Its declared return variable and type define the response; no additional generated return-schema block or reply envelope is posted. Replies use ${variableName}: value. Structural validation remains based on the procedure's declared types.
