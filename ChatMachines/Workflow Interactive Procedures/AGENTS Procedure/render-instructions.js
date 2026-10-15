@@ -39,11 +39,17 @@ function renderScreen(screens, renderNumber) {
   return render(screens[screenIndex]);
 }
 
+function entriesForState(state, screens = loadScreens(), toolInvocations = []) {
+  return (screens[state.render-1] || []).map(([key,value])=>[
+    key,key==='toolInvocationReport'?structuredClone(toolInvocations):structuredClone(value)
+  ]);
+}
+
 function renderState(state, screens = loadScreens()) {
   if (!state || typeof state !== "object" || Array.isArray(state)) {
     throw new Error("Renderer requires a state object.");
   }
-  return renderScreen(screens, state.render);
+  return render(entriesForState(state,screens));
 }
 
 if (require.main === module) {
@@ -51,4 +57,4 @@ if (require.main === module) {
   process.stdout.write(renderState(state) + "\n");
 }
 
-module.exports = { loadScreens, render, renderScreen, renderState };
+module.exports = { loadScreens, render, renderScreen, renderState, entriesForState };
