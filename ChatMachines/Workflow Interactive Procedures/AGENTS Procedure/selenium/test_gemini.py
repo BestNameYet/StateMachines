@@ -19,8 +19,8 @@ class FakeDriver:
 
 class GeminiAdapterTests(unittest.TestCase):
     def test_parse_plain_and_fenced_json(self):
-        self.assertEqual(gemini.parse_json_response('{"$answer":"ok"}'), {"$answer": "ok"})
-        self.assertEqual(gemini.parse_json_response('\\```json\n{"$answer":"ok"}\n\\```'), {"$answer": "ok"})
+        self.assertEqual(gemini.parse_json_response("```json\n{\"$answer\":\"ok\"}\n```"), {"$answer": "ok"})
+        self.assertEqual(gemini.parse_json_response("```json\n{\"$answer\":\"ok\"}\n```"), {"$answer": "ok"})
 
     def test_rejects_non_object_and_malformed_json(self):
         with self.assertRaisesRegex(ValueError, "JSON object"):
