@@ -113,7 +113,8 @@ function transition(state, transitionMap, valuesJson) {
   const map = compileTransitionMap(transitionMap);
   const working = structuredClone(state);
   let position;
-  if (working.render === null) {
+  const initializing = working.render == null;
+  if (initializing) {
     position = { array: map.root, index: 0 };
   } else {
     const current = map.renders.get(working.render);
@@ -136,7 +137,7 @@ function transition(state, transitionMap, valuesJson) {
       continue;
     }
     for (const [key,value] of Object.entries(item)) {
-      if (Object.hasOwn(working,key) && !(key === "render" && value === null)) {
+      if ((Object.hasOwn(working,key) || (initializing && position.array === map.root && position.index === 0 && !["entry","pointer","call","Boolean","return"].includes(key))) && !(key === "render" && value === null)) {
         working[key] = resolveValue(working,value);
       }
     }
@@ -177,10 +178,8 @@ function transition(state, transitionMap, valuesJson) {
 
 if (require.main === module) {
   const config = loadConfig();
-  const stateFile = path.join(__dirname,config.state);
-  const state = JSON.parse(fs.readFileSync(stateFile,"utf8"));
-  const result = transition(state,loadTransitionMap(config),process.argv[2]);
-  fs.writeFileSync(stateFile,JSON.stringify(result === "halt" ? state : result,null,2)+"\n");
+  const state = JSON.parse(process.argv[2] || "{}");
+  const result = transition(state,loadTransitionMap(config),process.argv[3]);
   process.stdout.write(result === "halt" ? "halt\n" : JSON.stringify(result,null,2)+"\n");
 }
 
