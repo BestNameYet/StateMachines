@@ -4,6 +4,7 @@ const {transition} = require('./transitions.js');
 const {loadScreens} = require('./render-instructions.js');
 const {inputsFor, validate} = require('./validator.js');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));
+const transitionMap = JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8'));
 const screens = loadScreens();
 const stateTemplate = () => JSON.parse(fs.readFileSync(path.join(__dirname,config.state),'utf8'));
 const fence = value => {
@@ -14,7 +15,7 @@ const fence = value => {
 };
 function startRun(issue) {
   const state=stateTemplate();
-  transition(state);
+  transition(state,transitionMap);
   return {state,done:false,request:1,lastCommentId:0,newFiles:[],history:[],originalRequest:issue.body||''};
 }
 function requestSchema(record) {
@@ -44,7 +45,7 @@ function applyReturn(record,payload,fileRoot) {
     validate(values[key],field.schema,key,context);
   }
   const draft=structuredClone(record.state);
-  const content=transition(draft,JSON.stringify(values));
+  const content=transition(draft,transitionMap,JSON.stringify(values));
   record.history.push({request:record.request,render:record.state.render,loopNumber:record.state.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
   record.state=draft;record.done=content===null;record.newFiles=newFiles;record.request++;
 }
