@@ -1,11 +1,12 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const { transition } = require("./transitions.js");
+const transitionMap = JSON.parse(fs.readFileSync("./transitions.json", "utf8"));
 const initial = JSON.parse(fs.readFileSync("./state.json", "utf8"));
 const req = [{ filename: "a.json", frombyte: 0, tobyte: 1, description: "change", intent: "requested", operator: "edit" }];
 function run(kind) {
   const state = structuredClone(initial), trace = [];
-  let content = transition(state), passes = 0;
+  let content = transition(state, transitionMap), passes = 0;
   while (content !== null) {
     trace.push(state.render);
     let values = {};
@@ -31,7 +32,7 @@ function run(kind) {
       case 22: passes++; values = { "$requirements": kind === "repeat" && passes === 1 ? req : [] }; break;
     }
     if (trace.length > 80) throw Error("Non-terminating simulation");
-    content = transition(state, JSON.stringify(values));
+    content = transition(state, transitionMap, JSON.stringify(values));
   }
   return { state, trace };
 }
@@ -52,9 +53,9 @@ assert.equal(repeat.state.loopNumber, 2);
 assert.deepEqual(repeat.state.requirements, []);
 assert.deepEqual(repeat.state.requirementsCompleted, req);
 assert.equal(repeat.trace.filter(x => x === 15).length, 1);
-const rejected = structuredClone(initial); transition(rejected);
+const rejected = structuredClone(initial); transition(rejected, transitionMap);
 const before = structuredClone(rejected);
-assert.throws(() => transition(rejected, '{"$render":99}'));
+assert.throws(() => transition(rejected, transitionMap, '{"$render":99}'));
 assert.deepEqual(rejected, before);
 const union = new Set([...minimal.trace, ...fidelity.trace, ...accountability.trace]);
 assert.equal(union.size, 23);
