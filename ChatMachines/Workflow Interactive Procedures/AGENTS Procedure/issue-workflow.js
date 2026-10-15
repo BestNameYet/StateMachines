@@ -33,8 +33,9 @@ function applyReturn(record,payload,fileRoot) {
   }else{
     if(fields.length!==1)throw Error('Instruction must declare its own combined return type.');
     const field=fields[0];
-    validate(payload,field.schema,field.name,{root:fileRoot,newFiles:record.newFiles});
-    values['$'+field.name]=payload;
+    if(payload.variable!==field.name)throw Error('Expected ${'+field.name+'}: value.');
+    validate(payload.value,field.schema,field.name,{root:fileRoot,newFiles:record.newFiles});
+    values['$'+field.name]=payload.value;
   }
   const draft=structuredClone(record.state);
   const result=transition(draft,transitionMap,JSON.stringify(values));
@@ -43,17 +44,23 @@ function applyReturn(record,payload,fileRoot) {
 }
 function parseReturn(body) {
   const text=body.trim();
-  const fenced=text.match(/^`{3,}(?:json)?\s*\n([\s\S]*?)\n`{3,}$/i);
-  return JSON.parse(fenced?fenced[1]:text);
+  const fenced=text.match(/^\x60{3,}(?:json|text|javascript)?\s*\n([\s\S]*?)\n\x60{3,}$/i);
+  const source=(fenced?fenced[1]:text).trim();
+  if(source==='{}')return {};
+  const match=source.match(/^\$\{([A-Za-z_][\w$]*)\}\s*:\s*([\s\S]+)$/);
+  if(!match)throw Error('Return must use ${variableName}: JSON value.');
+  return {variable:match[1],value:JSON.parse(match[2])};
 }
 function renderIssue(record,issueNumber) {
-  const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':direct-return -->';
+  const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':named-return -->';
   if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
   const instruction=Object.fromEntries(screens[record.state.render-1]);
   const schema=requestSchema(record);
+  const fields=inputsFor(screens[record.state.render-1]);
+  const reply=fields.length?'${'+fields[0].name+'}: <JSON value>':'{}';
   return marker+'\n## Render '+record.state.render+'\n\n'+
     fence(instruction)+'\n\n### Return schema\n\n'+fence(schema)+
-    '\n\nReply with only the declared JSON return. No request number or values wrapper. For a step with no captured return, submit {} after completing the instruction.'+
+    '\n\nReturn format: '+fence(reply)+ '\n\nUse the declared variable name and a JSON value of the required type. No request number or values wrapper. For a step with no captured return, submit {} after completing the instruction.'+
     '\n\n<details><summary>Original request and captured values</summary>\n\n'+fence({originalRequest:record.originalRequest,state:record.state})+'\n\n</details>';
 }
 function canonicalTitle(issue) {
@@ -91,7 +98,7 @@ async function main() {
   for(const comment of comments){
     if(comment.id<=record.lastCommentId||comment.user.type==='Bot')continue;
     if(record.done){record.lastCommentId=comment.id;continue;}
-    if(!/^\s*(?:[\[{"\d-]|true\b|false\b|null\b|\x60{3,})/.test(comment.body)) {record.lastCommentId=comment.id;continue;}
+    if(!/^\s*(?:\$\{|[\[{"\d-]|true\b|false\b|null\b|\x60{3,})/.test(comment.body)) {record.lastCommentId=comment.id;continue;}
     const errorMarker='<!-- agents-procedure:'+number+':error:'+comment.id+' -->';
     try{applyReturn(record,parseReturn(comment.body),process.env.GITHUB_WORKSPACE);}
     catch(error){outbox.push({marker:errorMarker,body:errorMarker+'\nReturn rejected: '+error.message+'\n\nState and current request are unchanged.'});}
