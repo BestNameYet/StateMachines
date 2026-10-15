@@ -120,7 +120,7 @@ class GeminiAdapterTests(unittest.TestCase):
     def test_terminal_screen_does_not_call_gemini(self):
         terminal = {"render": 23, "done": True, "state": {"render": 23}, "history": []}
         driver = FakeDriver()
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory() as directory, patch.object(gemini, "read_screen", return_value=terminal):
             result = gemini.run_loop(driver, "prompt", "minimal", directory, request_fn=lambda _: self.fail("must not call Gemini"))
         self.assertEqual(result["status"], "halted")
         self.assertEqual(result["submissions"], 0)
