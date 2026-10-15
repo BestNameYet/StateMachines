@@ -153,7 +153,14 @@
             "${tool}",
             "${invocation_verbatim}",
             "${final_output_after_completion_of_tool_call}",
-            "${unavailable_reason}"
+            "${unavailable_reason}",
+            "${new}",
+            "${filename}",
+            "${frombyte}",
+            "${tobyte}",
+            "${description}",
+            "${intent}",
+            "${operator}"
           ],
           "For web tools": {
             "return": {
@@ -177,11 +184,22 @@
             ]
           },
           "return": "${outcome}"
-        }
+        },
+        "operator": [
+          {
+            "instruction": "Determine whether the user specified an operator or method. If so, record it verbatim; otherwise return null. <string | null>: ${specifiedOperatorByUser}",
+            "return": "${specifiedOperatorByUser}"
+          },
+          {
+            "instruction": "Choose operator. If ${specifiedOperatorByUser} is null, choose an operator for performing the task; otherwise use the operator specified by the user. <string>: ${chosenOperator}",
+            "return": "${chosenOperator}"
+          }
+        ]
       },
       {
         "stepnumber": 3,
-        "steptext": "Construct ${changeList}: 1. Initialize ${changeList} as an empty array. 2. Iterate over every actual data change. 3. For each change, create a record with this shape: {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}. Record the location, a brief description of the actual change, its associated intent, and its operator. 4. Append the record to ${changeList}. 5. Return the completed array. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${changeList}"
+        "steptext": "Construct ${changeList}: 1. Display the entire recorded tool-invocation report, ${toolInvocations}, without truncation. 2. Using the tool-invocation report and other available information, list the actual data changes. 3. Initialize ${changeList} as an empty array. 4. Iterate over the actual data changes. For each change, create a record with this shape: {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}. Record the location, a brief description of the actual change, its associated intent, and its operator. 5. Append each record to ${changeList}. 6. Return the completed array. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${changeList}",
+        "toolInvocationReport": "${toolInvocations}"
       }
     ],
     "return": "${changeList}",
@@ -209,7 +227,14 @@
             "${tool}",
             "${invocation_verbatim}",
             "${final_output_after_completion_of_tool_call}",
-            "${unavailable_reason}"
+            "${unavailable_reason}",
+            "${new}",
+            "${filename}",
+            "${frombyte}",
+            "${tobyte}",
+            "${description}",
+            "${intent}",
+            "${operator}"
           ],
           "For web tools": {
             "return": {
@@ -233,11 +258,22 @@
             ]
           },
           "return": "${outcome}"
-        }
+        },
+        "operator": [
+          {
+            "instruction": "Determine whether the user specified an operator or method. If so, record it verbatim; otherwise return null. <string | null>: ${specifiedOperatorByUser}",
+            "return": "${specifiedOperatorByUser}"
+          },
+          {
+            "instruction": "Choose operator. If ${specifiedOperatorByUser} is null, choose an operator for performing the task; otherwise use the operator specified by the user. <string>: ${chosenOperator}",
+            "return": "${chosenOperator}"
+          }
+        ]
       },
       {
         "stepnumber": 4,
-        "steptext": "Construct ${changeList}: 1. Initialize ${changeList} as an empty array. 2. Iterate over every actual data change. 3. For each change, create a record with this shape: {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}. Record the location, a brief description of the actual change, its associated intent, and its operator. 4. Append the record to ${changeList}. 5. Return the completed array. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${changeList}"
+        "steptext": "Construct ${changeList}: 1. Display the entire recorded tool-invocation report, ${toolInvocations}, without truncation. 2. Using the tool-invocation report and other available information, list the actual data changes. 3. Initialize ${changeList} as an empty array. 4. Iterate over the actual data changes. For each change, create a record with this shape: {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}. Record the location, a brief description of the actual change, its associated intent, and its operator. 5. Append each record to ${changeList}. 6. Return the completed array. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${changeList}",
+        "toolInvocationReport": "${toolInvocations}"
       },
       {
         "stepnumber": 5,
