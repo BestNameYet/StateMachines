@@ -1,6 +1,5 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const renderer = require("./render-instructions.js");
 
 function loadConfig() {
   return JSON.parse(fs.readFileSync(path.join(__dirname, "config.json"), "utf8"));
@@ -65,16 +64,32 @@ function applyValidatedValues(state, valuesJson = "{}") {
   for (const [key, value] of entries) state[key] = value;
 }
 
-function findPosition(array, predicate) {
-  for (let index = 0; index < array.length; index++) {
-    const item = array[index];
-    if (predicate(item)) return { array, index };
-    if (Array.isArray(item.onTrue)) {
-      const result = findPosition(item.onTrue, predicate);
-      if (result) return result;
-    }
+function compileTransitionMap(source) {
+  const sourceArray = Array.isArray(source) ? source : source?.transitions;
+  if (source === null) return { root: [], renders: new Map(), entries: new Map() };
+  if (!Array.isArray(sourceArray)) throw new Error("Transitions must be an array.");
+  const renders = new Map(), entries = new Map();
+  function sequence(items) {
+    const array = items.flat(Infinity).map(item =>
+      item && Array.isArray(item.onTrue) ? { ...item, onTrue: sequence(item.onTrue) } : item
+    );
+    array.forEach((item,index) => {
+      if (item === null) return;
+      if (!item || typeof item !== "object" || Array.isArray(item)) throw new Error("Invalid transition item.");
+      const position = { array, index };
+      if (item.render !== undefined && item.render !== null) {
+        if (renders.has(item.render)) throw new Error("Duplicate render address.");
+        renders.set(item.render, position);
+      }
+      if (item.entry) {
+        if (entries.has(item.entry)) throw new Error("Duplicate entry address.");
+        entries.set(item.entry, position);
+      }
+    });
+    return array;
   }
-  return null;
+  const root = sequence(sourceArray);
+  return { root, renders, entries };
 }
 
 function runCall(state, call, config) {
@@ -95,57 +110,78 @@ function runCall(state, call, config) {
 
 function transition(state, transitionMap, valuesJson) {
   if (!state || typeof state !== "object" || Array.isArray(state)) throw new Error("State must be an object.");
-  const root = Array.isArray(transitionMap) ? transitionMap : transitionMap?.transitions;
-  if (!Array.isArray(root)) throw new Error("Transitions must be an array.");
+  const map = compileTransitionMap(transitionMap);
   const working = structuredClone(state);
   let position;
   if (working.render === null) {
-    position = { array: root, index: 0 };
+    position = { array: map.root, index: 0 };
   } else {
-    position = findPosition(root, item => item.render === working.render);
-    if (!position) throw new Error("Current render is not in the transition map.");
+    const current = map.renders.get(working.render);
+    if (!current) {
+      if (transitionMap === null) return "halt";
+      throw new Error("Current render is not in the transition map.");
+    }
+    position = { array: current.array, index: current.index + 1 };
     applyValidatedValues(working, valuesJson);
-    position.index++;
   }
-  let output = null;
+  const finish = result => {
+    Object.assign(state, working);
+    return result;
+  };
   while (position.index < position.array.length) {
     const item = position.array[position.index];
+    if (item === null) return finish("halt");
     if (Object.hasOwn(item, "onTrue")) {
       position.index++;
       continue;
     }
-    for (const [key, value] of Object.entries(item)) {
-      if (Object.hasOwn(working, key)) working[key] = resolveValue(working, value);
+    for (const [key,value] of Object.entries(item)) {
+      if (Object.hasOwn(working,key) && !(key === "render" && value === null)) {
+        working[key] = resolveValue(working,value);
+      }
     }
-    if (item.call) runCall(working, item.call, loadConfig());
+    if (Object.hasOwn(item,"return") && item.return === null) return finish("halt");
+    if (item.pointer) {
+      const destination = map.entries.get(item.pointer);
+      if (!destination) throw new Error("Unknown entry point.");
+      position = { ...destination };
+      continue;
+    }
+    if (item.call) runCall(working,item.call,loadConfig());
     if (item.Boolean) {
-      const target = item.return[String(evaluateCondition(working, item.Boolean))];
+      const result = String(evaluateCondition(working,item.Boolean));
+      if (!Object.hasOwn(item.return || {},result)) throw new Error("Missing Boolean destination.");
+      const target = item.return[result];
+      if (target === null) return finish("halt");
       if (target === "onTrue") {
-        position = { array: position.array[position.index + 1].onTrue, index: 0 };
+        const branch = position.array[position.index + 1]?.onTrue;
+        if (!Array.isArray(branch)) throw new Error("Missing onTrue branch.");
+        position = { array: branch, index: 0 };
       } else if (target === "continue") {
-        position.index += 2;
+        position.index += Array.isArray(position.array[position.index + 1]?.onTrue) ? 2 : 1;
+      } else if (target?.pointer && map.entries.has(target.pointer)) {
+        const destination = map.entries.get(target.pointer);
+        position = { ...destination };
       } else {
-        position = findPosition(root, entry => entry.entry === target.pointer);
-        if (!position) throw new Error("Unknown entry point.");
+        throw new Error("Unknown transition destination.");
       }
       continue;
     }
-    if (Object.hasOwn(item, "render")) {
-      output = renderer.renderState(working);
-      break;
+    if (Object.hasOwn(item,"render")) {
+      return finish(item.render === null ? "halt" : structuredClone(working));
     }
     position.index++;
   }
-  Object.assign(state, working);
-  return output;
+  return finish("halt");
 }
 
 if (require.main === module) {
   const config = loadConfig();
-  const state = JSON.parse(fs.readFileSync(path.join(__dirname, config.state), "utf8"));
-  const content = transition(state, process.argv[2]);
-  fs.writeFileSync(path.join(__dirname, config.state), JSON.stringify(state, null, 2) + "\n");
-  if (content !== null) process.stdout.write(content + "\n");
+  const stateFile = path.join(__dirname,config.state);
+  const state = JSON.parse(fs.readFileSync(stateFile,"utf8"));
+  const result = transition(state,loadTransitionMap(config),process.argv[2]);
+  fs.writeFileSync(stateFile,JSON.stringify(result === "halt" ? state : result,null,2)+"\n");
+  process.stdout.write(result === "halt" ? "halt\n" : JSON.stringify(result,null,2)+"\n");
 }
 
-module.exports = { applyValidatedValues, evaluateCondition, loadTransitionMap, transition };
+module.exports = { applyValidatedValues, evaluateCondition, loadTransitionMap, compileTransitionMap, transition };
