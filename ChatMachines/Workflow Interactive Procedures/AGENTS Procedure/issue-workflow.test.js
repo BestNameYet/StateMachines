@@ -24,3 +24,21 @@ console.log('Named colon returns, variable/type checks, arrays, objects, and hal
 
 assert(!renderIssue(startRun({body:'test'}),7).includes('Return schema'));
 console.log('Issue output contains the procedure without a generated return schema.');
+
+const filesRun=startRun({});
+const step=text=>applyReturn(filesRun,parseReturn(text),root);
+step('${verbatimUserPrompt}: "Create a new file and edit notes."');
+step('${userIntent}: "Create a file and edit notes."');
+step('${exampleMatch}: false');
+const unchanged=structuredClone(filesRun);
+assert.throws(()=>step('${targetFiles}: ["created.txt"]'));
+assert.throws(()=>step('${targetFiles}: [{"filename":"missing.txt","newFile":false}]'));
+assert.throws(()=>step('${targetFiles}: [{"filename":"../escape.txt","newFile":true}]'));
+assert.throws(()=>step('${targetFiles}: [{"filename":"created.txt","newFile":"true"}]'));
+assert.deepEqual(filesRun,unchanged);
+step('${targetFiles}: [{"filename":"created.txt","newFile":true},{"filename":"notes.txt","newFile":false}]');
+assert.equal(filesRun.state.render,9);
+assert.deepEqual(filesRun.newFiles,['created.txt']);
+step('${requirements}: [{"filename":"created.txt","frombyte":0,"tobyte":0,"description":"Create file","intent":"Requested","operator":"create"}]');
+assert.equal(filesRun.state.render,10);
+console.log('New-file targets persist their designation into requirements; invalid targets leave state unchanged.');
