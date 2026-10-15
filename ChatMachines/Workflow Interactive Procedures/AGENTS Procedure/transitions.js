@@ -93,10 +93,9 @@ function runCall(state, call, config) {
   state[target] = fn(...call.arguments.map(arg => resolveValue(scope, arg)));
 }
 
-function transition(state, valuesJson) {
+function transition(state, transitionMap, valuesJson) {
   if (!state || typeof state !== "object" || Array.isArray(state)) throw new Error("State must be an object.");
-  const config = loadConfig();
-  const root = loadTransitionMap(config).transitions;
+  const root = Array.isArray(transitionMap) ? transitionMap : transitionMap?.transitions;
   if (!Array.isArray(root)) throw new Error("Transitions must be an array.");
   const working = structuredClone(state);
   let position;
@@ -118,7 +117,7 @@ function transition(state, valuesJson) {
     for (const [key, value] of Object.entries(item)) {
       if (Object.hasOwn(working, key)) working[key] = resolveValue(working, value);
     }
-    if (item.call) runCall(working, item.call, config);
+    if (item.call) runCall(working, item.call, loadConfig());
     if (item.Boolean) {
       const target = item.return[String(evaluateCondition(working, item.Boolean))];
       if (target === "onTrue") {
