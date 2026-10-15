@@ -6,7 +6,14 @@ function loadScreens() {
   const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
   const templatePath = path.join(__dirname, config.instructionRender);
   const template = JSON.parse(fs.readFileSync(templatePath, "utf8"));
-  return template.screens;
+  const lookupPath = path.join(__dirname, config.instructionLookup);
+  const lookup = JSON.parse(fs.readFileSync(lookupPath, "utf8"));
+  return template.screens.map(positions => positions.map(position => {
+    if (!Number.isInteger(position) || !Array.isArray(lookup[position])) {
+      throw new Error("Invalid instruction lookup position: " + position);
+    }
+    return lookup[position];
+  }));
 }
 
 function render(entries) {
