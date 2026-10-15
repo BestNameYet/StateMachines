@@ -1,6 +1,11 @@
 name: AGENTS Gemini Selenium
 
 on:
+  push:
+    paths:
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/gemini.py'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/selenium/test_gemini.py'
+      - '.github/workflows/agents-gemini-selenium.yml'
   workflow_dispatch:
     inputs:
       scenario:
@@ -50,6 +55,7 @@ jobs:
           python selenium/test_gemini.py
 
       - name: Run Gemini and Selenium scenario
+        if: github.event_name == 'workflow_dispatch'
         env:
           GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
