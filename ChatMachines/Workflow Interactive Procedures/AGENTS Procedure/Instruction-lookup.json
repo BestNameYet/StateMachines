@@ -250,6 +250,41 @@
     [
       "steptext",
       "Execute each requirement in ${requirements} using its specified operator, at its specified filename and location, performing the change described by its description and intent."
+    ],
+    [
+      "return",
+      {
+        "required": [
+          "${cwd}",
+          "${command_line_verbatim}",
+          "${tool}",
+          "${invocation_verbatim}",
+          "${final_output_after_completion_of_tool_call}",
+          "${unavailable_reason}"
+        ],
+        "For web tools": {
+          "return": {
+            "input": {
+              "$ref": "#/return/required"
+            },
+            "append": [
+              "${http_method}",
+              "${url}"
+            ]
+          }
+        },
+        "descriptor": "Select one value from Outcome for ${outcome} that matches the observed result of the tool call. Report only what the final output establishes.",
+        "Outcome": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "blocked",
+            "unfinished",
+            "unknown"
+          ]
+        },
+        "return": "${outcome}"
+      }
     ]
   ],
   "14": [
@@ -294,6 +329,41 @@
     [
       "steptext",
       "Execute each requirement in ${requirements} using its specified operator, at its specified filename and location, performing the change described by its description and intent."
+    ],
+    [
+      "return",
+      {
+        "required": [
+          "${cwd}",
+          "${command_line_verbatim}",
+          "${tool}",
+          "${invocation_verbatim}",
+          "${final_output_after_completion_of_tool_call}",
+          "${unavailable_reason}"
+        ],
+        "For web tools": {
+          "return": {
+            "input": {
+              "$ref": "#/return/required"
+            },
+            "append": [
+              "${http_method}",
+              "${url}"
+            ]
+          }
+        },
+        "descriptor": "Select one value from Outcome for ${outcome} that matches the observed result of the tool call. Report only what the final output establishes.",
+        "Outcome": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "blocked",
+            "unfinished",
+            "unknown"
+          ]
+        },
+        "return": "${outcome}"
+      }
     ]
   ],
   "18": [
