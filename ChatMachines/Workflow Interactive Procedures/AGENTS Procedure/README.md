@@ -76,18 +76,9 @@ The AGENTS Selenium setup GitHub Actions workflow installs Node and Python, inst
 
 Start a run using the AGENTS Procedure issue template. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction, captured values, and return schema as a comment. The full procedure is not posted.
 
-Reply with a JSON comment, optionally inside a JSON code fence. Use the request number shown in the instruction comment:
+Reply with only the instruction's declared JSON return, optionally inside a JSON code fence. For a string return, submit a JSON string; for a Boolean, submit true or false; for an array or object, submit that array or object directly. There is no request-number field or values wrapper. The workflow binds the validated return to the declared variable internally. Steps with no captured return accept {} after their instruction is completed. File records may designate new files with newFile: true.
 
-```json
-{
-  "request": 1,
-  "values": {
-    "$verbatimUserPrompt": "The original user request"
-  }
-}
-```
-
-Each valid return updates that issue's state through transition(state, transitionMap, valuesJson). Hidden decisions execute immediately; the next visible instruction is posted. Steps with no captured return accept an empty values object. Validation errors are posted without advancing the state. The request number rejects replies to old instructions, including earlier loop iterations. File references are checked relative to the repository root; include an optional newFiles array or newFile: true on a record when creating files.
+Each valid return updates the issue state through the transition function. Hidden decisions execute immediately; the next visible instruction is posted. Validation errors do not advance the state. The workflow keeps comment-processing identifiers internally; they are not part of the submitted return schema.
 
 Each run is saved as issue-runs/<issue-number>.json with the state, current request number, input history, and state snapshots. The state itself retains its existing input fields, render number, and loop counter. Workflow runs for the same issue are serialized, and the runner reads pending JSON comments in order. Bot comments do not trigger another processing cycle. Terminal runs post completion and close the issue while preserving its history. No Gemini calls or Selenium runs are made by this workflow.
 
