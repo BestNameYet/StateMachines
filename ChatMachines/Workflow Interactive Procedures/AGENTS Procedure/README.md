@@ -94,3 +94,7 @@ Each run is saved as issue-runs/<issue-number>.json with the state, current requ
 Run the local issue adapter checks with node issue-workflow.test.js. They verify the adapter without creating an actual GitHub issue.
 
 The issue form includes a Procedure identifier so a run is recognized even when its initial title is changed. Existing runs are also identified by their saved run record. The canonical title uses the issue creation timestamp, so correcting a title never changes the run's timestamp. Title-edit events only enforce the title and do not advance the procedure.
+
+## Behavioral requirements
+
+The required issue-form acknowledgement refers to [Behavioral-requirements.md](Behavioral-requirements.md). Read those requirements before starting a run.
