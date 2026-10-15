@@ -1,10 +1,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const {transition} = require('./transitions.js');
+const {compileTransitionMap,applyValidatedValues} = require('./transitions.js');
 const {loadScreens} = require('./render-instructions.js');
 const {inputsFor, validate} = require('./validator.js');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));
-const transitionMap = JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8'));
+const map = compileTransitionMap(JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8')));
 const screens = loadScreens();
 const fence = value => {
   const text = typeof value === 'string' ? value : JSON.stringify(value,null,2);
@@ -14,7 +14,7 @@ const fence = value => {
 };
 function startRun(issue) {
   const state={};
-  const result=transition(state,transitionMap);
+  const result=map(state);
   return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],originalRequest:issue.body||''};
 }
 function applyReturn(record,payload,fileRoot) {
@@ -31,7 +31,8 @@ function applyReturn(record,payload,fileRoot) {
     values['$'+field.name]=payload.value;
   }
   const draft=structuredClone(record.state);
-  const result=transition(draft,transitionMap,JSON.stringify(values));
+  applyValidatedValues(draft,JSON.stringify(values));
+  const result=map(draft);
   record.history.push({request:record.request,render:record.state.render,loopNumber:record.state.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
   record.state=result==='halt'?draft:result;record.done=result==='halt';record.request++;
 }
