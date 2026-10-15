@@ -96,3 +96,9 @@ Run the local issue adapter checks with node issue-workflow.test.js. They verify
 The issue form includes a Procedure identifier so a run is recognized even when its initial title is changed. Existing runs are also identified by their saved run record. The canonical title uses the issue creation timestamp, so correcting a title never changes the run's timestamp. Title-edit events only enforce the title and do not advance the procedure.
 
 The caller loads transitions.json and supplies its parsed object as transitionMap. Initialization calls transition(state, transitionMap); subsequent returns use transition(state, transitionMap, valuesJson). The transition function no longer locates or reads its own transition map.
+
+## Transition result contract
+
+transition(state, transitionMap, valuesJson) returns the next state object, or the string halt at a terminal destination. It does not render. Internally it indexes render and entry addresses, processes hidden calls and decisions, follows pointers, and accepts nested sequence arrays. Exhausted selected arrays, null items, null return destinations, and null render destinations resolve to halt. Missing or malformed addresses remain errors rather than being silently treated as completion.
+
+The GitHub workflow runner is the caller. It writes the returned state into the issue's run file before posting its instruction. At halt it preserves the final updated state, records completion, and does not render another instruction. The HTML adapter consumes the same result contract. Initialization still receives the state object loaded from state.json and the caller-supplied transition map.
