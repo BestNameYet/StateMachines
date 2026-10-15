@@ -1,8 +1,6 @@
 const assert=require('node:assert/strict');
-const {startRun,applyReturn,parseReturn,renderIssue,requestSchema}=require('./issue-workflow.js');
+const {startRun,applyReturn,parseReturn,renderIssue}=require('./issue-workflow.js');
 const r=startRun({body:'Test request'}),root=__dirname+'/fixtures';
-assert.deepEqual(requestSchema(r),{type:'string'});
-assert(renderIssue(r,7).includes('${verbatimUserPrompt}: <JSON value>'));
 const before=structuredClone(r);
 assert.throws(()=>applyReturn(r,parseReturn('${userIntent}: "wrong variable"'),root));
 assert.deepEqual(r,before);
@@ -23,3 +21,6 @@ assert.deepEqual(parseReturn('${requirements}: []'),{variable:'requirements',val
 assert.throws(()=>parseReturn('${userIntent}: process.exit()'));
 assert.throws(()=>parseReturn('${userIntent} = "old format"'));
 console.log('Named colon returns, variable/type checks, arrays, objects, and halt passed.');
+
+assert(!renderIssue(startRun({body:'test'}),7).includes('Return schema'));
+console.log('Issue output contains the procedure without a generated return schema.');
