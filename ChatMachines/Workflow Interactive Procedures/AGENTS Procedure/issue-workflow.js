@@ -15,7 +15,7 @@ const fence = value => {
 function startRun(issue) {
   const state={};
   const result=map(state);
-  return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],originalRequest:state.verbatimUserPrompt ?? null};
+  return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[]};
 }
 function applyReturn(record,payload,fileRoot) {
   if(record.done)throw Error('This run has finished.');
@@ -34,7 +34,7 @@ function applyReturn(record,payload,fileRoot) {
   applyValidatedValues(draft,JSON.stringify(values));
   const result=map(draft);
   record.history.push({request:record.request,render:record.state.render,loopNumber:record.state.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
-  record.state=result==='halt'?draft:result;record.originalRequest=record.state.verbatimUserPrompt;record.done=result==='halt';record.request++;
+  record.state=result==='halt'?draft:result;record.done=result==='halt';record.request++;
 }
 function parseReturn(body) {
   const text=body.trim();
@@ -50,7 +50,7 @@ function renderIssue(record,issueNumber) {
   if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
   const instruction=Object.fromEntries(screens[record.state.render-1]);
   return marker+'\n## Render '+record.state.render+'\n\n'+fence(instruction)+
-    '\n\n<details><summary>Original request and captured values</summary>\n\n'+fence({originalRequest:record.state.verbatimUserPrompt,state:record.state})+'\n\n</details>';
+    '\n\n<details><summary>Captured values</summary>\n\n'+fence({state:record.state})+'\n\n</details>';
 }
 function canonicalTitle(issue) {
   return 'AGENTS Procedure — '+new Date(issue.created_at).toISOString();
