@@ -65,11 +65,14 @@ function renderIssue(record,issueNumber) {
     '\n\nReply with a JSON comment using this envelope. For a step with no return fields, submit an empty values object after completing the instruction.\n\n'+fence(response)+
     '\n\n<details><summary>Original request and captured values</summary>\n\n'+fence({originalRequest:record.originalRequest,state:record.state})+'\n\n</details>';
 }
+function canonicalTitle(issue) {
+  return 'AGENTS Procedure — '+new Date(issue.created_at).toISOString();
+}
 async function main() {
   const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
   const repository=process.env.GITHUB_REPOSITORY;
   const number=event.issue?.number;
-  if(!number||event.issue.pull_request||!/^AGENTS Procedure(?:\s|$)/.test(event.issue.title))return;
+  if(!number||event.issue.pull_request)return;
   if(event.comment?.user?.type==='Bot')return;
   const apiBase='https://api.github.com/repos/'+repository;
   async function api(method,route,body,allowMissing=false) {
@@ -78,13 +81,18 @@ async function main() {
     if(!response.ok)throw Error('GitHub '+method+' '+route+' returned '+response.status);
     return response.status===204?null:response.json();
   }
-  if(event.action==='opened' && /^AGENTS Procedure(?:\\s*—\\s*)?$/.test(event.issue.title)){
-    await api('PATCH','/issues/'+number,{title:'AGENTS Procedure — '+new Date().toISOString()});
-  }
   const relative=path.relative(process.env.GITHUB_WORKSPACE,__dirname).split(path.sep).join('/')+'/issue-runs/'+number+'.json';
   const route='/contents/'+relative.split('/').map(encodeURIComponent).join('/');
   const stored=await api('GET',route,undefined,true);
-  const record=stored?JSON.parse(Buffer.from(stored.content,'base64').toString('utf8')):startRun(event.issue);
+  const issue=await api('GET','/issues/'+number);
+  const identified=stored || /^AGENTS Procedure(?:\\s|$)/.test(issue.title) ||
+    /### Procedure\\s+AGENTS Procedure(?:\\s|$)/.test(issue.body||'');
+  if(!identified)return;
+  const title=canonicalTitle(issue);
+  if(issue.title!==title)await api('PATCH','/issues/'+number,{title});
+  // Title edits enforce naming only; they do not advance or initialize a run.
+  if(event.action==='edited')return;
+  const record=stored?JSON.parse(Buffer.from(stored.content,'base64').toString('utf8')):startRun(issue);
   const outbox=[];
   let comments=[],page=1;
   while(true){const batch=await api('GET','/issues/'+number+'/comments?per_page=100&page='+page++);comments.push(...batch);if(batch.length<100)break;}
@@ -107,4 +115,4 @@ async function main() {
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={startRun,applyReturn,requestSchema,parseReturn,renderIssue};
+module.exports={startRun,applyReturn,requestSchema,parseReturn,renderIssue,canonicalTitle};
