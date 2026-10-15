@@ -21,3 +21,9 @@ send(r,{'$minimalResult':{result:'Hello'}});assert.equal(r.done,true);assert.mat
 const other=fresh();assert.equal(other.state.verbatimUserPrompt,null);
 assert(!renderIssue(other,100).includes('Construct \\u0024{changeList}'));
 console.log('Issue adapter: initialization, current instruction, schema, rejected type, stale reply, independent state, and minimal completion passed.');
+
+const {canonicalTitle}=require('./issue-workflow.js');
+const created_at='2026-10-15T06:00:00Z';
+assert.equal(canonicalTitle({title:'Custom title',created_at}),'AGENTS Procedure — 2026-10-15T06:00:00.000Z');
+assert.equal(canonicalTitle({title:'AGENTS Procedure — wrong',created_at}),'AGENTS Procedure — 2026-10-15T06:00:00.000Z');
+console.log('Canonical title uses creation timestamp regardless of edited title.');
