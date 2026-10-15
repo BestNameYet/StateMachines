@@ -194,7 +194,7 @@ def _append_event(events_file, record):
 def execution_blocker(screen):
     """Return a blocker when a file-edit step needs an executor this harness lacks."""
     entries = screen.get("entries", [])
-    instruction = "\\n".join(str(value) for key, value in entries if key in ("instruction", "steptext"))
+    instruction = " ".join(str(value) for key, value in entries if key in ("instruction", "steptext"))
     if not screen.get("inputs") and "Execute each requirement in" in instruction:
         return "This step requires actual repository file edits. The browser interface and Gemini response collector do not write files, so execution is blocked rather than reported as complete."
     return None
