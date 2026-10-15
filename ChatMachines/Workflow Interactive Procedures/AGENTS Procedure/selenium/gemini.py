@@ -191,6 +191,15 @@ def _append_event(events_file, record):
         stream.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
+def execution_blocker(screen):
+    """Return a blocker when a file-edit step needs an executor this harness lacks."""
+    entries = screen.get("entries", [])
+    instruction = "\\n".join(str(value) for key, value in entries if key in ("instruction", "steptext"))
+    if not screen.get("inputs") and "Execute each requirement in" in instruction:
+        return "This step requires actual repository file edits. The browser interface and Gemini response collector do not write files, so execution is blocked rather than reported as complete."
+    return None
+
+
 def run_loop(driver, initial_prompt, scenario, artifacts, request_fn=call_gemini, max_submissions=100):
     """Answer screens until the browser reports done; save every attempt as evidence."""
     artifacts = Path(artifacts)
@@ -215,6 +224,20 @@ def run_loop(driver, initial_prompt, scenario, artifacts, request_fn=call_gemini
             terminal["screenshot"] = screenshot.name
             _append_event(events_file, {"event": "terminal_screenshot", "path": screenshot.name})
             return {"status": "halted", "screen": screen, "submissions": submission_count, "evidence": str(artifacts)}
+
+        blocker = execution_blocker(screen)
+        if blocker:
+            screenshot = artifacts / f"blocked-render-{screen.get('render')}.png"
+            driver.save_screenshot(str(screenshot))
+            _append_event(events_file, {
+                "event": "execution_blocked",
+                "render": screen.get("render"),
+                "reason": blocker,
+                "instruction_entries": screen.get("entries", []),
+                "held_state": screen.get("state"),
+                "screenshot": screenshot.name,
+            })
+            return {"status": "blocked", "screen": screen, "submissions": submission_count, "blocker": blocker, "evidence": str(artifacts)}
 
         submission_count += 1
         if submission_count > max_submissions:
