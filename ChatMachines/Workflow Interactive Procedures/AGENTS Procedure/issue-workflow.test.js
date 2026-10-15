@@ -27,3 +27,10 @@ const created_at='2026-10-15T06:00:00Z';
 assert.equal(canonicalTitle({title:'Custom title',created_at}),'AGENTS Procedure — 2026-10-15T06:00:00.000Z');
 assert.equal(canonicalTitle({title:'AGENTS Procedure — wrong',created_at}),'AGENTS Procedure — 2026-10-15T06:00:00.000Z');
 console.log('Canonical title uses creation timestamp regardless of edited title.');
+
+const {initialState}=require('./issue-workflow.js');
+const blank=initialState();
+assert.equal(blank.render,null);
+assert(Object.values(blank).every(value=>value===null));
+assert.equal(startRun({body:'test'}).state.render,1);
+console.log('All-null input precedes initialization to render 1.');
