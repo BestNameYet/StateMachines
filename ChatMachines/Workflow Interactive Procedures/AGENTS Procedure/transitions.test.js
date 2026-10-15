@@ -1,6 +1,15 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const { transition } = require("./transitions.js");
+const { compileTransitionMap,applyValidatedValues } = require("./transitions.js");
+const compiled = new Map();
+function transition(state,source,values) {
+  if (!compiled.has(source)) compiled.set(source,compileTransitionMap(source));
+  const draft=structuredClone(state);
+  if(values)applyValidatedValues(draft,values);
+  const result=compiled.get(source)(draft);
+  Object.assign(state,draft);
+  return result;
+}
 const transitionMap = JSON.parse(fs.readFileSync("./transitions.json", "utf8"));
 const initial = {};
 const req = [{ filename: "a.json", frombyte: 0, tobyte: 1, description: "change", intent: "requested", operator: "edit" }];
@@ -80,3 +89,12 @@ const initialized=transition({},transitionMap);
 assert.equal(initialized.render,1);
 for(const [key,value] of Object.entries(initialized))if(key!=="render")assert.equal(value,null);
 assert.deepEqual(initialized,transitionMap.transitions[0]);
+
+const source=[{render:101,value:null},{render:102,value:"${value}"}];
+const operator=compileTransitionMap(source);
+source[1].render=999;
+const a=operator({});
+a.value="external input";
+assert.deepEqual(operator(a),{render:102,value:"external input"});
+assert.equal(operator({render:102,value:7}),"halt");
+console.log("Compiled operator accepts state only; JSON control flow compiled before invocation.");
