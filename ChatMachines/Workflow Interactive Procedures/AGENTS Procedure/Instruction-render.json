@@ -234,82 +234,9 @@
     ],
     [
       [
-        "instructionnumber",
-        9
+        "mode",
+        "Fidelity mode is selected."
       ],
-      [
-        "instruction",
-        "Find the value for the \"example\" key found in ${matchedExample}. Find the matching key in the lookup table. The value of the matching key is the mode you will use. <\"accountability\" | \"fidelity\" | \"minimal\">: ${mode}"
-      ],
-      [
-        "lookupTable",
-        {
-          "1": "fidelity",
-          "2": "accountability",
-          "3": "accountability",
-          "4": "fidelity",
-          "5": "accountability",
-          "6": "fidelity",
-          "7": "accountability",
-          "8": "accountability",
-          "9": "fidelity"
-        }
-      ],
-      [
-        "return",
-        "${mode}"
-      ]
-    ],
-    [
-      [
-        "instructionnumber",
-        10
-      ],
-      [
-        "instruction",
-        "Input ${mode}. <string>: ${mode}"
-      ],
-      [
-        "return",
-        "${mode}"
-      ]
-    ],
-    [
-      [
-        "instructionnumber",
-        11
-      ],
-      [
-        "instruction",
-        "If ${mode} = \"fidelity\", follow the procedure in this object. Else discontinue this step and proceed to the next step."
-      ],
-      [
-        "procedure",
-        [
-          {
-            "stepnumber": 1,
-            "steptext": "Restate ${requirements}. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirements}"
-          },
-          {
-            "stepnumber": 2,
-            "steptext": "Execute each requirement in ${requirements} using its specified operator, at its specified filename and location, performing the change described by its description and intent."
-          },
-          {
-            "stepnumber": 3,
-            "steptext": "Construct ${changeList}: 1. Initialize ${changeList} as an empty array. 2. Iterate over every actual data change. 3. For each change, create a record with this shape: {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}. Record the location, a brief description of the actual change, its associated intent, and its operator. 4. Append the record to ${changeList}. 5. Return the completed array. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${changeList}"
-          }
-        ]
-      ],
-      [
-        "return",
-        "${changeList}"
-      ],
-      [
-        "stop",
-        "Stop."
-      ]
-    ],
-    [
       [
         "stepnumber",
         1
@@ -341,64 +268,9 @@
     ],
     [
       [
-        "instructionnumber",
-        12
+        "mode",
+        "Accountability mode is selected."
       ],
-      [
-        "instruction",
-        "If ${mode} = \"accountability\", follow the procedure in this object."
-      ],
-      [
-        "procedure",
-        [
-          {
-            "stepnumber": 1,
-            "steptext": "Initialize ${requirementsCompleted} as an empty array on first entry to this procedure. Preserve it across subsequent iterations. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirementsCompleted}"
-          },
-          {
-            "stepnumber": 2,
-            "steptext": "Restate ${requirements}. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirements}"
-          },
-          {
-            "stepnumber": 3,
-            "steptext": "Execute each requirement in ${requirements} using its specified operator, at its specified filename and location, performing the change described by its description and intent."
-          },
-          {
-            "stepnumber": 4,
-            "steptext": "Construct ${changeList}: 1. Initialize ${changeList} as an empty array. 2. Iterate over every actual data change. 3. For each change, create a record with this shape: {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}. Record the location, a brief description of the actual change, its associated intent, and its operator. 4. Append the record to ${changeList}. 5. Return the completed array. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${changeList}"
-          },
-          {
-            "stepnumber": 5,
-            "steptext": "Reconcile ${changeList} to ${requirements}: 1. For each requirement with corresponding actual changes, create a reconciliation object containing requirement, the original object from ${requirements}, and changeList, the sublist of original objects from ${changeList} corresponding to that requirement. Append this object to the reconciliation array. 2. Collect requirements with no corresponding changes into missedRequirements, a sublist of ${requirements}. 3. Collect changes with no corresponding requirements into unapprovedChanges, a sublist of ${changeList}. 4. Return the reconciliation array and both sublists. <{\"reconciliation\": <Array<{\"requirement\": {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}, \"changeList\": <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>}>>, \"missedRequirements\": <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>, \"unapprovedChanges\": <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>}>: ${changeAssessment}"
-          },
-          {
-            "stepnumber": 6,
-            "steptext": "For each object in ${changeAssessment}.reconciliation, compare requirement with its changeList: 1. Identify every part of the requirement. 2. For each change, first compare its filename and operator with those of the requirement. A non-matching filename or non-matching operator is an error and does not count toward completion of any part. Flag each mismatch in errors, recording the field, expected value, actual value, and description. For changes passing both checks, describe which part each completes and how. 3. Show whether every part is complete. Return Complete only when all parts are complete; otherwise return Incomplete. 4. For an Incomplete requirement, construct a requirements array covering its unfinished parts, using the existing requirements record shape. Collect these arrays into remainderRequirements. <{\"requirementAssessments\": <Array<{\"requirement\": {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}, \"errors\": <Array<{\"change\": {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}, \"field\": <\"filename\" | \"operator\">, \"expected\": <string>, \"actual\": <string>, \"description\": <string>}>>, \"changeContributions\": <Array<{\"change\": {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}, \"requirementPart\": <string>, \"description\": <string>}>>, \"parts\": <Array<{\"part\": <string>, \"description\": <string>, \"status\": <\"Complete\" | \"Incomplete\">}>>, \"status\": <\"Complete\" | \"Incomplete\">, \"remainderRequirements\": <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>}>>, \"remainderRequirements\": <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>}>: ${completionAssessment}"
-          },
-          {
-            "stepnumber": 7,
-            "steptext": "Iterate over ${completionAssessment}.requirementAssessments. For each assessment whose status is Complete, append its original requirement object to ${requirementsCompleted}. Preserve previously appended requirements. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirementsCompleted}"
-          },
-          {
-            "stepnumber": 8,
-            "steptext": "Iterate over ${changeAssessment}.unapprovedChanges. For each unapproved change, create a requirement to rescind that change and restore the data affected by it. Record the location, a brief description of the required rescission, the intent to rescind the unapproved change, and the operator. Append each record to rescissionRequirements. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${rescissionRequirements}"
-          },
-          {
-            "stepnumber": 9,
-            "steptext": "Combine ${completionAssessment}.remainderRequirements, ${changeAssessment}.missedRequirements, and ${rescissionRequirements} into one new requirements array. Preserve the records from all three lists. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirements}"
-          },
-          {
-            "stepnumber": 10,
-            "steptext": "If ${requirements} is empty, return ${requirementsCompleted} and stop. Otherwise, continue this procedure at step 3. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirementsCompleted}"
-          }
-        ]
-      ],
-      [
-        "return",
-        "${requirementsCompleted}"
-      ]
-    ],
-    [
       [
         "stepnumber",
         1
@@ -486,16 +358,6 @@
       [
         "steptext",
         "Combine ${completionAssessment}.remainderRequirements, ${changeAssessment}.missedRequirements, and ${rescissionRequirements} into one new requirements array. Preserve the records from all three lists. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirements}"
-      ]
-    ],
-    [
-      [
-        "stepnumber",
-        10
-      ],
-      [
-        "steptext",
-        "If ${requirements} is empty, return ${requirementsCompleted} and stop. Otherwise, continue this procedure at step 3. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirementsCompleted}"
       ]
     ]
   ]
