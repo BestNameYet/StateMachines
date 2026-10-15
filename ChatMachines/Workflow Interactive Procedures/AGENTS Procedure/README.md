@@ -22,7 +22,7 @@ Use a fresh issue for every run. Append instructions, agent returns, and validat
 
 ## Implementation status
 
-The procedure, transition map, transition executor, render positions, lookup, HTML interface, and structural validator are implemented. The issue-trigger workflow is implemented; the Gemini–Selenium harness is not yet connected.
+The procedure, transition map, transition executor, render positions, lookup, HTML interface, and structural validator are implemented. The issue-trigger workflow and Gemini–Selenium harness are implemented; live Gemini runs are started manually.
 
 ## Run the HTML interface
 
@@ -102,3 +102,19 @@ compileTransitionMap(transitions) returns a function map(state). Compilation bui
 The GitHub workflow runner is the caller. It writes the returned state into the issue's run file before posting its instruction. At halt it preserves the final updated state, records completion, and does not render another instruction. The HTML adapter consumes the same result contract. Initialization calls map({}). The first map item defines the initial input fields and render; no separate state template is loaded. The workflow persists each resulting run state.
 
 Issue comments render the procedure's instruction directly. Its declared return variable and type define the response; no additional generated return-schema block or reply envelope is posted. Replies use ${variableName}: value. Structural validation remains based on the procedure's declared types.
+
+
+## Run Gemini through Selenium
+
+The Gemini adapter is in `selenium/gemini.py`. It reads each live browser screen, sends its instruction, held state, declared inputs, and return contract to the existing Gemini generateContent API, validates the returned JSON names and types, and submits accepted values through `selenium/browser.py`. Validation failures are sent back to Gemini with their actual error text. Prompts, responses, submitted values, state snapshots, failures, and screenshots are saved as run evidence; the API key is sent in an HTTP header and is not written to the evidence.
+
+Configure the GitHub Actions repository variable `GEMINI_API_KEY`; optionally set `GEMINI_MODEL`. The model defaults to the value used by the existing Gemini integration. Open **Actions → AGENTS Gemini Selenium → Run workflow**, then select a scenario:
+
+- `minimal` exercises the minimal answer path.
+- `fidelity` selects the fidelity path.
+- `accountability` selects the accountability path.
+- `repeated-accountability` exercises the accountability loop.
+
+The workflow first runs the existing Node tests and the focused Gemini adapter tests, then starts the local interface and headless browser for the selected live scenario. It uploads the run log and screenshots as a downloadable Actions artifact. Source pushes run the test checks without calling Gemini.
+
+The interface collects procedure returns; it does not edit repository files. If a live scenario reaches an instruction to execute file requirements, the harness records a screenshot and an execution-blocked result, then stops at that screen. It does not claim those changes or later completion values. The mocked adapter tests verify response parsing, declared-variable checks, validation-error recovery, terminal handling, and evidence capture; they do not prove a live Gemini run. The existing interface tests cover the procedure's 23 renders across its documented paths.
