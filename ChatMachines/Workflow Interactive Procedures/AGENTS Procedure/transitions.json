@@ -157,93 +157,31 @@
       ]
     },
     {
-      "render": 12,
-      "actions": [
-        {
-          "set": {
-            "mode": "${mode}",
-            "render": 13
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "mode": "${mode}",
+      "render": 12
     },
     {
-      "render": 13,
-      "actions": [
-        {
-          "set": {
-            "mode": "${mode}",
-            "render": 14
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
+      "Boolean": "${mode} = \"fidelity\"",
+      "return": {
+        "true": "onTrue",
+        "false": "continue"
+      }
     },
     {
-      "render": 14,
-      "next": [
+      "onTrue": [
         {
-          "if": "${mode} = \"fidelity\"",
+          "render": 14
+        },
+        {
+          "requirements": "${requirements}",
           "render": 15
         },
         {
-          "if": "${mode} != \"fidelity\"",
-          "render": 18
-        }
-      ]
-    },
-    {
-      "render": 15,
-      "actions": [
-        {
-          "set": {
-            "requirements": "${requirements}",
-            "render": 16
-          }
+          "render": 16
         },
         {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
-    },
-    {
-      "render": 16,
-      "actions": [
-        {
-          "set": {
-            "render": 17
-          }
-        },
-        {
-          "call": {
-            "renderer": "render-instructions.js",
-            "argument": "state"
-          }
-        }
-      ]
-    },
-    {
-      "render": 17,
-      "actions": [
-        {
-          "set": {
-            "changeList": "${changeList}",
-            "render": null
-          }
+          "changeList": "${changeList}",
+          "render": 17
         }
       ]
     },
