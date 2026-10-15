@@ -28,9 +28,12 @@ Output: source manifest, format/coverage report, and an explicit worker-access a
 
 Do not subdivide based only on the file's apparent size or assume the archive contains the complete account.
 
-## 2. Extract and index — establish reliable work units
+## 2. Extract each conversation and verify completeness — first preparation step
 
-- [ ] Parse conversations and messages while preserving original text, identifiers, dates, authors, branch relationships, and attachment references.
+- [ ] Extract each conversation into its own structured record, preserving its ID, title, dates, original messages, message IDs, speakers, timestamps, branch relationships, and attachment references.
+- [ ] Preserve original wording. Normalize export formatting only; do not summarize, rewrite, or assign topic labels during extraction.
+- [ ] Reconstruct ordered user/assistant exchanges within each conversation branch without joining alternative replies into a fictitious linear conversation.
+- [ ] Mark unavailable attachments and missing content explicitly rather than treating the remaining text as complete.
 - [ ] Give every conversation and message a stable reference back to the original.
 - [ ] Build the inventory: dates, titles, message counts, lengths, and metadata availability.
 - [ ] Verify extraction counts and account for omitted, duplicate, empty, malformed, or unsupported records.
@@ -41,14 +44,19 @@ Output: indexed source records, inventory, reference scheme, parsing exceptions,
 
 Parallel opportunity: after the format and reference scheme are fixed, independent conversations can be extracted in separate jobs. Combine and validate counts centrally before interpretation.
 
-## 3. Design the analysis and subdivision — inspect, then decide
+## 3. Prepare classification passages and design the analysis
 
 - [ ] Inspect representative conversations to identify the kinds of questions and contexts present. Mark this as sampling.
 - [ ] Define and prioritize the user's analysis questions and intended practical outputs.
 - [ ] Populate the analysis matrix: question, subject, perspective, source material, method, evidence requirements, coverage standard, limitations, output, and next prompt.
 - [ ] Distinguish the user, people discussed, interactions, and ChatGPT as analytical subjects.
 - [ ] Define comparison periods from available dates rather than assumed eras.
-- [ ] Choose chunk boundaries, model input budgets, overlap, branch handling, and context needed for each question.
+- [ ] Organize the prepared material as conversations → ordered exchanges → classification passages, preserving references to the original messages.
+- [ ] Give each passage a defined target and separately marked contextBefore/contextAfter. Label the target; surrounding context aids interpretation without automatically contributing its topics.
+- [ ] Choose provisional passage boundaries between complete exchanges, model input budgets, overlap, branch handling, and context needed for each question.
+- [ ] Do not group unrelated conversations by presumed topics before discovering labels. Use natural conversation structure for the initial preparation.
+- [ ] Compare a few passage sizes on the same conversations in the pilot; assess contextual sufficiency, topic mixing, citation accuracy, and label consistency rather than selecting an arbitrary word count.
+- [ ] Allow later label-discovery findings to refine mixed-topic passage boundaries; do not require perfect topic boundaries before discovery.
 - [ ] Keep conversations intact where feasible; link oversized conversation parts and related conversations.
 - [ ] Specify how overlap is tracked so repeated passages do not become independent evidence.
 - [ ] Generate chunk manifests and verify every source message is accounted for.
@@ -75,11 +83,31 @@ Current substrate boundary: one batch uses one shared instruction. Different ana
 
 ## 5. Execute independent analytical passes — parallel
 
-### Broad topic discovery
+### Label discovery — parallel over prepared passages
 
-- [ ] Analyze independent chunks for topics, recurring concerns, questions, projects, and unfinished investigations.
-- [ ] Return source-linked topic candidates and context needed to revisit them.
-- [ ] Preserve topics outside relationship material rather than allowing that material to dominate every assignment.
+- [ ] Ask Gemini to propose candidate labels from each unlabeled target passage, define each label, and cite supporting message references/passages.
+- [ ] Allow multiple labels and an insufficient-context result instead of forcing a single class.
+- [ ] Keep label dimensions separate: subject, user's purpose, analytical perspective, and conversation outcome.
+- [ ] Include topics, recurring concerns, questions, projects, and unfinished investigations outside relationship material.
+- [ ] Preserve candidate labels with their definitions, supporting references, uncertainty, and any boundary problems.
+
+### Consolidate labels — after discovery results
+
+- [ ] Merge synonymous labels, distinguish concepts incorrectly combined, and resolve inconsistent naming across workers.
+- [ ] Establish a versioned label catalog with definitions and inclusion/exclusion criteria grounded in the discovered examples.
+- [ ] Review candidate labels against original passages and retain disagreements or ambiguity rather than silently forcing a merge.
+- [ ] Refine passage boundaries where discovery revealed unrelated subjects mixed in one target; preserve source and overlap accounting.
+
+### Classify with the consolidated catalog — parallel again
+
+- [ ] Apply the same catalog version to all prepared target passages, permitting multiple labels across the separate dimensions.
+- [ ] Require evidence references for assigned labels; prevent surrounding context from supplying unsupported target labels.
+- [ ] Permit proposed new labels when the catalog does not fit, then review/consolidate those proposals and identify affected passages for reclassification.
+- [ ] Verify label consistency and coverage; distinguish proposed candidate labels from final applied labels.
+- [ ] Save labeled passages, catalog version, source references, unresolved cases, and updated coverage.
+- [ ] Use the resulting topic map to locate material for the perspective analyses below; it does not substitute for reading evidence.
+
+Do not start catalog-based classification before the catalog is consolidated. Discovery jobs can run concurrently with each other, and classification jobs can run concurrently after that dependency is satisfied.
 
 ### The user
 
@@ -170,9 +198,14 @@ Output: verification report, corrected findings, coverage ledger, and unresolved
 | Extraction/index | Format and reference conventions | Independent conversations or partitions. |
 | Analysis/chunk design | Inventory and representative inspection | Candidate lenses and methods; consolidate decisions. |
 | Assignment pilot | Chunk manifest and common conventions | Small independent assignments; inspect before scaling. |
-| Analytical passes | Validated assignment design | Independent chunks and context-complete perspectives. |
+| Label discovery | Prepared target/context passages and validated pilot | Independent passages proposing labels. |
+| Label consolidation | Candidate labels and supporting evidence | Review distinct candidate groups; reconcile the final catalog. |
+| Catalog-based classification | Consolidated catalog and passage manifest | Independent passages using the same catalog version. |
+| Analytical passes | Relevant classified material, questions, and context | Independent chunks and context-complete perspectives. |
 | Synthesis | Relevant analytical outputs | Independent topic, timeline, perspective, and usage syntheses. |
 | Verification | Source references and findings | Citation partitions, coverage checks, and independent reviews. |
 | Final delivery | Verified/corrected outputs | Preparation can overlap; completion waits for checks. |
+
+The immediate next preparation milestone is one intact structured record per conversation, followed by a verified extraction inventory. Passage construction and label discovery follow that milestone; none of those archive-processing tasks is marked complete here.
 
 Do not parallelize a downstream task before its required evidence or design decisions exist. The parallelizer schedules independent calls; this plan specifies which calls should be independent and when they are ready.
