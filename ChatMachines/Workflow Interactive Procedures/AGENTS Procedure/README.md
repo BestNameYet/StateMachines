@@ -31,7 +31,7 @@ Use a fresh issue for every run. Append instructions, agent returns, and validat
 
 ## Implementation status
 
-The procedure, state template, transition executor, render positions, lookup, HTML interface, and structural validator are implemented. The issue-trigger workflow and Gemini–Selenium harness are not yet connected.
+The procedure, state template, transition executor, render positions, lookup, HTML interface, and structural validator are implemented. The issue-trigger workflow is implemented; the Gemini–Selenium harness is not yet connected.
 
 ## Run the HTML interface
 
@@ -71,3 +71,24 @@ python selenium/smoke.py
 The smoke check starts the existing interface server, opens its first screen, verifies the prompt and input box, and shuts down. It submits no values and takes no screenshots. Setup diagnostics are written to selenium/artifacts, which is ignored by git.
 
 The AGENTS Selenium setup GitHub Actions workflow installs Node and Python, installs Selenium, and runs this initial-form check. It can be started manually and also runs when its workflow or Selenium setup files change. The Gemini-driven procedure run and screenshots of every render remain separate work.
+
+## Render the procedure to issues
+
+Start a run using the AGENTS Procedure issue template. The workflow supplies a timestamp when the template title is unchanged, initializes a separate state, and posts the current instruction, captured values, and return schema as a comment. The full procedure is not posted.
+
+Reply with a JSON comment, optionally inside a JSON code fence. Use the request number shown in the instruction comment:
+
+```json
+{
+  "request": 1,
+  "values": {
+    "$verbatimUserPrompt": "The original user request"
+  }
+}
+```
+
+Each valid return updates that issue's state through transition(state, valuesJson). Hidden decisions execute immediately; the next visible instruction is posted. Steps with no captured return accept an empty values object. Validation errors are posted without advancing the state. The request number rejects replies to old instructions, including earlier loop iterations. File references are checked relative to the repository root; include an optional newFiles array or newFile: true on a record when creating files.
+
+Each run is saved as issue-runs/<issue-number>.json with the state, current request number, input history, and state snapshots. The state itself retains its existing input fields, render number, and loop counter. Workflow runs for the same issue are serialized, and the runner reads pending JSON comments in order. Bot comments do not trigger another processing cycle. Terminal runs post completion and close the issue while preserving its history. No Gemini calls or Selenium runs are made by this workflow.
+
+Run the local issue adapter checks with node issue-workflow.test.js. They verify the adapter without creating an actual GitHub issue.
