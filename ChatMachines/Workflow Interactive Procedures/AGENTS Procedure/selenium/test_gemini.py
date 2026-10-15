@@ -112,7 +112,7 @@ class GeminiAdapterTests(unittest.TestCase):
             "render": 13,
             "done": False,
             "entries": [["steptext", "Execute each requirement in the requirements array."]],
-            "inputs": [],
+            "inputs": [{"name": "toolInvocations", "schema": {"type": "array"}}],
             "state": {"render": 13},
         }
         self.assertIn("do not write files", gemini.execution_blocker(screen).lower())
