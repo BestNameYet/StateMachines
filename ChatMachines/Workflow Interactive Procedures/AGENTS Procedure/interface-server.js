@@ -6,6 +6,7 @@ const {transition} = require('./transitions.js');
 const renderer = require('./render-instructions.js');
 const {inputsFor,validate} = require('./validator.js');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));
+const transitionMap = JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8'));
 const screens = renderer.loadScreens();
 const inputs = screens.map(inputsFor);
 const fixture = JSON.parse(fs.readFileSync(path.join(__dirname,'fixture-manifest.json'),'utf8'));
@@ -30,7 +31,7 @@ function handleSubmit(session,data) {
   newFiles.forEach(x=>validate(x,{type:'string',format:'file-reference'},'newFiles',{...context,newFile:true}));
   for(const input of expected){const key='$'+input.name;if(!Object.hasOwn(values,key))throw Error('Missing input: '+key);validate(values[key],input.schema,key,context);}
   const before=structuredClone(session.state), draft=structuredClone(session.state);
-  const output=transition(draft,JSON.stringify(values));
+  const output=transition(draft,transitionMap,JSON.stringify(values));
   session.history.push({render:before.render,loopNumber:before.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
   session.state=draft;session.newFiles=newFiles;session.done=output===null;
   return view(session);
@@ -42,7 +43,7 @@ const server=http.createServer(async(req,res)=>{
     if(req.method==='POST'&&url.pathname==='/api/start'){
       const state=readState();state.render=null;
       const session={id:crypto.randomUUID(),state,done:false,newFiles:[...fixture.newFiles],history:[]};
-      transition(state);sessions.set(session.id,session);return send(res,200,view(session));
+      transition(state,transitionMap);sessions.set(session.id,session);return send(res,200,view(session));
     }
     if(req.method==='POST'&&url.pathname==='/api/submit'){
       const data=await body(req),session=sessions.get(data.id);if(!session)return send(res,404,{error:'Run not found.'});
