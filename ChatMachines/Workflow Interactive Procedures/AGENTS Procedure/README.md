@@ -99,6 +99,6 @@ The caller loads transitions.json and supplies its parsed object as transitionMa
 
 ## Transition result contract
 
-transition(state, transitionMap, valuesJson) returns the next state object, or the string halt at a terminal destination. It does not render. Internally it indexes render and entry addresses, processes hidden calls and decisions, follows pointers, and accepts nested sequence arrays. Exhausted selected arrays, null items, null return destinations, and null render destinations resolve to halt. Missing or malformed addresses remain errors rather than being silently treated as completion.
+transition(state, transitionMap, valuesJson) returns the next state object, or the string halt at a terminal destination. It does not render. Internally it indexes render and entry addresses, processes hidden calls and decisions, follows pointers, and accepts nested sequence arrays. Exhausted selected arrays, null items, and null return destinations resolve to halt. The transition map omits null render fields; only a non-null render value returns a renderable state. Missing or malformed addresses remain errors rather than being silently treated as completion.
 
 The GitHub workflow runner is the caller. It writes the returned state into the issue's run file before posting its instruction. At halt it preserves the final updated state, records completion, and does not render another instruction. The HTML adapter consumes the same result contract. Initialization still receives the state object loaded from state.json and the caller-supplied transition map.
