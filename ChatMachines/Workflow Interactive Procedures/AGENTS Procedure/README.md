@@ -31,7 +31,7 @@ Use a fresh issue for every run. Append instructions, agent returns, and validat
 
 ## Implementation status
 
-The procedure, state template, transition executor, render positions, lookup, HTML interface, and structural validator are implemented. The issue-trigger workflow is implemented; the Gemini–Selenium harness is not yet connected.
+The procedure, transition map, transition executor, render positions, lookup, HTML interface, and structural validator are implemented. The issue-trigger workflow is implemented; the Gemini–Selenium harness is not yet connected.
 
 ## Run the HTML interface
 
@@ -41,7 +41,7 @@ From this directory, run:
 node interface-server.js
 ```
 
-Open http://127.0.0.1:3000. Each page load starts a separate in-memory run from the state template. Submit or Enter sends the expected values through the existing transition(state, transitionMap, valuesJson) contract; Shift+Enter inserts a newline. The interface does not change transitions.js or add interface fields to its state. Server restart discards these interface sessions.
+Open http://127.0.0.1:3000. Each page load starts a separate in-memory run from an empty state object through the transition map. Submit or Enter sends the expected values through the existing transition(state, transitionMap, valuesJson) contract; Shift+Enter inserts a newline. The interface does not change transitions.js or add interface fields to its state. Server restart discards these interface sessions.
 
 Instruction keys and values are resolved using Instruction-render.json and Instruction-lookup.json. Input controls and JSON return schemas are derived from the explicit types already present in the instruction text. Structural checks include strings, integers, Booleans, arrays, required object fields, byte ranges, and relative file references. They do not judge whether a response is semantically correct.
 
@@ -92,12 +92,14 @@ Run the local issue adapter checks with node issue-workflow.test.js. They verify
 
 The issue form includes a Procedure identifier so a run is recognized even when its initial title is changed. Existing runs are also identified by their saved run record. The canonical title uses the issue creation timestamp, so correcting a title never changes the run's timestamp. Title-edit events only enforce the title and do not advance the procedure.
 
-The caller loads transitions.json and supplies its parsed object as transitionMap. Initialization calls transition(state, transitionMap); subsequent returns use transition(state, transitionMap, valuesJson). The transition function no longer locates or reads its own transition map.
+The caller loads transitions.json and supplies its parsed object as transitionMap. Initialization calls transition(state, transitionMap); subsequent returns use transition(state, transitionMap, valuesJson). The transition function no longer locates or reads its own transition map. There is no separate state.json or state config entry.
+
+The transition CLI accepts a JSON state as its first argument (default {}), with optional values JSON as its second argument, and prints the next state or halt. The renderer CLI accepts the JSON state as its first argument. Neither CLI reads or writes a shared state template.
 
 ## Transition result contract
 
 transition(state, transitionMap, valuesJson) returns the next state object, or the string halt at a terminal destination. It does not render. Internally it indexes render and entry addresses, processes hidden calls and decisions, follows pointers, and accepts nested sequence arrays. Exhausted selected arrays, null items, and null return destinations resolve to halt. The transition map omits null render fields; only a non-null render value returns a renderable state. Missing or malformed addresses remain errors rather than being silently treated as completion.
 
-The GitHub workflow runner is the caller. It writes the returned state into the issue's run file before posting its instruction. At halt it preserves the final updated state, records completion, and does not render another instruction. The HTML adapter consumes the same result contract. Initialization still receives the state object loaded from state.json and the caller-supplied transition map.
+The GitHub workflow runner is the caller. It writes the returned state into the issue's run file before posting its instruction. At halt it preserves the final updated state, records completion, and does not render another instruction. The HTML adapter consumes the same result contract. Initialization calls transition({}, transitionMap). The first map item defines the initial input fields and render; no separate state template is loaded. The workflow persists each resulting run state.
 
 Issue comments render the procedure's instruction directly. Its declared return variable and type define the response; no additional generated return-schema block or reply envelope is posted. Replies use ${variableName}: value. Structural validation remains based on the procedure's declared types.
