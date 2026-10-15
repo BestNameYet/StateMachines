@@ -20,7 +20,6 @@ class FakeDriver:
 class GeminiAdapterTests(unittest.TestCase):
     def test_parse_plain_and_fenced_json(self):
         self.assertEqual(gemini.parse_json_response("```json\n{\"$answer\":\"ok\"}\n```"), {"$answer": "ok"})
-        self.assertEqual(gemini.parse_json_response("```json\n{\"$answer\":\"ok\"}\n```"), {"$answer": "ok"})
 
     def test_rejects_non_object_and_malformed_json(self):
         with self.assertRaisesRegex(ValueError, "JSON object"):
@@ -107,6 +106,16 @@ class GeminiAdapterTests(unittest.TestCase):
             self.assertTrue(any(event["event"] == "terminal" for event in events))
             self.assertTrue(any(Path(directory, name).exists() for name in ("screen-001-render-1-attempt-01.png", "screen-001-render-1-attempt-02.png")))
             self.assertTrue(any(Path(directory, name).exists() for name in ("terminal-001.png",)))
+
+    def test_execution_instruction_blocks_without_claiming_completion(self):
+        screen = {
+            "render": 13,
+            "done": False,
+            "entries": [["steptext", "Execute each requirement in the requirements array."]],
+            "inputs": [],
+            "state": {"render": 13},
+        }
+        self.assertIn("do not write files", gemini.execution_blocker(screen).lower())
 
     def test_terminal_screen_does_not_call_gemini(self):
         terminal = {"render": 23, "done": True, "state": {"render": 23}, "history": []}
