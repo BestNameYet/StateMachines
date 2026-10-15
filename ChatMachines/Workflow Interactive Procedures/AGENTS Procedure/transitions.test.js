@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const { transition } = require("./transitions.js");
 const transitionMap = JSON.parse(fs.readFileSync("./transitions.json", "utf8"));
-const initial = JSON.parse(fs.readFileSync("./state.json", "utf8"));
+const initial = {};
 const req = [{ filename: "a.json", frombyte: 0, tobyte: 1, description: "change", intent: "requested", operator: "edit" }];
 function run(kind) {
   const state = structuredClone(initial), trace = [];
@@ -75,3 +75,8 @@ assert.equal(transition({render:null},[{return:null}]),'halt');
 assert.equal(transition({render:null},[{render:null},{render:1}]).render,1);
 assert.equal(transition({render:null,flag:true},[{Boolean:"${flag}",return:{true:null,false:'continue'}}]),'halt');
 console.log('State outputs, irregular arrays, array endings, and null returns, and non-null render boundaries passed.');
+
+const initialized=transition({},transitionMap);
+assert.equal(initialized.render,1);
+for(const [key,value] of Object.entries(initialized))if(key!=="render")assert.equal(value,null);
+assert.deepEqual(initialized,transitionMap.transitions[0]);
