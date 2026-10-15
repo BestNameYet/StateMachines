@@ -48,13 +48,13 @@ function parseReturn(body) {
 }
 function renderIssue(record,issueNumber) {
   const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':direct-return -->';
-  if(record.done)return marker+'\n## Procedure complete\\n\\nAll submitted values and state snapshots are preserved in the run record.';
+  if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
   const instruction=Object.fromEntries(screens[record.state.render-1]);
   const schema=requestSchema(record);
-  return marker+'\n## Render '+record.state.render+'\n\\n'+
-    fence(instruction)+'\n\\n### Return schema\\n\\n'+fence(schema)+
-    '\n\\nReply with only the declared JSON return. No request number or values wrapper. For a step with no captured return, submit {} after completing the instruction.'+
-    '\n\\n<details><summary>Original request and captured values</summary>\\n\\n'+fence({originalRequest:record.originalRequest,state:record.state})+'\n\\n</details>';
+  return marker+'\n## Render '+record.state.render+'\n\n'+
+    fence(instruction)+'\n\n### Return schema\n\n'+fence(schema)+
+    '\n\nReply with only the declared JSON return. No request number or values wrapper. For a step with no captured return, submit {} after completing the instruction.'+
+    '\n\n<details><summary>Original request and captured values</summary>\n\n'+fence({originalRequest:record.originalRequest,state:record.state})+'\n\n</details>';
 }
 function canonicalTitle(issue) {
   return 'AGENTS Procedure — '+new Date(issue.created_at).toISOString();
