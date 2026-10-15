@@ -86,16 +86,81 @@
       "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
     },
     "mode": "fidelity",
-    "changeList": null,
+    "changeList": [
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/run_task.py",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create a reusable Python worker that reads one assigned repository text file or directory, calls Gemini using the repository secret without revealing it, saves the original assignment, source hashes, raw answer, and outcome, and fails clearly on unsupported or oversized inputs without truncation.",
+        "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+        "operator": "create"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/test_run_task.py",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create focused tests for assignment isolation, manifests, path rejection, safe diagnostics, API headers, and incomplete-answer rejection using a mocked API boundary.",
+        "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+        "operator": "create"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/plan.py",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create the plan builder that validates an array of distinct paths, shared instruction and parallelism, and emits the independent matrix assignments and instruction file. Support manual dispatch and timestamp/Boolean commit trigger.",
+        "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+        "operator": "create"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/trigger.json",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create the parallel workflow configuration trigger with timestamp, enabled Boolean, paths array, instruction, and maxParallel. Leave it disabled until real analysis assignments are chosen.",
+        "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+        "operator": "create"
+      },
+      {
+        "filename": ".github/workflows/conversation-parallel-gemini.yml",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create a GitHub Actions workflow with independent Gemini matrix jobs, bounded concurrency, isolated per-path artifacts, failure-tolerant collection and a complete assignment outcome index; support manual and commit triggering.",
+        "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+        "operator": "create"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/README.md",
+        "frombyte": 14570,
+        "tobyte": 14570,
+        "description": "Document the substrate location, inputs, trigger, parallel execution, result retrieval, source limits, and separation from archive subdivision and final synthesis.",
+        "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+        "operator": "append"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/trigger.json",
+        "frombyte": 0,
+        "tobyte": 118,
+        "description": "Enabled the commit trigger for a two-path live infrastructure smoke test with maxParallel 2.",
+        "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+        "operator": "edit"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/trigger.json",
+        "frombyte": 0,
+        "tobyte": 557,
+        "description": "Returned the trigger to disabled with no analysis assignments after the live smoke test.",
+        "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+        "operator": "edit"
+      }
+    ],
     "requirementsCompleted": null,
     "changeAssessment": null,
     "completionAssessment": null,
     "rescissionRequirements": null,
     "loopNumber": null
   },
-  "done": false,
-  "request": 10,
-  "lastCommentId": 6203671804,
+  "done": true,
+  "request": 11,
+  "lastCommentId": 6203679819,
   "newFiles": [
     "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/run_task.py",
     "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/test_run_task.py",
@@ -1016,6 +1081,238 @@
         },
         "mode": "fidelity",
         "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null
+      }
+    },
+    {
+      "request": 10,
+      "render": 14,
+      "loopNumber": null,
+      "values": {
+        "$changeList": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/run_task.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create a reusable Python worker that reads one assigned repository text file or directory, calls Gemini using the repository secret without revealing it, saves the original assignment, source hashes, raw answer, and outcome, and fails clearly on unsupported or oversized inputs without truncation.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/test_run_task.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create focused tests for assignment isolation, manifests, path rejection, safe diagnostics, API headers, and incomplete-answer rejection using a mocked API boundary.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/plan.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create the plan builder that validates an array of distinct paths, shared instruction and parallelism, and emits the independent matrix assignments and instruction file. Support manual dispatch and timestamp/Boolean commit trigger.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/trigger.json",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create the parallel workflow configuration trigger with timestamp, enabled Boolean, paths array, instruction, and maxParallel. Leave it disabled until real analysis assignments are chosen.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": ".github/workflows/conversation-parallel-gemini.yml",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create a GitHub Actions workflow with independent Gemini matrix jobs, bounded concurrency, isolated per-path artifacts, failure-tolerant collection and a complete assignment outcome index; support manual and commit triggering.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/README.md",
+            "frombyte": 14570,
+            "tobyte": 14570,
+            "description": "Document the substrate location, inputs, trigger, parallel execution, result retrieval, source limits, and separation from archive subdivision and final synthesis.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "append"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/trigger.json",
+            "frombyte": 0,
+            "tobyte": 118,
+            "description": "Enabled the commit trigger for a two-path live infrastructure smoke test with maxParallel 2.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/trigger.json",
+            "frombyte": 0,
+            "tobyte": 557,
+            "description": "Returned the trigger to disabled with no analysis assignments after the live smoke test.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "edit"
+          }
+        ]
+      },
+      "state": {
+        "render": 14,
+        "verbatimUserPrompt": "So this first task is big enough. Let's run that and let's run that in the agent's procedure.",
+        "userIntent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/run_task.py",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/test_run_task.py",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/plan.py",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/trigger.json",
+            "newFile": true
+          },
+          {
+            "filename": ".github/workflows/conversation-parallel-gemini.yml",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/README.md",
+            "newFile": false
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/run_task.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create a reusable Python worker that reads one assigned repository text file or directory, calls Gemini using the repository secret without revealing it, saves the original assignment, source hashes, raw answer, and outcome, and fails clearly on unsupported or oversized inputs without truncation.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/test_run_task.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create focused tests for assignment isolation, manifests, path rejection, safe diagnostics, API headers, and incomplete-answer rejection using a mocked API boundary.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/plan.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create the plan builder that validates an array of distinct paths, shared instruction and parallelism, and emits the independent matrix assignments and instruction file. Support manual dispatch and timestamp/Boolean commit trigger.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/trigger.json",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create the parallel workflow configuration trigger with timestamp, enabled Boolean, paths array, instruction, and maxParallel. Leave it disabled until real analysis assignments are chosen.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": ".github/workflows/conversation-parallel-gemini.yml",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create a GitHub Actions workflow with independent Gemini matrix jobs, bounded concurrency, isolated per-path artifacts, failure-tolerant collection and a complete assignment outcome index; support manual and commit triggering.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/README.md",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Document the substrate location, inputs, trigger, parallel execution, result retrieval, source limits, and separation from archive subdivision and final synthesis.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "append"
+          }
+        ],
+        "matchedExample": {
+          "example": 6,
+          "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+        },
+        "mode": "fidelity",
+        "changeList": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/run_task.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create a reusable Python worker that reads one assigned repository text file or directory, calls Gemini using the repository secret without revealing it, saves the original assignment, source hashes, raw answer, and outcome, and fails clearly on unsupported or oversized inputs without truncation.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/test_run_task.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create focused tests for assignment isolation, manifests, path rejection, safe diagnostics, API headers, and incomplete-answer rejection using a mocked API boundary.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/plan.py",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create the plan builder that validates an array of distinct paths, shared instruction and parallelism, and emits the independent matrix assignments and instruction file. Support manual dispatch and timestamp/Boolean commit trigger.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/trigger.json",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create the parallel workflow configuration trigger with timestamp, enabled Boolean, paths array, instruction, and maxParallel. Leave it disabled until real analysis assignments are chosen.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": ".github/workflows/conversation-parallel-gemini.yml",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create a GitHub Actions workflow with independent Gemini matrix jobs, bounded concurrency, isolated per-path artifacts, failure-tolerant collection and a complete assignment outcome index; support manual and commit triggering.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/README.md",
+            "frombyte": 14570,
+            "tobyte": 14570,
+            "description": "Document the substrate location, inputs, trigger, parallel execution, result retrieval, source limits, and separation from archive subdivision and final synthesis.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "append"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/trigger.json",
+            "frombyte": 0,
+            "tobyte": 118,
+            "description": "Enabled the commit trigger for a two-path live infrastructure smoke test with maxParallel 2.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/trigger.json",
+            "frombyte": 0,
+            "tobyte": 557,
+            "description": "Returned the trigger to disabled with no analysis assignments after the live smoke test.",
+            "intent": "Build a reusable parallel Gemini workflow substrate for the conversation archive analysis. Accept an array of repository paths, assign one Gemini operation to each path, execute independent assignments concurrently, and save separate results and evidence. Use the existing AGENTS interactive procedure for this build.",
+            "operator": "edit"
+          }
+        ],
         "requirementsCompleted": null,
         "changeAssessment": null,
         "completionAssessment": null,
