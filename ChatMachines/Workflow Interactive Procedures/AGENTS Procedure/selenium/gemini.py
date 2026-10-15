@@ -11,6 +11,7 @@ import re
 import subprocess
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -223,6 +224,7 @@ def run_loop(driver, initial_prompt, scenario, artifacts, request_fn=call_gemini
         correction = None
         while True:
             attempt += 1
+            raw = None
             screenshot = artifacts / f"screen-{screen_visit:03d}-render-{screen.get('render')}-attempt-{attempt:02d}.png"
             driver.save_screenshot(str(screenshot))
             prompt = build_prompt(initial_prompt, screen, scenario, correction, repeated_count)
