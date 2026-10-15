@@ -6,7 +6,6 @@ const {inputsFor, validate} = require('./validator.js');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));
 const transitionMap = JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8'));
 const screens = loadScreens();
-const stateTemplate = () => JSON.parse(fs.readFileSync(path.join(__dirname,config.state),'utf8'));
 const fence = value => {
   const text = typeof value === 'string' ? value : JSON.stringify(value,null,2);
   const width = Math.max(3,...(text.match(/`+/g)||[]).map(x=>x.length+1));
@@ -14,7 +13,7 @@ const fence = value => {
   return mark + 'json\n' + text + '\n' + mark;
 };
 function startRun(issue) {
-  const state=stateTemplate();
+  const state={};
   const result=transition(state,transitionMap);
   return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],originalRequest:issue.body||''};
 }
