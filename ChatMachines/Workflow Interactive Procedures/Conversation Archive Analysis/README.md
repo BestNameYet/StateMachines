@@ -1,5 +1,9 @@
 # Conversation Archive Analysis
 
+## Execution checklist
+
+See [CHECKLIST.md](CHECKLIST.md) for the ordered requirements, dependencies, and parallelization plan. **The Gemini parallelizer is complete and live-tested.** Archive preparation and analysis remain outstanding.
+
 ## Purpose and current scope
 
 Preserve the user's goals and the analysis-design questions discussed on October 15, 2026, so this project can be resumed without reconstructing the conversation.
