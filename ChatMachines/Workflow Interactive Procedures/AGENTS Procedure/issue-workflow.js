@@ -12,8 +12,12 @@ const fence = value => {
   const mark = '`'.repeat(width);
   return mark + 'json\n' + text + '\n' + mark;
 };
+function initialState() {
+  return Object.fromEntries(Object.keys(stateTemplate()).map(key=>[key,null]));
+}
 function startRun(issue) {
-  const state=stateTemplate(); state.render=null; transition(state);
+  const state=initialState();
+  transition(state);
   return {state,done:false,request:1,lastCommentId:0,newFiles:[],history:[],originalRequest:issue.body||''};
 }
 function requestSchema(record) {
@@ -116,4 +120,4 @@ async function main() {
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={startRun,applyReturn,requestSchema,parseReturn,renderIssue,canonicalTitle};
+module.exports={startRun,applyReturn,requestSchema,parseReturn,renderIssue,canonicalTitle,initialState};
