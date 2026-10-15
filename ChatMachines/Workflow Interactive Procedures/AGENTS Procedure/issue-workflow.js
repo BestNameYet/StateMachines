@@ -18,12 +18,6 @@ function startRun(issue) {
   const result=transition(state,transitionMap);
   return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],originalRequest:issue.body||''};
 }
-function requestSchema(record) {
-  const fields=inputsFor(screens[record.state.render-1]);
-  if(fields.length===0)return {type:'object',maxProperties:0};
-  if(fields.length!==1)throw Error('Instruction must declare its own combined return type.');
-  return fields[0].schema;
-}
 function applyReturn(record,payload,fileRoot) {
   if(record.done)throw Error('This run has finished.');
   const fields=inputsFor(screens[record.state.render-1]);
@@ -55,12 +49,7 @@ function renderIssue(record,issueNumber) {
   const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':named-return -->';
   if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
   const instruction=Object.fromEntries(screens[record.state.render-1]);
-  const schema=requestSchema(record);
-  const fields=inputsFor(screens[record.state.render-1]);
-  const reply=fields.length?'${'+fields[0].name+'}: <JSON value>':'{}';
-  return marker+'\n## Render '+record.state.render+'\n\n'+
-    fence(instruction)+'\n\n### Return schema\n\n'+fence(schema)+
-    '\n\nReturn format: '+fence(reply)+ '\n\nUse the declared variable name and a JSON value of the required type. No request number or values wrapper. For a step with no captured return, submit {} after completing the instruction.'+
+  return marker+'\n## Render '+record.state.render+'\n\n'+fence(instruction)+
     '\n\n<details><summary>Original request and captured values</summary>\n\n'+fence({originalRequest:record.originalRequest,state:record.state})+'\n\n</details>';
 }
 function canonicalTitle(issue) {
@@ -114,4 +103,4 @@ async function main() {
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={startRun,applyReturn,requestSchema,parseReturn,renderIssue,canonicalTitle};
+module.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle};
