@@ -85,9 +85,10 @@ async function main() {
   const route='/contents/'+relative.split('/').map(encodeURIComponent).join('/');
   const stored=await api('GET',route,undefined,true);
   const issue=await api('GET','/issues/'+number);
-  const identified=stored || /^AGENTS Procedure(?:\\s|$)/.test(issue.title) ||
-    /### Procedure\\s+AGENTS Procedure(?:\\s|$)/.test(issue.body||'');
+  const acknowledged=/### Procedure acknowledgement\s+[-*] \[[xX]\] I acknowledge and agree to follow the behavioral requirements of the AGENTS Procedure\./.test(issue.body||'');
+  const identified=stored || /^AGENTS Procedure(?:\s|$)/.test(issue.title) || acknowledged;
   if(!identified)return;
+  if(!stored && !acknowledged)throw Error('Acknowledge the AGENTS Procedure behavioral requirements before starting.');
   const title=canonicalTitle(issue);
   if(issue.title!==title)await api('PATCH','/issues/'+number,{title});
   // Title edits enforce naming only; they do not advance or initialize a run.
