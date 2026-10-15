@@ -72,6 +72,6 @@ assert.equal(transition(shapeState,irregular),'halt');
 assert.equal(shapeState.value,'retained');
 assert.equal(transition({render:null},null),'halt');
 assert.equal(transition({render:null},[{return:null}]),'halt');
-assert.equal(transition({render:null},[{render:null}]),'halt');
+assert.equal(transition({render:null},[{render:null},{render:1}]).render,1);
 assert.equal(transition({render:null,flag:true},[{Boolean:"${flag}",return:{true:null,false:'continue'}}]),'halt');
-console.log('State outputs, irregular arrays, array endings, and null terminal destinations passed.');
+console.log('State outputs, irregular arrays, array endings, and null returns, and non-null render boundaries passed.');
