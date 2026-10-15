@@ -46,7 +46,22 @@ function inputsFor(entries) {
     if (text[begin] !== '<') continue;
   }
   if (begin < 0) throw Error('Missing return type for ' + name);
-  return [{name, schema:schemaFromType(text.slice(begin,end+1))}];
+  let schema=schemaFromType(text.slice(begin,end+1));
+  if(name==='toolInvocations') {
+    const definition=entries.find(([key])=>key==='return')?.[1];
+    const names=definition.required.map(variable=>variable.slice(2,-1));
+    const nullable=type=>({anyOf:[{type},{type:'null'}]});
+    const properties=Object.fromEntries(names.map(key=>[key,
+      key==='final_output_after_completion_of_tool_call'?{}:
+      nullable(['frombyte','tobyte'].includes(key)?'integer':key==='new'?'boolean':'string')]));
+    properties.outcome={anyOf:definition.Outcome.enum.map(value=>({const:value}))};
+    properties.specifiedOperatorByUser=nullable('string');
+    properties.chosenOperator={type:'string'};
+    properties.http_method={type:'string'};
+    properties.url={type:'string'};
+    schema={type:'array',items:{type:'object',properties,required:[...names,'specifiedOperatorByUser','chosenOperator','outcome'],toolInvocation:true}};
+  }
+  return [{name,schema}];
 }
 
 function validate(value, schema, where = 'value', context = {}) {
@@ -56,6 +71,7 @@ function validate(value, schema, where = 'value', context = {}) {
   }
   if (Object.hasOwn(schema,'const') && value !== schema.const) throw Error(where + ' must equal ' + schema.const);
   const kind = schema.type;
+  if (kind === 'null' && value !== null) throw Error(where + ' must be null.');
   if (kind === 'string' && typeof value !== 'string') throw Error(where + ' must be a string.');
   if (kind === 'integer' && !Number.isInteger(value)) throw Error(where + ' must be an integer.');
   if (kind === 'boolean' && typeof value !== 'boolean') throw Error(where + ' must be Boolean.');
@@ -67,6 +83,9 @@ function validate(value, schema, where = 'value', context = {}) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error(where + ' must be an object.');
     for (const key of schema.required || []) if (!Object.hasOwn(value,key)) throw Error(where + '.' + key + ' is required.');
     for (const [key,child] of Object.entries(schema.properties || {})) if (Object.hasOwn(value,key)) validate(value[key],child,where+'.'+key,{...context,newFile:value.newFile === true});
+    if(schema.toolInvocation && (Object.hasOwn(value,'http_method') || Object.hasOwn(value,'url'))) {
+      for(const key of ['http_method','url'])if(typeof value[key]!=='string'||!value[key])throw Error(where+'.'+key+' is required for web tools.');
+    }
     if (Object.hasOwn(value,'newFile') && typeof value.newFile !== 'boolean') throw Error(where + '.newFile must be Boolean.');
     if (Number.isInteger(value.frombyte) && Number.isInteger(value.tobyte) && (value.frombyte < 0 || value.tobyte < value.frombyte)) throw Error(where + ' has an invalid byte range.');
   }
