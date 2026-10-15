@@ -2,20 +2,11 @@
 
 ## Create a procedure run
 
-Create a new issue in the BestNameYet/StateMachines repository for each run of this procedure. GitHub issues belong to the repository rather than a folder. Associate the issue with this procedure using the title and the procedure folder recorded in its body.
+Create a new issue in BestNameYet/StateMachines using the AGENTS Procedure issue template for each run. Check the required Procedure acknowledgement checkbox before submitting. The template contains that acknowledgement; it does not collect the user prompt. The first rendered instruction captures the verbatim user prompt in the issue replies.
 
-Use this issue title format:
+The workflow replaces the issue title with AGENTS Procedure — <issue creation timestamp in UTC>, including after title edits. The timestamp comes from GitHub's issue creation time and remains unchanged throughout the run. The issue number identifies the run and its separate persisted state.
 
-AGENTS Procedure — <UTC timestamp in YYYY-MM-DDTHH:mm:ssZ format>
-
-Include these fields in the issue body:
-
-- Procedure: AGENTS Procedure
-- Procedure folder: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
-- Started at: <same UTC timestamp used in the title>
-- User request: <original user request>
-
-The timestamp distinguishes runs. The issue number identifies the run and its separate persisted state.
+GitHub issues belong to the repository rather than a folder. The runner stores this procedure's run records under ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/.
 
 ## Interactive execution
 
@@ -90,7 +81,7 @@ Each run is saved as issue-runs/<issue-number>.json with the state, current requ
 
 Run the local issue adapter checks with node issue-workflow.test.js. They verify the adapter without creating an actual GitHub issue.
 
-The issue form includes a Procedure identifier so a run is recognized even when its initial title is changed. Existing runs are also identified by their saved run record. The canonical title uses the issue creation timestamp, so correcting a title never changes the run's timestamp. Title-edit events only enforce the title and do not advance the procedure.
+The runner recognizes a procedure issue by an existing saved run record, an AGENTS Procedure title prefix, or the checked Procedure acknowledgement in its body. A new run requires the checked acknowledgement even when its title matches. Title-edit events enforce the canonical title only; they do not initialize or advance the procedure.
 
 The caller loads transitions.json and compiles it once: const map = compileTransitionMap(transitions). The result is a state-to-state operator. Initialize with map({}); for subsequent returns, apply validated inputs to the previous state and call map(state). There is no separate state.json or state config entry.
 
