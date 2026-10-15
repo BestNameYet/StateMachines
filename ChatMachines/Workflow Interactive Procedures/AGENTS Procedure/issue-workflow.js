@@ -20,34 +20,26 @@ function startRun(issue) {
 }
 function requestSchema(record) {
   const fields=inputsFor(screens[record.state.render-1]);
-  return {type:'object',required:['request','values'],properties:{
-    request:{const:record.request},
-    values:{type:'object',required:fields.map(x=>'$'+x.name),properties:Object.fromEntries(fields.map(x=>['$'+x.name,x.schema])),additionalProperties:false},
-    newFiles:{type:'array',items:{type:'string'}}
-  },additionalProperties:false};
+  if(fields.length===0)return {type:'object',maxProperties:0};
+  if(fields.length!==1)throw Error('Instruction must declare its own combined return type.');
+  return fields[0].schema;
 }
 function applyReturn(record,payload,fileRoot) {
   if(record.done)throw Error('This run has finished.');
-  if(payload.request!==record.request)throw Error('Reply to the current request number: '+record.request);
-  const values=payload.values;
-  if(!values||typeof values!=='object'||Array.isArray(values))throw Error('values must be a JSON object.');
-  if(Object.keys(payload).some(k=>!['request','values','newFiles'].includes(k)))throw Error('Unexpected submission field.');
   const fields=inputsFor(screens[record.state.render-1]);
-  const names=fields.map(x=>'$'+x.name);
-  if(Object.keys(values).some(k=>!names.includes(k)))throw Error('Unexpected return variable.');
-  const newFiles=payload.newFiles??record.newFiles;
-  if(!Array.isArray(newFiles)||newFiles.some(x=>typeof x!=='string'))throw Error('newFiles must be an array of filenames.');
-  const context={root:fileRoot,newFiles};
-  for(const name of newFiles)validate(name,{type:'string',format:'file-reference'},'newFiles',{...context,newFile:true});
-  for(const field of fields){
-    const key='$'+field.name;
-    if(!Object.hasOwn(values,key))throw Error('Missing return variable: '+key);
-    validate(values[key],field.schema,key,context);
+  const values={};
+  if(fields.length===0){
+    if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).length)throw Error('This step accepts only {} to continue.');
+  }else{
+    if(fields.length!==1)throw Error('Instruction must declare its own combined return type.');
+    const field=fields[0];
+    validate(payload,field.schema,field.name,{root:fileRoot,newFiles:record.newFiles});
+    values['$'+field.name]=payload;
   }
   const draft=structuredClone(record.state);
   const result=transition(draft,transitionMap,JSON.stringify(values));
   record.history.push({request:record.request,render:record.state.render,loopNumber:record.state.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
-  record.state=result==='halt'?draft:result;record.done=result==='halt';record.newFiles=newFiles;record.request++;
+  record.state=result==='halt'?draft:result;record.done=result==='halt';record.request++;
 }
 function parseReturn(body) {
   const text=body.trim();
@@ -55,17 +47,14 @@ function parseReturn(body) {
   return JSON.parse(fenced?fenced[1]:text);
 }
 function renderIssue(record,issueNumber) {
-  const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+' -->';
-  if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
-  const entries=screens[record.state.render-1];
-  const instruction=Object.fromEntries(entries);
+  const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':direct-return -->';
+  if(record.done)return marker+'\n## Procedure complete\\n\\nAll submitted values and state snapshots are preserved in the run record.';
+  const instruction=Object.fromEntries(screens[record.state.render-1]);
   const schema=requestSchema(record);
-  const names=Object.keys(schema.properties.values.properties);
-  const response={request:record.request,values:Object.fromEntries(names.map(k=>[k,'<value>']))};
-  return marker+'\n## Render '+record.state.render+' · Request '+record.request+'\n\n'+
-    fence(instruction)+'\n\n### Return schema\n\n'+fence(schema)+
-    '\n\nReply with a JSON comment using this envelope. For a step with no return fields, submit an empty values object after completing the instruction.\n\n'+fence(response)+
-    '\n\n<details><summary>Original request and captured values</summary>\n\n'+fence({originalRequest:record.originalRequest,state:record.state})+'\n\n</details>';
+  return marker+'\n## Render '+record.state.render+'\n\\n'+
+    fence(instruction)+'\n\\n### Return schema\\n\\n'+fence(schema)+
+    '\n\\nReply with only the declared JSON return. No request number or values wrapper. For a step with no captured return, submit {} after completing the instruction.'+
+    '\n\\n<details><summary>Original request and captured values</summary>\\n\\n'+fence({originalRequest:record.originalRequest,state:record.state})+'\n\\n</details>';
 }
 function canonicalTitle(issue) {
   return 'AGENTS Procedure — '+new Date(issue.created_at).toISOString();
@@ -102,7 +91,7 @@ async function main() {
   for(const comment of comments){
     if(comment.id<=record.lastCommentId||comment.user.type==='Bot')continue;
     if(record.done){record.lastCommentId=comment.id;continue;}
-    if(!/^\s*(?:\{|\x60{3,})/.test(comment.body)) {record.lastCommentId=comment.id;continue;}
+    if(!/^\s*(?:[\[{"\d-]|true\b|false\b|null\b|\x60{3,})/.test(comment.body)) {record.lastCommentId=comment.id;continue;}
     const errorMarker='<!-- agents-procedure:'+number+':error:'+comment.id+' -->';
     try{applyReturn(record,parseReturn(comment.body),process.env.GITHUB_WORKSPACE);}
     catch(error){outbox.push({marker:errorMarker,body:errorMarker+'\nReturn rejected: '+error.message+'\n\nState and current request are unchanged.'});}
