@@ -27,14 +27,16 @@ function applyReturn(record,payload,fileRoot) {
     if(fields.length!==1)throw Error('Instruction must declare its own combined return type.');
     const field=fields[0];
     if(payload.variable!==field.name)throw Error('Expected ${'+field.name+'}: value.');
-    validate(payload.value,field.schema,field.name,{root:fileRoot,newFiles:record.newFiles});
+    validate(payload.value,field.schema,field.name,{root:fileRoot,newFiles:field.name==='targetFiles'?[]:record.newFiles});
     values['$'+field.name]=payload.value;
   }
   const draft=structuredClone(record.state);
   applyValidatedValues(draft,JSON.stringify(values));
   const result=map(draft);
   record.history.push({request:record.request,render:record.state.render,loopNumber:record.state.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
-  record.state=result==='halt'?draft:result;record.done=result==='halt';record.request++;
+  record.state=result==='halt'?draft:result;
+  if(payload.variable==='targetFiles')record.newFiles=payload.value.filter(file=>file.newFile).map(file=>file.filename);
+  record.done=result==='halt';record.request++;
 }
 function parseReturn(body) {
   const text=body.trim();
