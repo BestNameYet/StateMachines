@@ -7,7 +7,7 @@ const req = [{ filename: "a.json", frombyte: 0, tobyte: 1, description: "change"
 function run(kind) {
   const state = structuredClone(initial), trace = [];
   let content = transition(state, transitionMap), passes = 0;
-  while (content !== null) {
+  while (content !== "halt") {
     trace.push(state.render);
     let values = {};
     switch (state.render) {
@@ -60,3 +60,18 @@ assert.deepEqual(rejected, before);
 const union = new Set([...minimal.trace, ...fidelity.trace, ...accountability.trace]);
 assert.equal(union.size, 23);
 console.log(JSON.stringify({ scenarios: 4, coveredRenders: union.size, minimal: minimal.trace, fidelity: fidelity.trace, accountability: accountability.trace, repeat: repeat.trace, invalidInputLeavesStateUnchanged: true }, null, 2));
+
+const shapeState={render:null,value:null};
+const irregular=[[[{render:1}]],[],[{value:"${value}",render:2}],[null]];
+let result=transition(shapeState,irregular);
+assert.equal(result.render,1);
+assert.equal(typeof result,'object');
+result=transition(shapeState,irregular,'{"$value":"retained"}');
+assert.deepEqual(result,{render:2,value:"retained"});
+assert.equal(transition(shapeState,irregular),'halt');
+assert.equal(shapeState.value,'retained');
+assert.equal(transition({render:null},null),'halt');
+assert.equal(transition({render:null},[{return:null}]),'halt');
+assert.equal(transition({render:null},[{render:null}]),'halt');
+assert.equal(transition({render:null,flag:true},[{Boolean:"${flag}",return:{true:null,false:'continue'}}]),'halt');
+console.log('State outputs, irregular arrays, array endings, and null terminal destinations passed.');
