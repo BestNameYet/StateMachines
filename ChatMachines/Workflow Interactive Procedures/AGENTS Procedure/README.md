@@ -22,7 +22,7 @@ Use a fresh issue for every run. Append instructions, agent returns, and validat
 
 ## Implementation status
 
-The procedure, transition map, transition executor, render positions, lookup, HTML interface, and structural validator are implemented. The issue-trigger workflow and Gemini–Selenium harness are implemented; live Gemini runs are started manually.
+The procedure, transition map, transition executor, render positions, lookup, HTML interface, and structural validator are implemented. The issue-trigger workflow and Gemini–Selenium harness are implemented; a live Gemini run has not yet been verified.
 
 ## Run the HTML interface
 
