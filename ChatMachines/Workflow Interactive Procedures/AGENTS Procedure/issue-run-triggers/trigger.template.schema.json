@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BestNameYet/StateMachines/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/issue-run-triggers/trigger.template.schema.json",
+  "title": "AGENTS Procedure issue-run trigger",
+  "description": "Required JSON fields for a commit-triggered procedure run.",
+  "type": "object",
+  "required": [
+    "datetimestampedTitle",
+    "procedureIssueNumber",
+    "runProcedureOnCommit",
+    "procedureSavedHere"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "datetimestampedTitle": {
+      "type": "string",
+      "pattern": "^AGENTS Procedure — \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$",
+      "description": "Canonical AGENTS Procedure issue title with its UTC creation timestamp."
+    },
+    "procedureIssueNumber": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*$",
+      "description": "GitHub issue number identifying this procedure run."
+    },
+    "runProcedureOnCommit": {
+      "type": "boolean",
+      "description": "True to request that the commit workflow process this trigger."
+    },
+    "procedureSavedHere": {
+      "type": "object",
+      "description": "The persisted issue-runs/<procedureIssueNumber>.json receipt.",
+      "required": [
+        "state",
+        "done",
+        "request",
+        "lastCommentId",
+        "newFiles",
+        "history",
+        "toolInvocations"
+      ],
+      "properties": {
+        "state": {
+          "type": "object",
+          "description": "The complete procedure state snapshot."
+        },
+        "done": {
+          "type": "boolean"
+        },
+        "request": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lastCommentId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "newFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "toolInvocations": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}
