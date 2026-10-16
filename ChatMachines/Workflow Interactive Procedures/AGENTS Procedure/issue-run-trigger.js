@@ -35,6 +35,57 @@ function parseTrigger(filename, value) {
   return { filename, procedureName, identifier, nonce: value.nonce };
 }
 
+function initializeConsumedTrigger(current, trigger, issue, receipt) {
+  const procedureReceiptPath = 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/' + issue.number + '.json';
+  return {
+    ...current,
+    startProcedure: false,
+    procedureName: trigger.procedureName,
+    procedureIdentifier: trigger.identifier,
+    procedureIssueNumber: issue.number,
+    procedureIssueUrl: issue.html_url,
+    procedureTitle: issue.title,
+    procedureReceiptPath,
+    procedureSavedHere: receipt,
+    procedureReceipts: [receipt]
+  };
+}
+
+function appendProcedureReceipt(current, receipt, issueNumber) {
+  if (!current || typeof current !== 'object' || Array.isArray(current)) {
+    throw new Error('Consumed trigger must be a JSON object.');
+  }
+  const identifier = current.procedureIdentifier;
+  if (current.startProcedure !== false ||
+      typeof identifier !== 'string' ||
+      !/^[A-Za-z][A-Za-z0-9_-]*[0-9]+$/.test(identifier) ||
+      !/^[A-Za-z][A-Za-z0-9_-]*$/.test(current.procedureName || '') ||
+      !Number.isSafeInteger(current.nonce) ||
+      current.nonce < 0 ||
+      current.procedureName + current.nonce !== identifier) {
+    throw new Error('Trigger filename identity does not match its procedureName and nonce.');
+  }
+  if (current.procedureIssueNumber !== issueNumber) {
+    throw new Error('Trigger is bound to a different issue.');
+  }
+  const expectedPath = 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/' + issueNumber + '.json';
+  if (current.procedureReceiptPath !== expectedPath) {
+    throw new Error('Trigger receipt path does not match its bound issue.');
+  }
+  if (!receipt || typeof receipt !== 'object' || receipt.triggerIdentifier !== identifier) {
+    throw new Error('Run receipt identifier does not match the trigger filename.');
+  }
+  const receipts = current.procedureReceipts === undefined
+    ? (current.procedureSavedHere ? [current.procedureSavedHere] : [])
+    : current.procedureReceipts;
+  if (!Array.isArray(receipts)) throw new Error('Trigger procedureReceipts must be an array.');
+  const last = receipts[receipts.length - 1];
+  if (last && last.request === receipt.request &&
+      last.lastCommentId === receipt.lastCommentId &&
+      JSON.stringify(last) === JSON.stringify(receipt)) return null;
+  return { ...current, procedureReceipts: [...receipts, structuredClone(receipt)] };
+}
+
 function triggerMarker(identifier) {
   return '<!-- agents-procedure-trigger:' + identifier + ' -->';
 }
@@ -92,17 +143,7 @@ async function main() {
   async function writeConsumedTrigger(route, stored, trigger, issue, receipt) {
     const current = JSON.parse(Buffer.from(stored.content, 'base64').toString('utf8'));
     if (current.startProcedure !== true) return;
-    const completed = {
-      ...current,
-      startProcedure: false,
-      procedureName: trigger.procedureName,
-      procedureIdentifier: trigger.identifier,
-      procedureIssueNumber: issue.number,
-      procedureIssueUrl: issue.html_url,
-      procedureTitle: issue.title,
-      procedureReceiptPath: 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/' + issue.number + '.json',
-      procedureSavedHere: receipt
-    };
+    const completed = initializeConsumedTrigger(current, trigger, issue, receipt);
     await api('PUT', route, {
       message: 'Bind procedure trigger ' + trigger.identifier + ' to issue ' + issue.number,
       sha: stored.sha,
@@ -144,4 +185,4 @@ if (require.main === module) main().catch(error => {
   process.exitCode = 1;
 });
 
-module.exports = { parseTrigger, triggerMarker, issueBody, identifierFromFilename };
+module.exports = { parseTrigger, triggerMarker, issueBody, identifierFromFilename, initializeConsumedTrigger, appendProcedureReceipt };
