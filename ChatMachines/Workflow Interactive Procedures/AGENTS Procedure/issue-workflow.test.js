@@ -1,8 +1,8 @@
 const assert=require('node:assert/strict');
 const {startRun,applyReturn,parseReturn,renderIssue,triggerIdentifier,issueNumberForEvent}=require('./issue-workflow.js');
-assert.equal(issueNumberForEvent({inputs:{issue_number:'42'}},'workflow_dispatch'),42);
+assert.equal(issueNumberForEvent({},'push','42'),42);
 assert.equal(issueNumberForEvent({issue:{number:19}},'issues'),19);
-assert.equal(issueNumberForEvent({inputs:{issue_number:'0'}},'workflow_dispatch'),null);
+assert.equal(issueNumberForEvent({},'push','0'),null);
 assert.equal(triggerIdentifier({body:'<!-- agents-procedure-trigger:buildProcedure12 -->'}),'buildProcedure12');
 assert.equal(startRun({body:'<!-- agents-procedure-trigger:buildProcedure12 -->'}).triggerIdentifier,'buildProcedure12');
 const r=startRun({body:'Test request'}),root=__dirname+'/fixtures';
