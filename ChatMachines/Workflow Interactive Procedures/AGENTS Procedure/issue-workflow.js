@@ -3,6 +3,7 @@ const path = require('node:path');
 const {compileTransitionMap,applyValidatedValues} = require('./transitions.js');
 const {loadScreens,entriesForState} = require('./render-instructions.js');
 const {inputsFor, validate} = require('./validator.js');
+const {appendProcedureReceipt} = require('./issue-run-trigger.js');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));
 const map = compileTransitionMap(JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8')));
 const screens = loadScreens();
@@ -14,6 +15,13 @@ const fence = value => {
 };
 function triggerIdentifier(issue) {
   return (issue.body || '').match(/<!-- agents-procedure-trigger:([A-Za-z][A-Za-z0-9_-]*) -->/)?.[1] || null;
+}
+function triggerPathForRecord(record) {
+  const identifier = record?.triggerIdentifier;
+  if (typeof identifier !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]*[0-9]+$/.test(identifier)) {
+    throw new Error('Run record has an invalid procedure trigger identifier.');
+  }
+  return path.join(__dirname, 'issue-run-triggers', identifier + '.json');
 }
 function issueNumberForEvent(event,overrideNumber) {
   const raw=overrideNumber ?? event.issue?.number;
@@ -113,8 +121,17 @@ async function main() {
   for(const item of outbox)if(item.body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
   // Persist the state before publishing. Markers prevent duplicate prompts on retries.
   await api('PUT',route,{message:'Save AGENTS Procedure issue '+number+' state',content:Buffer.from(JSON.stringify(record,null,2)+'\n').toString('base64'),...(stored?{sha:stored.sha}:{})});
+  if(process.env.GITHUB_EVENT_NAME!=='push' && record.triggerIdentifier) {
+    const triggerRelative=path.relative(process.env.GITHUB_WORKSPACE,triggerPathForRecord(record)).split(path.sep).join('/');
+    const triggerRoute='/contents/'+triggerRelative.split('/').map(encodeURIComponent).join('/');
+    const triggerStored=await api('GET',triggerRoute,undefined,true);
+    if(!triggerStored)throw Error('Bound procedure trigger file was not found: '+triggerRelative);
+    const trigger=JSON.parse(Buffer.from(triggerStored.content,'base64').toString('utf8'));
+    const updatedTrigger=appendProcedureReceipt(trigger,record,number);
+    if(updatedTrigger)await api('PUT',triggerRoute,{message:'Append AGENTS Procedure issue '+number+' receipt to '+record.triggerIdentifier,content:Buffer.from(JSON.stringify(updatedTrigger,null,2)+'\\n').toString('base64'),sha:triggerStored.sha});
+  }
   for(const item of outbox)if(!comments.some(c=>c.body.includes(item.marker)))await api('POST','/issues/'+number+'/comments',{body:item.body});
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle,triggerIdentifier,issueNumberForEvent};
+module.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle,triggerIdentifier,triggerPathForRecord,issueNumberForEvent};
