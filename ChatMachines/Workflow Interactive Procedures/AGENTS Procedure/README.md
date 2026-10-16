@@ -19,13 +19,13 @@ Create a new JSON file directly in `issue-run-triggers/` named `<procedureName><
 }
 ```
 
-The nonce must be a non-negative integer and match the numeric suffix of the filename. Commit the trigger file to `main`. The workflow validates it, creates one issue with the checked Procedure acknowledgement, dispatches the existing issue runner by issue number, and changes `startProcedure` to `false`. It then adds `procedureName`, `procedureIdentifier`, `procedureIssueNumber`, `procedureIssueUrl`, `procedureTitle`, and `procedureReceiptPath` to the trigger JSON. The issue body and saved run record carry the trigger identifier so the issue remains bound to the filename even after the issue runner changes its title to the canonical UTC timestamp.
+The nonce must be a non-negative integer and match the numeric suffix of the filename. Commit the trigger file to `main`. The workflow validates it, creates one issue with the checked Procedure acknowledgement, runs the existing issue initializer directly by issue number in that same push workflow, and changes `startProcedure` to `false` after the issue record and first instruction are persisted. It then adds `procedureName`, `procedureIdentifier`, `procedureIssueNumber`, `procedureIssueUrl`, `procedureTitle`, and `procedureReceiptPath` to the trigger JSON. The issue body and saved run record carry the trigger identifier so the issue remains bound to the filename even after the issue runner changes its title to the canonical UTC timestamp. The issue is the persistent communication port for later returns; it does not start the push workflow.
 
 The workflow reuses an issue carrying the exact trigger marker if a run is retried. The trigger file is a one-time handoff; the current mutable receipt remains `issue-runs/<issue-number>.json`. Do not copy the receipt into the trigger file because that would create a stale second version. The first rendered instruction captures the verbatim user prompt in the issue replies.
 
 ## Interactive execution
 
-The intended workflow starts when a qualifying procedure issue is opened or when a committed trigger explicitly dispatches its issue number. It initializes that issue's state, reads the state-to-instruction mapping, and posts the current instruction to the issue. The complete procedure remains in its source file and is not posted to the issue.
+The intended workflow starts when a qualifying procedure issue is opened or when the push workflow creates an issue from a committed trigger. It initializes that issue's state, reads the state-to-instruction mapping, and posts the current instruction to the issue. The complete procedure remains in its source file and is not posted to the issue.
 
 On receipt of an agent return, validate it against the current instruction's expected return. If valid, record the returned value, update the persisted state, and render the instruction associated with the resulting state. If invalid, retain the current state and post the validation error for correction. A waiting-return status is unnecessary.
 
