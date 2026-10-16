@@ -15,7 +15,7 @@ const fence = value => {
 function triggerIdentifier(issue) {
   return (issue.body || '').match(/<!-- agents-procedure-trigger:([A-Za-z][A-Za-z0-9_-]*) -->/)?.[1] || null;
 }
-function issueNumberForEvent(event,eventName,overrideNumber) {
+function issueNumberForEvent(event,overrideNumber) {
   const raw=overrideNumber ?? event.issue?.number;
   const number=typeof raw==='string'&&/^\d+$/.test(raw)?Number(raw):raw;
   return Number.isSafeInteger(number)&&number>0?number:null;
@@ -72,7 +72,7 @@ function canonicalTitle(issue) {
 async function main() {
   const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
   const repository=process.env.GITHUB_REPOSITORY;
-  const number=issueNumberForEvent(event,process.env.GITHUB_EVENT_NAME,process.env.AGENTS_PROCEDURE_ISSUE_NUMBER);
+  const number=issueNumberForEvent(event,process.env.AGENTS_PROCEDURE_ISSUE_NUMBER);
   if(!number||event.issue?.pull_request)return;
   if(event.comment?.user?.type==='Bot')return;
   const apiBase='https://api.github.com/repos/'+repository;
