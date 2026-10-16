@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 
 const triggerDirectory = path.join(__dirname, 'issue-run-triggers');
 const identifierFromFilename = (filename, nonce) => {
@@ -114,10 +115,12 @@ async function main() {
         body: issueBody(trigger)
       });
     }
-    await api('POST', '/actions/workflows/agents-procedure-issues.yml/dispatches', {
-      ref: 'main',
-      inputs: { issue_number: String(issue.number) }
+    execFileSync(process.execPath, ['issue-workflow.js'], {
+      cwd: __dirname,
+      stdio: 'inherit',
+      env: { ...process.env, AGENTS_PROCEDURE_ISSUE_NUMBER: String(issue.number) }
     });
+    issue = await api('GET', '/issues/' + issue.number);
     const { route, stored } = await readFile(filename);
     await writeConsumedTrigger(route, stored, trigger, issue);
     console.log('Bound ' + filename + ' to issue #' + issue.number + ' and dispatched issue initialization.');
