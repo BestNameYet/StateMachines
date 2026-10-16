@@ -1,0 +1,98 @@
+name: Extract Conversations Archive
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/conversations-011.zip'
+      - 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extract-request.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: extract-conversations-archive
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - name: Extract ZIP safely
+        id: extract
+        env:
+          ARCHIVE_PATH: ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/conversations-011.zip
+          OUTPUT_DIR: ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011
+        run: |
+          python - <<'PY'
+          import os
+          import shutil
+          import stat
+          import zipfile
+          from pathlib import Path, PurePosixPath
+
+          archive = Path(os.environ["ARCHIVE_PATH"])
+          destination = Path(os.environ["OUTPUT_DIR"])
+          if not archive.is_file():
+              raise SystemExit(f"Archive not found: {archive}")
+          if destination.exists():
+              shutil.rmtree(destination)
+          destination.mkdir(parents=True)
+          root = destination.resolve()
+          seen = set()
+          files = 0
+          total_bytes = 0
+
+          with zipfile.ZipFile(archive) as zf:
+              for info in zf.infolist():
+                  name = info.filename
+                  relative = PurePosixPath(name)
+                  parts = [part for part in relative.parts if part not in ("", ".")]
+                  if relative.is_absolute() or not parts or any(part == ".." for part in parts):
+                      raise SystemExit("Unsafe ZIP entry path encountered")
+                  normalized = "/".join(parts)
+                  if normalized in seen:
+                      raise SystemExit("Duplicate ZIP entry path encountered")
+                  seen.add(normalized)
+                  mode = (info.external_attr >> 16) & 0xFFFF
+                  if stat.S_ISLNK(mode):
+                      raise SystemExit("Symbolic links are not extracted")
+                  target = destination.joinpath(*parts)
+                  resolved = target.resolve()
+                  if root not in resolved.parents and resolved != root:
+                      raise SystemExit("ZIP entry escapes extraction folder")
+                  if info.is_dir():
+                      target.mkdir(parents=True, exist_ok=True)
+                      continue
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  with zf.open(info, "r") as source, target.open("xb") as output:
+                      shutil.copyfileobj(source, output)
+                  files += 1
+                  total_bytes += info.file_size
+
+          if files == 0:
+              raise SystemExit("ZIP contained no files")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"files={files}\\nbytes={total_bytes}\\n")
+          print(f"Extracted {files} files ({total_bytes} uncompressed bytes).")
+          PY
+      - name: Commit extracted files
+        env:
+          OUTPUT_DIR: ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$OUTPUT_DIR"
+          if git diff --cached --quiet; then
+            echo "Extraction output already matches the archive."
+            exit 0
+          fi
+          git commit -m "Extract conversations-011 archive"
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
