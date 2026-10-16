@@ -1,6 +1,6 @@
 {
   "state": {
-    "render": 11,
+    "render": 12,
     "verbatimUserPrompt": "Analyze my Google activity archive from the relevant files in Google Drive, using the connected app if available. Remove Gaia ID from the working output, normalize timestamps to Houston time, identify the earliest defensible timestamp and any caveat on that minimum, and summarize the requested activity chronologically by month. If Google Drive is not connected, offer the connection for approval before continuing; do not modify the source files.",
     "userIntent": "Analyze Google activity archive files using connected Google Drive; create a Gaia-ID-free working chronology in Houston time, identify the earliest supportable timestamp and its caveats, summarize by month, and leave source files unchanged. Apply the existing procedure in BestNameYet/StateMachines main.",
     "exampleMatch": false,
@@ -69,8 +69,11 @@
         "operator": "local analysis and file generation"
       }
     ],
-    "matchedExample": null,
-    "mode": null,
+    "matchedExample": {
+      "example": 4,
+      "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+    },
+    "mode": "fidelity",
     "changeList": null,
     "requirementsCompleted": null,
     "changeAssessment": null,
@@ -79,8 +82,8 @@
     "loopNumber": null
   },
   "done": false,
-  "request": 7,
-  "lastCommentId": 6225919383,
+  "request": 8,
+  "lastCommentId": 6225929842,
   "newFiles": [
     "output/google_activity_report.md",
     "output/activity_houston.csv",
@@ -438,6 +441,99 @@
         ],
         "matchedExample": null,
         "mode": null,
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null
+      }
+    },
+    {
+      "request": 7,
+      "render": 11,
+      "loopNumber": null,
+      "values": {
+        "$matchedExample": {
+          "example": 4,
+          "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+        }
+      },
+      "state": {
+        "render": 12,
+        "verbatimUserPrompt": "Analyze my Google activity archive from the relevant files in Google Drive, using the connected app if available. Remove Gaia ID from the working output, normalize timestamps to Houston time, identify the earliest defensible timestamp and any caveat on that minimum, and summarize the requested activity chronologically by month. If Google Drive is not connected, offer the connection for approval before continuing; do not modify the source files.",
+        "userIntent": "Analyze Google activity archive files using connected Google Drive; create a Gaia-ID-free working chronology in Houston time, identify the earliest supportable timestamp and its caveats, summarize by month, and leave source files unchanged. Apply the existing procedure in BestNameYet/StateMachines main.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "output/google_activity_report.md",
+            "newFile": true
+          },
+          {
+            "filename": "output/activity_houston.csv",
+            "newFile": true
+          },
+          {
+            "filename": "output/access_log_houston.csv",
+            "newFile": true
+          },
+          {
+            "filename": "output/devices_houston.csv",
+            "newFile": true
+          },
+          {
+            "filename": "output/analysis.json",
+            "newFile": true
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "output/google_activity_report.md",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create derived google_activity_report.md from read-only archive sources, omit Gaia identifier values and use Houston-normalized times where applicable.",
+            "intent": "Provide source-grounded monthly activity chronology and earliest timestamp with limitations, without source modifications.",
+            "operator": "local analysis and file generation"
+          },
+          {
+            "filename": "output/activity_houston.csv",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create derived activity_houston.csv from read-only archive sources, omit Gaia identifier values and use Houston-normalized times where applicable.",
+            "intent": "Provide source-grounded monthly activity chronology and earliest timestamp with limitations, without source modifications.",
+            "operator": "local analysis and file generation"
+          },
+          {
+            "filename": "output/access_log_houston.csv",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create derived access_log_houston.csv from read-only archive sources, omit Gaia identifier values and use Houston-normalized times where applicable.",
+            "intent": "Provide source-grounded monthly activity chronology and earliest timestamp with limitations, without source modifications.",
+            "operator": "local analysis and file generation"
+          },
+          {
+            "filename": "output/devices_houston.csv",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create derived devices_houston.csv from read-only archive sources, omit Gaia identifier values and use Houston-normalized times where applicable.",
+            "intent": "Provide source-grounded monthly activity chronology and earliest timestamp with limitations, without source modifications.",
+            "operator": "local analysis and file generation"
+          },
+          {
+            "filename": "output/analysis.json",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create derived analysis.json from read-only archive sources, omit Gaia identifier values and use Houston-normalized times where applicable.",
+            "intent": "Provide source-grounded monthly activity chronology and earliest timestamp with limitations, without source modifications.",
+            "operator": "local analysis and file generation"
+          }
+        ],
+        "matchedExample": {
+          "example": 4,
+          "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+        },
+        "mode": "fidelity",
         "changeList": null,
         "requirementsCompleted": null,
         "changeAssessment": null,
