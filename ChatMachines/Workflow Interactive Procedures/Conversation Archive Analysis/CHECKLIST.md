@@ -21,16 +21,17 @@ The parallelizer is already built. Do not include rebuilding it as an outstandin
 - [x] Retrieve the linked Library archive and record its current identity, version, filename, size, and hash.
 - [x] Inspect its actual format, contents, date coverage, branches, attachments, and any parsing problems.
 - [x] Preserve an unchanged source and document where source and derived data will be held.
-- [ ] Determine how the workers will access the material. The current substrate accepts repository paths; Library access/import is not built into it. Resolve this before launching archive jobs, without automatically committing private conversations.
+- [x] Decide worker-data handling from the historical dialogues: keep the original archive and extracted records in Library; stage only each worker's assigned material into a temporary worker workspace; keep code and assignment manifests in GitHub. This records the data-handling policy, not a working access path.
+- [ ] Implement and verify a private Library-to-worker staging route (or equivalent). The current substrate accepts repository paths; Library access/import is not built into it. Complete and test the handoff before launching archive-analysis jobs, without automatically committing private conversations.
 - [x] Establish whether 2024–2025 and present-day material are both available; identify missing comparison sources.
 
-Output: source manifest, format/coverage report, and an explicit worker-access arrangement.
+Output: source manifest, format/coverage report, documented private-data handling policy, and a tested worker-access route.
 
 Do not subdivide based only on the file's apparent size or assume the archive contains the complete account.
 
 ### Stage 1 inspection result — October 15, 2026
 
-Source inspection is complete except worker access. All 14 conversation shards parsed: 1,334 conversations, 36,200 messages. Observed message dates span August 25, 2024 through August 5, 2026; current October usage needs additional material. Attachment bytes are absent. Preserve six repeated message-ID occurrences, including one ID with differing payloads, during extraction.
+Source inspection and the worker-data handling decision are complete; the technical handoff remains open. Historical Build Dialogues record the policy: retain the archive and extracted records in Library, stage only assigned material into a temporary worker workspace, and keep code/manifests in GitHub. This appears in shared_chat_conversations.json, chat 6ad20a38-4b64-83e8-af9a-1810aa4b6515 (message 1d07c5e2-c1ee-5b31-951a-97797ed3bb86, 2026-10-16 02:51:11 UTC); its branched copy is chat 6ad20a64-aa6c-83e8-b41c-edfb92cfe8df. The same message says the arrangement was not yet implemented, and the current parallelizer still accepts repository paths only. All 14 conversation shards parsed: 1,334 conversations, 36,200 messages. Observed message dates span August 25, 2024 through August 5, 2026; current October usage needs additional material. Attachment bytes are absent. Preserve six repeated message-ID occurrences, including one ID with differing payloads, during extraction.
 
 Recoverable reports:
 
@@ -85,6 +86,8 @@ Output: analysis matrix, chunking decision, chunk manifest, and shared analytica
 Parallel opportunity: candidate approaches and independent question/perspective designs can be proposed concurrently from the same source inventory. Consolidate them before launching the full analytical pass. The final subdivision depends on those decisions.
 
 ## 4. Prepare parallel assignments — before model calls
+
+Historical worker-sizing direction (shared_chat_conversations.json, chat 6ad20a38-4b64-83e8-af9a-1810aa4b6515, messages 837925ba-1c87-5f3c-b986-0df9cb13e144 and e60a07ca-58f2-5aff-a843-54ec6c28e7ca): begin with one worker and a representative assignment; measure token load, elapsed time, cost, and analysis completeness; plan assignments at 80% of tested comfortable capacity; then estimate assignment count and concurrent workers against the user's target completion time. The earlier 80,000-token figure was only a tentative test starting point, not a validated effective-capacity limit. Recheck current model/account limits and judge the pilot's quality before scaling.
 
 - [ ] For each assignment, name its source path, question, perspective, relevant period, expected output, and dependencies.
 - [ ] Include the original message references and sufficient contextual material in every assignment.
