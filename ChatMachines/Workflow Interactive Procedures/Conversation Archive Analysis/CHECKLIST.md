@@ -42,19 +42,25 @@ Worker-access integration remains unchecked: the parallelizer has no Library-to-
 
 ## 2. Extract each conversation and verify completeness — first preparation step
 
-- [ ] Extract each conversation into its own structured record, preserving its ID, title, dates, original messages, message IDs, speakers, timestamps, branch relationships, and attachment references.
-- [ ] Preserve original wording. Normalize export formatting only; do not summarize, rewrite, or assign topic labels during extraction.
-- [ ] Reconstruct ordered user/assistant exchanges within each conversation branch without joining alternative replies into a fictitious linear conversation.
-- [ ] Mark unavailable attachments and missing content explicitly rather than treating the remaining text as complete.
-- [ ] Give every conversation and message a stable reference back to the original.
-- [ ] Build the inventory: dates, titles, message counts, lengths, and metadata availability.
-- [ ] Verify extraction counts and account for omitted, duplicate, empty, malformed, or unsupported records.
-- [ ] Create the coverage ledger, distinguishing inventoried, searched, read, analyzed for a named question, synthesized, and verified.
-- [ ] Establish attribution conventions for user statements, quoted third-party messages, assistant output, reports, and interpretations.
+- [x] Extract each conversation into its own structured record, preserving its ID, title, dates, original messages, message IDs, speakers, timestamps, branch relationships, and attachment references.
+- [x] Preserve original wording. Normalize export formatting only; do not summarize, rewrite, or assign topic labels during extraction.
+- [x] Reconstruct ordered user/assistant exchanges within each conversation branch without joining alternative replies into a fictitious linear conversation.
+- [x] Mark unavailable attachments and missing content explicitly rather than treating the remaining text as complete.
+- [x] Give every conversation and message a stable reference back to the original.
+- [x] Build the inventory: dates, titles, message counts, lengths, and metadata availability.
+- [x] Verify extraction counts and account for omitted, duplicate, empty, malformed, or unsupported records.
+- [x] Create the coverage ledger, distinguishing inventoried, searched, read, analyzed for a named question, synthesized, and verified.
+- [x] Establish attribution conventions for user statements, quoted third-party messages, assistant output, reports, and interpretations.
 
 Output: indexed source records, inventory, reference scheme, parsing exceptions, and initial coverage ledger.
 
 Parallel opportunity: after the format and reference scheme are fixed, independent conversations can be extracted in separate jobs. Combine and validate counts centrally before interpretation.
+
+### Stage 2 extraction result — October 16, 2026
+
+Extraction is complete. The private Library package `chatgpt_conversations_stage2.zip` contains one source-faithful JSON record per conversation, plus an index, coverage and integrity report, and the source asset-name map. It records 1,334 conversations and 36,200 messages; each generated record was reopened and checked against its source object. Branch alternatives and repeated message IDs are retained. The archive's omitted attachment payloads remain unavailable and are identified in the package. The package includes attribution conventions that preserve the export's speaker role and do not infer a new speaker for quoted or discussed people.
+
+The package remains in Library. No conversation text was added to this repository. Semantic reading, topic search, analysis, and synthesis remain for later stages.
 
 ## 3. Prepare classification passages and design the analysis
 
