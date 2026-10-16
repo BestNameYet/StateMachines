@@ -2,13 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/BestNameYet/StateMachines/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/issue-run-triggers/trigger.template.schema.json",
   "title": "AGENTS Procedure issue-run trigger",
-  "description": "Agent-submitted trigger files contain only startProcedure and nonce. After issue creation, the workflow marks the trigger consumed and writes issue and receipt metadata.",
+  "description": "Agent-submitted trigger files contain only startProcedure and nonce. After initialization, the workflow marks the trigger consumed and writes issue metadata and an initial JSON receipt snapshot.",
   "type": "object",
   "required": ["startProcedure", "nonce"],
   "properties": {
     "startProcedure": {
       "type": "boolean",
-      "description": "Set true in a new trigger file. The workflow changes it to false after binding the issue."
+      "description": "Set true in a new trigger file. The workflow changes it to false after binding and initializing the issue."
     },
     "nonce": {
       "type": "integer",
@@ -37,11 +37,32 @@
     },
     "procedureTitle": {
       "type": "string",
-      "description": "Issue title supplied at creation; the issue runner then applies its canonical UTC timestamp title."
+      "description": "Canonical title applied by the issue runner after issue creation."
     },
     "procedureReceiptPath": {
       "type": "string",
       "description": "Path to the canonical mutable JSON run receipt under issue-runs/."
+    },
+    "procedureSavedHere": {
+      "$ref": "#/$defs/procedureReceipt",
+      "description": "Snapshot of the initialized receipt when the trigger is consumed. The issue-runs file remains live."
+    }
+  },
+  "$defs": {
+    "procedureReceipt": {
+      "type": "object",
+      "required": ["state", "done", "request", "lastCommentId", "newFiles", "history", "toolInvocations"],
+      "properties": {
+        "state": { "type": "object" },
+        "done": { "type": "boolean" },
+        "request": { "type": "integer", "minimum": 1 },
+        "lastCommentId": { "type": "integer", "minimum": 0 },
+        "newFiles": { "type": "array", "items": { "type": "string" } },
+        "history": { "type": "array", "items": { "type": "object" } },
+        "toolInvocations": { "type": "array", "items": { "type": "object" } },
+        "triggerIdentifier": { "type": "string" }
+      },
+      "additionalProperties": false
     }
   },
   "allOf": [
@@ -52,7 +73,7 @@
     {
       "if": { "properties": { "startProcedure": { "const": false } }, "required": ["startProcedure"] },
       "then": {
-        "required": ["procedureName", "procedureIdentifier", "procedureIssueNumber", "procedureIssueUrl", "procedureTitle", "procedureReceiptPath"]
+        "required": ["procedureName", "procedureIdentifier", "procedureIssueNumber", "procedureIssueUrl", "procedureTitle", "procedureReceiptPath", "procedureSavedHere"]
       }
     }
   ],
