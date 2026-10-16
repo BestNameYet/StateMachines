@@ -1,0 +1,109 @@
+[
+  {
+    "profile": "fidelity"
+  },
+  {
+    "user_prompt_verbatim": "Create a new json document, a json array, for each key at root, copy it recursively to the next empty index of that array"
+  },
+  {
+    "agents_md_provenance": {
+      "file_id": "file_000000005104820c8cb3f5fc0731d877",
+      "library_file_id": "libfile_b6b39702befc8191a23fdb2b219b132e"
+    }
+  },
+  {
+    "objective": "Convert this JWRS object's root key/value pairs into an ordered JSON array of single-key objects."
+  },
+  {
+    "operations": [
+      "Copy each root key with its complete recursive value into the next array index.",
+      "Verify that reconstructing the object from the array reproduces the source.",
+      "Save the new JSON document."
+    ]
+  },
+  {
+    "constraints": [
+      "Preserve root-key order and all nested keys, arrays, values, and types.",
+      "Use the JWRS object as the source, not the AGENTS.md instruction object."
+    ]
+  },
+  {
+    "return_schema": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "object",
+          "required": [
+            "result"
+          ],
+          "properties": {
+            "result": {}
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "verbatim_tool_invocations"
+          ],
+          "properties": {
+            "verbatim_tool_invocations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "sequence",
+                  "tool",
+                  "invocation_verbatim",
+                  "outcome"
+                ],
+                "properties": {
+                  "sequence": {
+                    "type": "integer"
+                  },
+                  "tool": {
+                    "type": "string"
+                  },
+                  "invocation_verbatim": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "outcome": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "profile",
+            "status"
+          ],
+          "properties": {
+            "profile": {
+              "enum": [
+                "minimal",
+                "fidelity",
+                "accountability"
+              ]
+            },
+            "status": {
+              "enum": [
+                "COMPLETE",
+                "INCOMPLETE",
+                "BLOCKED",
+                "FAILED"
+              ]
+            }
+          }
+        }
+      ],
+      "minItems": 3,
+      "maxItems": 3
+    }
+  }
+]

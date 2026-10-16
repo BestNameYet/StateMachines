@@ -1,0 +1,1685 @@
+{
+  "instruction_id": "jwrs_file_change_first_report",
+  "version": "0.3",
+  "scope": "Draft; preplan design deferred",
+  "description": "Within the substantive result, place the file-change array first, existing selected-mode result requirements second, and derived task-summary array third. Preserve the tool audit and universal suffix outside this substantive result.",
+  "definitions": {
+    "file_change": "One observed changed file, with metadata and all recorded edit locations.",
+    "subtask": "A named task association stored in the file-change record; not a retrospective authorization.",
+    "edit_ids": "Exact edit references associated with that subtask in this file.",
+    "task_summary": "A derived grouping of file edits by recorded subtask ID; its task text is copied from the source record.",
+    "source_ref": "Actual source-record or invocation reference; null when not available. EXAMPLE references are never runtime evidence."
+  },
+  "instructions": [
+    "Build file_changes from observed file differences in the declared comparison scope.",
+    "For each changed file, report both metadata snapshots and every edit's before and after location and value.",
+    "Use subtasks:[] when no task association is recorded; do not invent a task association to justify an extra edit.",
+    "Subtask associations name edit_ids within the same file-change record; references must resolve.",
+    "Build task_summary only after file_changes. Group by subtask_id and copy the subtask text.",
+    "For each summary entry, list all associated file edits with file-change ID, edit ID, old/new paths, kind, and old/new locations.",
+    "An edit associated with multiple subtasks appears once under each relevant subtask.",
+    "Keep file_changes as the authoritative evidence; task_summary is a derived index.",
+    "Null denotes unavailable metadata or source reference; an observed absence must be preserved in the actual lookup record, not inferred from null.",
+    "A file-change report cannot establish completion of non-file tasks or tasks that yielded no change.",
+    "Do not alter current preplan requirements or activate this draft in the governing AGENTS.md.",
+    "File changes without subtask association remain in the first array with subtasks:[]; no association is invented for the task summary.",
+    "The substantive result has three ordered items: file-change array, the selected mode's existing result object, and task-summary array.",
+    "Keep every existing required result field in the middle object; retain optional fields when applicable.",
+    "Keep the verbatim-tool-invocation audit and universal profile/status suffix in their existing second and third outer-report positions.",
+    "Do not put the entire original report inside the middle object."
+  ],
+  "cross_record_rules": [
+    "file_change_id values are unique within the report.",
+    "edit_id values are unique within their file-change record.",
+    "Every subtask edit_id resolves to an edit in that record.",
+    "The same subtask_id has the same subtask text wherever it appears.",
+    "The summary is the exact grouping of associated edits, with no invented or omitted entries."
+  ],
+  "few_shot_examples": [
+    {
+      "scenario": "Requested manifest edit plus an unassigned notes edit",
+      "illustrative_only": true,
+      "report": [
+        [
+          [
+            {
+              "file_change_id": "EXAMPLE-c1",
+              "subtasks": [
+                {
+                  "subtask_id": "EXAMPLE-s1",
+                  "subtask": "Change the manifest Python version to 3.12",
+                  "edit_ids": [
+                    "EXAMPLE-e1"
+                  ]
+                }
+              ],
+              "before": {
+                "file_id": null,
+                "library_file_id": null,
+                "path": "manifest.json",
+                "name": "manifest.json",
+                "size_bytes": 148,
+                "version_id": null,
+                "source_ref": "EXAMPLE-observation"
+              },
+              "after": {
+                "file_id": null,
+                "library_file_id": null,
+                "path": "manifest.json",
+                "name": "manifest.json",
+                "size_bytes": 148,
+                "version_id": null,
+                "source_ref": "EXAMPLE-observation"
+              },
+              "edits": [
+                {
+                  "edit_id": "EXAMPLE-e1",
+                  "kind": "replace",
+                  "before": {
+                    "locator_type": "json_pointer",
+                    "locator": "/python",
+                    "value": "3.11",
+                    "source_ref": "EXAMPLE-before-read"
+                  },
+                  "after": {
+                    "locator_type": "json_pointer",
+                    "locator": "/python",
+                    "value": "3.12",
+                    "source_ref": "EXAMPLE-after-read"
+                  }
+                }
+              ]
+            },
+            {
+              "file_change_id": "EXAMPLE-c2",
+              "subtasks": [],
+              "before": {
+                "file_id": null,
+                "library_file_id": null,
+                "path": "notes.txt",
+                "name": "notes.txt",
+                "size_bytes": 4,
+                "version_id": null,
+                "source_ref": "EXAMPLE-observation"
+              },
+              "after": {
+                "file_id": null,
+                "library_file_id": null,
+                "path": "notes.txt",
+                "name": "notes.txt",
+                "size_bytes": 5,
+                "version_id": null,
+                "source_ref": "EXAMPLE-observation"
+              },
+              "edits": [
+                {
+                  "edit_id": "EXAMPLE-e2",
+                  "kind": "replace",
+                  "before": {
+                    "locator_type": "line_range",
+                    "locator": [
+                      1,
+                      1
+                    ],
+                    "value": "old\n",
+                    "source_ref": "EXAMPLE-before-read-2"
+                  },
+                  "after": {
+                    "locator_type": "line_range",
+                    "locator": [
+                      1,
+                      1
+                    ],
+                    "value": "new!\n",
+                    "source_ref": "EXAMPLE-after-read-2"
+                  }
+                }
+              ]
+            }
+          ],
+          {
+            "result": "EXAMPLE: manifest Python version changed; notes edit also recorded."
+          },
+          [
+            {
+              "subtask_id": "EXAMPLE-s1",
+              "subtask": "Change the manifest Python version to 3.12",
+              "file_edits": [
+                {
+                  "file_change_id": "EXAMPLE-c1",
+                  "edit_id": "EXAMPLE-e1",
+                  "path_before": "manifest.json",
+                  "path_after": "manifest.json",
+                  "kind": "replace",
+                  "location_before": "/python",
+                  "location_after": "/python"
+                }
+              ]
+            }
+          ]
+        ],
+        {
+          "verbatim_tool_invocations": []
+        },
+        {
+          "profile": "fidelity",
+          "status": "COMPLETE"
+        }
+      ]
+    },
+    {
+      "scenario": "One subtask changes multiple files",
+      "illustrative_only": true,
+      "rule": "Use the same subtask_id in each changed file; the derived summary contains edits from every matching record."
+    },
+    {
+      "scenario": "File rename without content change",
+      "illustrative_only": true,
+      "rule": "Record old and new metadata paths and names, and a rename edit with path locators. The summary lists that rename under its recorded subtask."
+    }
+  ],
+  "validation": {
+    "example_schema_check": "Illustrative report checked for required keys, closed objects, value types, enumerations, and scalar bounds.",
+    "derivation_check": "Task-summary entries derive from the first substantive array. Existing mode result fields occupy only the middle substantive item; audit and suffix retain their original outer positions.",
+    "limits": "Cross-record invariants and live provenance require additional verification in actual use; no Chat-mode effectiveness test performed."
+  },
+  "report_schemas_by_profile": {
+    "fidelity": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "file_change_id",
+                  "subtasks",
+                  "before",
+                  "after",
+                  "edits"
+                ],
+                "properties": {
+                  "file_change_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "subtasks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "subtask_id",
+                        "subtask",
+                        "edit_ids"
+                      ],
+                      "properties": {
+                        "subtask_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "subtask": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "edit_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "before": {
+                    "type": "object",
+                    "required": [
+                      "file_id",
+                      "library_file_id",
+                      "path",
+                      "name",
+                      "size_bytes",
+                      "version_id",
+                      "source_ref"
+                    ],
+                    "properties": {
+                      "file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "library_file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "path": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "size_bytes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "version_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "source_ref": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "after": {
+                    "type": "object",
+                    "required": [
+                      "file_id",
+                      "library_file_id",
+                      "path",
+                      "name",
+                      "size_bytes",
+                      "version_id",
+                      "source_ref"
+                    ],
+                    "properties": {
+                      "file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "library_file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "path": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "size_bytes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "version_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "source_ref": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "edits": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "edit_id",
+                        "kind",
+                        "before",
+                        "after"
+                      ],
+                      "properties": {
+                        "edit_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "kind": {
+                          "enum": [
+                            "insert",
+                            "replace",
+                            "delete",
+                            "create",
+                            "rename",
+                            "move",
+                            "metadata"
+                          ]
+                        },
+                        "before": {
+                          "type": "object",
+                          "required": [
+                            "locator_type",
+                            "locator",
+                            "value",
+                            "source_ref"
+                          ],
+                          "properties": {
+                            "locator_type": {
+                              "enum": [
+                                "json_pointer",
+                                "line_range",
+                                "byte_range",
+                                "symbol",
+                                "section",
+                                "path",
+                                "metadata_field"
+                              ]
+                            },
+                            "locator": {},
+                            "value": {},
+                            "source_ref": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "after": {
+                          "type": "object",
+                          "required": [
+                            "locator_type",
+                            "locator",
+                            "value",
+                            "source_ref"
+                          ],
+                          "properties": {
+                            "locator_type": {
+                              "enum": [
+                                "json_pointer",
+                                "line_range",
+                                "byte_range",
+                                "symbol",
+                                "section",
+                                "path",
+                                "metadata_field"
+                              ]
+                            },
+                            "locator": {},
+                            "value": {},
+                            "source_ref": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "result"
+              ],
+              "properties": {
+                "result": {
+                  "description": "The actual requested substantive result or deliverable."
+                },
+                "remaining": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Material unfulfilled operations, when applicable."
+                }
+              }
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "subtask_id",
+                  "subtask",
+                  "file_edits"
+                ],
+                "properties": {
+                  "subtask_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "subtask": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "file_edits": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "file_change_id",
+                        "edit_id",
+                        "path_before",
+                        "path_after",
+                        "kind",
+                        "location_before",
+                        "location_after"
+                      ],
+                      "properties": {
+                        "file_change_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "edit_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "path_before": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "path_after": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "kind": {
+                          "enum": [
+                            "insert",
+                            "replace",
+                            "delete",
+                            "create",
+                            "rename",
+                            "move",
+                            "metadata"
+                          ]
+                        },
+                        "location_before": {},
+                        "location_after": {}
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          ],
+          "minItems": 3,
+          "maxItems": 3,
+          "items": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "verbatim_tool_invocations"
+          ],
+          "properties": {
+            "verbatim_tool_invocations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/invocation"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "profile",
+            "status"
+          ],
+          "properties": {
+            "profile": {
+              "type": "string",
+              "enum": [
+                "fidelity",
+                "accountability",
+                "minimal"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "COMPLETE",
+                "INCOMPLETE",
+                "BLOCKED",
+                "FAILED"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "minItems": 3,
+      "maxItems": 3,
+      "items": false,
+      "$defs": {
+        "invocation": {
+          "type": "object",
+          "required": [
+            "sequence",
+            "tool",
+            "invocation_verbatim",
+            "outcome"
+          ],
+          "properties": {
+            "sequence": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "tool": {
+              "type": "string",
+              "minLength": 1
+            },
+            "invocation_verbatim": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "command_line_verbatim": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "cwd": {
+              "type": "string"
+            },
+            "http_method": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "outcome": {
+              "type": "object",
+              "required": [
+                "status"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "succeeded",
+                    "failed",
+                    "blocked",
+                    "unfinished",
+                    "unknown"
+                  ]
+                },
+                "http_status": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "response_excerpt": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "unavailable_reason": {
+              "type": "string"
+            },
+            "evidence": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "accountability": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "file_change_id",
+                  "subtasks",
+                  "before",
+                  "after",
+                  "edits"
+                ],
+                "properties": {
+                  "file_change_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "subtasks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "subtask_id",
+                        "subtask",
+                        "edit_ids"
+                      ],
+                      "properties": {
+                        "subtask_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "subtask": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "edit_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "before": {
+                    "type": "object",
+                    "required": [
+                      "file_id",
+                      "library_file_id",
+                      "path",
+                      "name",
+                      "size_bytes",
+                      "version_id",
+                      "source_ref"
+                    ],
+                    "properties": {
+                      "file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "library_file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "path": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "size_bytes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "version_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "source_ref": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "after": {
+                    "type": "object",
+                    "required": [
+                      "file_id",
+                      "library_file_id",
+                      "path",
+                      "name",
+                      "size_bytes",
+                      "version_id",
+                      "source_ref"
+                    ],
+                    "properties": {
+                      "file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "library_file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "path": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "size_bytes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "version_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "source_ref": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "edits": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "edit_id",
+                        "kind",
+                        "before",
+                        "after"
+                      ],
+                      "properties": {
+                        "edit_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "kind": {
+                          "enum": [
+                            "insert",
+                            "replace",
+                            "delete",
+                            "create",
+                            "rename",
+                            "move",
+                            "metadata"
+                          ]
+                        },
+                        "before": {
+                          "type": "object",
+                          "required": [
+                            "locator_type",
+                            "locator",
+                            "value",
+                            "source_ref"
+                          ],
+                          "properties": {
+                            "locator_type": {
+                              "enum": [
+                                "json_pointer",
+                                "line_range",
+                                "byte_range",
+                                "symbol",
+                                "section",
+                                "path",
+                                "metadata_field"
+                              ]
+                            },
+                            "locator": {},
+                            "value": {},
+                            "source_ref": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "after": {
+                          "type": "object",
+                          "required": [
+                            "locator_type",
+                            "locator",
+                            "value",
+                            "source_ref"
+                          ],
+                          "properties": {
+                            "locator_type": {
+                              "enum": [
+                                "json_pointer",
+                                "line_range",
+                                "byte_range",
+                                "symbol",
+                                "section",
+                                "path",
+                                "metadata_field"
+                              ]
+                            },
+                            "locator": {},
+                            "value": {},
+                            "source_ref": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "result",
+                "execution_record"
+              ],
+              "properties": {
+                "result": {
+                  "description": "The actual requested substantive result."
+                },
+                "execution_record": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "commitment",
+                      "observed_outcome"
+                    ],
+                    "properties": {
+                      "commitment": {
+                        "type": "string"
+                      },
+                      "observed_outcome": {
+                        "type": "string"
+                      },
+                      "evidence": {
+                        "type": "string",
+                        "description": "Supporting execution evidence when available."
+                      }
+                    }
+                  }
+                },
+                "deviations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "remaining": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "subtask_id",
+                  "subtask",
+                  "file_edits"
+                ],
+                "properties": {
+                  "subtask_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "subtask": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "file_edits": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "file_change_id",
+                        "edit_id",
+                        "path_before",
+                        "path_after",
+                        "kind",
+                        "location_before",
+                        "location_after"
+                      ],
+                      "properties": {
+                        "file_change_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "edit_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "path_before": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "path_after": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "kind": {
+                          "enum": [
+                            "insert",
+                            "replace",
+                            "delete",
+                            "create",
+                            "rename",
+                            "move",
+                            "metadata"
+                          ]
+                        },
+                        "location_before": {},
+                        "location_after": {}
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          ],
+          "minItems": 3,
+          "maxItems": 3,
+          "items": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "verbatim_tool_invocations"
+          ],
+          "properties": {
+            "verbatim_tool_invocations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/invocation"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "profile",
+            "status"
+          ],
+          "properties": {
+            "profile": {
+              "type": "string",
+              "enum": [
+                "fidelity",
+                "accountability",
+                "minimal"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "COMPLETE",
+                "INCOMPLETE",
+                "BLOCKED",
+                "FAILED"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "minItems": 3,
+      "maxItems": 3,
+      "items": false,
+      "$defs": {
+        "invocation": {
+          "type": "object",
+          "required": [
+            "sequence",
+            "tool",
+            "invocation_verbatim",
+            "outcome"
+          ],
+          "properties": {
+            "sequence": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "tool": {
+              "type": "string",
+              "minLength": 1
+            },
+            "invocation_verbatim": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "command_line_verbatim": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "cwd": {
+              "type": "string"
+            },
+            "http_method": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "outcome": {
+              "type": "object",
+              "required": [
+                "status"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "succeeded",
+                    "failed",
+                    "blocked",
+                    "unfinished",
+                    "unknown"
+                  ]
+                },
+                "http_status": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "response_excerpt": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "unavailable_reason": {
+              "type": "string"
+            },
+            "evidence": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "minimal": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "file_change_id",
+                  "subtasks",
+                  "before",
+                  "after",
+                  "edits"
+                ],
+                "properties": {
+                  "file_change_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "subtasks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "subtask_id",
+                        "subtask",
+                        "edit_ids"
+                      ],
+                      "properties": {
+                        "subtask_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "subtask": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "edit_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "before": {
+                    "type": "object",
+                    "required": [
+                      "file_id",
+                      "library_file_id",
+                      "path",
+                      "name",
+                      "size_bytes",
+                      "version_id",
+                      "source_ref"
+                    ],
+                    "properties": {
+                      "file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "library_file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "path": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "size_bytes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "version_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "source_ref": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "after": {
+                    "type": "object",
+                    "required": [
+                      "file_id",
+                      "library_file_id",
+                      "path",
+                      "name",
+                      "size_bytes",
+                      "version_id",
+                      "source_ref"
+                    ],
+                    "properties": {
+                      "file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "library_file_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "path": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "name": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "size_bytes": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "minimum": 0
+                      },
+                      "version_id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "source_ref": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "edits": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "edit_id",
+                        "kind",
+                        "before",
+                        "after"
+                      ],
+                      "properties": {
+                        "edit_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "kind": {
+                          "enum": [
+                            "insert",
+                            "replace",
+                            "delete",
+                            "create",
+                            "rename",
+                            "move",
+                            "metadata"
+                          ]
+                        },
+                        "before": {
+                          "type": "object",
+                          "required": [
+                            "locator_type",
+                            "locator",
+                            "value",
+                            "source_ref"
+                          ],
+                          "properties": {
+                            "locator_type": {
+                              "enum": [
+                                "json_pointer",
+                                "line_range",
+                                "byte_range",
+                                "symbol",
+                                "section",
+                                "path",
+                                "metadata_field"
+                              ]
+                            },
+                            "locator": {},
+                            "value": {},
+                            "source_ref": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "after": {
+                          "type": "object",
+                          "required": [
+                            "locator_type",
+                            "locator",
+                            "value",
+                            "source_ref"
+                          ],
+                          "properties": {
+                            "locator_type": {
+                              "enum": [
+                                "json_pointer",
+                                "line_range",
+                                "byte_range",
+                                "symbol",
+                                "section",
+                                "path",
+                                "metadata_field"
+                              ]
+                            },
+                            "locator": {},
+                            "value": {},
+                            "source_ref": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "result"
+              ],
+              "properties": {
+                "result": {
+                  "description": "The requested answer, output, or deliverable."
+                }
+              }
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "subtask_id",
+                  "subtask",
+                  "file_edits"
+                ],
+                "properties": {
+                  "subtask_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "subtask": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "file_edits": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "file_change_id",
+                        "edit_id",
+                        "path_before",
+                        "path_after",
+                        "kind",
+                        "location_before",
+                        "location_after"
+                      ],
+                      "properties": {
+                        "file_change_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "edit_id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "path_before": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "path_after": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "kind": {
+                          "enum": [
+                            "insert",
+                            "replace",
+                            "delete",
+                            "create",
+                            "rename",
+                            "move",
+                            "metadata"
+                          ]
+                        },
+                        "location_before": {},
+                        "location_after": {}
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          ],
+          "minItems": 3,
+          "maxItems": 3,
+          "items": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "verbatim_tool_invocations"
+          ],
+          "properties": {
+            "verbatim_tool_invocations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/invocation"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "profile",
+            "status"
+          ],
+          "properties": {
+            "profile": {
+              "type": "string",
+              "enum": [
+                "fidelity",
+                "accountability",
+                "minimal"
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "COMPLETE",
+                "INCOMPLETE",
+                "BLOCKED",
+                "FAILED"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "minItems": 3,
+      "maxItems": 3,
+      "items": false,
+      "$defs": {
+        "invocation": {
+          "type": "object",
+          "required": [
+            "sequence",
+            "tool",
+            "invocation_verbatim",
+            "outcome"
+          ],
+          "properties": {
+            "sequence": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "tool": {
+              "type": "string",
+              "minLength": 1
+            },
+            "invocation_verbatim": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "command_line_verbatim": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "cwd": {
+              "type": "string"
+            },
+            "http_method": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "outcome": {
+              "type": "object",
+              "required": [
+                "status"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "succeeded",
+                    "failed",
+                    "blocked",
+                    "unfinished",
+                    "unknown"
+                  ]
+                },
+                "http_status": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "response_excerpt": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "unavailable_reason": {
+              "type": "string"
+            },
+            "evidence": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "report_order": {
+    "substantive_result": [
+      "file_change_array",
+      "existing_selected_mode_result_fields",
+      "task_summary_array"
+    ],
+    "outer_report": [
+      "substantive_result",
+      "existing_tool_audit",
+      "existing_universal_suffix"
+    ]
+  }
+}

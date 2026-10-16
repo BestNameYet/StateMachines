@@ -1,0 +1,2682 @@
+{
+  "AGENTS.md_additions": {
+    "response_type": "instruction_module_draft",
+    "instruction_id": "jwrs_fixed_effect_records",
+    "version": "0.1",
+    "scope": "Candidate extension; not activated",
+    "purpose": "Extend JWRS with a predefined catalog of structured effect records and operational bindings, matching AGENTS.md's definition-and-example organization.",
+    "source_provenance": {
+      "file_id": "file_000000005104820c8cb3f5fc0731d877",
+      "library_file_id": "libfile_b6b39702befc8191a23fdb2b219b132e"
+    },
+    "definitions": {
+      "effect_dimension": "An independently observable aspect of an operation; dimensions compose rather than replace one another.",
+      "instruction_description": "Authoring prose that defines a field or procedure; permitted in this governing module.",
+      "runtime_record": "Closed structured data without explanatory prose or evaluatory compliance keys.",
+      "evidence_ref": "An actual invocation or returned record reference; if unavailable, null. It is not a invented ID with an official-looking prefix.",
+      "local_record_id": "A locally assigned reference for connecting records; it does not by itself establish external provenance.",
+      "unknown": "No obtainable observation supports a field value; represented by null where the schema permits.",
+      "illustrative_record": "Example data prefixed EXAMPLE or explicitly described as a placeholder; never actual execution evidence.",
+      "source_literal": "Verbatim source data. Natural-language source quotes are allowed because they are evidence operands rather than explanatory responses."
+    },
+    "governing_rule": "Use this fixed catalog. Populate factual fields from source records. The executor may bind operands but must not invent or relax record schemas, convert missing evidence into assurance, or replace a required mechanism with equivalent-looking state.",
+    "phase_contract": {
+      "pre_execution": [
+        "source_reads",
+        "requirements",
+        "operations",
+        "expected_state",
+        "active_constraints",
+        "requirement_updates"
+      ],
+      "post_execution": [
+        "execution_records",
+        "state_observations",
+        "effect_records",
+        "remaining_operation_ids"
+      ],
+      "rule": "Observed records are populated only after actual observation. Earlier phase records are not evidence that later execution occurred. Use empty arrays for no records and null only for unavailable scalar fields; known JSON null may also be an observed value, distinguished by its evidence envelope."
+    },
+    "effect_catalog": {
+      "identity_location": {
+        "name": "Identity and location",
+        "description": "Identifies the exact object and version to which an observation applies.",
+        "definitions": {
+          "provider": "Provider returned or explicitly identified by the invoked interface.",
+          "resource_id": "Provider-issued object identifier. A local record ID cannot substitute for it.",
+          "parent_id": "Provider-issued containing directory or parent identifier.",
+          "path": "Exact provider or filesystem path; preserve spelling and case.",
+          "version_id": "Version returned for this observation, not a remembered version."
+        },
+        "instruction": "Populate only from actual source records. Use the fixed keys and types. Keep illustrative placeholders out of runtime evidence. Attach the observation through the shared evidence envelope.",
+        "evidence_boundary": "A filename alone does not identify a unique object; a historical version does not establish the current version.",
+        "record_schema": {
+          "type": "object",
+          "required": [
+            "provider",
+            "resource_id",
+            "parent_id",
+            "path",
+            "version_id"
+          ],
+          "properties": {
+            "provider": {
+              "type": "string",
+              "minLength": 1
+            },
+            "resource_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "parent_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "version_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "few_shot_examples": [
+          {
+            "scenario": "Backing ID changes while persistent ID remains stable",
+            "record": {
+              "provider": "example-library",
+              "resource_id": "EXAMPLE-file-v8",
+              "parent_id": "EXAMPLE-root",
+              "path": "/AGENTS.md",
+              "version_id": "8"
+            },
+            "interpretation_limit": "A filename alone does not identify a unique object; a historical version does not establish the current version."
+          },
+          {
+            "scenario": "Path exists without a returned provider ID",
+            "record": {
+              "provider": "example-filesystem",
+              "resource_id": null,
+              "parent_id": null,
+              "path": "/project/README.md",
+              "version_id": null
+            },
+            "interpretation_limit": "A filename alone does not identify a unique object; a historical version does not establish the current version."
+          },
+          {
+            "scenario": "Same filename in another directory",
+            "record": {
+              "provider": "example-filesystem",
+              "resource_id": null,
+              "parent_id": null,
+              "path": "/other/README.md",
+              "version_id": null
+            },
+            "interpretation_limit": "A filename alone does not identify a unique object; a historical version does not establish the current version."
+          }
+        ],
+        "generalization_rule": "Examples illustrate this fixed dimension; they do not exhaust its applications or authorize inferred observations."
+      },
+      "presence_membership": {
+        "name": "Presence and membership",
+        "description": "Records lookup scope, returned members, pagination, and lookup errors without converting them into a universal absence verdict.",
+        "definitions": {
+          "lookup_call_id": "Reference to the actual lookup invocation.",
+          "lookup_scope": "Exact resource or query scope searched by that invocation.",
+          "returned_resource_ids": "Object identifiers actually included in the returned lookup page.",
+          "continuation_ref": "Pagination reference returned by the provider; null when none was returned.",
+          "returned_error_code": "Actual provider error code; null when no error code was returned."
+        },
+        "instruction": "Populate only from actual source records. Use the fixed keys and types. Keep illustrative placeholders out of runtime evidence. Attach the observation through the shared evidence envelope.",
+        "evidence_boundary": "An empty page, inaccessible lookup, and exhausted authorized listing are distinct records.",
+        "record_schema": {
+          "type": "object",
+          "required": [
+            "lookup_call_id",
+            "lookup_scope",
+            "returned_resource_ids",
+            "continuation_ref",
+            "returned_error_code"
+          ],
+          "properties": {
+            "lookup_call_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "lookup_scope": {
+              "type": "string",
+              "minLength": 1
+            },
+            "returned_resource_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "continuation_ref": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "returned_error_code": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "few_shot_examples": [
+          {
+            "scenario": "Member returned",
+            "record": {
+              "lookup_call_id": "EXAMPLE-call-1",
+              "lookup_scope": "EXAMPLE-folder-A",
+              "returned_resource_ids": [
+                "EXAMPLE-file-A"
+              ],
+              "continuation_ref": null,
+              "returned_error_code": null
+            },
+            "interpretation_limit": "An empty page, inaccessible lookup, and exhausted authorized listing are distinct records."
+          },
+          {
+            "scenario": "Empty first page with more results",
+            "record": {
+              "lookup_call_id": "EXAMPLE-call-2",
+              "lookup_scope": "EXAMPLE-folder-A",
+              "returned_resource_ids": [],
+              "continuation_ref": "EXAMPLE-page-2",
+              "returned_error_code": null
+            },
+            "interpretation_limit": "An empty page, inaccessible lookup, and exhausted authorized listing are distinct records."
+          },
+          {
+            "scenario": "Access denied",
+            "record": {
+              "lookup_call_id": "EXAMPLE-call-3",
+              "lookup_scope": "EXAMPLE-folder-A",
+              "returned_resource_ids": [],
+              "continuation_ref": null,
+              "returned_error_code": "403"
+            },
+            "interpretation_limit": "An empty page, inaccessible lookup, and exhausted authorized listing are distinct records."
+          }
+        ],
+        "generalization_rule": "Examples illustrate this fixed dimension; they do not exhaust its applications or authorize inferred observations."
+      },
+      "content_value": {
+        "name": "Content and value",
+        "description": "Records the exact value or byte-derived attributes returned for a selector and version.",
+        "definitions": {
+          "read_call_id": "Reference to the actual read or inspection invocation.",
+          "resource_id": "Provider-issued object identifier. A local record ID cannot substitute for it.",
+          "version_id": "Version returned for this observation, not a remembered version.",
+          "selector": "Exact JSON Pointer, field name, range, or byte selector used.",
+          "returned_value": "Unaltered source value, including a genuine JSON null when returned.",
+          "byte_count": "Measured count for the bytes inspected; metadata-declared length is not a measured count.",
+          "digest_algorithm": "Algorithm actually applied to the inspected bytes.",
+          "digest": "Digest actually computed or returned for those bytes."
+        },
+        "instruction": "Populate only from actual source records. Use the fixed keys and types. Keep illustrative placeholders out of runtime evidence. Attach the observation through the shared evidence envelope.",
+        "evidence_boundary": "A size printed from metadata is not a measured binary size; null digest is not an integrity check.",
+        "record_schema": {
+          "type": "object",
+          "required": [
+            "read_call_id",
+            "resource_id",
+            "version_id",
+            "selector",
+            "returned_value",
+            "byte_count",
+            "digest_algorithm",
+            "digest"
+          ],
+          "properties": {
+            "read_call_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "resource_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "selector": {
+              "type": "string",
+              "minLength": 1
+            },
+            "returned_value": {
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "object",
+                "array",
+                "null"
+              ]
+            },
+            "byte_count": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            },
+            "digest_algorithm": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "digest": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "few_shot_examples": [
+          {
+            "scenario": "JSON value read",
+            "record": {
+              "read_call_id": "EXAMPLE-call-4",
+              "resource_id": "EXAMPLE-manifest",
+              "version_id": "9",
+              "selector": "/python",
+              "returned_value": "3.12",
+              "byte_count": null,
+              "digest_algorithm": null,
+              "digest": null
+            },
+            "interpretation_limit": "A size printed from metadata is not a measured binary size; null digest is not an integrity check."
+          },
+          {
+            "scenario": "LFS pointer read",
+            "record": {
+              "read_call_id": "EXAMPLE-call-5",
+              "resource_id": "EXAMPLE-model-path",
+              "version_id": "commit-A",
+              "selector": "bytes",
+              "returned_value": "version https://git-lfs.github.com/spec/v1\noid sha256:EXAMPLE-DIGEST\nsize 136619444\n",
+              "byte_count": null,
+              "digest_algorithm": null,
+              "digest": null
+            },
+            "interpretation_limit": "A size printed from metadata is not a measured binary size; null digest is not an integrity check."
+          },
+          {
+            "scenario": "Binary bytes counted",
+            "record": {
+              "read_call_id": "EXAMPLE-call-6",
+              "resource_id": "EXAMPLE-binary",
+              "version_id": null,
+              "selector": "bytes",
+              "returned_value": null,
+              "byte_count": 136619444,
+              "digest_algorithm": null,
+              "digest": null
+            },
+            "interpretation_limit": "A size printed from metadata is not a measured binary size; null digest is not an integrity check."
+          }
+        ],
+        "generalization_rule": "Examples illustrate this fixed dimension; they do not exhaust its applications or authorize inferred observations."
+      },
+      "state_transition": {
+        "name": "State transition",
+        "description": "Links before and after observations to the intervening mutation invocation without asserting exclusive causation.",
+        "definitions": {
+          "before_observation_id": "Local reference to a source-backed observation preceding the attempted change.",
+          "mutation_call_id": "Actual mutation invocation reference; null when no mutation was invoked.",
+          "after_observation_id": "Local reference to a source-backed observation following the attempted change."
+        },
+        "instruction": "Populate only from actual source records. Use the fixed keys and types. Keep illustrative placeholders out of runtime evidence. Attach the observation through the shared evidence envelope.",
+        "evidence_boundary": "Invoking a mutation is not equivalent to observing its effect; preexisting satisfaction is not a performed change.",
+        "record_schema": {
+          "type": "object",
+          "required": [
+            "before_observation_id",
+            "mutation_call_id",
+            "after_observation_id"
+          ],
+          "properties": {
+            "before_observation_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "mutation_call_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "after_observation_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "few_shot_examples": [
+          {
+            "scenario": "Observed deletion",
+            "record": {
+              "before_observation_id": "EXAMPLE-present",
+              "mutation_call_id": "EXAMPLE-delete-call",
+              "after_observation_id": "EXAMPLE-absent"
+            },
+            "interpretation_limit": "Invoking a mutation is not equivalent to observing its effect; preexisting satisfaction is not a performed change."
+          },
+          {
+            "scenario": "Already absent; no mutation",
+            "record": {
+              "before_observation_id": "EXAMPLE-absent-before",
+              "mutation_call_id": null,
+              "after_observation_id": "EXAMPLE-absent-after"
+            },
+            "interpretation_limit": "Invoking a mutation is not equivalent to observing its effect; preexisting satisfaction is not a performed change."
+          },
+          {
+            "scenario": "Mutation attempted; after-state unavailable",
+            "record": {
+              "before_observation_id": "EXAMPLE-before",
+              "mutation_call_id": "EXAMPLE-edit-call",
+              "after_observation_id": null
+            },
+            "interpretation_limit": "Invoking a mutation is not equivalent to observing its effect; preexisting satisfaction is not a performed change."
+          }
+        ],
+        "generalization_rule": "Examples illustrate this fixed dimension; they do not exhaust its applications or authorize inferred observations."
+      },
+      "execution": {
+        "name": "Execution",
+        "description": "Identifies the invoked actor, program, inputs, run, timestamps, exit code, and returned outputs.",
+        "definitions": {
+          "invocation_id": "Reference to the actual invocation.",
+          "actor_id": "Exact executor or runtime identifier available from the environment or returned record.",
+          "program_ref": "Exact workflow, executable, script, or function invoked.",
+          "input_refs": "References to actual inputs and versions provided to the invocation.",
+          "run_id": "Provider-issued run identifier; null when the interface supplies none.",
+          "started_at": "Actual source-reported start timestamp, not a generated estimate.",
+          "ended_at": "Actual source-reported terminal timestamp; null while unavailable.",
+          "exit_code": "Actual process exit code; do not invent a numeric mapping for provider statuses.",
+          "output_refs": "References to the actual returned output records."
+        },
+        "instruction": "Populate only from actual source records. Use the fixed keys and types. Keep illustrative placeholders out of runtime evidence. Attach the observation through the shared evidence envelope.",
+        "evidence_boundary": "Dispatch acknowledgment does not establish completion; exit code zero does not prove an external state change.",
+        "record_schema": {
+          "type": "object",
+          "required": [
+            "invocation_id",
+            "actor_id",
+            "program_ref",
+            "input_refs",
+            "run_id",
+            "started_at",
+            "ended_at",
+            "exit_code",
+            "output_refs"
+          ],
+          "properties": {
+            "invocation_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "actor_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "program_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "input_refs": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "run_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "started_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "ended_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "exit_code": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "output_refs": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "few_shot_examples": [
+          {
+            "scenario": "Completed run",
+            "record": {
+              "invocation_id": "EXAMPLE-dispatch-1",
+              "actor_id": "EXAMPLE-actions",
+              "program_ref": "test.yml",
+              "input_refs": [
+                "EXAMPLE-config-v1"
+              ],
+              "run_id": "EXAMPLE-run-1",
+              "started_at": "2026-01-01T00:00:00Z",
+              "ended_at": "2026-01-01T00:01:00Z",
+              "exit_code": 0,
+              "output_refs": [
+                "EXAMPLE-log-1"
+              ]
+            },
+            "interpretation_limit": "Dispatch acknowledgment does not establish completion; exit code zero does not prove an external state change."
+          },
+          {
+            "scenario": "Dispatched run without terminal observation",
+            "record": {
+              "invocation_id": "EXAMPLE-dispatch-2",
+              "actor_id": "EXAMPLE-actions",
+              "program_ref": "test.yml",
+              "input_refs": [
+                "EXAMPLE-config-v1"
+              ],
+              "run_id": "EXAMPLE-run-2",
+              "started_at": null,
+              "ended_at": null,
+              "exit_code": null,
+              "output_refs": []
+            },
+            "interpretation_limit": "Dispatch acknowledgment does not establish completion; exit code zero does not prove an external state change."
+          },
+          {
+            "scenario": "Terminal process error",
+            "record": {
+              "invocation_id": "EXAMPLE-call-7",
+              "actor_id": "EXAMPLE-python",
+              "program_ref": "cleanup.py",
+              "input_refs": [
+                "EXAMPLE-config-v1"
+              ],
+              "run_id": null,
+              "started_at": null,
+              "ended_at": null,
+              "exit_code": 1,
+              "output_refs": [
+                "EXAMPLE-error-log"
+              ]
+            },
+            "interpretation_limit": "Dispatch acknowledgment does not establish completion; exit code zero does not prove an external state change."
+          }
+        ],
+        "generalization_rule": "Examples illustrate this fixed dimension; they do not exhaust its applications or authorize inferred observations."
+      },
+      "production_linkage": {
+        "name": "Production linkage",
+        "description": "Records source-reported linkage between a producing run and an output version.",
+        "definitions": {
+          "producer_run_id": "Run identifier named by a source record as producing the output.",
+          "output_resource_id": "Provider identifier of the produced or inspected output object.",
+          "output_version_id": "Version of that output identified in the producer record.",
+          "producer_record_ref": "Reference to the actual log, response, or provenance record linking run and output."
+        },
+        "instruction": "Populate only from actual source records. Use the fixed keys and types. Keep illustrative placeholders out of runtime evidence. Attach the observation through the shared evidence envelope.",
+        "evidence_boundary": "Output existence cannot establish production by the required test; timestamp proximity alone is not a producer record.",
+        "record_schema": {
+          "type": "object",
+          "required": [
+            "producer_run_id",
+            "output_resource_id",
+            "output_version_id",
+            "producer_record_ref"
+          ],
+          "properties": {
+            "producer_run_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "output_resource_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "output_version_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "producer_record_ref": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "few_shot_examples": [
+          {
+            "scenario": "Output linked by producing-run record",
+            "record": {
+              "producer_run_id": "EXAMPLE-test-run",
+              "output_resource_id": "EXAMPLE-test-branch",
+              "output_version_id": "EXAMPLE-commit",
+              "producer_record_ref": "EXAMPLE-run-log-entry"
+            },
+            "interpretation_limit": "Output existence cannot establish production by the required test; timestamp proximity alone is not a producer record."
+          },
+          {
+            "scenario": "Existing output; producer unknown",
+            "record": {
+              "producer_run_id": null,
+              "output_resource_id": "EXAMPLE-test-branch",
+              "output_version_id": "EXAMPLE-commit",
+              "producer_record_ref": null
+            },
+            "interpretation_limit": "Output existence cannot establish production by the required test; timestamp proximity alone is not a producer record."
+          },
+          {
+            "scenario": "Output linked to manual operation",
+            "record": {
+              "producer_run_id": "EXAMPLE-manual-run",
+              "output_resource_id": "EXAMPLE-test-branch",
+              "output_version_id": "EXAMPLE-commit",
+              "producer_record_ref": "EXAMPLE-manual-response"
+            },
+            "interpretation_limit": "Output existence cannot establish production by the required test; timestamp proximity alone is not a producer record."
+          }
+        ],
+        "generalization_rule": "Examples illustrate this fixed dimension; they do not exhaust its applications or authorize inferred observations."
+      },
+      "delivery_persistence": {
+        "name": "Delivery and persistence",
+        "description": "Separates transfer invocation, destination acknowledgment, destination version, and subsequent retrieval.",
+        "definitions": {
+          "source_ref": "Exact source object or local artifact reference.",
+          "destination_ref": "Exact requested destination reference.",
+          "transfer_call_id": "Actual transfer or persistence invocation reference.",
+          "destination_receipt_id": "Receipt or acknowledgment identifier returned by the destination.",
+          "destination_version_id": "Version returned by the destination write or read.",
+          "destination_read_call_id": "Actual subsequent destination read invocation, if performed.",
+          "destination_digest": "Digest obtained for destination bytes, if measured."
+        },
+        "instruction": "Populate only from actual source records. Use the fixed keys and types. Keep illustrative placeholders out of runtime evidence. Attach the observation through the shared evidence envelope.",
+        "evidence_boundary": "Local creation does not establish remote persistence. A receipt proves only what the destination's receipt contract specifies; readback need not be added to tasks that do not require it.",
+        "record_schema": {
+          "type": "object",
+          "required": [
+            "source_ref",
+            "destination_ref",
+            "transfer_call_id",
+            "destination_receipt_id",
+            "destination_version_id",
+            "destination_read_call_id",
+            "destination_digest"
+          ],
+          "properties": {
+            "source_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "destination_ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "transfer_call_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "destination_receipt_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "destination_version_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "destination_read_call_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "destination_digest": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "few_shot_examples": [
+          {
+            "scenario": "Destination acknowledged and read",
+            "record": {
+              "source_ref": "EXAMPLE-local-file",
+              "destination_ref": "EXAMPLE-library-file",
+              "transfer_call_id": "EXAMPLE-upload",
+              "destination_receipt_id": "EXAMPLE-receipt",
+              "destination_version_id": "1",
+              "destination_read_call_id": "EXAMPLE-readback",
+              "destination_digest": null
+            },
+            "interpretation_limit": "Local creation does not establish remote persistence. A receipt proves only what the destination's receipt contract specifies; readback need not be added to tasks that do not require it."
+          },
+          {
+            "scenario": "Local file only",
+            "record": {
+              "source_ref": "EXAMPLE-local-file",
+              "destination_ref": "EXAMPLE-library-file",
+              "transfer_call_id": null,
+              "destination_receipt_id": null,
+              "destination_version_id": null,
+              "destination_read_call_id": null,
+              "destination_digest": null
+            },
+            "interpretation_limit": "Local creation does not establish remote persistence. A receipt proves only what the destination's receipt contract specifies; readback need not be added to tasks that do not require it."
+          },
+          {
+            "scenario": "Acknowledged write without readback",
+            "record": {
+              "source_ref": "EXAMPLE-local-file",
+              "destination_ref": "EXAMPLE-library-file",
+              "transfer_call_id": "EXAMPLE-upload",
+              "destination_receipt_id": "EXAMPLE-receipt",
+              "destination_version_id": "1",
+              "destination_read_call_id": null,
+              "destination_digest": null
+            },
+            "interpretation_limit": "Local creation does not establish remote persistence. A receipt proves only what the destination's receipt contract specifies; readback need not be added to tasks that do not require it."
+          }
+        ],
+        "generalization_rule": "Examples illustrate this fixed dimension; they do not exhaust its applications or authorize inferred observations."
+      }
+    },
+    "operational_additions": {
+      "resolve_operative_target": {
+        "name": "Resolve the operative target",
+        "description": "Bind references to exact source text and resource identities before choosing an operation.",
+        "definitions": {
+          "requirement_binding": "A reference to source-quoted requirement data, not a model-authored description of compliance.",
+          "record_binding": "A reference to a fixed-schema data record; evidence references must resolve to actual accessible source records."
+        },
+        "required_jwrs_keys": [
+          "source_reads",
+          "requirements",
+          "operations"
+        ],
+        "instruction": "Supply the required records using the fixed schemas. Preserve source literals and references. Do not add narrative correctness, confidence, justification, or compliance-verdict fields.",
+        "few_shot_examples": [
+          {
+            "scenario": "Original acquisition baseline",
+            "user_prompt": "Find the original model acquisition code.",
+            "non_substitutable_operand": "EXAMPLE-current-Dockerfile",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r1",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 41,
+                    "text": "Find the original model acquisition code."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o1",
+                  "requirement_ids": [
+                    "EXAMPLE-r1"
+                  ],
+                  "target_ref": "EXAMPLE-original-download.py",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Named directory",
+            "user_prompt": "Delete images in datasets/telemetry.",
+            "non_substitutable_operand": "datasets/anchor",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r2",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 36,
+                    "text": "Delete images in datasets/telemetry."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o2",
+                  "requirement_ids": [
+                    "EXAMPLE-r2"
+                  ],
+                  "target_ref": "datasets/telemetry",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "File versus manifest entry",
+            "user_prompt": "Delete requirements.txt.",
+            "non_substitutable_operand": "manifest:/files/requirements.txt",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r3",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 24,
+                    "text": "Delete requirements.txt."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o3",
+                  "requirement_ids": [
+                    "EXAMPLE-r3"
+                  ],
+                  "target_ref": "requirements.txt",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          }
+        ],
+        "generalization_rule": "Apply the record bindings to analogous requests; do not require a matching example or invent additional task obligations."
+      },
+      "projection_prompt_binding": {
+        "name": "Bind projection to the prompt",
+        "description": "Every operation and constraint references an immutable source requirement; projection text cannot expand authorization.",
+        "definitions": {
+          "requirement_binding": "A reference to source-quoted requirement data, not a model-authored description of compliance.",
+          "record_binding": "A reference to a fixed-schema data record; evidence references must resolve to actual accessible source records."
+        },
+        "required_jwrs_keys": [
+          "requirements",
+          "operations",
+          "active_constraints"
+        ],
+        "instruction": "Supply the required records using the fixed schemas. Preserve source literals and references. Do not add narrative correctness, confidence, justification, or compliance-verdict fields.",
+        "few_shot_examples": [
+          {
+            "scenario": "Subobject interface",
+            "user_prompt": "Pass the test object to the function.",
+            "non_substitutable_operand": "/",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r1",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 37,
+                    "text": "Pass the test object to the function."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o1",
+                  "requirement_ids": [
+                    "EXAMPLE-r1"
+                  ],
+                  "target_ref": "/test",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Acquisition stage",
+            "user_prompt": "Download and persist inputs; do not build.",
+            "non_substitutable_operand": "docker_build",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r2",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 42,
+                    "text": "Download and persist inputs; do not build."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o2",
+                  "requirement_ids": [
+                    "EXAMPLE-r2"
+                  ],
+                  "target_ref": "download_and_persist",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Edit without dispatch",
+            "user_prompt": "Update the workflow; do not run it.",
+            "non_substitutable_operand": "workflow_dispatch",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r3",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 35,
+                    "text": "Update the workflow; do not run it."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o3",
+                  "requirement_ids": [
+                    "EXAMPLE-r3"
+                  ],
+                  "target_ref": "workflow_edit",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          }
+        ],
+        "generalization_rule": "Apply the record bindings to analogous requests; do not require a matching example or invent additional task obligations."
+      },
+      "preserve_required_mechanism": {
+        "name": "Preserve the required mechanism",
+        "description": "Record required actor and mechanism independently from the output-state predicate.",
+        "definitions": {
+          "requirement_binding": "A reference to source-quoted requirement data, not a model-authored description of compliance.",
+          "record_binding": "A reference to a fixed-schema data record; evidence references must resolve to actual accessible source records."
+        },
+        "required_jwrs_keys": [
+          "requirements",
+          "operations",
+          "expected_state"
+        ],
+        "instruction": "Supply the required records using the fixed schemas. Preserve source literals and references. Do not add narrative correctness, confidence, justification, or compliance-verdict fields.",
+        "few_shot_examples": [
+          {
+            "scenario": "Automatic branch creation",
+            "user_prompt": "The test must create the branch.",
+            "non_substitutable_operand": "manual_branch_creation",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r1",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 32,
+                    "text": "The test must create the branch."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o1",
+                  "requirement_ids": [
+                    "EXAMPLE-r1"
+                  ],
+                  "target_ref": "test",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": "test"
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Prescribed runtime",
+            "user_prompt": "Run the request in Chromium.",
+            "non_substitutable_operand": "GitHub Actions",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r2",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 28,
+                    "text": "Run the request in Chromium."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o2",
+                  "requirement_ids": [
+                    "EXAMPLE-r2"
+                  ],
+                  "target_ref": "Chromium",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": "Chromium"
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Actual input test",
+            "user_prompt": "Test persistence with the actual model.",
+            "non_substitutable_operand": "synthetic_fixture",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r3",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 39,
+                    "text": "Test persistence with the actual model."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o3",
+                  "requirement_ids": [
+                    "EXAMPLE-r3"
+                  ],
+                  "target_ref": "actual_model",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": "actual_model"
+                }
+              ]
+            }
+          }
+        ],
+        "generalization_rule": "Apply the record bindings to analogous requests; do not require a matching example or invent additional task obligations."
+      },
+      "retain_corrections": {
+        "name": "Retain corrections",
+        "description": "Store source-quoted requirement replacements; superseded requirements cannot be silently restored.",
+        "definitions": {
+          "requirement_binding": "A reference to source-quoted requirement data, not a model-authored description of compliance.",
+          "record_binding": "A reference to a fixed-schema data record; evidence references must resolve to actual accessible source records."
+        },
+        "required_jwrs_keys": [
+          "requirements",
+          "requirement_updates",
+          "active_constraints"
+        ],
+        "instruction": "Supply the required records using the fixed schemas. Preserve source literals and references. Do not add narrative correctness, confidence, justification, or compliance-verdict fields.",
+        "few_shot_examples": [
+          {
+            "scenario": "Rejected whitelist",
+            "user_prompt": "Do not filter by branch name.",
+            "non_substitutable_operand": "branch_whitelist",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r1",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 29,
+                    "text": "Do not filter by branch name."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o1",
+                  "requirement_ids": [
+                    "EXAMPLE-r1"
+                  ],
+                  "target_ref": "no_branch_filter",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Corrected function input",
+            "user_prompt": "The test receives the test subobject.",
+            "non_substitutable_operand": "/",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r2",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 37,
+                    "text": "The test receives the test subobject."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o2",
+                  "requirement_ids": [
+                    "EXAMPLE-r2"
+                  ],
+                  "target_ref": "/test",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Changed authority",
+            "user_prompt": "Use the Python version in the manifest.",
+            "non_substitutable_operand": "Dockerfile:FROM",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r3",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 39,
+                    "text": "Use the Python version in the manifest."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o3",
+                  "requirement_ids": [
+                    "EXAMPLE-r3"
+                  ],
+                  "target_ref": "manifest:/python",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          }
+        ],
+        "generalization_rule": "Apply the record bindings to analogous requests; do not require a matching example or invent additional task obligations."
+      },
+      "trace_config_consumption": {
+        "name": "Trace configuration consumption",
+        "description": "Bind configuration selectors to the actual consumer source and, when functional execution is required, its run records.",
+        "definitions": {
+          "requirement_binding": "A reference to source-quoted requirement data, not a model-authored description of compliance.",
+          "record_binding": "A reference to a fixed-schema data record; evidence references must resolve to actual accessible source records."
+        },
+        "required_jwrs_keys": [
+          "source_reads",
+          "operations",
+          "execution_records",
+          "state_observations"
+        ],
+        "instruction": "Supply the required records using the fixed schemas. Preserve source literals and references. Do not add narrative correctness, confidence, justification, or compliance-verdict fields.",
+        "few_shot_examples": [
+          {
+            "scenario": "Template expansion",
+            "user_prompt": "Make directory metadata generic.",
+            "non_substitutable_operand": "unconsumed_template",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r1",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 32,
+                    "text": "Make directory metadata generic."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o1",
+                  "requirement_ids": [
+                    "EXAMPLE-r1"
+                  ],
+                  "target_ref": "directory_file_templates",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Version authority",
+            "user_prompt": "Have the scripts use the manifest Python version.",
+            "non_substitutable_operand": "hardcoded_python",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r2",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 49,
+                    "text": "Have the scripts use the manifest Python version."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o2",
+                  "requirement_ids": [
+                    "EXAMPLE-r2"
+                  ],
+                  "target_ref": "manifest:/python",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Launcher separation",
+            "user_prompt": "Runner selects the script; operation config supplies arguments.",
+            "non_substitutable_operand": "runner.mode",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r3",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 63,
+                    "text": "Runner selects the script; operation config supplies arguments."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o3",
+                  "requirement_ids": [
+                    "EXAMPLE-r3"
+                  ],
+                  "target_ref": "runner.script+operation.arguments",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          }
+        ],
+        "generalization_rule": "Apply the record bindings to analogous requests; do not require a matching example or invent additional task obligations."
+      },
+      "preserve_dependencies": {
+        "name": "Preserve operational dependencies",
+        "description": "Record dependencies and constrained operands before modifying an execution path.",
+        "definitions": {
+          "requirement_binding": "A reference to source-quoted requirement data, not a model-authored description of compliance.",
+          "record_binding": "A reference to a fixed-schema data record; evidence references must resolve to actual accessible source records."
+        },
+        "required_jwrs_keys": [
+          "operations",
+          "active_constraints",
+          "source_reads"
+        ],
+        "instruction": "Supply the required records using the fixed schemas. Preserve source literals and references. Do not add narrative correctness, confidence, justification, or compliance-verdict fields.",
+        "few_shot_examples": [
+          {
+            "scenario": "Authentication retained",
+            "user_prompt": "Simplify the launcher that invokes gh.",
+            "non_substitutable_operand": "removed_GH_TOKEN",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r1",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 38,
+                    "text": "Simplify the launcher that invokes gh."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o1",
+                  "requirement_ids": [
+                    "EXAMPLE-r1"
+                  ],
+                  "target_ref": "GH_TOKEN",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Persistence remains required",
+            "user_prompt": "Keep the original required commit and push.",
+            "non_substitutable_operand": "optional_flag",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r2",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 43,
+                    "text": "Keep the original required commit and push."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o2",
+                  "requirement_ids": [
+                    "EXAMPLE-r2"
+                  ],
+                  "target_ref": "commit_and_push",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Existing workflow retained",
+            "user_prompt": "Use the existing configured workflow.",
+            "non_substitutable_operand": "new_workflow",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r3",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 37,
+                    "text": "Use the existing configured workflow."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o3",
+                  "requirement_ids": [
+                    "EXAMPLE-r3"
+                  ],
+                  "target_ref": "existing_workflow",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          }
+        ],
+        "generalization_rule": "Apply the record bindings to analogous requests; do not require a matching example or invent additional task obligations."
+      },
+      "bind_claims_to_observations": {
+        "name": "Bind effects to observations",
+        "description": "Require factual effect records; neither an invocation nor a self-issued verdict fills an observation slot.",
+        "definitions": {
+          "requirement_binding": "A reference to source-quoted requirement data, not a model-authored description of compliance.",
+          "record_binding": "A reference to a fixed-schema data record; evidence references must resolve to actual accessible source records."
+        },
+        "required_jwrs_keys": [
+          "execution_records",
+          "state_observations"
+        ],
+        "instruction": "Supply the required records using the fixed schemas. Preserve source literals and references. Do not add narrative correctness, confidence, justification, or compliance-verdict fields.",
+        "few_shot_examples": [
+          {
+            "scenario": "Pointer versus binary",
+            "user_prompt": "Retrieve the actual binary.",
+            "non_substitutable_operand": "LFS_pointer_metadata",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r1",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 27,
+                    "text": "Retrieve the actual binary."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o1",
+                  "requirement_ids": [
+                    "EXAMPLE-r1"
+                  ],
+                  "target_ref": "binary_bytes",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Preexisting absence",
+            "user_prompt": "Delete the branch if it exists.",
+            "non_substitutable_operand": "deletion_claim_without_mutation",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r2",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 31,
+                    "text": "Delete the branch if it exists."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o2",
+                  "requirement_ids": [
+                    "EXAMPLE-r2"
+                  ],
+                  "target_ref": "before_lookup+optional_delete+after_lookup",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Digest checking",
+            "user_prompt": "Check the downloaded hash against the manifest.",
+            "non_substitutable_operand": "printed_manifest_digest",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r3",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 47,
+                    "text": "Check the downloaded hash against the manifest."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o3",
+                  "requirement_ids": [
+                    "EXAMPLE-r3"
+                  ],
+                  "target_ref": "observed_digest+expected_digest",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          }
+        ],
+        "generalization_rule": "Apply the record bindings to analogous requests; do not require a matching example or invent additional task obligations."
+      },
+      "continue_outstanding_operations": {
+        "name": "Continue outstanding operations",
+        "description": "Track operation IDs and their required records; an intermediate output does not remove a downstream execution obligation.",
+        "definitions": {
+          "requirement_binding": "A reference to source-quoted requirement data, not a model-authored description of compliance.",
+          "record_binding": "A reference to a fixed-schema data record; evidence references must resolve to actual accessible source records."
+        },
+        "required_jwrs_keys": [
+          "operations",
+          "execution_records",
+          "state_observations"
+        ],
+        "instruction": "Supply the required records using the fixed schemas. Preserve source literals and references. Do not add narrative correctness, confidence, justification, or compliance-verdict fields.",
+        "few_shot_examples": [
+          {
+            "scenario": "Create and execute",
+            "user_prompt": "Create and execute the script.",
+            "non_substitutable_operand": "create_only",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r1",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 30,
+                    "text": "Create and execute the script."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o1",
+                  "requirement_ids": [
+                    "EXAMPLE-r1"
+                  ],
+                  "target_ref": "create+execute",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Paginated lookup",
+            "user_prompt": "List all files in this directory.",
+            "non_substitutable_operand": "first_page_only",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r2",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 33,
+                    "text": "List all files in this directory."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o2",
+                  "requirement_ids": [
+                    "EXAMPLE-r2"
+                  ],
+                  "target_ref": "all_pages",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          },
+          {
+            "scenario": "Mixed work",
+            "user_prompt": "Edit two files; one is inaccessible.",
+            "non_substitutable_operand": "stop_all_work",
+            "explanation": "These are pre-execution entries. They preserve the exact requirement and its operand; they are not evidence of execution. The non_substitutable_operand would change the requirement. Applicable domain-specific tool arguments must come from the documented interface.",
+            "jwrs_entries": {
+              "requirements": [
+                {
+                  "requirement_id": "EXAMPLE-r3",
+                  "source": {
+                    "message_id": null,
+                    "start": 0,
+                    "end": 36,
+                    "text": "Edit two files; one is inaccessible."
+                  }
+                }
+              ],
+              "operations": [
+                {
+                  "operation_id": "EXAMPLE-o3",
+                  "requirement_ids": [
+                    "EXAMPLE-r3"
+                  ],
+                  "target_ref": "accessible_file_edit+blocked_ref",
+                  "tool": null,
+                  "arguments": {},
+                  "depends_on": [],
+                  "required_actor_ref": null,
+                  "required_mechanism_ref": null
+                }
+              ]
+            }
+          }
+        ],
+        "generalization_rule": "Apply the record bindings to analogous requests; do not require a matching example or invent additional task obligations."
+      }
+    },
+    "fixed_jwrs_record_schemas": {
+      "source_reads": {
+        "type": "object",
+        "required": [
+          "resource_ref",
+          "file_id",
+          "library_file_id",
+          "version_id",
+          "read_call_id",
+          "returned_ranges",
+          "continuation_ref"
+        ],
+        "properties": {
+          "resource_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "file_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "library_file_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "read_call_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "returned_ranges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "unit",
+                "start",
+                "end"
+              ],
+              "properties": {
+                "unit": {
+                  "enum": [
+                    "line",
+                    "page",
+                    "byte"
+                  ]
+                },
+                "start": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "end": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "continuation_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "requirements": {
+        "type": "object",
+        "required": [
+          "requirement_id",
+          "source"
+        ],
+        "properties": {
+          "requirement_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "object",
+            "required": [
+              "message_id",
+              "start",
+              "end",
+              "text"
+            ],
+            "properties": {
+              "message_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "start": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "end": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "operations": {
+        "type": "object",
+        "required": [
+          "operation_id",
+          "requirement_ids",
+          "target_ref",
+          "tool",
+          "arguments",
+          "depends_on",
+          "required_actor_ref",
+          "required_mechanism_ref"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "requirement_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "target_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tool": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "arguments": {
+            "type": "object"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required_actor_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required_mechanism_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "expected_state": {
+        "type": "object",
+        "required": [
+          "requirement_ids",
+          "resource_ref",
+          "selector",
+          "relation",
+          "operand",
+          "producer_operation_id"
+        ],
+        "properties": {
+          "requirement_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "resource_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "selector": {
+            "type": "string",
+            "minLength": 1
+          },
+          "relation": {
+            "enum": [
+              "exists",
+              "absent",
+              "equals",
+              "contains",
+              "count_equals"
+            ]
+          },
+          "operand": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "object",
+              "array",
+              "null"
+            ]
+          },
+          "producer_operation_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "active_constraints": {
+        "type": "object",
+        "required": [
+          "requirement_id",
+          "scope_refs",
+          "operator",
+          "action",
+          "operands"
+        ],
+        "properties": {
+          "requirement_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "operator": {
+            "enum": [
+              "require",
+              "forbid"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operands": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "object",
+                "array",
+                "null"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "requirement_updates": {
+        "type": "object",
+        "required": [
+          "source",
+          "superseded_requirement_ids",
+          "replacement_requirement_ids"
+        ],
+        "properties": {
+          "source": {
+            "type": "object",
+            "required": [
+              "message_id",
+              "start",
+              "end",
+              "text"
+            ],
+            "properties": {
+              "message_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "start": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "end": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "superseded_requirement_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "replacement_requirement_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "execution_records": {
+        "type": "object",
+        "required": [
+          "operation_id",
+          "call_id",
+          "tool",
+          "arguments",
+          "returned_resource_ids",
+          "returned_error"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "call_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tool": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arguments": {
+            "type": "object"
+          },
+          "returned_resource_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "returned_error": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "object",
+              "array",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "state_observations": {
+        "type": "object",
+        "required": [
+          "observation_id",
+          "resource_ref",
+          "version_id",
+          "read_call_id",
+          "selector",
+          "value",
+          "producer_run_id"
+        ],
+        "properties": {
+          "observation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "resource_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "read_call_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "selector": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "object",
+              "array",
+              "null"
+            ]
+          },
+          "producer_run_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "evidence_envelope_schema": {
+      "type": "object",
+      "required": [
+        "record_id",
+        "observed_at",
+        "source_call_id",
+        "source_result_ref",
+        "source_selector",
+        "record"
+      ],
+      "properties": {
+        "record_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_call_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_result_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_selector": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "record": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "effect_record_schema": {
+      "type": "object",
+      "required": [
+        "dimension",
+        "evidence",
+        "record"
+      ],
+      "properties": {
+        "dimension": {
+          "enum": [
+            "identity_location",
+            "presence_membership",
+            "content_value",
+            "state_transition",
+            "execution",
+            "production_linkage",
+            "delivery_persistence"
+          ]
+        },
+        "evidence": {
+          "type": "object",
+          "required": [
+            "record_id",
+            "observed_at",
+            "source_call_id",
+            "source_result_ref",
+            "source_selector"
+          ],
+          "properties": {
+            "record_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "observed_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "source_call_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "source_result_ref": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "source_selector": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "record": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "dimension": {
+              "const": "identity_location"
+            },
+            "record": {
+              "type": "object",
+              "required": [
+                "provider",
+                "resource_id",
+                "parent_id",
+                "path",
+                "version_id"
+              ],
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "resource_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "parent_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "version_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "properties": {
+            "dimension": {
+              "const": "presence_membership"
+            },
+            "record": {
+              "type": "object",
+              "required": [
+                "lookup_call_id",
+                "lookup_scope",
+                "returned_resource_ids",
+                "continuation_ref",
+                "returned_error_code"
+              ],
+              "properties": {
+                "lookup_call_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lookup_scope": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "returned_resource_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "continuation_ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "returned_error_code": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "properties": {
+            "dimension": {
+              "const": "content_value"
+            },
+            "record": {
+              "type": "object",
+              "required": [
+                "read_call_id",
+                "resource_id",
+                "version_id",
+                "selector",
+                "returned_value",
+                "byte_count",
+                "digest_algorithm",
+                "digest"
+              ],
+              "properties": {
+                "read_call_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "resource_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "selector": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "returned_value": {
+                  "type": [
+                    "string",
+                    "number",
+                    "boolean",
+                    "object",
+                    "array",
+                    "null"
+                  ]
+                },
+                "byte_count": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "digest_algorithm": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "digest": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "properties": {
+            "dimension": {
+              "const": "state_transition"
+            },
+            "record": {
+              "type": "object",
+              "required": [
+                "before_observation_id",
+                "mutation_call_id",
+                "after_observation_id"
+              ],
+              "properties": {
+                "before_observation_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "mutation_call_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "after_observation_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "properties": {
+            "dimension": {
+              "const": "execution"
+            },
+            "record": {
+              "type": "object",
+              "required": [
+                "invocation_id",
+                "actor_id",
+                "program_ref",
+                "input_refs",
+                "run_id",
+                "started_at",
+                "ended_at",
+                "exit_code",
+                "output_refs"
+              ],
+              "properties": {
+                "invocation_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "actor_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "program_ref": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "input_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "run_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "started_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "ended_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "exit_code": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "output_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "properties": {
+            "dimension": {
+              "const": "production_linkage"
+            },
+            "record": {
+              "type": "object",
+              "required": [
+                "producer_run_id",
+                "output_resource_id",
+                "output_version_id",
+                "producer_record_ref"
+              ],
+              "properties": {
+                "producer_run_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "output_resource_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "output_version_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "producer_record_ref": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        {
+          "properties": {
+            "dimension": {
+              "const": "delivery_persistence"
+            },
+            "record": {
+              "type": "object",
+              "required": [
+                "source_ref",
+                "destination_ref",
+                "transfer_call_id",
+                "destination_receipt_id",
+                "destination_version_id",
+                "destination_read_call_id",
+                "destination_digest"
+              ],
+              "properties": {
+                "source_ref": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "destination_ref": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "transfer_call_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "destination_receipt_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "destination_version_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "destination_read_call_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "destination_digest": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      ]
+    },
+    "composition_examples": [
+      {
+        "user_prompt": "Delete the file.",
+        "required_dimensions": [
+          "identity_location",
+          "presence_membership",
+          "state_transition"
+        ],
+        "required_record_links": [
+          "target_identity",
+          "before_lookup",
+          "mutation_if_required",
+          "after_lookup"
+        ],
+        "boundary": "Already absent and deleted during this turn remain distinct."
+      },
+      {
+        "user_prompt": "Have the test create the branch.",
+        "required_dimensions": [
+          "identity_location",
+          "execution",
+          "presence_membership",
+          "production_linkage"
+        ],
+        "required_record_links": [
+          "required_test_run",
+          "branch_observation",
+          "producer_record"
+        ],
+        "boundary": "Manual precreation cannot replace the test's production record."
+      },
+      {
+        "user_prompt": "Retrieve the actual LFS binary and save it.",
+        "required_dimensions": [
+          "identity_location",
+          "content_value",
+          "delivery_persistence"
+        ],
+        "required_record_links": [
+          "retrieved_bytes",
+          "destination_receipt"
+        ],
+        "boundary": "Pointer metadata does not establish binary retrieval; readback or digest checking is added only if required."
+      }
+    ],
+    "cross_scenario_rules": [
+      "Descriptions and explanations belong to instruction and examples, not runtime factual records.",
+      "Known source literals and raw errors may contain prose; they remain source data, not self-evaluation.",
+      "Do not fabricate a missing identifier, timestamp, digest, invocation, or producer link.",
+      "Preserve returned provider values; do not coerce job conclusions into invented exit codes.",
+      "No-op and attempted mutation are represented by different call and observation records.",
+      "Requested scope determines which dimensions are required; this catalog does not authorize new side effects.",
+      "Cross-record references must resolve; this cannot be established by JSON syntax validation alone.",
+      "Semantic correctness and interpretation fidelity remain outside what these operational observations alone establish."
+    ],
+    "integration_notes": {
+      "placement": "Attach effect_catalog, operational_additions, fixed schemas, and definitions under the existing governing instruction, preserving its selectors and output contract.",
+      "runtime_extension": "Add the defined record arrays to the selected projection/result schemas through an author-approved revision, not executor improvisation.",
+      "activation": "This draft does not modify or activate the authoritative instruction.",
+      "unsupported_effects": "A future catalog revision must define unsupported effects; the executor cannot create ad hoc truth schemas."
+    },
+    "completion_rule": "Populate the required fixed records and report outstanding operation IDs. Do not infer completion from populated schemas, example similarity, or process exit alone."
+  }
+}
