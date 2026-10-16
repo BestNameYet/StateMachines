@@ -25,7 +25,7 @@ The workflow reuses an issue carrying the exact trigger marker if a run is retri
 
 ## Interactive execution
 
-The intended workflow starts when a qualifying procedure issue is opened. It initializes that issue's state, reads the state-to-instruction mapping, and posts the current instruction to the issue. The complete procedure remains in its source file and is not posted to the issue.
+The intended workflow starts when a qualifying procedure issue is opened or when a committed trigger explicitly dispatches its issue number. It initializes that issue's state, reads the state-to-instruction mapping, and posts the current instruction to the issue. The complete procedure remains in its source file and is not posted to the issue.
 
 On receipt of an agent return, validate it against the current instruction's expected return. If valid, record the returned value, update the persisted state, and render the instruction associated with the resulting state. If invalid, retain the current state and post the validation error for correction. A waiting-return status is unnecessary.
 
@@ -80,7 +80,7 @@ The AGENTS Selenium setup GitHub Actions workflow installs Node and Python, inst
 
 ## Render the procedure to issues
 
-Start a run using the AGENTS Procedure issue template. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction and captured values as a comment. The full procedure is not posted.
+Start a run using the AGENTS Procedure issue template or the commit trigger described above. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction and captured values as a comment. The full procedure is not posted.
 
 Reply using ${variableName}: value, where value is JSON of the declared type. For example:
 
