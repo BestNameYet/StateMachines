@@ -80,6 +80,8 @@ The AGENTS Selenium setup GitHub Actions workflow installs Node and Python, inst
 
 ## Render the procedure to issues
 
+Every active issue screen includes shared communication instructions from `renderIssue()`. After a confirmed submission, check after 10, 20, and 30 additional seconds (60 seconds total). If no response appears, resubmit the identical return once, without repeating the substantive work, then use the same bounded checks. Stop and report pending if the response still does not appear. New requests, completion, validation errors, and rate limits end the ordinary waiting path. Communication calls are excluded from execution reports to avoid self-referential reporting. Completion comments do not instruct the agent to submit or poll again.
+
 Start a run using the AGENTS Procedure issue template or the commit trigger described above. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction and captured values as a comment. The full procedure is not posted.
 
 Reply using ${variableName}: value, where value is JSON of the declared type. For example:

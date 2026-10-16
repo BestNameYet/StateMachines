@@ -31,6 +31,12 @@ assert.throws(()=>parseReturn('${userIntent} = "old format"'));
 console.log('Named colon returns, variable/type checks, arrays, objects, and halt passed.');
 
 assert(!renderIssue(startRun({body:'test'}),7).includes('Return schema'));
+const wrapped=renderIssue(startRun({}),7);
+assert(wrapped.includes('### Communication instructions'));
+assert(wrapped.includes('60 seconds total'));
+assert(wrapped.includes('resubmit the exact same return once'));
+assert(wrapped.includes('exclude them from the task-execution tool-invocation report'));
+assert(!renderIssue(r,7).includes('### Communication instructions'));
 console.log('Issue output contains the procedure without a generated return schema.');
 
 const filesRun=startRun({});

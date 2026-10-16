@@ -98,7 +98,17 @@ function renderIssue(record,issueNumber) {
   if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
   const instruction=Object.fromEntries(entriesForState(record.state,screens,record.toolInvocations || []));
   const {expectedInputs,renderedRequests,...visibleState}=record.state;
-  return marker+'\n## Render '+record.state.render+'\n\n'+fence(instruction)+
+  const communication=[
+    '### Communication instructions',
+    'Submit the current instruction\'s return as ${variableName}: JSON value, or {} when no return variable is requested.',
+    'After GitHub confirms your submission, check for a newer request, procedure completion, or a validation error after 10 seconds, then 20 more seconds, then 30 more seconds (60 seconds total). Do not poll continuously.',
+    'If a newer request or completion appears, stop waiting for this request and follow that result. If a validation error appears, read it and the current instruction before correcting your return; do not blindly repeat a rejected return.',
+    'If no response appears after 60 seconds, resubmit the exact same return once to this issue to retrigger processing. Do not redo the substantive work or change the submitted values. The runner validates against stored expected inputs and skips publishing request numbers already recorded as rendered.',
+    'After that single resubmission, use the same 10, 20, and 30 second checks. If no response appears, stop and report the issue URL, submission comment IDs, and last observed request number as pending. Do not create another procedure run or keep retrying.',
+    'If submission or reading returns a rate-limit error, honor any Retry-After instruction and stop automatic retries for this turn. If submission success is uncertain, check once whether your comment exists before resubmitting.',
+    'Procedure submission, polling, and recovery calls are communication operations; exclude them from the task-execution tool-invocation report so that submitting the report does not require reporting itself.'
+  ].join('\n\n');
+  return marker+'\n## Render '+record.state.render+'\n\n'+communication+'\n\n'+fence(instruction)+
     '\n\n<details><summary>Captured values</summary>\n\n'+fence({state:visibleState})+'\n\n</details>';
 }
 function canonicalTitle(issue) {
