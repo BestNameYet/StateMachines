@@ -2,11 +2,26 @@
 
 ## Create a procedure run
 
-Create a new issue in BestNameYet/StateMachines using the AGENTS Procedure issue template for each run. Check the required Procedure acknowledgement checkbox before submitting. The template contains that acknowledgement; it does not collect the user prompt. The first rendered instruction captures the verbatim user prompt in the issue replies.
+Create a new issue in BestNameYet/StateMachines using either the AGENTS Procedure issue template or a committed trigger file under issue-run-triggers/. The issue template contains the required Procedure acknowledgement; it does not collect the user prompt. The first rendered instruction captures the verbatim user prompt in the issue replies.
 
 The workflow replaces the issue title with AGENTS Procedure — <issue creation timestamp in UTC>, including after title edits. The timestamp comes from GitHub's issue creation time and remains unchanged throughout the run. The issue number identifies the run and its separate persisted state.
 
 GitHub issues belong to the repository rather than a folder. The runner stores this procedure's run records under ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/.
+
+### Commit a procedure issue trigger
+
+Create a new JSON file directly in `issue-run-triggers/` named `<procedureName><nonce>.json`, for example `buildProcedure12.json`. Its complete initial body must be:
+
+```json
+{
+  "startProcedure": true,
+  "nonce": 12
+}
+```
+
+The nonce must be a non-negative integer and match the numeric suffix of the filename. Commit the trigger file to `main`. The workflow validates it, creates one issue with the checked Procedure acknowledgement, dispatches the existing issue runner by issue number, and changes `startProcedure` to `false`. It then adds `procedureName`, `procedureIdentifier`, `procedureIssueNumber`, `procedureIssueUrl`, `procedureTitle`, and `procedureReceiptPath` to the trigger JSON. The issue body and saved run record carry the trigger identifier so the issue remains bound to the filename even after the issue runner changes its title to the canonical UTC timestamp.
+
+The workflow reuses an issue carrying the exact trigger marker if a run is retried. The trigger file is a one-time handoff; the current mutable receipt remains `issue-runs/<issue-number>.json`. Do not copy the receipt into the trigger file because that would create a stale second version. The first rendered instruction captures the verbatim user prompt in the issue replies.
 
 ## Interactive execution
 
