@@ -39,7 +39,9 @@ Recoverable reports:
 - Library /inspection-report.md — libfile_bb250c290264819199e658d45b71f994
 - Original source remains libfile_8eeefed45af881919c1fdb5c15604019; SHA-256 b3baf3917796412b5096c21fad7356c6dba84aa916e38a68453c6a328b23b5f4.
 
-Worker-access integration remains unchecked: the parallelizer has no Library-to-worker materialization route. No personal conversation text was committed to GitHub. No extraction, chunking, labeling, or semantic analysis has been performed. See [AGENTS inspection run #14](https://github.com/BestNameYet/StateMachines/issues/14).
+Repository-path worker access is implemented for files already in GitHub: `AGENTS Procedure/Historical Build Dialogues/shared_chat_conversations.json` is committed in the sibling folder. The parallelizer accepts repository-relative file or directory paths; each Actions worker checks out the repository and reads only its assigned path for its Gemini analysis. This historical-dialogue file can be assigned directly, without a Library handoff.
+
+The source dataset for this archive-analysis project is separate: `/chatgpt_conversations_stage2.zip` remains in the Library and is not committed in this repository. The current worker accepts repository paths only, so the Library-to-worker handoff remains open for that export package. The earlier blanket statement that no personal conversation text was committed to GitHub was inaccurate: the separate historical-dialogue JSON is present. Do not copy additional export-package contents into the repository without an explicit data-handling decision. No extraction, chunking, labeling, or semantic analysis of the source export has been performed. See [AGENTS inspection run #14](https://github.com/BestNameYet/StateMachines/issues/14).
 
 ## 2. Extract each conversation and verify completeness — first preparation step
 
@@ -61,7 +63,7 @@ Parallel opportunity: after the format and reference scheme are fixed, independe
 
 Extraction is complete. The private Library package `chatgpt_conversations_stage2.zip` contains one source-faithful JSON record per conversation, plus an index, coverage and integrity report, and the source asset-name map. It records 1,334 conversations and 36,200 messages; each generated record was reopened and checked against its source object. Branch alternatives and repeated message IDs are retained. The archive's omitted attachment payloads remain unavailable and are identified in the package. The package includes attribution conventions that preserve the export's speaker role and do not infer a new speaker for quoted or discussed people.
 
-The package remains in Library. No conversation text was added to this repository. Semantic reading, topic search, analysis, and synthesis remain for later stages.
+The export package remains in Library. No text from its 1,334 extracted records was added to this repository; the separate Historical Build Dialogues JSON described above is already committed. Semantic reading, topic search, analysis, and synthesis of the export remain for later stages.
 
 ## 3. Prepare classification passages and design the analysis
 
