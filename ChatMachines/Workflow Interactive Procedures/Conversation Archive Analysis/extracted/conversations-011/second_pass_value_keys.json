@@ -1,0 +1,314 @@
+{
+  "purpose": "Second-pass value-capture key plan derived from key_type_inventory.json",
+  "source": {
+    "file": "key_type_inventory.json",
+    "shards": 14,
+    "conversations": 1334
+  },
+  "capture_fields": [
+    {
+      "key": "id",
+      "observed_types": [
+        "string"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Conversation record identifier; capture at conversation root."
+    },
+    {
+      "key": "conversation_id",
+      "observed_types": [
+        "string"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Preserve separately from id so differing identifiers are not collapsed."
+    },
+    {
+      "key": "title",
+      "observed_types": [
+        "string"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Conversation title at root."
+    },
+    {
+      "key": "create_time",
+      "observed_types": [
+        "number"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Conversation creation time."
+    },
+    {
+      "key": "update_time",
+      "observed_types": [
+        "number"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Most recent conversation update time."
+    },
+    {
+      "key": "current_node",
+      "observed_types": [
+        "string"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Pointer to the current terminal node; useful for branch integrity."
+    },
+    {
+      "key": "default_model_slug",
+      "observed_types": [
+        "string"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Conversation-level model designation."
+    },
+    {
+      "key": "conversation_template_id",
+      "observed_types": [
+        "null",
+        "string"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Optional template or custom-conversation association."
+    },
+    {
+      "key": "is_archived",
+      "observed_types": [
+        "boolean"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Archive state."
+    },
+    {
+      "key": "is_do_not_remember",
+      "observed_types": [
+        "boolean",
+        "null"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Memory preference state; preserve null distinctly."
+    },
+    {
+      "key": "is_read_only",
+      "observed_types": [
+        "null"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Currently observed as null; retain the explicit value."
+    },
+    {
+      "key": "is_starred",
+      "observed_types": [
+        "boolean",
+        "null"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Star state; preserve null distinctly."
+    },
+    {
+      "key": "is_study_mode",
+      "observed_types": [
+        "boolean"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Study-mode setting."
+    },
+    {
+      "key": "memory_scope",
+      "observed_types": [
+        "string"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Memory-scope setting."
+    },
+    {
+      "key": "pinned_time",
+      "observed_types": [
+        "null"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Pinned timestamp field; currently observed as null."
+    },
+    {
+      "key": "plugin_ids",
+      "observed_types": [
+        "null"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Plugin ID field; currently observed as null."
+    },
+    {
+      "key": "voice",
+      "observed_types": [
+        "null",
+        "string"
+      ],
+      "scope": "conversation root only",
+      "coverage": "present in all 1,334 records",
+      "reason": "Conversation voice setting."
+    }
+  ],
+  "selective_message_metadata": {
+    "scope": "Traverse mapping.message.metadata only to collect compact source and output references per conversation.",
+    "source_fields": [
+      {
+        "key": "sources",
+        "observed_types": [
+          "array"
+        ],
+        "capture": "source references; normalize to unique items"
+      },
+      {
+        "key": "metadata_sources",
+        "observed_types": [
+          "array"
+        ],
+        "capture": "source provenance references"
+      },
+      {
+        "key": "content_references",
+        "observed_types": [
+          "array"
+        ],
+        "capture": "citation/reference identifiers"
+      },
+      {
+        "key": "source",
+        "observed_types": [
+          "string"
+        ],
+        "capture": "source label when present"
+      },
+      {
+        "key": "source_title",
+        "observed_types": [
+          "string"
+        ],
+        "capture": "source title"
+      },
+      {
+        "key": "source_url",
+        "observed_types": [
+          "null",
+          "string"
+        ],
+        "capture": "source URL when present"
+      },
+      {
+        "key": "source_type",
+        "observed_types": [
+          "null"
+        ],
+        "capture": "type value, preserving null"
+      }
+    ],
+    "output_attachment_fields": [
+      {
+        "key": "attachments",
+        "observed_types": [
+          "array"
+        ],
+        "capture": "attachment descriptors only"
+      },
+      {
+        "key": "file_name",
+        "observed_types": [
+          "string"
+        ],
+        "capture": "output or attachment filename"
+      },
+      {
+        "key": "mime_type",
+        "observed_types": [
+          "string"
+        ],
+        "capture": "output or attachment media type"
+      },
+      {
+        "key": "size_bytes",
+        "observed_types": [
+          "number"
+        ],
+        "capture": "output or attachment byte size"
+      },
+      {
+        "key": "asset_pointer",
+        "observed_types": [
+          "string"
+        ],
+        "capture": "reference only when needed to identify an output asset"
+      }
+    ]
+  },
+  "derived_fields": [
+    {
+      "name": "topic",
+      "status": "not an observed key",
+      "handling": "derive separately from conversation-level evidence; do not claim it is a raw export field"
+    },
+    {
+      "name": "project",
+      "status": "no project or project_id key observed",
+      "handling": "record only when explicit project association is supported; otherwise null"
+    },
+    {
+      "name": "outputs",
+      "status": "no outputs key observed",
+      "handling": "derive a concise output inventory from attachment/output descriptors, not from full message bodies"
+    }
+  ],
+  "exclude_or_summarize": [
+    {
+      "key": "mapping",
+      "observed_type": "object",
+      "handling": "traverse selectively; do not copy the whole message graph"
+    },
+    {
+      "key": "message",
+      "observed_types": [
+        "null",
+        "object"
+      ],
+      "handling": "exclude message objects from the per-conversation metadata record"
+    },
+    {
+      "key": "content",
+      "observed_types": [
+        "object",
+        "string"
+      ],
+      "handling": "do not copy message content"
+    },
+    {
+      "key": "text",
+      "observed_type": "string",
+      "handling": "do not copy message text"
+    },
+    {
+      "key": "summary",
+      "observed_type": "string",
+      "handling": "do not copy nested summaries unless a later analysis explicitly requests them"
+    }
+  ],
+  "notes": [
+    "The first-pass inventory is recursive and flattened, so it does not encode the path of each key. The root-field set above was checked against all 1,334 conversation records: each listed root field is present in all records.",
+    "The inventory has no direct topic, project, project_id, fileID, file_id, or outputs key. id and conversation_id are present and should both be preserved rather than assumed equivalent.",
+    "Types are observed JSON types; preserve null as a value where listed."
+  ]
+}
