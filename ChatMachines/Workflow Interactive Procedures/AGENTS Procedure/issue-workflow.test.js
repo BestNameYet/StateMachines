@@ -1,10 +1,12 @@
 const assert=require('node:assert/strict');
-const {startRun,applyReturn,parseReturn,renderIssue,triggerIdentifier,issueNumberForEvent}=require('./issue-workflow.js');
+const {startRun,applyReturn,parseReturn,renderIssue,triggerIdentifier,triggerPathForRecord,issueNumberForEvent}=require('./issue-workflow.js');
 assert.equal(issueNumberForEvent({},'42'),42);
 assert.equal(issueNumberForEvent({issue:{number:19}}),19);
 assert.equal(issueNumberForEvent({},'0'),null);
 assert.equal(triggerIdentifier({body:'<!-- agents-procedure-trigger:buildProcedure12 -->'}),'buildProcedure12');
 assert.equal(startRun({body:'<!-- agents-procedure-trigger:buildProcedure12 -->'}).triggerIdentifier,'buildProcedure12');
+assert.equal(triggerPathForRecord({triggerIdentifier:'buildProcedure12'}),require('node:path').join(__dirname,'issue-run-triggers','buildProcedure12.json'));
+assert.throws(()=>triggerPathForRecord({triggerIdentifier:'../escape'}));
 const r=startRun({body:'Test request'}),root=__dirname+'/fixtures';
 const before=structuredClone(r);
 assert.throws(()=>applyReturn(r,parseReturn('${userIntent}: "wrong variable"'),root));
