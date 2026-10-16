@@ -128,7 +128,7 @@ async function main() {
     if(!triggerStored)throw Error('Bound procedure trigger file was not found: '+triggerRelative);
     const trigger=JSON.parse(Buffer.from(triggerStored.content,'base64').toString('utf8'));
     const updatedTrigger=appendProcedureReceipt(trigger,record,number);
-    if(updatedTrigger)await api('PUT',triggerRoute,{message:'Append AGENTS Procedure issue '+number+' receipt to '+record.triggerIdentifier,content:Buffer.from(JSON.stringify(updatedTrigger,null,2)+'\\n').toString('base64'),sha:triggerStored.sha});
+    if(updatedTrigger)await api('PUT',triggerRoute,{message:'Append AGENTS Procedure issue '+number+' receipt to '+record.triggerIdentifier,content:Buffer.from(JSON.stringify(updatedTrigger,null,2)+'\n').toString('base64'),sha:triggerStored.sha});
   }
   for(const item of outbox)if(!comments.some(c=>c.body.includes(item.marker)))await api('POST','/issues/'+number+'/comments',{body:item.body});
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
