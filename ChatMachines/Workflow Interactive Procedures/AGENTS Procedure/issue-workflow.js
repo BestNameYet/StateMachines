@@ -12,10 +12,19 @@ const fence = value => {
   const mark = '`'.repeat(width);
   return mark + 'json\n' + text + '\n' + mark;
 };
+function triggerIdentifier(issue) {
+  return (issue.body || '').match(/<!-- agents-procedure-trigger:([A-Za-z][A-Za-z0-9_-]*) -->/)?.[1] || null;
+}
+function issueNumberForEvent(event,eventName) {
+  const raw=event.issue?.number ?? (eventName==='workflow_dispatch' ? event.inputs?.issue_number : undefined);
+  const number=typeof raw==='string'&&/^\d+$/.test(raw)?Number(raw):raw;
+  return Number.isSafeInteger(number)&&number>0?number:null;
+}
 function startRun(issue) {
   const state={};
   const result=map(state);
-  return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],toolInvocations:[]};
+  const identifier=triggerIdentifier(issue);
+  return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],toolInvocations:[],...(identifier?{triggerIdentifier:identifier}:{})};
 }
 function applyReturn(record,payload,fileRoot) {
   if(record.done)throw Error('This run has finished.');
@@ -63,8 +72,8 @@ function canonicalTitle(issue) {
 async function main() {
   const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
   const repository=process.env.GITHUB_REPOSITORY;
-  const number=event.issue?.number;
-  if(!number||event.issue.pull_request)return;
+  const number=issueNumberForEvent(event,process.env.GITHUB_EVENT_NAME);
+  if(!number||event.issue?.pull_request)return;
   if(event.comment?.user?.type==='Bot')return;
   const apiBase='https://api.github.com/repos/'+repository;
   async function api(method,route,body,allowMissing=false) {
@@ -108,4 +117,4 @@ async function main() {
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle};
+module.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle,triggerIdentifier,issueNumberForEvent};
