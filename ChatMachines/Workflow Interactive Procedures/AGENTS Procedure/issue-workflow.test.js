@@ -67,3 +67,49 @@ applyReturn(restored,{variable:'toolInvocations',value:[{...invocation,url:'http
 assert.equal(restored.toolInvocations.length,2);
 assert(renderIssue(restored,99).includes('https://example.test'));
 console.log('Runner-held invocation records survive serialization, accumulate, and render in full at change-list steps.');
+
+async function checkCommunicationState() {
+  const {publishCurrent,restoreCommunicationState}=require('./issue-workflow.js');
+  const record=startRun({});
+  assert.equal(record.state.expectedInputs.render,1);
+  assert.equal(record.state.expectedInputs.inputs[0].name,'verbatimUserPrompt');
+  assert.deepEqual(record.state.renderedRequests,[]);
+  assert(!renderIssue(record,7).includes('expectedInputs'));
+  assert(!renderIssue(record,7).includes('renderedRequests'));
+  let posts=0,saves=0;
+  const post=async()=>{posts++;};
+  const save=async()=>{saves++;};
+  assert.equal(await publishCurrent(record,7,post,save),true);
+  const restored=JSON.parse(JSON.stringify(record));
+  assert.equal(await publishCurrent(restored,7,post,save),false);
+  assert.equal(posts,1);
+  assert.equal(saves,1);
+  const before=structuredClone(restored);
+  assert.throws(()=>applyReturn(restored,{variable:'userIntent',value:'wrong'},root));
+  assert.deepEqual(restored,before);
+  applyReturn(restored,{variable:'verbatimUserPrompt',value:'test'},root);
+  assert.equal(restored.state.expectedInputs.inputs[0].name,'userIntent');
+  assert.deepEqual(restored.state.renderedRequests,[1]);
+  await assert.rejects(()=>publishCurrent(restored,7,async()=>{throw Error('post failed');},save));
+  assert.deepEqual(restored.state.renderedRequests,[1]);
+  await publishCurrent(restored,7,post,save);
+  assert.deepEqual(restored.state.renderedRequests,[1,2]);
+  // Revisiting a render is a new request and must still publish.
+  restored.state.render=1;
+  restored.request=3;
+  await publishCurrent(restored,7,post,save);
+  assert.deepEqual(restored.state.renderedRequests,[1,2,3]);
+  const legacy=startRun({});
+  delete legacy.state.renderedRequests;
+  delete legacy.state.expectedInputs;
+  restoreCommunicationState(legacy,[
+    {user:{type:'Bot'},body:'<!-- agents-procedure:7:request:1:named-return -->'},
+    {user:{type:'User'},body:'<!-- agents-procedure:7:request:99:named-return -->'},
+    {user:{type:'Bot'},body:'<!-- agents-procedure:8:request:2:named-return -->'}
+  ],7);
+  assert.deepEqual(legacy.state.renderedRequests,[1]);
+  assert.equal(await publishCurrent(legacy,7,post,save),false);
+  console.log('Expected inputs, unchanged rejected returns, publication tracking, retries, loop renders, and legacy migration passed.');
+}
+checkCommunicationState().catch(error=>{console.error(error);process.exitCode=1;});
+

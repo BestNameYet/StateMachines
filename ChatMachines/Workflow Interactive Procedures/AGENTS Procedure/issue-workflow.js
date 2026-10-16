@@ -32,11 +32,32 @@ function startRun(issue) {
   const state={};
   const result=map(state);
   const identifier=triggerIdentifier(issue);
-  return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],toolInvocations:[],...(identifier?{triggerIdentifier:identifier}:{})};
+  const record={state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],toolInvocations:[],...(identifier?{triggerIdentifier:identifier}:{})};
+  record.state.renderedRequests=[];
+  setExpectedInputs(record);
+  return record;
+}
+function setExpectedInputs(record) {
+  record.state.expectedInputs={render:record.state.render,inputs:record.done?[]:inputsFor(screens[record.state.render-1])};
+}
+function restoreCommunicationState(record,comments,issueNumber) {
+  if(!Array.isArray(record.state.renderedRequests)) {
+    const pattern=new RegExp('^<!-- agents-procedure:'+issueNumber+':request:(\\d+):named-return -->');
+    record.state.renderedRequests=[...new Set(comments.filter(c=>c.user?.type==='Bot').map(c=>Number(c.body.match(pattern)?.[1])).filter(Number.isSafeInteger))];
+  }
+  setExpectedInputs(record);
+}
+async function publishCurrent(record,issueNumber,post,save) {
+  if(record.state.renderedRequests.includes(record.request))return false;
+  await post(renderIssue(record,issueNumber));
+  record.state.renderedRequests.push(record.request);
+  await save();
+  return true;
 }
 function applyReturn(record,payload,fileRoot) {
   if(record.done)throw Error('This run has finished.');
-  const fields=inputsFor(screens[record.state.render-1]);
+  const expected=record.state.expectedInputs;
+  const fields=expected?.render===record.state.render?expected.inputs:inputsFor(screens[record.state.render-1]);
   const values={};
   if(fields.length===0){
     if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).length)throw Error('This step accepts only {} to continue.');
@@ -57,6 +78,7 @@ function applyReturn(record,payload,fileRoot) {
   record.state=result==='halt'?draft:result;
   if(payload.variable==='targetFiles')record.newFiles=payload.value.filter(file=>file.newFile).map(file=>file.filename);
   record.done=result==='halt';record.request++;
+  setExpectedInputs(record);
 }
 function parseReturn(body) {
   const text=body.trim();
@@ -71,8 +93,9 @@ function renderIssue(record,issueNumber) {
   const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':named-return -->';
   if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
   const instruction=Object.fromEntries(entriesForState(record.state,screens,record.toolInvocations || []));
+  const {expectedInputs,renderedRequests,...visibleState}=record.state;
   return marker+'\n## Render '+record.state.render+'\n\n'+fence(instruction)+
-    '\n\n<details><summary>Captured values</summary>\n\n'+fence({state:record.state})+'\n\n</details>';
+    '\n\n<details><summary>Captured values</summary>\n\n'+fence({state:visibleState})+'\n\n</details>';
 }
 function canonicalTitle(issue) {
   return 'AGENTS Procedure — '+new Date(issue.created_at).toISOString();
@@ -106,6 +129,7 @@ async function main() {
   const outbox=[];
   let comments=[],page=1;
   while(true){const batch=await api('GET','/issues/'+number+'/comments?per_page=100&page='+page++);comments.push(...batch);if(batch.length<100)break;}
+  restoreCommunicationState(record,comments,number);
   for(const comment of comments){
     if(comment.id<=record.lastCommentId||comment.user.type==='Bot')continue;
     if(record.done){record.lastCommentId=comment.id;continue;}
@@ -116,11 +140,16 @@ async function main() {
     record.lastCommentId=comment.id;
   }
   const rendered=renderIssue(record,number);
-  const marker=rendered.split('\n')[0];
-  outbox.push({marker,body:rendered});
-  for(const item of outbox)if(item.body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
+  for(const body of [rendered,...outbox.map(item=>item.body)])if(body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
   // Persist the state before publishing. Markers prevent duplicate prompts on retries.
-  await api('PUT',route,{message:'Save AGENTS Procedure issue '+number+' state',content:Buffer.from(JSON.stringify(record,null,2)+'\n').toString('base64'),...(stored?{sha:stored.sha}:{})});
+  let stateSha=stored?.sha;
+  async function saveRecord() {
+    const saved=await api('PUT',route,{message:'Save AGENTS Procedure issue '+number+' state',content:Buffer.from(JSON.stringify(record,null,2)+'\n').toString('base64'),...(stateSha?{sha:stateSha}:{})});
+    stateSha=saved.content.sha;
+  }
+  await saveRecord();
+  for(const item of outbox)if(!comments.some(c=>c.body.includes(item.marker)))await api('POST','/issues/'+number+'/comments',{body:item.body});
+  await publishCurrent(record,number,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord);
   if(process.env.GITHUB_EVENT_NAME!=='push' && record.triggerIdentifier) {
     const triggerRelative=path.relative(process.env.GITHUB_WORKSPACE,triggerPathForRecord(record)).split(path.sep).join('/');
     const triggerRoute='/contents/'+triggerRelative.split('/').map(encodeURIComponent).join('/');
@@ -130,8 +159,8 @@ async function main() {
     const updatedTrigger=appendProcedureReceipt(trigger,record,number);
     if(updatedTrigger)await api('PUT',triggerRoute,{message:'Append AGENTS Procedure issue '+number+' receipt to '+record.triggerIdentifier,content:Buffer.from(JSON.stringify(updatedTrigger,null,2)+'\n').toString('base64'),sha:triggerStored.sha});
   }
-  for(const item of outbox)if(!comments.some(c=>c.body.includes(item.marker)))await api('POST','/issues/'+number+'/comments',{body:item.body});
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle,triggerIdentifier,triggerPathForRecord,issueNumberForEvent};
+module.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle,triggerIdentifier,triggerPathForRecord,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+
