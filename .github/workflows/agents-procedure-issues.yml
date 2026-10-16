@@ -5,10 +5,19 @@ on:
     types: [opened, edited]
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue to initialize after a trigger created it
+        required: true
+        type: string
   push:
+    branches: [main]
     paths:
       - '.github/workflows/agents-procedure-issues.yml'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/*.json'
 
 permissions:
   contents: read
@@ -22,19 +31,46 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check issue adapter
+      - name: Check issue adapter and trigger
         working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
-        run: node issue-workflow.test.js
+        run: |
+          node issue-workflow.test.js
+          node issue-run-trigger.test.js
 
-  render-issue:
-    if: >-
-      github.event_name != 'push' &&
-      !github.event.issue.pull_request &&
-      (github.event_name == 'issues' || github.event.comment.user.type != 'Bot')
+  create-from-trigger:
+    if: github.event_name == 'push'
+    needs: check
     runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
-      group: agents-procedure-issue-${{ github.event.issue.number }}
+      group: agents-procedure-issue-run-triggers
+      cancel-in-progress: false
+    permissions:
+      actions: write
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Create and bind issues for pending trigger files
+        working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node issue-run-trigger.js
+
+  render-issue:
+    if: >-
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'issues' && !github.event.issue.pull_request) ||
+      (github.event_name == 'issue_comment' && !github.event.issue.pull_request && github.event.comment.user.type != 'Bot')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: agents-procedure-issue-${{ github.event.issue.number || inputs.issue_number }}
       cancel-in-progress: false
     permissions:
       contents: write
