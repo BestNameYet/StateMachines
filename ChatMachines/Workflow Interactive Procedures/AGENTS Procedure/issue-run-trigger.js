@@ -131,7 +131,7 @@ async function main() {
     const receipt = await readRunReceipt(issue.number);
     const { route, stored } = await readFile(filename);
     await writeConsumedTrigger(route, stored, trigger, issue, receipt);
-    console.log('Bound ' + filename + ' to issue #' + issue.number + ' and dispatched issue initialization.');
+    console.log('Bound ' + filename + ' to issue #' + issue.number + ' and initialized the issue');
   }
 }
 
