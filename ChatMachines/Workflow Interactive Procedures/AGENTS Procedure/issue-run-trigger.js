@@ -20,6 +20,9 @@ function parseTrigger(filename, value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('Trigger JSON must be an object.');
   }
+  if (!Object.prototype.hasOwnProperty.call(value, 'startProcedure') || typeof value.startProcedure !== 'boolean') {
+    throw new Error('startProcedure must be a Boolean.');
+  }
   if (value.startProcedure !== true) return null;
   if (!Number.isSafeInteger(value.nonce) || value.nonce < 0) {
     throw new Error('nonce must be a non-negative safe integer.');
@@ -98,7 +101,7 @@ async function main() {
       content: Buffer.from(JSON.stringify(completed, null, 2) + '\n').toString('base64')
     });
   }
-  const names = fs.readdirSync(triggerDirectory).filter(name => name.endsWith('.json')).sort();
+  const names = fs.readdirSync(triggerDirectory).filter(name => name.endsWith('.json') && name !== 'trigger.template.schema.json').sort();
   for (const filename of names) {
     const value = JSON.parse(fs.readFileSync(path.join(triggerDirectory, filename), 'utf8'));
     const trigger = parseTrigger(filename, value);
