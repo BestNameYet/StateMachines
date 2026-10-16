@@ -34,22 +34,25 @@ function startRun(issue) {
   const identifier=triggerIdentifier(issue);
   const record={state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],toolInvocations:[],...(identifier?{triggerIdentifier:identifier}:{})};
   record.state.renderedRequests=[];
-  setExpectedInputs(record);
+  record.state.expectedInputs=null;
   return record;
 }
 function setExpectedInputs(record) {
-  record.state.expectedInputs={render:record.state.render,inputs:record.done?[]:inputsFor(screens[record.state.render-1])};
+  record.state.expectedInputs={request:record.request,render:record.state.render,inputs:record.done?[]:inputsFor(screens[record.state.render-1])};
 }
 function restoreCommunicationState(record,comments,issueNumber) {
   if(!Array.isArray(record.state.renderedRequests)) {
     const pattern=new RegExp('^<!-- agents-procedure:'+issueNumber+':request:(\\d+):named-return -->');
     record.state.renderedRequests=[...new Set(comments.filter(c=>c.user?.type==='Bot').map(c=>Number(c.body.match(pattern)?.[1])).filter(Number.isSafeInteger))];
   }
-  setExpectedInputs(record);
+  // One-time migration for an already-published legacy screen.
+  if(!record.state.expectedInputs && record.state.renderedRequests.includes(record.request))setExpectedInputs(record);
+  const expected=record.state.expectedInputs;
+  if(expected && expected.request===undefined && expected.render===record.state.render)expected.request=record.request;
 }
-async function publishCurrent(record,issueNumber,post,save) {
+async function publishCurrent(record,issueNumber,post,save,body) {
   if(record.state.renderedRequests.includes(record.request))return false;
-  await post(renderIssue(record,issueNumber));
+  await post(body ?? renderIssue(record,issueNumber));
   record.state.renderedRequests.push(record.request);
   await save();
   return true;
@@ -57,7 +60,8 @@ async function publishCurrent(record,issueNumber,post,save) {
 function applyReturn(record,payload,fileRoot) {
   if(record.done)throw Error('This run has finished.');
   const expected=record.state.expectedInputs;
-  const fields=expected?.render===record.state.render?expected.inputs:inputsFor(screens[record.state.render-1]);
+  if(expected?.render!==record.state.render || expected?.request!==record.request)throw Error('Current screen has not been rendered; expected inputs are unavailable.');
+  const fields=expected.inputs;
   const values={};
   if(fields.length===0){
     if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).length)throw Error('This step accepts only {} to continue.');
@@ -78,7 +82,6 @@ function applyReturn(record,payload,fileRoot) {
   record.state=result==='halt'?draft:result;
   if(payload.variable==='targetFiles')record.newFiles=payload.value.filter(file=>file.newFile).map(file=>file.filename);
   record.done=result==='halt';record.request++;
-  setExpectedInputs(record);
 }
 function parseReturn(body) {
   const text=body.trim();
@@ -90,6 +93,7 @@ function parseReturn(body) {
   return {variable:match[1],value:JSON.parse(match[2])};
 }
 function renderIssue(record,issueNumber) {
+  setExpectedInputs(record);
   const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':named-return -->';
   if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
   const instruction=Object.fromEntries(entriesForState(record.state,screens,record.toolInvocations || []));
@@ -139,8 +143,8 @@ async function main() {
     catch(error){outbox.push({marker:errorMarker,body:errorMarker+'\nReturn rejected: '+error.message+'\n\nState and current request are unchanged.'});}
     record.lastCommentId=comment.id;
   }
-  const rendered=renderIssue(record,number);
-  for(const body of [rendered,...outbox.map(item=>item.body)])if(body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
+  const rendered=record.state.renderedRequests.includes(record.request)?null:renderIssue(record,number);
+  for(const body of [rendered,...outbox.map(item=>item.body)])if(body && body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
   // Persist the state before publishing. Markers prevent duplicate prompts on retries.
   let stateSha=stored?.sha;
   async function saveRecord() {
@@ -149,7 +153,7 @@ async function main() {
   }
   await saveRecord();
   for(const item of outbox)if(!comments.some(c=>c.body.includes(item.marker)))await api('POST','/issues/'+number+'/comments',{body:item.body});
-  await publishCurrent(record,number,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord);
+  await publishCurrent(record,number,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord,rendered);
   if(process.env.GITHUB_EVENT_NAME!=='push' && record.triggerIdentifier) {
     const triggerRelative=path.relative(process.env.GITHUB_WORKSPACE,triggerPathForRecord(record)).split(path.sep).join('/');
     const triggerRoute='/contents/'+triggerRelative.split('/').map(encodeURIComponent).join('/');
