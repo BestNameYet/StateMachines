@@ -32,5 +32,1314 @@
     "history": [],
     "toolInvocations": [],
     "triggerIdentifier": "updateIssueRunReceipts1"
-  }
-}
+  },
+  "procedureReceipts": [
+    {
+      "state": {
+        "render": 1,
+        "verbatimUserPrompt": null,
+        "userIntent": null,
+        "exampleMatch": null,
+        "minimalResult": null,
+        "targetFiles": null,
+        "requirements": null,
+        "matchedExample": null,
+        "mode": null,
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null
+      },
+      "done": false,
+      "request": 1,
+      "lastCommentId": 0,
+      "newFiles": [],
+      "history": [],
+      "toolInvocations": [],
+      "triggerIdentifier": "updateIssueRunReceipts1"
+    },
+    {
+      "state": {
+        "render": 14,
+        "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
+        "userIntent": "Change the issue workflow so every newly processed receipt is appended to the trigger JSON whose filename matches the run’s stored procedureIdentifier (procedureName plus nonce), while preserving the existing per-issue receipt and trigger metadata.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "newFile": false
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "frombyte": 773,
+            "tobyte": 799,
+            "description": "Resolve the trigger identifier into the exact procedureName+nonce JSON path and verify the trigger’s issue binding before appending.",
+            "intent": "Append each run receipt to the correct trigger JSON rather than leaving it only in issue-runs/<issue-number>.json.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "frombyte": 7055,
+            "tobyte": 7166,
+            "description": "After saving the issue receipt, append a deduplicated receipt snapshot to its bound trigger JSON using the current content SHA.",
+            "intent": "Keep the trigger JSON’s receipt history synchronized with issue-comment workflow advances while retaining the canonical per-issue receipt.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+            "frombyte": 434,
+            "tobyte": 534,
+            "description": "Add tests for correct trigger-path resolution, issue binding, snapshot append, and duplicate suppression.",
+            "intent": "Verify the runner appends to the matching procedureName+nonce file and rejects mismatched targets.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+            "frombyte": 4301,
+            "tobyte": 6375,
+            "description": "Initialize the trigger JSON receipt history with the first persisted receipt when consuming a new trigger.",
+            "intent": "Ensure the correct procedure nonce file starts with its initial receipt so later workflow advances can append.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+            "frombyte": 1526,
+            "tobyte": 1613,
+            "description": "Test initial receipt history creation and trigger identity/issue association.",
+            "intent": "Verify trigger initialization seeds the receipt history in the selected trigger JSON.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+            "frombyte": 1888,
+            "tobyte": 2104,
+            "description": "Add a schema definition for the appended receipt snapshot array.",
+            "intent": "Validate receipt snapshots persisted in each procedureName+nonce JSON file.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 1703,
+            "tobyte": 2190,
+            "description": "Document that the trigger JSON retains an append-only receipt history while issue-runs/<issue-number>.json remains the live current receipt.",
+            "intent": "Explain where historical snapshots are appended and how the correct trigger is bound to the issue.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 8998,
+            "tobyte": 9049,
+            "description": "Clarify the relationship between per-issue live receipts and appended trigger-file receipt snapshots.",
+            "intent": "Make the workflow’s persistent receipt locations and responsibilities explicit.",
+            "operator": "edit"
+          }
+        ],
+        "matchedExample": {
+          "example": 6,
+          "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+        },
+        "mode": "fidelity",
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null
+      },
+      "done": false,
+      "request": 10,
+      "lastCommentId": 6216013834,
+      "newFiles": [],
+      "history": [
+        {
+          "request": 1,
+          "render": 1,
+          "loopNumber": null,
+          "values": {
+            "$verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json"
+          },
+          "state": {
+            "render": 2,
+            "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
+            "userIntent": null,
+            "exampleMatch": null,
+            "minimalResult": null,
+            "targetFiles": null,
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null
+          }
+        },
+        {
+          "request": 2,
+          "render": 2,
+          "loopNumber": null,
+          "values": {
+            "$userIntent": "Update the workflow runner to append each persisted receipt snapshot to the trigger JSON named by that run’s procedureName and nonce, while retaining the per-issue run receipt."
+          },
+          "state": {
+            "render": 3,
+            "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
+            "userIntent": "Update the workflow runner to append each persisted receipt snapshot to the trigger JSON named by that run’s procedureName and nonce, while retaining the per-issue run receipt.",
+            "exampleMatch": null,
+            "minimalResult": null,
+            "targetFiles": null,
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null
+          }
+        },
+        {
+          "request": 3,
+          "render": 3,
+          "loopNumber": null,
+          "values": {
+            "$exampleMatch": false
+          },
+          "state": {
+            "render": 8,
+            "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
+            "userIntent": "Update the workflow runner to append each persisted receipt snapshot to the trigger JSON named by that run’s procedureName and nonce, while retaining the per-issue run receipt.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": null,
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null
+          }
+        },
+        {
+          "request": 4,
+          "render": 8,
+          "loopNumber": null,
+          "values": {
+            "$targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": false
+              }
+            ]
+          },
+          "state": {
+            "render": 9,
+            "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
+            "userIntent": "Update the workflow runner to append each persisted receipt snapshot to the trigger JSON named by that run’s procedureName and nonce, while retaining the per-issue run receipt.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": false
+              }
+            ],
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null
+          }
+        },
+        {
+          "request": 5,
+          "render": 9,
+          "loopNumber": null,
+          "values": {
+            "$requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 773,
+                "tobyte": 799,
+                "description": "Resolve the trigger identifier into the exact procedureName+nonce JSON path and verify the trigger’s issue binding before appending.",
+                "intent": "Append each run receipt to the correct trigger JSON rather than leaving it only in issue-runs/<issue-number>.json.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 7055,
+                "tobyte": 7166,
+                "description": "After saving the issue receipt, append a deduplicated receipt snapshot to its bound trigger JSON using the current content SHA.",
+                "intent": "Keep the trigger JSON’s receipt history synchronized with issue-comment workflow advances while retaining the canonical per-issue receipt.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "frombyte": 434,
+                "tobyte": 534,
+                "description": "Add tests for correct trigger-path resolution, issue binding, snapshot append, and duplicate suppression.",
+                "intent": "Verify the runner appends to the matching procedureName+nonce file and rejects mismatched targets.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "frombyte": 4301,
+                "tobyte": 6375,
+                "description": "Initialize the trigger JSON receipt history with the first persisted receipt when consuming a new trigger.",
+                "intent": "Ensure the correct procedure nonce file starts with its initial receipt so later workflow advances can append.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "frombyte": 1526,
+                "tobyte": 1613,
+                "description": "Test initial receipt history creation and trigger identity/issue association.",
+                "intent": "Verify trigger initialization seeds the receipt history in the selected trigger JSON.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "frombyte": 1888,
+                "tobyte": 2104,
+                "description": "Add a schema definition for the appended receipt snapshot array.",
+                "intent": "Validate receipt snapshots persisted in each procedureName+nonce JSON file.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 1703,
+                "tobyte": 2190,
+                "description": "Document that the trigger JSON retains an append-only receipt history while issue-runs/<issue-number>.json remains the live current receipt.",
+                "intent": "Explain where historical snapshots are appended and how the correct trigger is bound to the issue.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 8998,
+                "tobyte": 9049,
+                "description": "Clarify the relationship between per-issue live receipts and appended trigger-file receipt snapshots.",
+                "intent": "Make the workflow’s persistent receipt locations and responsibilities explicit.",
+                "operator": "edit"
+              }
+            ]
+          },
+          "state": {
+            "render": 10,
+            "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
+            "userIntent": "Update the workflow runner to append each persisted receipt snapshot to the trigger JSON named by that run’s procedureName and nonce, while retaining the per-issue run receipt.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": false
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 773,
+                "tobyte": 799,
+                "description": "Resolve the trigger identifier into the exact procedureName+nonce JSON path and verify the trigger’s issue binding before appending.",
+                "intent": "Append each run receipt to the correct trigger JSON rather than leaving it only in issue-runs/<issue-number>.json.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 7055,
+                "tobyte": 7166,
+                "description": "After saving the issue receipt, append a deduplicated receipt snapshot to its bound trigger JSON using the current content SHA.",
+                "intent": "Keep the trigger JSON’s receipt history synchronized with issue-comment workflow advances while retaining the canonical per-issue receipt.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "frombyte": 434,
+                "tobyte": 534,
+                "description": "Add tests for correct trigger-path resolution, issue binding, snapshot append, and duplicate suppression.",
+                "intent": "Verify the runner appends to the matching procedureName+nonce file and rejects mismatched targets.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "frombyte": 4301,
+                "tobyte": 6375,
+                "description": "Initialize the trigger JSON receipt history with the first persisted receipt when consuming a new trigger.",
+                "intent": "Ensure the correct procedure nonce file starts with its initial receipt so later workflow advances can append.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "frombyte": 1526,
+                "tobyte": 1613,
+                "description": "Test initial receipt history creation and trigger identity/issue association.",
+                "intent": "Verify trigger initialization seeds the receipt history in the selected trigger JSON.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "frombyte": 1888,
+                "tobyte": 2104,
+                "description": "Add a schema definition for the appended receipt snapshot array.",
+                "intent": "Validate receipt snapshots persisted in each procedureName+nonce JSON file.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 1703,
+                "tobyte": 2190,
+                "description": "Document that the trigger JSON retains an append-only receipt history while issue-runs/<issue-number>.json remains the live current receipt.",
+                "intent": "Explain where historical snapshots are appended and how the correct trigger is bound to the issue.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 8998,
+                "tobyte": 9049,
+                "description": "Clarify the relationship between per-issue live receipts and appended trigger-file receipt snapshots.",
+                "intent": "Make the workflow’s persistent receipt locations and responsibilities explicit.",
+                "operator": "edit"
+              }
+            ],
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null
+          }
+        },
+        {
+          "request": 6,
+          "render": 10,
+          "loopNumber": null,
+          "values": {
+            "$userIntent": "Change the issue workflow so every newly processed receipt is appended to the trigger JSON whose filename matches the run’s stored procedureIdentifier (procedureName plus nonce), while preserving the existing per-issue receipt and trigger metadata."
+          },
+          "state": {
+            "render": 11,
+            "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
+            "userIntent": "Change the issue workflow so every newly processed receipt is appended to the trigger JSON whose filename matches the run’s stored procedureIdentifier (procedureName plus nonce), while preserving the existing per-issue receipt and trigger metadata.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": false
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 773,
+                "tobyte": 799,
+                "description": "Resolve the trigger identifier into the exact procedureName+nonce JSON path and verify the trigger’s issue binding before appending.",
+                "intent": "Append each run receipt to the correct trigger JSON rather than leaving it only in issue-runs/<issue-number>.json.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 7055,
+                "tobyte": 7166,
+                "description": "After saving the issue receipt, append a deduplicated receipt snapshot to its bound trigger JSON using the current content SHA.",
+                "intent": "Keep the trigger JSON’s receipt history synchronized with issue-comment workflow advances while retaining the canonical per-issue receipt.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "frombyte": 434,
+                "tobyte": 534,
+                "description": "Add tests for correct trigger-path resolution, issue binding, snapshot append, and duplicate suppression.",
+                "intent": "Verify the runner appends to the matching procedureName+nonce file and rejects mismatched targets.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "frombyte": 4301,
+                "tobyte": 6375,
+                "description": "Initialize the trigger JSON receipt history with the first persisted receipt when consuming a new trigger.",
+                "intent": "Ensure the correct procedure nonce file starts with its initial receipt so later workflow advances can append.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "frombyte": 1526,
+                "tobyte": 1613,
+                "description": "Test initial receipt history creation and trigger identity/issue association.",
+                "intent": "Verify trigger initialization seeds the receipt history in the selected trigger JSON.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "frombyte": 1888,
+                "tobyte": 2104,
+                "description": "Add a schema definition for the appended receipt snapshot array.",
+                "intent": "Validate receipt snapshots persisted in each procedureName+nonce JSON file.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 1703,
+                "tobyte": 2190,
+                "description": "Document that the trigger JSON retains an append-only receipt history while issue-runs/<issue-number>.json remains the live current receipt.",
+                "intent": "Explain where historical snapshots are appended and how the correct trigger is bound to the issue.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 8998,
+                "tobyte": 9049,
+                "description": "Clarify the relationship between per-issue live receipts and appended trigger-file receipt snapshots.",
+                "intent": "Make the workflow’s persistent receipt locations and responsibilities explicit.",
+                "operator": "edit"
+              }
+            ],
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null
+          }
+        },
+        {
+          "request": 7,
+          "render": 11,
+          "loopNumber": null,
+          "values": {
+            "$matchedExample": {
+              "example": 6,
+              "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+            }
+          },
+          "state": {
+            "render": 12,
+            "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
+            "userIntent": "Change the issue workflow so every newly processed receipt is appended to the trigger JSON whose filename matches the run’s stored procedureIdentifier (procedureName plus nonce), while preserving the existing per-issue receipt and trigger metadata.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": false
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 773,
+                "tobyte": 799,
+                "description": "Resolve the trigger identifier into the exact procedureName+nonce JSON path and verify the trigger’s issue binding before appending.",
+                "intent": "Append each run receipt to the correct trigger JSON rather than leaving it only in issue-runs/<issue-number>.json.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 7055,
+                "tobyte": 7166,
+                "description": "After saving the issue receipt, append a deduplicated receipt snapshot to its bound trigger JSON using the current content SHA.",
+                "intent": "Keep the trigger JSON’s receipt history synchronized with issue-comment workflow advances while retaining the canonical per-issue receipt.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "frombyte": 434,
+                "tobyte": 534,
+                "description": "Add tests for correct trigger-path resolution, issue binding, snapshot append, and duplicate suppression.",
+                "intent": "Verify the runner appends to the matching procedureName+nonce file and rejects mismatched targets.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "frombyte": 4301,
+                "tobyte": 6375,
+                "description": "Initialize the trigger JSON receipt history with the first persisted receipt when consuming a new trigger.",
+                "intent": "Ensure the correct procedure nonce file starts with its initial receipt so later workflow advances can append.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "frombyte": 1526,
+                "tobyte": 1613,
+                "description": "Test initial receipt history creation and trigger identity/issue association.",
+                "intent": "Verify trigger initialization seeds the receipt history in the selected trigger JSON.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "frombyte": 1888,
+                "tobyte": 2104,
+                "description": "Add a schema definition for the appended receipt snapshot array.",
+                "intent": "Validate receipt snapshots persisted in each procedureName+nonce JSON file.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 1703,
+                "tobyte": 2190,
+                "description": "Document that the trigger JSON retains an append-only receipt history while issue-runs/<issue-number>.json remains the live current receipt.",
+                "intent": "Explain where historical snapshots are appended and how the correct trigger is bound to the issue.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 8998,
+                "tobyte": 9049,
+                "description": "Clarify the relationship between per-issue live receipts and appended trigger-file receipt snapshots.",
+                "intent": "Make the workflow’s persistent receipt locations and responsibilities explicit.",
+                "operator": "edit"
+              }
+            ],
+            "matchedExample": {
+              "example": 6,
+              "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+            },
+            "mode": "fidelity",
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null
+          }
+        },
+        {
+          "request": 8,
+          "render": 12,
+          "loopNumber": null,
+          "values": {
+            "$requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 773,
+                "tobyte": 799,
+                "description": "Resolve the trigger identifier into the exact procedureName+nonce JSON path and verify the trigger’s issue binding before appending.",
+                "intent": "Append each run receipt to the correct trigger JSON rather than leaving it only in issue-runs/<issue-number>.json.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 7055,
+                "tobyte": 7166,
+                "description": "After saving the issue receipt, append a deduplicated receipt snapshot to its bound trigger JSON using the current content SHA.",
+                "intent": "Keep the trigger JSON’s receipt history synchronized with issue-comment workflow advances while retaining the canonical per-issue receipt.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "frombyte": 434,
+                "tobyte": 534,
+                "description": "Add tests for correct trigger-path resolution, issue binding, snapshot append, and duplicate suppression.",
+                "intent": "Verify the runner appends to the matching procedureName+nonce file and rejects mismatched targets.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "frombyte": 4301,
+                "tobyte": 6375,
+                "description": "Initialize the trigger JSON receipt history with the first persisted receipt when consuming a new trigger.",
+                "intent": "Ensure the correct procedure nonce file starts with its initial receipt so later workflow advances can append.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "frombyte": 1526,
+                "tobyte": 1613,
+                "description": "Test initial receipt history creation and trigger identity/issue association.",
+                "intent": "Verify trigger initialization seeds the receipt history in the selected trigger JSON.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "frombyte": 1888,
+                "tobyte": 2104,
+                "description": "Add a schema definition for the appended receipt snapshot array.",
+                "intent": "Validate receipt snapshots persisted in each procedureName+nonce JSON file.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 1703,
+                "tobyte": 2190,
+                "description": "Document that the trigger JSON retains an append-only receipt history while issue-runs/<issue-number>.json remains the live current receipt.",
+                "intent": "Explain where historical snapshots are appended and how the correct trigger is bound to the issue.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 8998,
+                "tobyte": 9049,
+                "description": "Clarify the relationship between per-issue live receipts and appended trigger-file receipt snapshots.",
+                "intent": "Make the workflow’s persistent receipt locations and responsibilities explicit.",
+                "operator": "edit"
+              }
+            ]
+          },
+          "state": {
+            "render": 13,
+            "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
+            "userIntent": "Change the issue workflow so every newly processed receipt is appended to the trigger JSON whose filename matches the run’s stored procedureIdentifier (procedureName plus nonce), while preserving the existing per-issue receipt and trigger metadata.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": false
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 773,
+                "tobyte": 799,
+                "description": "Resolve the trigger identifier into the exact procedureName+nonce JSON path and verify the trigger’s issue binding before appending.",
+                "intent": "Append each run receipt to the correct trigger JSON rather than leaving it only in issue-runs/<issue-number>.json.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 7055,
+                "tobyte": 7166,
+                "description": "After saving the issue receipt, append a deduplicated receipt snapshot to its bound trigger JSON using the current content SHA.",
+                "intent": "Keep the trigger JSON’s receipt history synchronized with issue-comment workflow advances while retaining the canonical per-issue receipt.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "frombyte": 434,
+                "tobyte": 534,
+                "description": "Add tests for correct trigger-path resolution, issue binding, snapshot append, and duplicate suppression.",
+                "intent": "Verify the runner appends to the matching procedureName+nonce file and rejects mismatched targets.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "frombyte": 4301,
+                "tobyte": 6375,
+                "description": "Initialize the trigger JSON receipt history with the first persisted receipt when consuming a new trigger.",
+                "intent": "Ensure the correct procedure nonce file starts with its initial receipt so later workflow advances can append.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "frombyte": 1526,
+                "tobyte": 1613,
+                "description": "Test initial receipt history creation and trigger identity/issue association.",
+                "intent": "Verify trigger initialization seeds the receipt history in the selected trigger JSON.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "frombyte": 1888,
+                "tobyte": 2104,
+                "description": "Add a schema definition for the appended receipt snapshot array.",
+                "intent": "Validate receipt snapshots persisted in each procedureName+nonce JSON file.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 1703,
+                "tobyte": 2190,
+                "description": "Document that the trigger JSON retains an append-only receipt history while issue-runs/<issue-number>.json remains the live current receipt.",
+                "intent": "Explain where historical snapshots are appended and how the correct trigger is bound to the issue.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 8998,
+                "tobyte": 9049,
+                "description": "Clarify the relationship between per-issue live receipts and appended trigger-file receipt snapshots.",
+                "intent": "Make the workflow’s persistent receipt locations and responsibilities explicit.",
+                "operator": "edit"
+              }
+            ],
+            "matchedExample": {
+              "example": 6,
+              "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+            },
+            "mode": "fidelity",
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null
+          }
+        },
+        {
+          "request": 9,
+          "render": 13,
+          "loopNumber": null,
+          "values": {
+            "$toolInvocations": [
+              {
+                "cwd": null,
+                "command_line_verbatim": null,
+                "tool": "mcp__codex_apps__github_create_file",
+                "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/updateIssueRunReceipts1.json\",\"branch\":\"main\",\"message\":\"Start AGENTS Procedure run for receipt append update\",\"content\":\"{\\n  \\\"startProcedure\\\": true,\\n  \\\"nonce\\\": 1\\n}\\n\"}",
+                "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"c34e78103b9cc63169934195d41b8224d92a9226\"}",
+                "unavailable_reason": null,
+                "new": true,
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/updateIssueRunReceipts1.json",
+                "frombyte": 0,
+                "tobyte": 43,
+                "description": "Create the documented nonce trigger to start this AGENTS Procedure run.",
+                "intent": "Start the interactive procedure and bind it to its correct procedureName+nonce file.",
+                "operator": "create",
+                "specifiedOperatorByUser": null,
+                "chosenOperator": "create",
+                "outcome": "succeeded"
+              },
+              {
+                "cwd": null,
+                "command_line_verbatim": null,
+                "tool": "mcp__codex_apps__github_update_file",
+                "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js\",\"sha\":\"6d903f804c19ed048a78de33e50a48f8053e7302\",\"content\":\"const fs = require('node:fs');\\nconst path = require('node:path');\\nconst { execFileSync } = require('node:child_process');\\n\\nconst triggerDirectory = path.join(__dirname, 'issue-run-triggers');\\nconst identifierFromFilename = (filename, nonce) => {\\n  if (typeof filename !== 'string' || !filename.endsWith('.json')) {\\n    throw new Error('Trigger filename must end in .json.');\\n  }\\n  const stem = filename.slice(0, -5);\\n  const suffix = String(nonce);\\n  if (!stem.endsWith(suffix)) throw new Error('Filename must end with its JSON nonce.');\\n  const procedureName = stem.slice(0, -suffix.length);\\n  if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(procedureName)) {\\n    throw new Error('Filename must be <procedureName><nonce>.json; procedureName must start with a letter and contain only letters, digits, _ or -.');\\n  }\\n  return { procedureName, identifier: stem };\\n};\\n\\nfunction parseTrigger(filename, value) {\\n  if (!value || typeof value !== 'object' || Array.isArray(value)) {\\n    throw new Error('Trigger JSON must be an object.');\\n  }\\n  if (!Object.prototype.hasOwnProperty.call(value, 'startProcedure') || typeof value.startProcedure !== 'boolean') {\\n    throw new Error('startProcedure must be a Boolean.');\\n  }\\n  if (value.startProcedure !== true) return null;\\n  if (!Number.isSafeInteger(value.nonce) || value.nonce < 0) {\\n    throw new Error('nonce must be a non-negative safe integer.');\\n  }\\n  const { procedureName, identifier } = identifierFromFilename(filename, value.nonce);\\n  const allowed = new Set(['startProcedure', 'nonce']);\\n  const unexpected = Object.keys(value).filter(key => !allowed.has(key));\\n  if (unexpected.length) throw new Error('A new trigger may contain only startProcedure and nonce; found: ' + unexpected.join(', '));\\n  return { filename, procedureName, identifier, nonce: value.nonce };\\n}\\n\\nfunction initializeConsumedTrigger(current, trigger, issue, receipt) {\\n  const procedureReceiptPath = 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/' + issue.number + '.json';\\n  return {\\n    ...current,\\n    startProcedure: false,\\n    procedureName: trigger.procedureName,\\n    procedureIdentifier: trigger.identifier,\\n    procedureIssueNumber: issue.number,\\n    procedureIssueUrl: issue.html_url,\\n    procedureTitle: issue.title,\\n    procedureReceiptPath,\\n    procedureSavedHere: receipt,\\n    procedureReceipts: [receipt]\\n  };\\n}\\n\\nfunction appendProcedureReceipt(current, receipt, issueNumber) {\\n  if (!current || typeof current !== 'object' || Array.isArray(current)) {\\n    throw new Error('Consumed trigger must be a JSON object.');\\n  }\\n  const identifier = current.procedureIdentifier;\\n  if (current.startProcedure !== false ||\\n      typeof identifier !== 'string' ||\\n      !/^[A-Za-z][A-Za-z0-9_-]*[0-9]+$/.test(identifier) ||\\n      !/^[A-Za-z][A-Za-z0-9_-]*$/.test(current.procedureName || '') ||\\n      !Number.isSafeInteger(current.nonce) ||\\n      current.nonce < 0 ||\\n      current.procedureName + current.nonce !== identifier) {\\n    throw new Error('Trigger filename identity does not match its procedureName and nonce.');\\n  }\\n  if (current.procedureIssueNumber !== issueNumber) {\\n    throw new Error('Trigger is bound to a different issue.');\\n  }\\n  const expectedPath = 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/' + issueNumber + '.json';\\n  if (current.procedureReceiptPath !== expectedPath) {\\n    throw new Error('Trigger receipt path does not match its bound issue.');\\n  }\\n  if (!receipt || typeof receipt !== 'object' || receipt.triggerIdentifier !== identifier) {\\n    throw new Error('Run receipt identifier does not match the trigger filename.');\\n  }\\n  const receipts = current.procedureReceipts === undefined\\n    ? (current.procedureSavedHere ? [current.procedureSavedHere] : [])\\n    : current.procedureReceipts;\\n  if (!Array.isArray(receipts)) throw new Error('Trigger procedureReceipts must be an array.');\\n  const last = receipts[receipts.length - 1];\\n  if (last && last.request === receipt.request &&\\n      last.lastCommentId === receipt.lastCommentId &&\\n      JSON.stringify(last) === JSON.stringify(receipt)) return null;\\n  return { ...current, procedureReceipts: [...receipts, structuredClone(receipt)] };\\n}\\n\\nfunction triggerMarker(identifier) {\\n  return '<!-- agents-procedure-trigger:' + identifier + ' -->';\\n}\\n\\nfunction issueBody(trigger) {\\n  return [\\n    triggerMarker(trigger.identifier),\\n    '### Procedure acknowledgement',\\n    '',\\n    '- [x] I agree to follow each instruction, preserve the user intent and constraints, perform the required work before reporting it, return accurate values in the required format, and account for incomplete or unapproved changes.',\\n    '',\\n    'Trigger identifier: `' + trigger.identifier + '`',\\n    ''\\n  ].join('\\\\n');\\n}\\n\\nasync function main() {\\n  const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));\\n  if (event_name() !== 'push') return;\\n  const repository = process.env.GITHUB_REPOSITORY;\\n  const apiBase = 'https://api.github.com/repos/' + repository;\\n  async function api(method, route, body) {\\n    const response = await fetch(apiBase + route, {\\n      method,\\n      headers: {\\n        Authorization: 'Bearer ' + process.env.GITHUB_TOKEN,\\n        Accept: 'application/vnd.github+json',\\n        'Content-Type': 'application/json',\\n        'X-GitHub-Api-Version': '2022-11-28'\\n      },\\n      ...(body ? { body: JSON.stringify(body) } : {})\\n    });\\n    if (!response.ok) throw new Error('GitHub ' + method + ' ' + route + ' returned ' + response.status + ': ' + await response.text());\\n    return response.status === 204 ? null : response.json();\\n  }\\n  async function findIssue(marker) {\\n    for (let page = 1; ; page++) {\\n      const issues = await api('GET', '/issues?state=all&per_page=100&page=' + page);\\n      const found = issues.find(issue => !issue.pull_request && (issue.body || '').includes(marker));\\n      if (found) return found;\\n      if (issues.length < 100) return null;\\n    }\\n  }\\n  async function readFile(filename) {\\n    const relative = path.relative(process.env.GITHUB_WORKSPACE, path.join(triggerDirectory, filename)).split(path.sep).join('/');\\n    const route = '/contents/' + relative.split('/').map(encodeURIComponent).join('/');\\n    return { route, stored: await api('GET', route) };\\n  }\\n  async function readRunReceipt(issueNumber) {\\n    const relative = path.relative(process.env.GITHUB_WORKSPACE, path.join(__dirname, 'issue-runs', issueNumber + '.json')).split(path.sep).join('/');\\n    const route = '/contents/' + relative.split('/').map(encodeURIComponent).join('/');\\n    const stored = await api('GET', route);\\n    return JSON.parse(Buffer.from(stored.content, 'base64').toString('utf8'));\\n  }\\n  async function writeConsumedTrigger(route, stored, trigger, issue, receipt) {\\n    const current = JSON.parse(Buffer.from(stored.content, 'base64').toString('utf8'));\\n    if (current.startProcedure !== true) return;\\n    const completed = initializeConsumedTrigger(current, trigger, issue, receipt);\\n    await api('PUT', route, {\\n      message: 'Bind procedure trigger ' + trigger.identifier + ' to issue ' + issue.number,\\n      sha: stored.sha,\\n      content: Buffer.from(JSON.stringify(completed, null, 2) + '\\\\n').toString('base64')\\n    });\\n  }\\n  const names = fs.readdirSync(triggerDirectory).filter(name => name.endsWith('.json') && name !== 'trigger.template.schema.json').sort();\\n  for (const filename of names) {\\n    const value = JSON.parse(fs.readFileSync(path.join(triggerDirectory, filename), 'utf8'));\\n    const trigger = parseTrigger(filename, value);\\n    if (!trigger) continue;\\n    const marker = triggerMarker(trigger.identifier);\\n    let issue = await findIssue(marker);\\n    if (!issue) {\\n      issue = await api('POST', '/issues', {\\n        title: 'AGENTS Procedure — ' + trigger.identifier,\\n        body: issueBody(trigger)\\n      });\\n    }\\n    execFileSync(process.execPath, ['issue-workflow.js'], {\\n      cwd: __dirname,\\n      stdio: 'inherit',\\n      env: { ...process.env, AGENTS_PROCEDURE_ISSUE_NUMBER: String(issue.number) }\\n    });\\n    issue = await api('GET', '/issues/' + issue.number);\\n    const receipt = await readRunReceipt(issue.number);\\n    const { route, stored } = await readFile(filename);\\n    await writeConsumedTrigger(route, stored, trigger, issue, receipt);\\n    console.log('Bound ' + filename + ' to issue #' + issue.number + ' and initialized the issue');\\n  }\\n}\\n\\nfunction event_name() {\\n  return process.env.GITHUB_EVENT_NAME;\\n}\\n\\nif (require.main === module) main().catch(error => {\\n  console.error(error.message);\\n  process.exitCode = 1;\\n});\\n\\nmodule.exports = { parseTrigger, triggerMarker, issueBody, identifierFromFilename, initializeConsumedTrigger, appendProcedureReceipt };\\n\",\"message\":\"Initialize and append procedure trigger receipts\"}",
+                "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"4f3b8de018288da394d89ff40abc0806ce51fb61\",\"content_sha\":\"7939f345fe96a6f0d2057d8a6653956ef5ce7375\"}",
+                "unavailable_reason": null,
+                "new": false,
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "frombyte": 4301,
+                "tobyte": 6375,
+                "description": "Seed the trigger receipt array and add safe identity-bound append/deduplication helpers.",
+                "intent": "The procedureName+nonce JSON starts with the initial receipt and provides the exact history target.",
+                "operator": "edit",
+                "specifiedOperatorByUser": null,
+                "chosenOperator": "edit",
+                "outcome": "succeeded"
+              },
+              {
+                "cwd": null,
+                "command_line_verbatim": null,
+                "tool": "mcp__codex_apps__github_update_file",
+                "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js\",\"sha\":\"435497bfbbaeb25157710f2e76c53f74df86dee4\",\"content\":\"const fs = require('node:fs');\\nconst path = require('node:path');\\nconst {compileTransitionMap,applyValidatedValues} = require('./transitions.js');\\nconst {loadScreens,entriesForState} = require('./render-instructions.js');\\nconst {inputsFor, validate} = require('./validator.js');\\nconst {appendProcedureReceipt} = require('./issue-run-trigger.js');\\nconst config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));\\nconst map = compileTransitionMap(JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8')));\\nconst screens = loadScreens();\\nconst fence = value => {\\n  const text = typeof value === 'string' ? value : JSON.stringify(value,null,2);\\n  const width = Math.max(3,...(text.match(/`+/g)||[]).map(x=>x.length+1));\\n  const mark = '`'.repeat(width);\\n  return mark + 'json\\\\n' + text + '\\\\n' + mark;\\n};\\nfunction triggerIdentifier(issue) {\\n  return (issue.body || '').match(/<!-- agents-procedure-trigger:([A-Za-z][A-Za-z0-9_-]*) -->/)?.[1] || null;\\n}\\nfunction triggerPathForRecord(record) {\\n  const identifier = record?.triggerIdentifier;\\n  if (typeof identifier !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]*[0-9]+$/.test(identifier)) {\\n    throw new Error('Run record has an invalid procedure trigger identifier.');\\n  }\\n  return path.join(__dirname, 'issue-run-triggers', identifier + '.json');\\n}\\nfunction issueNumberForEvent(event,overrideNumber) {\\n  const raw=overrideNumber ?? event.issue?.number;\\n  const number=typeof raw==='string'&&/^\\\\d+$/.test(raw)?Number(raw):raw;\\n  return Number.isSafeInteger(number)&&number>0?number:null;\\n}\\nfunction startRun(issue) {\\n  const state={};\\n  const result=map(state);\\n  const identifier=triggerIdentifier(issue);\\n  return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],toolInvocations:[],...(identifier?{triggerIdentifier:identifier}:{})};\\n}\\nfunction applyReturn(record,payload,fileRoot) {\\n  if(record.done)throw Error('This run has finished.');\\n  const fields=inputsFor(screens[record.state.render-1]);\\n  const values={};\\n  if(fields.length===0){\\n    if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).length)throw Error('This step accepts only {} to continue.');\\n  }else{\\n    if(fields.length!==1)throw Error('Instruction must declare its own combined return type.');\\n    const field=fields[0];\\n    if(payload.variable!==field.name)throw Error('Expected ${'+field.name+'}: value.');\\n    validate(payload.value,field.schema,field.name,{root:fileRoot,newFiles:field.name==='targetFiles'?[]:record.newFiles});\\n    values['$'+field.name]=payload.value;\\n  }\\n  const draft=structuredClone(record.state);\\n  const appliedValues={...values};\\n  delete appliedValues.$toolInvocations;\\n  applyValidatedValues(draft,JSON.stringify(appliedValues));\\n  const result=map(draft);\\n  if(Object.hasOwn(values,'$toolInvocations'))record.toolInvocations=[...(record.toolInvocations || []),...structuredClone(values.$toolInvocations)];\\n  record.history.push({request:record.request,render:record.state.render,loopNumber:record.state.loopNumber,values:structuredClone(values),state:structuredClone(draft)});\\n  record.state=result==='halt'?draft:result;\\n  if(payload.variable==='targetFiles')record.newFiles=payload.value.filter(file=>file.newFile).map(file=>file.filename);\\n  record.done=result==='halt';record.request++;\\n}\\nfunction parseReturn(body) {\\n  const text=body.trim();\\n  const fenced=text.match(/^\\\\x60{3,}(?:json|text|javascript)?\\\\s*\\\\n([\\\\s\\\\S]*?)\\\\n\\\\x60{3,}$/i);\\n  const source=(fenced?fenced[1]:text).trim();\\n  if(source==='{}')return {};\\n  const match=source.match(/^\\\\$\\\\{([A-Za-z_][\\\\w$]*)\\\\}\\\\s*:\\\\s*([\\\\s\\\\S]+)$/);\\n  if(!match)throw Error('Return must use ${variableName}: JSON value.');\\n  return {variable:match[1],value:JSON.parse(match[2])};\\n}\\nfunction renderIssue(record,issueNumber) {\\n  const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':named-return -->';\\n  if(record.done)return marker+'\\\\n## Procedure complete\\\\n\\\\nAll submitted values and state snapshots are preserved in the run record.';\\n  const instruction=Object.fromEntries(entriesForState(record.state,screens,record.toolInvocations || []));\\n  return marker+'\\\\n## Render '+record.state.render+'\\\\n\\\\n'+fence(instruction)+\\n    '\\\\n\\\\n<details><summary>Captured values</summary>\\\\n\\\\n'+fence({state:record.state})+'\\\\n\\\\n</details>';\\n}\\nfunction canonicalTitle(issue) {\\n  return 'AGENTS Procedure — '+new Date(issue.created_at).toISOString();\\n}\\nasync function main() {\\n  const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));\\n  const repository=process.env.GITHUB_REPOSITORY;\\n  const number=issueNumberForEvent(event,process.env.AGENTS_PROCEDURE_ISSUE_NUMBER);\\n  if(!number||event.issue?.pull_request)return;\\n  if(event.comment?.user?.type==='Bot')return;\\n  const apiBase='https://api.github.com/repos/'+repository;\\n  async function api(method,route,body,allowMissing=false) {\\n    const response=await fetch(apiBase+route,{method,headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});\\n    if(allowMissing&&response.status===404)return null;\\n    if(!response.ok)throw Error('GitHub '+method+' '+route+' returned '+response.status);\\n    return response.status===204?null:response.json();\\n  }\\n  const relative=path.relative(process.env.GITHUB_WORKSPACE,__dirname).split(path.sep).join('/')+'/issue-runs/'+number+'.json';\\n  const route='/contents/'+relative.split('/').map(encodeURIComponent).join('/');\\n  const stored=await api('GET',route,undefined,true);\\n  const issue=await api('GET','/issues/'+number);\\n  const acknowledged=/### Procedure acknowledgement\\\\s+[-*] \\\\[[xX]\\\\] \\\\S/.test(issue.body||'');\\n  const identified=stored || /^AGENTS Procedure(?:\\\\s|$)/.test(issue.title) || acknowledged;\\n  if(!identified)return;\\n  if(!stored && !acknowledged)throw Error('Acknowledge the AGENTS Procedure behavioral requirements before starting.');\\n  const title=canonicalTitle(issue);\\n  if(issue.title!==title)await api('PATCH','/issues/'+number,{title});\\n  // Title edits enforce naming only; they do not advance or initialize a run.\\n  if(event.action==='edited')return;\\n  const record=stored?JSON.parse(Buffer.from(stored.content,'base64').toString('utf8')):startRun(issue);\\n  const outbox=[];\\n  let comments=[],page=1;\\n  while(true){const batch=await api('GET','/issues/'+number+'/comments?per_page=100&page='+page++);comments.push(...batch);if(batch.length<100)break;}\\n  for(const comment of comments){\\n    if(comment.id<=record.lastCommentId||comment.user.type==='Bot')continue;\\n    if(record.done){record.lastCommentId=comment.id;continue;}\\n    if(!/^\\\\s*(?:\\\\$\\\\{|[\\\\[{\\\"\\\\d-]|true\\\\b|false\\\\b|null\\\\b|\\\\x60{3,})/.test(comment.body)) {record.lastCommentId=comment.id;continue;}\\n    const errorMarker='<!-- agents-procedure:'+number+':error:'+comment.id+' -->';\\n    try{applyReturn(record,parseReturn(comment.body),process.env.GITHUB_WORKSPACE);}\\n    catch(error){outbox.push({marker:errorMarker,body:errorMarker+'\\\\nReturn rejected: '+error.message+'\\\\n\\\\nState and current request are unchanged.'});}\\n    record.lastCommentId=comment.id;\\n  }\\n  const rendered=renderIssue(record,number);\\n  const marker=rendered.split('\\\\n')[0];\\n  outbox.push({marker,body:rendered});\\n  for(const item of outbox)if(item.body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');\\n  // Persist the state before publishing. Markers prevent duplicate prompts on retries.\\n  await api('PUT',route,{message:'Save AGENTS Procedure issue '+number+' state',content:Buffer.from(JSON.stringify(record,null,2)+'\\\\n').toString('base64'),...(stored?{sha:stored.sha}:{})});\\n  if(process.env.GITHUB_EVENT_NAME!=='push' && record.triggerIdentifier) {\\n    const triggerRelative=path.relative(process.env.GITHUB_WORKSPACE,triggerPathForRecord(record)).split(path.sep).join('/');\\n    const triggerRoute='/contents/'+triggerRelative.split('/').map(encodeURIComponent).join('/');\\n    const triggerStored=await api('GET',triggerRoute,undefined,true);\\n    if(!triggerStored)throw Error('Bound procedure trigger file was not found: '+triggerRelative);\\n    const trigger=JSON.parse(Buffer.from(triggerStored.content,'base64').toString('utf8'));\\n    const updatedTrigger=appendProcedureReceipt(trigger,record,number);\\n    if(updatedTrigger)await api('PUT',triggerRoute,{message:'Append AGENTS Procedure issue '+number+' receipt to '+record.triggerIdentifier,content:Buffer.from(JSON.stringify(updatedTrigger,null,2)+'\\\\\\\\n').toString('base64'),sha:triggerStored.sha});\\n  }\\n  for(const item of outbox)if(!comments.some(c=>c.body.includes(item.marker)))await api('POST','/issues/'+number+'/comments',{body:item.body});\\n  if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});\\n}\\nif(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});\\nmodule.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle,triggerIdentifier,triggerPathForRecord,issueNumberForEvent};\\n\",\"message\":\"Append run receipts to their procedure trigger\"}",
+                "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"b9d16efb157ad76a06cbfc99c252113833757744\",\"content_sha\":\"ecfe4f0a3a0e958d3d69037dcd82c4e643d49fa0\"}",
+                "unavailable_reason": null,
+                "new": false,
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 7055,
+                "tobyte": 7166,
+                "description": "After persisting the live issue receipt, append a deduplicated snapshot to the identifier-matched trigger JSON.",
+                "intent": "Keep the correct procedureName+nonce JSON synchronized with each issue workflow receipt.",
+                "operator": "edit",
+                "specifiedOperatorByUser": null,
+                "chosenOperator": "edit",
+                "outcome": "succeeded"
+              },
+              {
+                "cwd": null,
+                "command_line_verbatim": null,
+                "tool": "mcp__codex_apps__github_update_file",
+                "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js\",\"sha\":\"3aeb9f98b2693bf14d948008e5310736f598cbc9\",\"content\":\"const assert=require('node:assert/strict');\\nconst {startRun,applyReturn,parseReturn,renderIssue,triggerIdentifier,triggerPathForRecord,issueNumberForEvent}=require('./issue-workflow.js');\\nassert.equal(issueNumberForEvent({},'42'),42);\\nassert.equal(issueNumberForEvent({issue:{number:19}}),19);\\nassert.equal(issueNumberForEvent({},'0'),null);\\nassert.equal(triggerIdentifier({body:'<!-- agents-procedure-trigger:buildProcedure12 -->'}),'buildProcedure12');\\nassert.equal(startRun({body:'<!-- agents-procedure-trigger:buildProcedure12 -->'}).triggerIdentifier,'buildProcedure12');\\nassert.equal(triggerPathForRecord({triggerIdentifier:'buildProcedure12'}),require('node:path').join(__dirname,'issue-run-triggers','buildProcedure12.json'));\\nassert.throws(()=>triggerPathForRecord({triggerIdentifier:'../escape'}));\\nconst r=startRun({body:'Test request'}),root=__dirname+'/fixtures';\\nconst before=structuredClone(r);\\nassert.throws(()=>applyReturn(r,parseReturn('${userIntent}: \\\"wrong variable\\\"'),root));\\nassert.deepEqual(r,before);\\nassert.throws(()=>parseReturn('{\\\"values\\\":{}}'));\\nassert.throws(()=>applyReturn(r,parseReturn('${verbatimUserPrompt}: 12'),root));\\nassert.deepEqual(r,before);\\nconst send=text=>applyReturn(r,parseReturn(text),root);\\nsend('${verbatimUserPrompt}: \\\"What does JSON stand for?\\\"');\\nsend('${userIntent}: \\\"Expand JSON.\\\"');\\nsend('${exampleMatch}: true');\\nsend('{}');\\nsend('${userIntent}: \\\"Expand JSON.\\\"');\\nsend('{}');\\nsend('${minimalResult}: {\\\"result\\\":\\\"JavaScript Object Notation\\\"}');\\nassert.equal(r.done,true);\\nassert.equal(r.state.minimalResult.result,'JavaScript Object Notation');\\nassert.deepEqual(parseReturn('${requirements}: []'),{variable:'requirements',value:[]});\\nassert.throws(()=>parseReturn('${userIntent}: process.exit()'));\\nassert.throws(()=>parseReturn('${userIntent} = \\\"old format\\\"'));\\nconsole.log('Named colon returns, variable/type checks, arrays, objects, and halt passed.');\\n\\nassert(!renderIssue(startRun({body:'test'}),7).includes('Return schema'));\\nconsole.log('Issue output contains the procedure without a generated return schema.');\\n\\nconst filesRun=startRun({});\\nconst step=text=>applyReturn(filesRun,parseReturn(text),root);\\nstep('${verbatimUserPrompt}: \\\"Create a new file and edit notes.\\\"');\\nstep('${userIntent}: \\\"Create a file and edit notes.\\\"');\\nstep('${exampleMatch}: false');\\nconst unchanged=structuredClone(filesRun);\\nassert.throws(()=>step('${targetFiles}: [\\\"created.txt\\\"]'));\\nassert.throws(()=>step('${targetFiles}: [{\\\"filename\\\":\\\"missing.txt\\\",\\\"newFile\\\":false}]'));\\nassert.throws(()=>step('${targetFiles}: [{\\\"filename\\\":\\\"../escape.txt\\\",\\\"newFile\\\":true}]'));\\nassert.throws(()=>step('${targetFiles}: [{\\\"filename\\\":\\\"created.txt\\\",\\\"newFile\\\":\\\"true\\\"}]'));\\nassert.deepEqual(filesRun,unchanged);\\nstep('${targetFiles}: [{\\\"filename\\\":\\\"created.txt\\\",\\\"newFile\\\":true},{\\\"filename\\\":\\\"notes.txt\\\",\\\"newFile\\\":false}]');\\nassert.equal(filesRun.state.render,9);\\nassert.deepEqual(filesRun.newFiles,['created.txt']);\\nstep('${requirements}: [{\\\"filename\\\":\\\"created.txt\\\",\\\"frombyte\\\":0,\\\"tobyte\\\":0,\\\"description\\\":\\\"Create file\\\",\\\"intent\\\":\\\"Requested\\\",\\\"operator\\\":\\\"create\\\"}]');\\nassert.equal(filesRun.state.render,10);\\nconsole.log('New-file targets persist their designation into requirements; invalid targets leave state unchanged.');\\n\\nconst executionRun=startRun({});\\nexecutionRun.state.render=17;\\nexecutionRun.state.mode='accountability';\\nexecutionRun.state.loopNumber=1;\\nconst invocation={cwd:null,command_line_verbatim:null,tool:'test-tool',invocation_verbatim:'{}',final_output_after_completion_of_tool_call:'simulated test output',unavailable_reason:null,new:false,filename:'notes.txt',frombyte:0,tobyte:1,description:'Test reporting',intent:'Test intent',operator:'edit',specifiedOperatorByUser:null,chosenOperator:'edit',outcome:'succeeded'};\\nassert.throws(()=>applyReturn(executionRun,parseReturn('{}'),root));\\napplyReturn(executionRun,{variable:'toolInvocations',value:[invocation]},root);\\nassert.equal(executionRun.state.render,18);\\nassert.deepEqual(executionRun.toolInvocations,[invocation]);\\nassert(!Object.hasOwn(executionRun.state,'toolInvocations'));\\nassert(renderIssue(executionRun,99).includes('simulated test output'));\\nconst restored=JSON.parse(JSON.stringify(executionRun));\\nrestored.state.render=17;\\napplyReturn(restored,{variable:'toolInvocations',value:[{...invocation,url:'https://example.test',http_method:'GET'}]},root);\\nassert.equal(restored.toolInvocations.length,2);\\nassert(renderIssue(restored,99).includes('https://example.test'));\\nconsole.log('Runner-held invocation records survive serialization, accumulate, and render in full at change-list steps.');\\n\",\"message\":\"Test nonce-matched trigger paths\"}",
+                "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"5c6d410c1f1366887b5cc4eb743af6648a13cd84\",\"content_sha\":\"2f3ac6632d7a6fc5ebde16d4f9f5d6df2d771eda\"}",
+                "unavailable_reason": null,
+                "new": false,
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "frombyte": 434,
+                "tobyte": 534,
+                "description": "Cover exact trigger path derivation and reject unsafe identifiers.",
+                "intent": "Ensure the runner targets the JSON filename matching the stored procedure identifier.",
+                "operator": "edit",
+                "specifiedOperatorByUser": null,
+                "chosenOperator": "edit",
+                "outcome": "succeeded"
+              },
+              {
+                "cwd": null,
+                "command_line_verbatim": null,
+                "tool": "mcp__codex_apps__github_update_file",
+                "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js\",\"sha\":\"4e26395439ab2fb58312a978d24da6d7d86e28e0\",\"content\":\"const assert = require('node:assert/strict');\\nconst { parseTrigger, triggerMarker, issueBody, identifierFromFilename, initializeConsumedTrigger, appendProcedureReceipt } = require('./issue-run-trigger.js');\\n\\nassert.deepEqual(identifierFromFilename('buildProcedure12.json', 12), {\\n  procedureName: 'buildProcedure', identifier: 'buildProcedure12'\\n});\\nassert.deepEqual(parseTrigger('buildProcedure12.json', { startProcedure: true, nonce: 12 }), {\\n  filename: 'buildProcedure12.json', procedureName: 'buildProcedure', identifier: 'buildProcedure12', nonce: 12\\n});\\nassert.equal(parseTrigger('buildProcedure12.json', { startProcedure: false, nonce: 12 }), null);\\nassert.throws(() => parseTrigger('buildProcedure12.json', { startProcedure: true, nonce: '12' }));\\nassert.throws(() => parseTrigger('buildProcedure12.json', { startProcedure: true, nonce: 13 }));\\nassert.throws(() => parseTrigger('../buildProcedure12.json', { startProcedure: true, nonce: 12 }));\\nassert.throws(() => parseTrigger('12.json', { startProcedure: true, nonce: 12 }));\\nassert.throws(() => parseTrigger('buildProcedure12.json', { startProcedure: true, nonce: 12, procedureIssueNumber: 8 }));\\nconst trigger = parseTrigger('buildProcedure12.json', { startProcedure: true, nonce: 12 });\\nassert.equal(triggerMarker(trigger.identifier), '<!-- agents-procedure-trigger:buildProcedure12 -->');\\nassert.match(issueBody(trigger), /### Procedure acknowledgement/);\\nassert.match(issueBody(trigger), /- \\\\[x\\\\] I agree to follow each instruction/);\\nassert.match(issueBody(trigger), /Trigger identifier: `buildProcedure12`/);\\nconsole.log('Trigger filename, nonce, acknowledgement, and identifier tests passed.');\\n\\nconst initialReceipt = { state:{render:1}, done:false, request:1, lastCommentId:0, newFiles:[], history:[], toolInvocations:[], triggerIdentifier:'buildProcedure12' };\\nconst consumed = initializeConsumedTrigger({ startProcedure:true, nonce:12 }, trigger, { number:8, html_url:'https://github.com/BestNameYet/StateMachines/issues/8', title:'AGENTS Procedure — test' }, initialReceipt);\\nassert.deepEqual(consumed.procedureReceipts,[initialReceipt]);\\nconst laterReceipt = { ...initialReceipt, state:{render:2}, request:2, lastCommentId:41 };\\nconst appended = appendProcedureReceipt(consumed,laterReceipt,8);\\nassert.deepEqual(appended.procedureReceipts,[initialReceipt,laterReceipt]);\\nassert.equal(appendProcedureReceipt(appended,laterReceipt,8),null);\\nassert.throws(()=>appendProcedureReceipt(appended,{...laterReceipt,triggerIdentifier:'other9'},8));\\nassert.throws(()=>appendProcedureReceipt(appended,laterReceipt,9));\\nassert.throws(()=>appendProcedureReceipt({...appended,procedureIssueNumber:9},laterReceipt,9));\\nconsole.log('Initial and append-only receipt snapshots remain bound to the matching trigger identifier and issue.');\\n\",\"message\":\"Test initialized and appended trigger receipts\"}",
+                "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"d3e852aa759d6c0107f4ba532cab0231b77e1bc3\",\"content_sha\":\"e1f56116f8c88755a6aaaa1ebe279e57fbeb83d2\"}",
+                "unavailable_reason": null,
+                "new": false,
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "frombyte": 1526,
+                "tobyte": 1613,
+                "description": "Verify initial snapshot, append order, duplicate suppression, and issue/identifier binding.",
+                "intent": "Prevent receipts from being written to a different procedure nonce file or issue.",
+                "operator": "edit",
+                "specifiedOperatorByUser": null,
+                "chosenOperator": "edit",
+                "outcome": "succeeded"
+              },
+              {
+                "cwd": null,
+                "command_line_verbatim": null,
+                "tool": "mcp__codex_apps__github_update_file",
+                "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json\",\"sha\":\"ae3e244ca36a69f22c29a13ccfaf6fed8bf25021\",\"content\":\"{\\n  \\\"$schema\\\": \\\"https://json-schema.org/draft/2020-12/schema\\\",\\n  \\\"$id\\\": \\\"https://github.com/BestNameYet/StateMachines/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/issue-run-triggers/trigger.template.schema.json\\\",\\n  \\\"title\\\": \\\"AGENTS Procedure issue-run trigger\\\",\\n  \\\"description\\\": \\\"Agent-submitted trigger files contain only startProcedure and nonce. After initialization, the workflow marks the trigger consumed and writes issue metadata and an initial JSON receipt snapshot.\\\",\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"required\\\": [\\\"startProcedure\\\", \\\"nonce\\\"],\\n  \\\"properties\\\": {\\n    \\\"startProcedure\\\": {\\n      \\\"type\\\": \\\"boolean\\\",\\n      \\\"description\\\": \\\"Set true in a new trigger file. The workflow changes it to false after binding and initializing the issue.\\\"\\n    },\\n    \\\"nonce\\\": {\\n      \\\"type\\\": \\\"integer\\\",\\n      \\\"minimum\\\": 0,\\n      \\\"description\\\": \\\"Non-negative integer that must match the numeric suffix in the trigger filename.\\\"\\n    },\\n    \\\"procedureName\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"pattern\\\": \\\"^[A-Za-z][A-Za-z0-9_-]*$\\\",\\n      \\\"description\\\": \\\"Written by the workflow from the filename prefix.\\\"\\n    },\\n    \\\"procedureIdentifier\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"pattern\\\": \\\"^[A-Za-z][A-Za-z0-9_-]*[0-9]+$\\\",\\n      \\\"description\\\": \\\"The filename stem, such as buildProcedure12.\\\"\\n    },\\n    \\\"procedureIssueNumber\\\": {\\n      \\\"type\\\": \\\"integer\\\",\\n      \\\"minimum\\\": 1,\\n      \\\"description\\\": \\\"GitHub issue number created for this trigger.\\\"\\n    },\\n    \\\"procedureIssueUrl\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"format\\\": \\\"uri\\\",\\n      \\\"description\\\": \\\"URL of the issue bound to this trigger.\\\"\\n    },\\n    \\\"procedureTitle\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"description\\\": \\\"Canonical title applied by the issue runner after issue creation.\\\"\\n    },\\n    \\\"procedureReceiptPath\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"description\\\": \\\"Path to the canonical mutable JSON run receipt under issue-runs/.\\\"\\n    },\\n    \\\"procedureSavedHere\\\": {\\n      \\\"$ref\\\": \\\"#/$defs/procedureReceipt\\\",\\n      \\\"description\\\": \\\"Snapshot of the initialized receipt when the trigger is consumed. The issue-runs file remains live.\\\"\\n    },\\n    \\\"procedureReceipts\\\": {\\n      \\\"type\\\": \\\"array\\\",\\n      \\\"items\\\": { \\\"$ref\\\": \\\"#/$defs/procedureReceipt\\\" },\\n      \\\"description\\\": \\\"Ordered receipt snapshots, beginning with the initialized receipt and appended after later issue workflow updates.\\\"\\n    }\\n  },\\n  \\\"$defs\\\": {\\n    \\\"procedureReceipt\\\": {\\n      \\\"type\\\": \\\"object\\\",\\n      \\\"required\\\": [\\\"state\\\", \\\"done\\\", \\\"request\\\", \\\"lastCommentId\\\", \\\"newFiles\\\", \\\"history\\\", \\\"toolInvocations\\\"],\\n      \\\"properties\\\": {\\n        \\\"state\\\": { \\\"type\\\": \\\"object\\\" },\\n        \\\"done\\\": { \\\"type\\\": \\\"boolean\\\" },\\n        \\\"request\\\": { \\\"type\\\": \\\"integer\\\", \\\"minimum\\\": 1 },\\n        \\\"lastCommentId\\\": { \\\"type\\\": \\\"integer\\\", \\\"minimum\\\": 0 },\\n        \\\"newFiles\\\": { \\\"type\\\": \\\"array\\\", \\\"items\\\": { \\\"type\\\": \\\"string\\\" } },\\n        \\\"history\\\": { \\\"type\\\": \\\"array\\\", \\\"items\\\": { \\\"type\\\": \\\"object\\\" } },\\n        \\\"toolInvocations\\\": { \\\"type\\\": \\\"array\\\", \\\"items\\\": { \\\"type\\\": \\\"object\\\" } },\\n        \\\"triggerIdentifier\\\": { \\\"type\\\": \\\"string\\\" }\\n      },\\n      \\\"additionalProperties\\\": false\\n    }\\n  },\\n  \\\"allOf\\\": [\\n    {\\n      \\\"if\\\": { \\\"properties\\\": { \\\"startProcedure\\\": { \\\"const\\\": true } }, \\\"required\\\": [\\\"startProcedure\\\"] },\\n      \\\"then\\\": { \\\"maxProperties\\\": 2 }\\n    },\\n    {\\n      \\\"if\\\": { \\\"properties\\\": { \\\"startProcedure\\\": { \\\"const\\\": false } }, \\\"required\\\": [\\\"startProcedure\\\"] },\\n      \\\"then\\\": {\\n        \\\"required\\\": [\\\"procedureName\\\", \\\"procedureIdentifier\\\", \\\"procedureIssueNumber\\\", \\\"procedureIssueUrl\\\", \\\"procedureTitle\\\", \\\"procedureReceiptPath\\\", \\\"procedureSavedHere\\\"]\\n      }\\n    }\\n  ],\\n  \\\"additionalProperties\\\": false\\n}\\n\",\"message\":\"Allow appended receipt snapshots in trigger JSON\"}",
+                "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"6cd8bf8ced3f170f3753be0d5abe4f5d8d628b8c\",\"content_sha\":\"18d79cef91f74ca81ee94c3459cf18b147a0bdac\"}",
+                "unavailable_reason": null,
+                "new": false,
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "frombyte": 1888,
+                "tobyte": 2104,
+                "description": "Add procedureReceipts as an ordered array of procedure receipt snapshots.",
+                "intent": "Schema-validate receipt history stored in the correct procedureName+nonce JSON.",
+                "operator": "edit",
+                "specifiedOperatorByUser": null,
+                "chosenOperator": "edit",
+                "outcome": "succeeded"
+              },
+              {
+                "cwd": null,
+                "command_line_verbatim": null,
+                "tool": "mcp__codex_apps__github_update_file",
+                "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md\",\"sha\":\"778167145c3e4a704239b99797d8ccfea683c720\",\"content\":\"# AGENTS Procedure\\n\\n## Create a procedure run\\n\\nCreate a new issue in BestNameYet/StateMachines using either the AGENTS Procedure issue template or a committed trigger file under issue-run-triggers/. The issue template contains the required Procedure acknowledgement; it does not collect the user prompt. The first rendered instruction captures the verbatim user prompt in the issue replies.\\n\\nThe workflow replaces the issue title with AGENTS Procedure — <issue creation timestamp in UTC>, including after title edits. The timestamp comes from GitHub's issue creation time and remains unchanged throughout the run. The issue number identifies the run and its separate persisted state.\\n\\nGitHub issues belong to the repository rather than a folder. The runner stores this procedure's run records under ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/.\\n\\n### Commit a procedure issue trigger\\n\\nCreate a new JSON file directly in `issue-run-triggers/` named `<procedureName><nonce>.json`, for example `buildProcedure12.json`. Its complete initial body must be:\\n\\n```json\\n{\\n  \\\"startProcedure\\\": true,\\n  \\\"nonce\\\": 12\\n}\\n```\\n\\nThe nonce must be a non-negative integer and match the numeric suffix of the filename. Commit the trigger file to `main`. The workflow validates it, creates one issue with the checked Procedure acknowledgement, runs the existing issue initializer directly by issue number in that same push workflow, and changes `startProcedure` to `false` after the issue record and first instruction are persisted. It then adds `procedureName`, `procedureIdentifier`, `procedureIssueNumber`, `procedureIssueUrl`, `procedureTitle`, and `procedureReceiptPath` to the trigger JSON. The issue body and saved run record carry the trigger identifier so the issue remains bound to the filename even after the issue runner changes its title to the canonical UTC timestamp. The issue is the persistent communication port for later returns. Each non-bot reply creates an `issue_comment` event and retriggers this GitHub Actions workflow for that issue; the runner loads its receipt and advances the conversation.\\n\\nThe workflow reuses an issue carrying the exact trigger marker if a run is retried. Once the push job initializes the issue, `procedureSavedHere` stores the initial JSON receipt and `procedureReceipts` starts with that snapshot. `procedureReceiptPath` points to the live mutable receipt at `issue-runs/<issue-number>.json`. Later workflow updates append receipt snapshots to the trigger JSON named by its `procedureIdentifier` (`<procedureName><nonce>.json`), after verifying the issue binding; the live per-issue receipt remains canonical for current state. The first rendered instruction captures the verbatim user prompt in the issue replies.\\n\\n## Interactive execution\\n\\nThe intended workflow starts when a qualifying procedure issue is opened or when the push workflow creates an issue from a committed trigger. It initializes that issue's state, reads the state-to-instruction mapping, and posts the current instruction to the issue. The complete procedure remains in its source file and is not posted to the issue.\\n\\nOn receipt of an agent return, validate it against the current instruction's expected return. If valid, record the returned value, update the persisted state, and render the instruction associated with the resulting state. If invalid, retain the current state and post the validation error for correction. A waiting-return status is unnecessary.\\n\\nKeep state updates, instruction rendering, and return validation separate. Each issue has its own state. Serialize processing for the same issue to prevent overlapping updates.\\n\\n## Preserve run history\\n\\nUse a fresh issue for every run. Append instructions, agent returns, and validation results as comments in that issue. Preserve the comments and the final persisted state. Close the issue when its run finishes; do not delete it or reuse it for a later run.\\n\\n## Implementation status\\n\\nThe procedure, transition map, transition executor, render positions, lookup, HTML interface, and structural validator are implemented. The issue-trigger workflow and Gemini–Selenium harness are implemented; a live Gemini run has not yet been verified.\\n\\n## Run the HTML interface\\n\\nFrom this directory, run:\\n\\n```sh\\nnode interface-server.js\\n```\\n\\nOpen http://127.0.0.1:3000. Each page load starts a separate in-memory run from an empty state object through the transition map. Submit or Enter sends the expected values through the compiled map(state) contract; Shift+Enter inserts a newline. The interface does not change transitions.js or add interface fields to its state. Server restart discards these interface sessions.\\n\\nInstruction keys and values are resolved using Instruction-render.json and Instruction-lookup.json. Input controls and JSON return schemas are derived from the explicit types already present in the instruction text. Structural checks include strings, integers, Booleans, arrays, required object fields, byte ranges, and relative file references. They do not judge whether a response is semantically correct.\\n\\nThe targetFiles return uses records with filename and newFile. The caller retains targets marked newFile: true for later file-reference validation. The HTML form also has a New files field. Existing file references must resolve inside the fixture workspace; designated new files do not need to exist. The fixture manifest lists three existing files and one new-file requirement. The interface validates file references; it does not itself execute the requested file edits.\\n\\nRun the HTTP adapter and validator checks with:\\n\\n```sh\\nnode interface.test.js\\n```\\n\\nThe tests cover minimal, fidelity, accountability, and repeated accountability through all 23 renders. They also check rejected types, nested integer fields, nonexistent files, and the new-file exception. These are HTTP/application tests; they are not Selenium browser tests.\\n\\nThe adapter exposes POST /api/start and POST /api/submit. A submission contains id, values (using $variableName keys), and optional newFiles. Responses contain the rendered entries, inputs, returnSchema, state, and submission history for the harness. Gemini and Selenium can consume this interface without changing the transition executor.\\n\\n## Selenium setup\\n\\nThe Selenium browser adapter is in selenium/browser.py. create_browser() starts headless Chrome using Selenium's built-in driver management. read_screen(driver) reads the current instruction and return schema. submit_values(driver, values) fills the corresponding form controls and clicks Submit, then waits for the next screen, completion, or a validation error. It does not generate answers or modify the transition executor.\\n\\nInstall the browser dependency and verify the setup:\\n\\n```sh\\npython -m pip install -r selenium/requirements.txt\\npython selenium/smoke.py\\n```\\n\\nThe smoke check starts the existing interface server, opens its first screen, verifies the prompt and input box, and shuts down. It submits no values and takes no screenshots. Setup diagnostics are written to selenium/artifacts, which is ignored by git.\\n\\nThe AGENTS Selenium setup GitHub Actions workflow installs Node and Python, installs Selenium, and runs this initial-form check. It can be started manually and also runs when its workflow or Selenium setup files change. The Gemini-driven procedure run and screenshots of every render remain separate work.\\n\\n## Render the procedure to issues\\n\\nStart a run using the AGENTS Procedure issue template or the commit trigger described above. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction and captured values as a comment. The full procedure is not posted.\\n\\nReply using ${variableName}: value, where value is JSON of the declared type. For example:\\n\\n```text\\n${userIntent}: \\\"The user wants to know what JSON stands for.\\\"\\n```\\n\\nDo not add a request number or values wrapper. The workflow validates the supplied variable name and the value, then updates that state variable. Steps with no captured return accept {} after their instruction is completed.\\n\\nReturn targetFiles as an array of records, each with filename and newFile. Use repository-relative paths in issue replies. Set newFile to true for creation and false for changes to an existing file:\\n\\n```text\\n${targetFiles}: [{\\\"filename\\\":\\\"new-file.txt\\\",\\\"newFile\\\":true},{\\\"filename\\\":\\\"README.md\\\",\\\"newFile\\\":false}]\\n```\\n\\nExisting targets must resolve to files. New targets may be absent; their paths must still be valid within the workspace. The caller retains the designated filenames for subsequent requirement and change-record validation, so those records do not need to repeat newFile. A designation permits a planned file reference; it does not create the file or prove execution.\\n\\nEach valid return updates the issue state through the transition function. Compiled hidden decisions execute immediately; the next visible instruction is posted. Validation errors do not advance the state. The workflow keeps comment-processing identifiers internally; they are not part of the submitted return schema.\\n\\nEach run is saved as issue-runs/<issue-number>.json with the state, current request number, input history, and state snapshots. For trigger-backed runs, the runner also appends each distinct updated receipt to the matching issue-run-triggers/<procedureIdentifier>.json, preserving the trigger’s initial receipt and metadata. The state itself retains its existing input fields, render number, and loop counter. Workflow runs for the same issue are serialized, and the runner reads pending JSON comments in order. Bot comments do not trigger another processing cycle. Terminal runs post completion and close the issue while preserving its history. No Gemini calls or Selenium runs are made by this workflow.\\n\\nRun the local issue adapter checks with node issue-workflow.test.js. They verify the adapter without creating an actual GitHub issue.\\n\\nThe runner recognizes a procedure issue by an existing saved run record, an AGENTS Procedure title prefix, or the checked Procedure acknowledgement in its body. A new run requires the checked acknowledgement even when its title matches. Title-edit events enforce the canonical title only; they do not initialize or advance the procedure.\\n\\nThe caller loads transitions.json and compiles it once: const map = compileTransitionMap(transitions). The result is a state-to-state operator. Initialize with map({}); for subsequent returns, apply validated inputs to the previous state and call map(state). There is no separate state.json or state config entry.\\n\\nThe transition CLI accepts a JSON state as its first argument (default {}), with optional values JSON as its second argument, and prints the next state or halt. The renderer CLI accepts the JSON state as its first argument. Neither CLI reads or writes a shared state template.\\n\\n## Transition result contract\\n\\ncompileTransitionMap(transitions) returns a function map(state). Compilation builds executable state transformations and connects sequence successors, Boolean destinations, branches, and entry pointers from the JSON. The resulting operator returns the next state object, or the string halt at a terminal destination. It does not render or walk JSON items during invocation. Nested sequence arrays are resolved during compilation. Exhausted selected arrays, null items, and null return destinations resolve to halt. The transition map omits null render fields; only a non-null render value returns a renderable state. Missing or malformed addresses remain errors rather than being silently treated as completion.\\n\\nThe GitHub workflow runner is the caller. It writes the returned state into the issue's run file before posting its instruction. At halt it preserves the final updated state, records completion, and does not render another instruction. The HTML adapter consumes the same result contract. Initialization calls map({}). The first map item defines the initial input fields and render; no separate state template is loaded. The workflow persists each resulting run state.\\n\\nIssue comments render the procedure's instruction directly. Its declared return variable and type define the response; no additional generated return-schema block or reply envelope is posted. Replies use ${variableName}: value. Structural validation remains based on the procedure's declared types.\\n\\n\\n## Run Gemini through Selenium\\n\\nThe Gemini adapter is in `selenium/gemini.py`. It reads each live browser screen, sends its instruction, held state, declared inputs, and return contract to the existing Gemini generateContent API, validates the returned JSON names and types, and submits accepted values through `selenium/browser.py`. Validation failures are sent back to Gemini with their actual error text. Prompts, responses, submitted values, state snapshots, failures, and screenshots are saved as run evidence; the API key is sent in an HTTP header and is not written to the evidence.\\n\\nConfigure the GitHub Actions repository secret `GEMINI_API_KEY`; optionally set `GEMINI_MODEL`. The model defaults to the value used by the existing Gemini integration. Open **Actions → AGENTS Gemini Selenium → Run workflow**, then select a scenario:\\n\\n- `minimal` exercises the minimal answer path.\\n- `fidelity` selects the fidelity path.\\n- `accountability` selects the accountability path.\\n- `repeated-accountability` exercises the accountability loop.\\n\\nThe workflow first runs the existing Node tests and the focused Gemini adapter tests, then starts the local interface and headless browser for the selected live scenario. It uploads the run log and screenshots as a downloadable Actions artifact. Source pushes run the test checks without calling Gemini unless the commit changes workflows/gemini-selenium/trigger.json with enabled set to true.\\n\\nThe interface collects procedure returns; it does not edit repository files. If a live scenario reaches an instruction to execute file requirements, the harness records a screenshot and an execution-blocked result, then stops at that screen. It does not claim those changes or later completion values. The mocked adapter tests verify response parsing, declared-variable checks, validation-error recovery, terminal handling, and evidence capture; they do not prove a live Gemini run. The existing interface tests cover the procedure's 23 renders across its documented paths.\\n\\n## Commit trigger for Gemini Selenium\\n\\nThe workflow trigger is workflows/gemini-selenium/trigger.json in this procedure directory. It contains timestamp (an ISO timestamp string) and enabled (a Boolean). Commit a fresh timestamp with enabled: true to main to start a live minimal scenario. Set enabled: false to disable live execution for a trigger update. Unrelated commits do not start live Gemini even if the stored Boolean remains true. Manual scenario selection remains available through workflow_dispatch.\\n\\n## Execution tool-invocation report\\n\\nExecution renders 13 and 17 capture ${toolInvocations} as an array of records using the displayed return definition. Each record includes the operator selection, required invocation fields, matching requirement fields, final tool output, and outcome. Use null for non-applicable required values; include http_method and url for web calls. Return only records from the current execution. The caller stores accepted records in its own toolInvocations array, outside the state passed to map(state), preserving earlier loop records. The issue runner serializes that array in its existing run record; the HTML runner holds it in its session. Renders 14 and 18 display the complete stored array as toolInvocationReport and use it with other available information to construct changeList. The report is supplied by the executor and structurally validated; it is not an automatic interception of external tool calls or proof that a reported change occurred. The Gemini harness still stops where it lacks a file executor.\\n\",\"message\":\"Document trigger-bound receipt history\"}",
+                "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"10c422610d80c633f34f5232d7c824f1555fa0ff\",\"content_sha\":\"f58c8422badec4bd60c58a774098d7c489068108\"}",
+                "unavailable_reason": null,
+                "new": false,
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 1703,
+                "tobyte": 2190,
+                "description": "Document procedureReceipts append behavior and the distinct live issue receipt.",
+                "intent": "Explain how receipt snapshots are stored in the trigger JSON that matches procedureName plus nonce.",
+                "operator": "edit",
+                "specifiedOperatorByUser": null,
+                "chosenOperator": "edit",
+                "outcome": "succeeded"
+              },
+              {
+                "cwd": null,
+                "command_line_verbatim": null,
+                "tool": "mcp__codex_apps__github_fetch",
+                "invocation_verbatim": "{\"url\":\"https://api.github.com/repos/BestNameYet/StateMachines/actions/runs/38904158369/jobs\"}",
+                "final_output_after_completion_of_tool_call": "{\"jobs\":[{\"name\":\"check\",\"status\":\"completed\",\"conclusion\":\"success\",\"step\":\"Check issue adapter and trigger\",\"step_conclusion\":\"success\"},{\"name\":\"create-from-trigger\",\"status\":\"completed\",\"conclusion\":\"success\"}]}",
+                "unavailable_reason": null,
+                "new": null,
+                "filename": null,
+                "frombyte": null,
+                "tobyte": null,
+                "description": "Read the push workflow execution result for the modified adapter and trigger tests.",
+                "intent": "Verify the repository’s existing automated checks ran successfully after the source and test changes.",
+                "operator": "read",
+                "specifiedOperatorByUser": null,
+                "chosenOperator": "read",
+                "outcome": "succeeded",
+                "http_method": "GET",
+                "url": "https://api.github.com/repos/BestNameYet/StateMachines/actions/runs/38904158369/jobs"
+              }
+            ]
+          },
+          "state": {
+            "render": 14,
+            "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
+            "userIntent": "Change the issue workflow so every newly processed receipt is appended to the trigger JSON whose filename matches the run’s stored procedureIdentifier (procedureName plus nonce), while preserving the existing per-issue receipt and trigger metadata.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "newFile": false
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": false
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 773,
+                "tobyte": 799,
+                "description": "Resolve the trigger identifier into the exact procedureName+nonce JSON path and verify the trigger’s issue binding before appending.",
+                "intent": "Append each run receipt to the correct trigger JSON rather than leaving it only in issue-runs/<issue-number>.json.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 7055,
+                "tobyte": 7166,
+                "description": "After saving the issue receipt, append a deduplicated receipt snapshot to its bound trigger JSON using the current content SHA.",
+                "intent": "Keep the trigger JSON’s receipt history synchronized with issue-comment workflow advances while retaining the canonical per-issue receipt.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+                "frombyte": 434,
+                "tobyte": 534,
+                "description": "Add tests for correct trigger-path resolution, issue binding, snapshot append, and duplicate suppression.",
+                "intent": "Verify the runner appends to the matching procedureName+nonce file and rejects mismatched targets.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+                "frombyte": 4301,
+                "tobyte": 6375,
+                "description": "Initialize the trigger JSON receipt history with the first persisted receipt when consuming a new trigger.",
+                "intent": "Ensure the correct procedure nonce file starts with its initial receipt so later workflow advances can append.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+                "frombyte": 1526,
+                "tobyte": 1613,
+                "description": "Test initial receipt history creation and trigger identity/issue association.",
+                "intent": "Verify trigger initialization seeds the receipt history in the selected trigger JSON.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+                "frombyte": 1888,
+                "tobyte": 2104,
+                "description": "Add a schema definition for the appended receipt snapshot array.",
+                "intent": "Validate receipt snapshots persisted in each procedureName+nonce JSON file.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 1703,
+                "tobyte": 2190,
+                "description": "Document that the trigger JSON retains an append-only receipt history while issue-runs/<issue-number>.json remains the live current receipt.",
+                "intent": "Explain where historical snapshots are appended and how the correct trigger is bound to the issue.",
+                "operator": "edit"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 8998,
+                "tobyte": 9049,
+                "description": "Clarify the relationship between per-issue live receipts and appended trigger-file receipt snapshots.",
+                "intent": "Make the workflow’s persistent receipt locations and responsibilities explicit.",
+                "operator": "edit"
+              }
+            ],
+            "matchedExample": {
+              "example": 6,
+              "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+            },
+            "mode": "fidelity",
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null
+          }
+        }
+      ],
+      "toolInvocations": [
+        {
+          "cwd": null,
+          "command_line_verbatim": null,
+          "tool": "mcp__codex_apps__github_create_file",
+          "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/updateIssueRunReceipts1.json\",\"branch\":\"main\",\"message\":\"Start AGENTS Procedure run for receipt append update\",\"content\":\"{\\n  \\\"startProcedure\\\": true,\\n  \\\"nonce\\\": 1\\n}\\n\"}",
+          "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"c34e78103b9cc63169934195d41b8224d92a9226\"}",
+          "unavailable_reason": null,
+          "new": true,
+          "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/updateIssueRunReceipts1.json",
+          "frombyte": 0,
+          "tobyte": 43,
+          "description": "Create the documented nonce trigger to start this AGENTS Procedure run.",
+          "intent": "Start the interactive procedure and bind it to its correct procedureName+nonce file.",
+          "operator": "create",
+          "specifiedOperatorByUser": null,
+          "chosenOperator": "create",
+          "outcome": "succeeded"
+        },
+        {
+          "cwd": null,
+          "command_line_verbatim": null,
+          "tool": "mcp__codex_apps__github_update_file",
+          "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js\",\"sha\":\"6d903f804c19ed048a78de33e50a48f8053e7302\",\"content\":\"const fs = require('node:fs');\\nconst path = require('node:path');\\nconst { execFileSync } = require('node:child_process');\\n\\nconst triggerDirectory = path.join(__dirname, 'issue-run-triggers');\\nconst identifierFromFilename = (filename, nonce) => {\\n  if (typeof filename !== 'string' || !filename.endsWith('.json')) {\\n    throw new Error('Trigger filename must end in .json.');\\n  }\\n  const stem = filename.slice(0, -5);\\n  const suffix = String(nonce);\\n  if (!stem.endsWith(suffix)) throw new Error('Filename must end with its JSON nonce.');\\n  const procedureName = stem.slice(0, -suffix.length);\\n  if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(procedureName)) {\\n    throw new Error('Filename must be <procedureName><nonce>.json; procedureName must start with a letter and contain only letters, digits, _ or -.');\\n  }\\n  return { procedureName, identifier: stem };\\n};\\n\\nfunction parseTrigger(filename, value) {\\n  if (!value || typeof value !== 'object' || Array.isArray(value)) {\\n    throw new Error('Trigger JSON must be an object.');\\n  }\\n  if (!Object.prototype.hasOwnProperty.call(value, 'startProcedure') || typeof value.startProcedure !== 'boolean') {\\n    throw new Error('startProcedure must be a Boolean.');\\n  }\\n  if (value.startProcedure !== true) return null;\\n  if (!Number.isSafeInteger(value.nonce) || value.nonce < 0) {\\n    throw new Error('nonce must be a non-negative safe integer.');\\n  }\\n  const { procedureName, identifier } = identifierFromFilename(filename, value.nonce);\\n  const allowed = new Set(['startProcedure', 'nonce']);\\n  const unexpected = Object.keys(value).filter(key => !allowed.has(key));\\n  if (unexpected.length) throw new Error('A new trigger may contain only startProcedure and nonce; found: ' + unexpected.join(', '));\\n  return { filename, procedureName, identifier, nonce: value.nonce };\\n}\\n\\nfunction initializeConsumedTrigger(current, trigger, issue, receipt) {\\n  const procedureReceiptPath = 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/' + issue.number + '.json';\\n  return {\\n    ...current,\\n    startProcedure: false,\\n    procedureName: trigger.procedureName,\\n    procedureIdentifier: trigger.identifier,\\n    procedureIssueNumber: issue.number,\\n    procedureIssueUrl: issue.html_url,\\n    procedureTitle: issue.title,\\n    procedureReceiptPath,\\n    procedureSavedHere: receipt,\\n    procedureReceipts: [receipt]\\n  };\\n}\\n\\nfunction appendProcedureReceipt(current, receipt, issueNumber) {\\n  if (!current || typeof current !== 'object' || Array.isArray(current)) {\\n    throw new Error('Consumed trigger must be a JSON object.');\\n  }\\n  const identifier = current.procedureIdentifier;\\n  if (current.startProcedure !== false ||\\n      typeof identifier !== 'string' ||\\n      !/^[A-Za-z][A-Za-z0-9_-]*[0-9]+$/.test(identifier) ||\\n      !/^[A-Za-z][A-Za-z0-9_-]*$/.test(current.procedureName || '') ||\\n      !Number.isSafeInteger(current.nonce) ||\\n      current.nonce < 0 ||\\n      current.procedureName + current.nonce !== identifier) {\\n    throw new Error('Trigger filename identity does not match its procedureName and nonce.');\\n  }\\n  if (current.procedureIssueNumber !== issueNumber) {\\n    throw new Error('Trigger is bound to a different issue.');\\n  }\\n  const expectedPath = 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/' + issueNumber + '.json';\\n  if (current.procedureReceiptPath !== expectedPath) {\\n    throw new Error('Trigger receipt path does not match its bound issue.');\\n  }\\n  if (!receipt || typeof receipt !== 'object' || receipt.triggerIdentifier !== identifier) {\\n    throw new Error('Run receipt identifier does not match the trigger filename.');\\n  }\\n  const receipts = current.procedureReceipts === undefined\\n    ? (current.procedureSavedHere ? [current.procedureSavedHere] : [])\\n    : current.procedureReceipts;\\n  if (!Array.isArray(receipts)) throw new Error('Trigger procedureReceipts must be an array.');\\n  const last = receipts[receipts.length - 1];\\n  if (last && last.request === receipt.request &&\\n      last.lastCommentId === receipt.lastCommentId &&\\n      JSON.stringify(last) === JSON.stringify(receipt)) return null;\\n  return { ...current, procedureReceipts: [...receipts, structuredClone(receipt)] };\\n}\\n\\nfunction triggerMarker(identifier) {\\n  return '<!-- agents-procedure-trigger:' + identifier + ' -->';\\n}\\n\\nfunction issueBody(trigger) {\\n  return [\\n    triggerMarker(trigger.identifier),\\n    '### Procedure acknowledgement',\\n    '',\\n    '- [x] I agree to follow each instruction, preserve the user intent and constraints, perform the required work before reporting it, return accurate values in the required format, and account for incomplete or unapproved changes.',\\n    '',\\n    'Trigger identifier: `' + trigger.identifier + '`',\\n    ''\\n  ].join('\\\\n');\\n}\\n\\nasync function main() {\\n  const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));\\n  if (event_name() !== 'push') return;\\n  const repository = process.env.GITHUB_REPOSITORY;\\n  const apiBase = 'https://api.github.com/repos/' + repository;\\n  async function api(method, route, body) {\\n    const response = await fetch(apiBase + route, {\\n      method,\\n      headers: {\\n        Authorization: 'Bearer ' + process.env.GITHUB_TOKEN,\\n        Accept: 'application/vnd.github+json',\\n        'Content-Type': 'application/json',\\n        'X-GitHub-Api-Version': '2022-11-28'\\n      },\\n      ...(body ? { body: JSON.stringify(body) } : {})\\n    });\\n    if (!response.ok) throw new Error('GitHub ' + method + ' ' + route + ' returned ' + response.status + ': ' + await response.text());\\n    return response.status === 204 ? null : response.json();\\n  }\\n  async function findIssue(marker) {\\n    for (let page = 1; ; page++) {\\n      const issues = await api('GET', '/issues?state=all&per_page=100&page=' + page);\\n      const found = issues.find(issue => !issue.pull_request && (issue.body || '').includes(marker));\\n      if (found) return found;\\n      if (issues.length < 100) return null;\\n    }\\n  }\\n  async function readFile(filename) {\\n    const relative = path.relative(process.env.GITHUB_WORKSPACE, path.join(triggerDirectory, filename)).split(path.sep).join('/');\\n    const route = '/contents/' + relative.split('/').map(encodeURIComponent).join('/');\\n    return { route, stored: await api('GET', route) };\\n  }\\n  async function readRunReceipt(issueNumber) {\\n    const relative = path.relative(process.env.GITHUB_WORKSPACE, path.join(__dirname, 'issue-runs', issueNumber + '.json')).split(path.sep).join('/');\\n    const route = '/contents/' + relative.split('/').map(encodeURIComponent).join('/');\\n    const stored = await api('GET', route);\\n    return JSON.parse(Buffer.from(stored.content, 'base64').toString('utf8'));\\n  }\\n  async function writeConsumedTrigger(route, stored, trigger, issue, receipt) {\\n    const current = JSON.parse(Buffer.from(stored.content, 'base64').toString('utf8'));\\n    if (current.startProcedure !== true) return;\\n    const completed = initializeConsumedTrigger(current, trigger, issue, receipt);\\n    await api('PUT', route, {\\n      message: 'Bind procedure trigger ' + trigger.identifier + ' to issue ' + issue.number,\\n      sha: stored.sha,\\n      content: Buffer.from(JSON.stringify(completed, null, 2) + '\\\\n').toString('base64')\\n    });\\n  }\\n  const names = fs.readdirSync(triggerDirectory).filter(name => name.endsWith('.json') && name !== 'trigger.template.schema.json').sort();\\n  for (const filename of names) {\\n    const value = JSON.parse(fs.readFileSync(path.join(triggerDirectory, filename), 'utf8'));\\n    const trigger = parseTrigger(filename, value);\\n    if (!trigger) continue;\\n    const marker = triggerMarker(trigger.identifier);\\n    let issue = await findIssue(marker);\\n    if (!issue) {\\n      issue = await api('POST', '/issues', {\\n        title: 'AGENTS Procedure — ' + trigger.identifier,\\n        body: issueBody(trigger)\\n      });\\n    }\\n    execFileSync(process.execPath, ['issue-workflow.js'], {\\n      cwd: __dirname,\\n      stdio: 'inherit',\\n      env: { ...process.env, AGENTS_PROCEDURE_ISSUE_NUMBER: String(issue.number) }\\n    });\\n    issue = await api('GET', '/issues/' + issue.number);\\n    const receipt = await readRunReceipt(issue.number);\\n    const { route, stored } = await readFile(filename);\\n    await writeConsumedTrigger(route, stored, trigger, issue, receipt);\\n    console.log('Bound ' + filename + ' to issue #' + issue.number + ' and initialized the issue');\\n  }\\n}\\n\\nfunction event_name() {\\n  return process.env.GITHUB_EVENT_NAME;\\n}\\n\\nif (require.main === module) main().catch(error => {\\n  console.error(error.message);\\n  process.exitCode = 1;\\n});\\n\\nmodule.exports = { parseTrigger, triggerMarker, issueBody, identifierFromFilename, initializeConsumedTrigger, appendProcedureReceipt };\\n\",\"message\":\"Initialize and append procedure trigger receipts\"}",
+          "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"4f3b8de018288da394d89ff40abc0806ce51fb61\",\"content_sha\":\"7939f345fe96a6f0d2057d8a6653956ef5ce7375\"}",
+          "unavailable_reason": null,
+          "new": false,
+          "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+          "frombyte": 4301,
+          "tobyte": 6375,
+          "description": "Seed the trigger receipt array and add safe identity-bound append/deduplication helpers.",
+          "intent": "The procedureName+nonce JSON starts with the initial receipt and provides the exact history target.",
+          "operator": "edit",
+          "specifiedOperatorByUser": null,
+          "chosenOperator": "edit",
+          "outcome": "succeeded"
+        },
+        {
+          "cwd": null,
+          "command_line_verbatim": null,
+          "tool": "mcp__codex_apps__github_update_file",
+          "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js\",\"sha\":\"435497bfbbaeb25157710f2e76c53f74df86dee4\",\"content\":\"const fs = require('node:fs');\\nconst path = require('node:path');\\nconst {compileTransitionMap,applyValidatedValues} = require('./transitions.js');\\nconst {loadScreens,entriesForState} = require('./render-instructions.js');\\nconst {inputsFor, validate} = require('./validator.js');\\nconst {appendProcedureReceipt} = require('./issue-run-trigger.js');\\nconst config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));\\nconst map = compileTransitionMap(JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8')));\\nconst screens = loadScreens();\\nconst fence = value => {\\n  const text = typeof value === 'string' ? value : JSON.stringify(value,null,2);\\n  const width = Math.max(3,...(text.match(/`+/g)||[]).map(x=>x.length+1));\\n  const mark = '`'.repeat(width);\\n  return mark + 'json\\\\n' + text + '\\\\n' + mark;\\n};\\nfunction triggerIdentifier(issue) {\\n  return (issue.body || '').match(/<!-- agents-procedure-trigger:([A-Za-z][A-Za-z0-9_-]*) -->/)?.[1] || null;\\n}\\nfunction triggerPathForRecord(record) {\\n  const identifier = record?.triggerIdentifier;\\n  if (typeof identifier !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]*[0-9]+$/.test(identifier)) {\\n    throw new Error('Run record has an invalid procedure trigger identifier.');\\n  }\\n  return path.join(__dirname, 'issue-run-triggers', identifier + '.json');\\n}\\nfunction issueNumberForEvent(event,overrideNumber) {\\n  const raw=overrideNumber ?? event.issue?.number;\\n  const number=typeof raw==='string'&&/^\\\\d+$/.test(raw)?Number(raw):raw;\\n  return Number.isSafeInteger(number)&&number>0?number:null;\\n}\\nfunction startRun(issue) {\\n  const state={};\\n  const result=map(state);\\n  const identifier=triggerIdentifier(issue);\\n  return {state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],toolInvocations:[],...(identifier?{triggerIdentifier:identifier}:{})};\\n}\\nfunction applyReturn(record,payload,fileRoot) {\\n  if(record.done)throw Error('This run has finished.');\\n  const fields=inputsFor(screens[record.state.render-1]);\\n  const values={};\\n  if(fields.length===0){\\n    if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).length)throw Error('This step accepts only {} to continue.');\\n  }else{\\n    if(fields.length!==1)throw Error('Instruction must declare its own combined return type.');\\n    const field=fields[0];\\n    if(payload.variable!==field.name)throw Error('Expected ${'+field.name+'}: value.');\\n    validate(payload.value,field.schema,field.name,{root:fileRoot,newFiles:field.name==='targetFiles'?[]:record.newFiles});\\n    values['$'+field.name]=payload.value;\\n  }\\n  const draft=structuredClone(record.state);\\n  const appliedValues={...values};\\n  delete appliedValues.$toolInvocations;\\n  applyValidatedValues(draft,JSON.stringify(appliedValues));\\n  const result=map(draft);\\n  if(Object.hasOwn(values,'$toolInvocations'))record.toolInvocations=[...(record.toolInvocations || []),...structuredClone(values.$toolInvocations)];\\n  record.history.push({request:record.request,render:record.state.render,loopNumber:record.state.loopNumber,values:structuredClone(values),state:structuredClone(draft)});\\n  record.state=result==='halt'?draft:result;\\n  if(payload.variable==='targetFiles')record.newFiles=payload.value.filter(file=>file.newFile).map(file=>file.filename);\\n  record.done=result==='halt';record.request++;\\n}\\nfunction parseReturn(body) {\\n  const text=body.trim();\\n  const fenced=text.match(/^\\\\x60{3,}(?:json|text|javascript)?\\\\s*\\\\n([\\\\s\\\\S]*?)\\\\n\\\\x60{3,}$/i);\\n  const source=(fenced?fenced[1]:text).trim();\\n  if(source==='{}')return {};\\n  const match=source.match(/^\\\\$\\\\{([A-Za-z_][\\\\w$]*)\\\\}\\\\s*:\\\\s*([\\\\s\\\\S]+)$/);\\n  if(!match)throw Error('Return must use ${variableName}: JSON value.');\\n  return {variable:match[1],value:JSON.parse(match[2])};\\n}\\nfunction renderIssue(record,issueNumber) {\\n  const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':named-return -->';\\n  if(record.done)return marker+'\\\\n## Procedure complete\\\\n\\\\nAll submitted values and state snapshots are preserved in the run record.';\\n  const instruction=Object.fromEntries(entriesForState(record.state,screens,record.toolInvocations || []));\\n  return marker+'\\\\n## Render '+record.state.render+'\\\\n\\\\n'+fence(instruction)+\\n    '\\\\n\\\\n<details><summary>Captured values</summary>\\\\n\\\\n'+fence({state:record.state})+'\\\\n\\\\n</details>';\\n}\\nfunction canonicalTitle(issue) {\\n  return 'AGENTS Procedure — '+new Date(issue.created_at).toISOString();\\n}\\nasync function main() {\\n  const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));\\n  const repository=process.env.GITHUB_REPOSITORY;\\n  const number=issueNumberForEvent(event,process.env.AGENTS_PROCEDURE_ISSUE_NUMBER);\\n  if(!number||event.issue?.pull_request)return;\\n  if(event.comment?.user?.type==='Bot')return;\\n  const apiBase='https://api.github.com/repos/'+repository;\\n  async function api(method,route,body,allowMissing=false) {\\n    const response=await fetch(apiBase+route,{method,headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});\\n    if(allowMissing&&response.status===404)return null;\\n    if(!response.ok)throw Error('GitHub '+method+' '+route+' returned '+response.status);\\n    return response.status===204?null:response.json();\\n  }\\n  const relative=path.relative(process.env.GITHUB_WORKSPACE,__dirname).split(path.sep).join('/')+'/issue-runs/'+number+'.json';\\n  const route='/contents/'+relative.split('/').map(encodeURIComponent).join('/');\\n  const stored=await api('GET',route,undefined,true);\\n  const issue=await api('GET','/issues/'+number);\\n  const acknowledged=/### Procedure acknowledgement\\\\s+[-*] \\\\[[xX]\\\\] \\\\S/.test(issue.body||'');\\n  const identified=stored || /^AGENTS Procedure(?:\\\\s|$)/.test(issue.title) || acknowledged;\\n  if(!identified)return;\\n  if(!stored && !acknowledged)throw Error('Acknowledge the AGENTS Procedure behavioral requirements before starting.');\\n  const title=canonicalTitle(issue);\\n  if(issue.title!==title)await api('PATCH','/issues/'+number,{title});\\n  // Title edits enforce naming only; they do not advance or initialize a run.\\n  if(event.action==='edited')return;\\n  const record=stored?JSON.parse(Buffer.from(stored.content,'base64').toString('utf8')):startRun(issue);\\n  const outbox=[];\\n  let comments=[],page=1;\\n  while(true){const batch=await api('GET','/issues/'+number+'/comments?per_page=100&page='+page++);comments.push(...batch);if(batch.length<100)break;}\\n  for(const comment of comments){\\n    if(comment.id<=record.lastCommentId||comment.user.type==='Bot')continue;\\n    if(record.done){record.lastCommentId=comment.id;continue;}\\n    if(!/^\\\\s*(?:\\\\$\\\\{|[\\\\[{\\\"\\\\d-]|true\\\\b|false\\\\b|null\\\\b|\\\\x60{3,})/.test(comment.body)) {record.lastCommentId=comment.id;continue;}\\n    const errorMarker='<!-- agents-procedure:'+number+':error:'+comment.id+' -->';\\n    try{applyReturn(record,parseReturn(comment.body),process.env.GITHUB_WORKSPACE);}\\n    catch(error){outbox.push({marker:errorMarker,body:errorMarker+'\\\\nReturn rejected: '+error.message+'\\\\n\\\\nState and current request are unchanged.'});}\\n    record.lastCommentId=comment.id;\\n  }\\n  const rendered=renderIssue(record,number);\\n  const marker=rendered.split('\\\\n')[0];\\n  outbox.push({marker,body:rendered});\\n  for(const item of outbox)if(item.body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');\\n  // Persist the state before publishing. Markers prevent duplicate prompts on retries.\\n  await api('PUT',route,{message:'Save AGENTS Procedure issue '+number+' state',content:Buffer.from(JSON.stringify(record,null,2)+'\\\\n').toString('base64'),...(stored?{sha:stored.sha}:{})});\\n  if(process.env.GITHUB_EVENT_NAME!=='push' && record.triggerIdentifier) {\\n    const triggerRelative=path.relative(process.env.GITHUB_WORKSPACE,triggerPathForRecord(record)).split(path.sep).join('/');\\n    const triggerRoute='/contents/'+triggerRelative.split('/').map(encodeURIComponent).join('/');\\n    const triggerStored=await api('GET',triggerRoute,undefined,true);\\n    if(!triggerStored)throw Error('Bound procedure trigger file was not found: '+triggerRelative);\\n    const trigger=JSON.parse(Buffer.from(triggerStored.content,'base64').toString('utf8'));\\n    const updatedTrigger=appendProcedureReceipt(trigger,record,number);\\n    if(updatedTrigger)await api('PUT',triggerRoute,{message:'Append AGENTS Procedure issue '+number+' receipt to '+record.triggerIdentifier,content:Buffer.from(JSON.stringify(updatedTrigger,null,2)+'\\\\\\\\n').toString('base64'),sha:triggerStored.sha});\\n  }\\n  for(const item of outbox)if(!comments.some(c=>c.body.includes(item.marker)))await api('POST','/issues/'+number+'/comments',{body:item.body});\\n  if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});\\n}\\nif(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});\\nmodule.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle,triggerIdentifier,triggerPathForRecord,issueNumberForEvent};\\n\",\"message\":\"Append run receipts to their procedure trigger\"}",
+          "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"b9d16efb157ad76a06cbfc99c252113833757744\",\"content_sha\":\"ecfe4f0a3a0e958d3d69037dcd82c4e643d49fa0\"}",
+          "unavailable_reason": null,
+          "new": false,
+          "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+          "frombyte": 7055,
+          "tobyte": 7166,
+          "description": "After persisting the live issue receipt, append a deduplicated snapshot to the identifier-matched trigger JSON.",
+          "intent": "Keep the correct procedureName+nonce JSON synchronized with each issue workflow receipt.",
+          "operator": "edit",
+          "specifiedOperatorByUser": null,
+          "chosenOperator": "edit",
+          "outcome": "succeeded"
+        },
+        {
+          "cwd": null,
+          "command_line_verbatim": null,
+          "tool": "mcp__codex_apps__github_update_file",
+          "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js\",\"sha\":\"3aeb9f98b2693bf14d948008e5310736f598cbc9\",\"content\":\"const assert=require('node:assert/strict');\\nconst {startRun,applyReturn,parseReturn,renderIssue,triggerIdentifier,triggerPathForRecord,issueNumberForEvent}=require('./issue-workflow.js');\\nassert.equal(issueNumberForEvent({},'42'),42);\\nassert.equal(issueNumberForEvent({issue:{number:19}}),19);\\nassert.equal(issueNumberForEvent({},'0'),null);\\nassert.equal(triggerIdentifier({body:'<!-- agents-procedure-trigger:buildProcedure12 -->'}),'buildProcedure12');\\nassert.equal(startRun({body:'<!-- agents-procedure-trigger:buildProcedure12 -->'}).triggerIdentifier,'buildProcedure12');\\nassert.equal(triggerPathForRecord({triggerIdentifier:'buildProcedure12'}),require('node:path').join(__dirname,'issue-run-triggers','buildProcedure12.json'));\\nassert.throws(()=>triggerPathForRecord({triggerIdentifier:'../escape'}));\\nconst r=startRun({body:'Test request'}),root=__dirname+'/fixtures';\\nconst before=structuredClone(r);\\nassert.throws(()=>applyReturn(r,parseReturn('${userIntent}: \\\"wrong variable\\\"'),root));\\nassert.deepEqual(r,before);\\nassert.throws(()=>parseReturn('{\\\"values\\\":{}}'));\\nassert.throws(()=>applyReturn(r,parseReturn('${verbatimUserPrompt}: 12'),root));\\nassert.deepEqual(r,before);\\nconst send=text=>applyReturn(r,parseReturn(text),root);\\nsend('${verbatimUserPrompt}: \\\"What does JSON stand for?\\\"');\\nsend('${userIntent}: \\\"Expand JSON.\\\"');\\nsend('${exampleMatch}: true');\\nsend('{}');\\nsend('${userIntent}: \\\"Expand JSON.\\\"');\\nsend('{}');\\nsend('${minimalResult}: {\\\"result\\\":\\\"JavaScript Object Notation\\\"}');\\nassert.equal(r.done,true);\\nassert.equal(r.state.minimalResult.result,'JavaScript Object Notation');\\nassert.deepEqual(parseReturn('${requirements}: []'),{variable:'requirements',value:[]});\\nassert.throws(()=>parseReturn('${userIntent}: process.exit()'));\\nassert.throws(()=>parseReturn('${userIntent} = \\\"old format\\\"'));\\nconsole.log('Named colon returns, variable/type checks, arrays, objects, and halt passed.');\\n\\nassert(!renderIssue(startRun({body:'test'}),7).includes('Return schema'));\\nconsole.log('Issue output contains the procedure without a generated return schema.');\\n\\nconst filesRun=startRun({});\\nconst step=text=>applyReturn(filesRun,parseReturn(text),root);\\nstep('${verbatimUserPrompt}: \\\"Create a new file and edit notes.\\\"');\\nstep('${userIntent}: \\\"Create a file and edit notes.\\\"');\\nstep('${exampleMatch}: false');\\nconst unchanged=structuredClone(filesRun);\\nassert.throws(()=>step('${targetFiles}: [\\\"created.txt\\\"]'));\\nassert.throws(()=>step('${targetFiles}: [{\\\"filename\\\":\\\"missing.txt\\\",\\\"newFile\\\":false}]'));\\nassert.throws(()=>step('${targetFiles}: [{\\\"filename\\\":\\\"../escape.txt\\\",\\\"newFile\\\":true}]'));\\nassert.throws(()=>step('${targetFiles}: [{\\\"filename\\\":\\\"created.txt\\\",\\\"newFile\\\":\\\"true\\\"}]'));\\nassert.deepEqual(filesRun,unchanged);\\nstep('${targetFiles}: [{\\\"filename\\\":\\\"created.txt\\\",\\\"newFile\\\":true},{\\\"filename\\\":\\\"notes.txt\\\",\\\"newFile\\\":false}]');\\nassert.equal(filesRun.state.render,9);\\nassert.deepEqual(filesRun.newFiles,['created.txt']);\\nstep('${requirements}: [{\\\"filename\\\":\\\"created.txt\\\",\\\"frombyte\\\":0,\\\"tobyte\\\":0,\\\"description\\\":\\\"Create file\\\",\\\"intent\\\":\\\"Requested\\\",\\\"operator\\\":\\\"create\\\"}]');\\nassert.equal(filesRun.state.render,10);\\nconsole.log('New-file targets persist their designation into requirements; invalid targets leave state unchanged.');\\n\\nconst executionRun=startRun({});\\nexecutionRun.state.render=17;\\nexecutionRun.state.mode='accountability';\\nexecutionRun.state.loopNumber=1;\\nconst invocation={cwd:null,command_line_verbatim:null,tool:'test-tool',invocation_verbatim:'{}',final_output_after_completion_of_tool_call:'simulated test output',unavailable_reason:null,new:false,filename:'notes.txt',frombyte:0,tobyte:1,description:'Test reporting',intent:'Test intent',operator:'edit',specifiedOperatorByUser:null,chosenOperator:'edit',outcome:'succeeded'};\\nassert.throws(()=>applyReturn(executionRun,parseReturn('{}'),root));\\napplyReturn(executionRun,{variable:'toolInvocations',value:[invocation]},root);\\nassert.equal(executionRun.state.render,18);\\nassert.deepEqual(executionRun.toolInvocations,[invocation]);\\nassert(!Object.hasOwn(executionRun.state,'toolInvocations'));\\nassert(renderIssue(executionRun,99).includes('simulated test output'));\\nconst restored=JSON.parse(JSON.stringify(executionRun));\\nrestored.state.render=17;\\napplyReturn(restored,{variable:'toolInvocations',value:[{...invocation,url:'https://example.test',http_method:'GET'}]},root);\\nassert.equal(restored.toolInvocations.length,2);\\nassert(renderIssue(restored,99).includes('https://example.test'));\\nconsole.log('Runner-held invocation records survive serialization, accumulate, and render in full at change-list steps.');\\n\",\"message\":\"Test nonce-matched trigger paths\"}",
+          "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"5c6d410c1f1366887b5cc4eb743af6648a13cd84\",\"content_sha\":\"2f3ac6632d7a6fc5ebde16d4f9f5d6df2d771eda\"}",
+          "unavailable_reason": null,
+          "new": false,
+          "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+          "frombyte": 434,
+          "tobyte": 534,
+          "description": "Cover exact trigger path derivation and reject unsafe identifiers.",
+          "intent": "Ensure the runner targets the JSON filename matching the stored procedure identifier.",
+          "operator": "edit",
+          "specifiedOperatorByUser": null,
+          "chosenOperator": "edit",
+          "outcome": "succeeded"
+        },
+        {
+          "cwd": null,
+          "command_line_verbatim": null,
+          "tool": "mcp__codex_apps__github_update_file",
+          "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js\",\"sha\":\"4e26395439ab2fb58312a978d24da6d7d86e28e0\",\"content\":\"const assert = require('node:assert/strict');\\nconst { parseTrigger, triggerMarker, issueBody, identifierFromFilename, initializeConsumedTrigger, appendProcedureReceipt } = require('./issue-run-trigger.js');\\n\\nassert.deepEqual(identifierFromFilename('buildProcedure12.json', 12), {\\n  procedureName: 'buildProcedure', identifier: 'buildProcedure12'\\n});\\nassert.deepEqual(parseTrigger('buildProcedure12.json', { startProcedure: true, nonce: 12 }), {\\n  filename: 'buildProcedure12.json', procedureName: 'buildProcedure', identifier: 'buildProcedure12', nonce: 12\\n});\\nassert.equal(parseTrigger('buildProcedure12.json', { startProcedure: false, nonce: 12 }), null);\\nassert.throws(() => parseTrigger('buildProcedure12.json', { startProcedure: true, nonce: '12' }));\\nassert.throws(() => parseTrigger('buildProcedure12.json', { startProcedure: true, nonce: 13 }));\\nassert.throws(() => parseTrigger('../buildProcedure12.json', { startProcedure: true, nonce: 12 }));\\nassert.throws(() => parseTrigger('12.json', { startProcedure: true, nonce: 12 }));\\nassert.throws(() => parseTrigger('buildProcedure12.json', { startProcedure: true, nonce: 12, procedureIssueNumber: 8 }));\\nconst trigger = parseTrigger('buildProcedure12.json', { startProcedure: true, nonce: 12 });\\nassert.equal(triggerMarker(trigger.identifier), '<!-- agents-procedure-trigger:buildProcedure12 -->');\\nassert.match(issueBody(trigger), /### Procedure acknowledgement/);\\nassert.match(issueBody(trigger), /- \\\\[x\\\\] I agree to follow each instruction/);\\nassert.match(issueBody(trigger), /Trigger identifier: `buildProcedure12`/);\\nconsole.log('Trigger filename, nonce, acknowledgement, and identifier tests passed.');\\n\\nconst initialReceipt = { state:{render:1}, done:false, request:1, lastCommentId:0, newFiles:[], history:[], toolInvocations:[], triggerIdentifier:'buildProcedure12' };\\nconst consumed = initializeConsumedTrigger({ startProcedure:true, nonce:12 }, trigger, { number:8, html_url:'https://github.com/BestNameYet/StateMachines/issues/8', title:'AGENTS Procedure — test' }, initialReceipt);\\nassert.deepEqual(consumed.procedureReceipts,[initialReceipt]);\\nconst laterReceipt = { ...initialReceipt, state:{render:2}, request:2, lastCommentId:41 };\\nconst appended = appendProcedureReceipt(consumed,laterReceipt,8);\\nassert.deepEqual(appended.procedureReceipts,[initialReceipt,laterReceipt]);\\nassert.equal(appendProcedureReceipt(appended,laterReceipt,8),null);\\nassert.throws(()=>appendProcedureReceipt(appended,{...laterReceipt,triggerIdentifier:'other9'},8));\\nassert.throws(()=>appendProcedureReceipt(appended,laterReceipt,9));\\nassert.throws(()=>appendProcedureReceipt({...appended,procedureIssueNumber:9},laterReceipt,9));\\nconsole.log('Initial and append-only receipt snapshots remain bound to the matching trigger identifier and issue.');\\n\",\"message\":\"Test initialized and appended trigger receipts\"}",
+          "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"d3e852aa759d6c0107f4ba532cab0231b77e1bc3\",\"content_sha\":\"e1f56116f8c88755a6aaaa1ebe279e57fbeb83d2\"}",
+          "unavailable_reason": null,
+          "new": false,
+          "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+          "frombyte": 1526,
+          "tobyte": 1613,
+          "description": "Verify initial snapshot, append order, duplicate suppression, and issue/identifier binding.",
+          "intent": "Prevent receipts from being written to a different procedure nonce file or issue.",
+          "operator": "edit",
+          "specifiedOperatorByUser": null,
+          "chosenOperator": "edit",
+          "outcome": "succeeded"
+        },
+        {
+          "cwd": null,
+          "command_line_verbatim": null,
+          "tool": "mcp__codex_apps__github_update_file",
+          "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json\",\"sha\":\"ae3e244ca36a69f22c29a13ccfaf6fed8bf25021\",\"content\":\"{\\n  \\\"$schema\\\": \\\"https://json-schema.org/draft/2020-12/schema\\\",\\n  \\\"$id\\\": \\\"https://github.com/BestNameYet/StateMachines/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/issue-run-triggers/trigger.template.schema.json\\\",\\n  \\\"title\\\": \\\"AGENTS Procedure issue-run trigger\\\",\\n  \\\"description\\\": \\\"Agent-submitted trigger files contain only startProcedure and nonce. After initialization, the workflow marks the trigger consumed and writes issue metadata and an initial JSON receipt snapshot.\\\",\\n  \\\"type\\\": \\\"object\\\",\\n  \\\"required\\\": [\\\"startProcedure\\\", \\\"nonce\\\"],\\n  \\\"properties\\\": {\\n    \\\"startProcedure\\\": {\\n      \\\"type\\\": \\\"boolean\\\",\\n      \\\"description\\\": \\\"Set true in a new trigger file. The workflow changes it to false after binding and initializing the issue.\\\"\\n    },\\n    \\\"nonce\\\": {\\n      \\\"type\\\": \\\"integer\\\",\\n      \\\"minimum\\\": 0,\\n      \\\"description\\\": \\\"Non-negative integer that must match the numeric suffix in the trigger filename.\\\"\\n    },\\n    \\\"procedureName\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"pattern\\\": \\\"^[A-Za-z][A-Za-z0-9_-]*$\\\",\\n      \\\"description\\\": \\\"Written by the workflow from the filename prefix.\\\"\\n    },\\n    \\\"procedureIdentifier\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"pattern\\\": \\\"^[A-Za-z][A-Za-z0-9_-]*[0-9]+$\\\",\\n      \\\"description\\\": \\\"The filename stem, such as buildProcedure12.\\\"\\n    },\\n    \\\"procedureIssueNumber\\\": {\\n      \\\"type\\\": \\\"integer\\\",\\n      \\\"minimum\\\": 1,\\n      \\\"description\\\": \\\"GitHub issue number created for this trigger.\\\"\\n    },\\n    \\\"procedureIssueUrl\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"format\\\": \\\"uri\\\",\\n      \\\"description\\\": \\\"URL of the issue bound to this trigger.\\\"\\n    },\\n    \\\"procedureTitle\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"description\\\": \\\"Canonical title applied by the issue runner after issue creation.\\\"\\n    },\\n    \\\"procedureReceiptPath\\\": {\\n      \\\"type\\\": \\\"string\\\",\\n      \\\"description\\\": \\\"Path to the canonical mutable JSON run receipt under issue-runs/.\\\"\\n    },\\n    \\\"procedureSavedHere\\\": {\\n      \\\"$ref\\\": \\\"#/$defs/procedureReceipt\\\",\\n      \\\"description\\\": \\\"Snapshot of the initialized receipt when the trigger is consumed. The issue-runs file remains live.\\\"\\n    },\\n    \\\"procedureReceipts\\\": {\\n      \\\"type\\\": \\\"array\\\",\\n      \\\"items\\\": { \\\"$ref\\\": \\\"#/$defs/procedureReceipt\\\" },\\n      \\\"description\\\": \\\"Ordered receipt snapshots, beginning with the initialized receipt and appended after later issue workflow updates.\\\"\\n    }\\n  },\\n  \\\"$defs\\\": {\\n    \\\"procedureReceipt\\\": {\\n      \\\"type\\\": \\\"object\\\",\\n      \\\"required\\\": [\\\"state\\\", \\\"done\\\", \\\"request\\\", \\\"lastCommentId\\\", \\\"newFiles\\\", \\\"history\\\", \\\"toolInvocations\\\"],\\n      \\\"properties\\\": {\\n        \\\"state\\\": { \\\"type\\\": \\\"object\\\" },\\n        \\\"done\\\": { \\\"type\\\": \\\"boolean\\\" },\\n        \\\"request\\\": { \\\"type\\\": \\\"integer\\\", \\\"minimum\\\": 1 },\\n        \\\"lastCommentId\\\": { \\\"type\\\": \\\"integer\\\", \\\"minimum\\\": 0 },\\n        \\\"newFiles\\\": { \\\"type\\\": \\\"array\\\", \\\"items\\\": { \\\"type\\\": \\\"string\\\" } },\\n        \\\"history\\\": { \\\"type\\\": \\\"array\\\", \\\"items\\\": { \\\"type\\\": \\\"object\\\" } },\\n        \\\"toolInvocations\\\": { \\\"type\\\": \\\"array\\\", \\\"items\\\": { \\\"type\\\": \\\"object\\\" } },\\n        \\\"triggerIdentifier\\\": { \\\"type\\\": \\\"string\\\" }\\n      },\\n      \\\"additionalProperties\\\": false\\n    }\\n  },\\n  \\\"allOf\\\": [\\n    {\\n      \\\"if\\\": { \\\"properties\\\": { \\\"startProcedure\\\": { \\\"const\\\": true } }, \\\"required\\\": [\\\"startProcedure\\\"] },\\n      \\\"then\\\": { \\\"maxProperties\\\": 2 }\\n    },\\n    {\\n      \\\"if\\\": { \\\"properties\\\": { \\\"startProcedure\\\": { \\\"const\\\": false } }, \\\"required\\\": [\\\"startProcedure\\\"] },\\n      \\\"then\\\": {\\n        \\\"required\\\": [\\\"procedureName\\\", \\\"procedureIdentifier\\\", \\\"procedureIssueNumber\\\", \\\"procedureIssueUrl\\\", \\\"procedureTitle\\\", \\\"procedureReceiptPath\\\", \\\"procedureSavedHere\\\"]\\n      }\\n    }\\n  ],\\n  \\\"additionalProperties\\\": false\\n}\\n\",\"message\":\"Allow appended receipt snapshots in trigger JSON\"}",
+          "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"6cd8bf8ced3f170f3753be0d5abe4f5d8d628b8c\",\"content_sha\":\"18d79cef91f74ca81ee94c3459cf18b147a0bdac\"}",
+          "unavailable_reason": null,
+          "new": false,
+          "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+          "frombyte": 1888,
+          "tobyte": 2104,
+          "description": "Add procedureReceipts as an ordered array of procedure receipt snapshots.",
+          "intent": "Schema-validate receipt history stored in the correct procedureName+nonce JSON.",
+          "operator": "edit",
+          "specifiedOperatorByUser": null,
+          "chosenOperator": "edit",
+          "outcome": "succeeded"
+        },
+        {
+          "cwd": null,
+          "command_line_verbatim": null,
+          "tool": "mcp__codex_apps__github_update_file",
+          "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md\",\"sha\":\"778167145c3e4a704239b99797d8ccfea683c720\",\"content\":\"# AGENTS Procedure\\n\\n## Create a procedure run\\n\\nCreate a new issue in BestNameYet/StateMachines using either the AGENTS Procedure issue template or a committed trigger file under issue-run-triggers/. The issue template contains the required Procedure acknowledgement; it does not collect the user prompt. The first rendered instruction captures the verbatim user prompt in the issue replies.\\n\\nThe workflow replaces the issue title with AGENTS Procedure — <issue creation timestamp in UTC>, including after title edits. The timestamp comes from GitHub's issue creation time and remains unchanged throughout the run. The issue number identifies the run and its separate persisted state.\\n\\nGitHub issues belong to the repository rather than a folder. The runner stores this procedure's run records under ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/.\\n\\n### Commit a procedure issue trigger\\n\\nCreate a new JSON file directly in `issue-run-triggers/` named `<procedureName><nonce>.json`, for example `buildProcedure12.json`. Its complete initial body must be:\\n\\n```json\\n{\\n  \\\"startProcedure\\\": true,\\n  \\\"nonce\\\": 12\\n}\\n```\\n\\nThe nonce must be a non-negative integer and match the numeric suffix of the filename. Commit the trigger file to `main`. The workflow validates it, creates one issue with the checked Procedure acknowledgement, runs the existing issue initializer directly by issue number in that same push workflow, and changes `startProcedure` to `false` after the issue record and first instruction are persisted. It then adds `procedureName`, `procedureIdentifier`, `procedureIssueNumber`, `procedureIssueUrl`, `procedureTitle`, and `procedureReceiptPath` to the trigger JSON. The issue body and saved run record carry the trigger identifier so the issue remains bound to the filename even after the issue runner changes its title to the canonical UTC timestamp. The issue is the persistent communication port for later returns. Each non-bot reply creates an `issue_comment` event and retriggers this GitHub Actions workflow for that issue; the runner loads its receipt and advances the conversation.\\n\\nThe workflow reuses an issue carrying the exact trigger marker if a run is retried. Once the push job initializes the issue, `procedureSavedHere` stores the initial JSON receipt and `procedureReceipts` starts with that snapshot. `procedureReceiptPath` points to the live mutable receipt at `issue-runs/<issue-number>.json`. Later workflow updates append receipt snapshots to the trigger JSON named by its `procedureIdentifier` (`<procedureName><nonce>.json`), after verifying the issue binding; the live per-issue receipt remains canonical for current state. The first rendered instruction captures the verbatim user prompt in the issue replies.\\n\\n## Interactive execution\\n\\nThe intended workflow starts when a qualifying procedure issue is opened or when the push workflow creates an issue from a committed trigger. It initializes that issue's state, reads the state-to-instruction mapping, and posts the current instruction to the issue. The complete procedure remains in its source file and is not posted to the issue.\\n\\nOn receipt of an agent return, validate it against the current instruction's expected return. If valid, record the returned value, update the persisted state, and render the instruction associated with the resulting state. If invalid, retain the current state and post the validation error for correction. A waiting-return status is unnecessary.\\n\\nKeep state updates, instruction rendering, and return validation separate. Each issue has its own state. Serialize processing for the same issue to prevent overlapping updates.\\n\\n## Preserve run history\\n\\nUse a fresh issue for every run. Append instructions, agent returns, and validation results as comments in that issue. Preserve the comments and the final persisted state. Close the issue when its run finishes; do not delete it or reuse it for a later run.\\n\\n## Implementation status\\n\\nThe procedure, transition map, transition executor, render positions, lookup, HTML interface, and structural validator are implemented. The issue-trigger workflow and Gemini–Selenium harness are implemented; a live Gemini run has not yet been verified.\\n\\n## Run the HTML interface\\n\\nFrom this directory, run:\\n\\n```sh\\nnode interface-server.js\\n```\\n\\nOpen http://127.0.0.1:3000. Each page load starts a separate in-memory run from an empty state object through the transition map. Submit or Enter sends the expected values through the compiled map(state) contract; Shift+Enter inserts a newline. The interface does not change transitions.js or add interface fields to its state. Server restart discards these interface sessions.\\n\\nInstruction keys and values are resolved using Instruction-render.json and Instruction-lookup.json. Input controls and JSON return schemas are derived from the explicit types already present in the instruction text. Structural checks include strings, integers, Booleans, arrays, required object fields, byte ranges, and relative file references. They do not judge whether a response is semantically correct.\\n\\nThe targetFiles return uses records with filename and newFile. The caller retains targets marked newFile: true for later file-reference validation. The HTML form also has a New files field. Existing file references must resolve inside the fixture workspace; designated new files do not need to exist. The fixture manifest lists three existing files and one new-file requirement. The interface validates file references; it does not itself execute the requested file edits.\\n\\nRun the HTTP adapter and validator checks with:\\n\\n```sh\\nnode interface.test.js\\n```\\n\\nThe tests cover minimal, fidelity, accountability, and repeated accountability through all 23 renders. They also check rejected types, nested integer fields, nonexistent files, and the new-file exception. These are HTTP/application tests; they are not Selenium browser tests.\\n\\nThe adapter exposes POST /api/start and POST /api/submit. A submission contains id, values (using $variableName keys), and optional newFiles. Responses contain the rendered entries, inputs, returnSchema, state, and submission history for the harness. Gemini and Selenium can consume this interface without changing the transition executor.\\n\\n## Selenium setup\\n\\nThe Selenium browser adapter is in selenium/browser.py. create_browser() starts headless Chrome using Selenium's built-in driver management. read_screen(driver) reads the current instruction and return schema. submit_values(driver, values) fills the corresponding form controls and clicks Submit, then waits for the next screen, completion, or a validation error. It does not generate answers or modify the transition executor.\\n\\nInstall the browser dependency and verify the setup:\\n\\n```sh\\npython -m pip install -r selenium/requirements.txt\\npython selenium/smoke.py\\n```\\n\\nThe smoke check starts the existing interface server, opens its first screen, verifies the prompt and input box, and shuts down. It submits no values and takes no screenshots. Setup diagnostics are written to selenium/artifacts, which is ignored by git.\\n\\nThe AGENTS Selenium setup GitHub Actions workflow installs Node and Python, installs Selenium, and runs this initial-form check. It can be started manually and also runs when its workflow or Selenium setup files change. The Gemini-driven procedure run and screenshots of every render remain separate work.\\n\\n## Render the procedure to issues\\n\\nStart a run using the AGENTS Procedure issue template or the commit trigger described above. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction and captured values as a comment. The full procedure is not posted.\\n\\nReply using ${variableName}: value, where value is JSON of the declared type. For example:\\n\\n```text\\n${userIntent}: \\\"The user wants to know what JSON stands for.\\\"\\n```\\n\\nDo not add a request number or values wrapper. The workflow validates the supplied variable name and the value, then updates that state variable. Steps with no captured return accept {} after their instruction is completed.\\n\\nReturn targetFiles as an array of records, each with filename and newFile. Use repository-relative paths in issue replies. Set newFile to true for creation and false for changes to an existing file:\\n\\n```text\\n${targetFiles}: [{\\\"filename\\\":\\\"new-file.txt\\\",\\\"newFile\\\":true},{\\\"filename\\\":\\\"README.md\\\",\\\"newFile\\\":false}]\\n```\\n\\nExisting targets must resolve to files. New targets may be absent; their paths must still be valid within the workspace. The caller retains the designated filenames for subsequent requirement and change-record validation, so those records do not need to repeat newFile. A designation permits a planned file reference; it does not create the file or prove execution.\\n\\nEach valid return updates the issue state through the transition function. Compiled hidden decisions execute immediately; the next visible instruction is posted. Validation errors do not advance the state. The workflow keeps comment-processing identifiers internally; they are not part of the submitted return schema.\\n\\nEach run is saved as issue-runs/<issue-number>.json with the state, current request number, input history, and state snapshots. For trigger-backed runs, the runner also appends each distinct updated receipt to the matching issue-run-triggers/<procedureIdentifier>.json, preserving the trigger’s initial receipt and metadata. The state itself retains its existing input fields, render number, and loop counter. Workflow runs for the same issue are serialized, and the runner reads pending JSON comments in order. Bot comments do not trigger another processing cycle. Terminal runs post completion and close the issue while preserving its history. No Gemini calls or Selenium runs are made by this workflow.\\n\\nRun the local issue adapter checks with node issue-workflow.test.js. They verify the adapter without creating an actual GitHub issue.\\n\\nThe runner recognizes a procedure issue by an existing saved run record, an AGENTS Procedure title prefix, or the checked Procedure acknowledgement in its body. A new run requires the checked acknowledgement even when its title matches. Title-edit events enforce the canonical title only; they do not initialize or advance the procedure.\\n\\nThe caller loads transitions.json and compiles it once: const map = compileTransitionMap(transitions). The result is a state-to-state operator. Initialize with map({}); for subsequent returns, apply validated inputs to the previous state and call map(state). There is no separate state.json or state config entry.\\n\\nThe transition CLI accepts a JSON state as its first argument (default {}), with optional values JSON as its second argument, and prints the next state or halt. The renderer CLI accepts the JSON state as its first argument. Neither CLI reads or writes a shared state template.\\n\\n## Transition result contract\\n\\ncompileTransitionMap(transitions) returns a function map(state). Compilation builds executable state transformations and connects sequence successors, Boolean destinations, branches, and entry pointers from the JSON. The resulting operator returns the next state object, or the string halt at a terminal destination. It does not render or walk JSON items during invocation. Nested sequence arrays are resolved during compilation. Exhausted selected arrays, null items, and null return destinations resolve to halt. The transition map omits null render fields; only a non-null render value returns a renderable state. Missing or malformed addresses remain errors rather than being silently treated as completion.\\n\\nThe GitHub workflow runner is the caller. It writes the returned state into the issue's run file before posting its instruction. At halt it preserves the final updated state, records completion, and does not render another instruction. The HTML adapter consumes the same result contract. Initialization calls map({}). The first map item defines the initial input fields and render; no separate state template is loaded. The workflow persists each resulting run state.\\n\\nIssue comments render the procedure's instruction directly. Its declared return variable and type define the response; no additional generated return-schema block or reply envelope is posted. Replies use ${variableName}: value. Structural validation remains based on the procedure's declared types.\\n\\n\\n## Run Gemini through Selenium\\n\\nThe Gemini adapter is in `selenium/gemini.py`. It reads each live browser screen, sends its instruction, held state, declared inputs, and return contract to the existing Gemini generateContent API, validates the returned JSON names and types, and submits accepted values through `selenium/browser.py`. Validation failures are sent back to Gemini with their actual error text. Prompts, responses, submitted values, state snapshots, failures, and screenshots are saved as run evidence; the API key is sent in an HTTP header and is not written to the evidence.\\n\\nConfigure the GitHub Actions repository secret `GEMINI_API_KEY`; optionally set `GEMINI_MODEL`. The model defaults to the value used by the existing Gemini integration. Open **Actions → AGENTS Gemini Selenium → Run workflow**, then select a scenario:\\n\\n- `minimal` exercises the minimal answer path.\\n- `fidelity` selects the fidelity path.\\n- `accountability` selects the accountability path.\\n- `repeated-accountability` exercises the accountability loop.\\n\\nThe workflow first runs the existing Node tests and the focused Gemini adapter tests, then starts the local interface and headless browser for the selected live scenario. It uploads the run log and screenshots as a downloadable Actions artifact. Source pushes run the test checks without calling Gemini unless the commit changes workflows/gemini-selenium/trigger.json with enabled set to true.\\n\\nThe interface collects procedure returns; it does not edit repository files. If a live scenario reaches an instruction to execute file requirements, the harness records a screenshot and an execution-blocked result, then stops at that screen. It does not claim those changes or later completion values. The mocked adapter tests verify response parsing, declared-variable checks, validation-error recovery, terminal handling, and evidence capture; they do not prove a live Gemini run. The existing interface tests cover the procedure's 23 renders across its documented paths.\\n\\n## Commit trigger for Gemini Selenium\\n\\nThe workflow trigger is workflows/gemini-selenium/trigger.json in this procedure directory. It contains timestamp (an ISO timestamp string) and enabled (a Boolean). Commit a fresh timestamp with enabled: true to main to start a live minimal scenario. Set enabled: false to disable live execution for a trigger update. Unrelated commits do not start live Gemini even if the stored Boolean remains true. Manual scenario selection remains available through workflow_dispatch.\\n\\n## Execution tool-invocation report\\n\\nExecution renders 13 and 17 capture ${toolInvocations} as an array of records using the displayed return definition. Each record includes the operator selection, required invocation fields, matching requirement fields, final tool output, and outcome. Use null for non-applicable required values; include http_method and url for web calls. Return only records from the current execution. The caller stores accepted records in its own toolInvocations array, outside the state passed to map(state), preserving earlier loop records. The issue runner serializes that array in its existing run record; the HTML runner holds it in its session. Renders 14 and 18 display the complete stored array as toolInvocationReport and use it with other available information to construct changeList. The report is supplied by the executor and structurally validated; it is not an automatic interception of external tool calls or proof that a reported change occurred. The Gemini harness still stops where it lacks a file executor.\\n\",\"message\":\"Document trigger-bound receipt history\"}",
+          "final_output_after_completion_of_tool_call": "{\"commit_sha\":\"10c422610d80c633f34f5232d7c824f1555fa0ff\",\"content_sha\":\"f58c8422badec4bd60c58a774098d7c489068108\"}",
+          "unavailable_reason": null,
+          "new": false,
+          "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+          "frombyte": 1703,
+          "tobyte": 2190,
+          "description": "Document procedureReceipts append behavior and the distinct live issue receipt.",
+          "intent": "Explain how receipt snapshots are stored in the trigger JSON that matches procedureName plus nonce.",
+          "operator": "edit",
+          "specifiedOperatorByUser": null,
+          "chosenOperator": "edit",
+          "outcome": "succeeded"
+        },
+        {
+          "cwd": null,
+          "command_line_verbatim": null,
+          "tool": "mcp__codex_apps__github_fetch",
+          "invocation_verbatim": "{\"url\":\"https://api.github.com/repos/BestNameYet/StateMachines/actions/runs/38904158369/jobs\"}",
+          "final_output_after_completion_of_tool_call": "{\"jobs\":[{\"name\":\"check\",\"status\":\"completed\",\"conclusion\":\"success\",\"step\":\"Check issue adapter and trigger\",\"step_conclusion\":\"success\"},{\"name\":\"create-from-trigger\",\"status\":\"completed\",\"conclusion\":\"success\"}]}",
+          "unavailable_reason": null,
+          "new": null,
+          "filename": null,
+          "frombyte": null,
+          "tobyte": null,
+          "description": "Read the push workflow execution result for the modified adapter and trigger tests.",
+          "intent": "Verify the repository’s existing automated checks ran successfully after the source and test changes.",
+          "operator": "read",
+          "specifiedOperatorByUser": null,
+          "chosenOperator": "read",
+          "outcome": "succeeded",
+          "http_method": "GET",
+          "url": "https://api.github.com/repos/BestNameYet/StateMachines/actions/runs/38904158369/jobs"
+        }
+      ],
+      "triggerIdentifier": "updateIssueRunReceipts1"
+    }
+  ]
+}\n
