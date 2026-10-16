@@ -83,7 +83,13 @@ async function main() {
     const route = '/contents/' + relative.split('/').map(encodeURIComponent).join('/');
     return { route, stored: await api('GET', route) };
   }
-  async function writeConsumedTrigger(route, stored, trigger, issue) {
+  async function readRunReceipt(issueNumber) {
+    const relative = path.relative(process.env.GITHUB_WORKSPACE, path.join(__dirname, 'issue-runs', issueNumber + '.json')).split(path.sep).join('/');
+    const route = '/contents/' + relative.split('/').map(encodeURIComponent).join('/');
+    const stored = await api('GET', route);
+    return JSON.parse(Buffer.from(stored.content, 'base64').toString('utf8'));
+  }
+  async function writeConsumedTrigger(route, stored, trigger, issue, receipt) {
     const current = JSON.parse(Buffer.from(stored.content, 'base64').toString('utf8'));
     if (current.startProcedure !== true) return;
     const completed = {
@@ -94,7 +100,8 @@ async function main() {
       procedureIssueNumber: issue.number,
       procedureIssueUrl: issue.html_url,
       procedureTitle: issue.title,
-      procedureReceiptPath: 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/' + issue.number + '.json'
+      procedureReceiptPath: 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/' + issue.number + '.json',
+      procedureSavedHere: receipt
     };
     await api('PUT', route, {
       message: 'Bind procedure trigger ' + trigger.identifier + ' to issue ' + issue.number,
@@ -121,8 +128,9 @@ async function main() {
       env: { ...process.env, AGENTS_PROCEDURE_ISSUE_NUMBER: String(issue.number) }
     });
     issue = await api('GET', '/issues/' + issue.number);
+    const receipt = await readRunReceipt(issue.number);
     const { route, stored } = await readFile(filename);
-    await writeConsumedTrigger(route, stored, trigger, issue);
+    await writeConsumedTrigger(route, stored, trigger, issue, receipt);
     console.log('Bound ' + filename + ' to issue #' + issue.number + ' and dispatched issue initialization.');
   }
 }
