@@ -1,6 +1,6 @@
 {
   "state": {
-    "render": 9,
+    "render": 10,
     "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
     "userIntent": "Update the workflow runner to append each persisted receipt snapshot to the trigger JSON named by that run’s procedureName and nonce, while retaining the per-issue run receipt.",
     "exampleMatch": false,
@@ -31,7 +31,72 @@
         "newFile": false
       }
     ],
-    "requirements": null,
+    "requirements": [
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+        "frombyte": 773,
+        "tobyte": 799,
+        "description": "Resolve the trigger identifier into the exact procedureName+nonce JSON path and verify the trigger’s issue binding before appending.",
+        "intent": "Append each run receipt to the correct trigger JSON rather than leaving it only in issue-runs/<issue-number>.json.",
+        "operator": "edit"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+        "frombyte": 7055,
+        "tobyte": 7166,
+        "description": "After saving the issue receipt, append a deduplicated receipt snapshot to its bound trigger JSON using the current content SHA.",
+        "intent": "Keep the trigger JSON’s receipt history synchronized with issue-comment workflow advances while retaining the canonical per-issue receipt.",
+        "operator": "edit"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+        "frombyte": 434,
+        "tobyte": 534,
+        "description": "Add tests for correct trigger-path resolution, issue binding, snapshot append, and duplicate suppression.",
+        "intent": "Verify the runner appends to the matching procedureName+nonce file and rejects mismatched targets.",
+        "operator": "edit"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+        "frombyte": 4301,
+        "tobyte": 6375,
+        "description": "Initialize the trigger JSON receipt history with the first persisted receipt when consuming a new trigger.",
+        "intent": "Ensure the correct procedure nonce file starts with its initial receipt so later workflow advances can append.",
+        "operator": "edit"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+        "frombyte": 1526,
+        "tobyte": 1613,
+        "description": "Test initial receipt history creation and trigger identity/issue association.",
+        "intent": "Verify trigger initialization seeds the receipt history in the selected trigger JSON.",
+        "operator": "edit"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+        "frombyte": 1888,
+        "tobyte": 2104,
+        "description": "Add a schema definition for the appended receipt snapshot array.",
+        "intent": "Validate receipt snapshots persisted in each procedureName+nonce JSON file.",
+        "operator": "edit"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+        "frombyte": 1703,
+        "tobyte": 2190,
+        "description": "Document that the trigger JSON retains an append-only receipt history while issue-runs/<issue-number>.json remains the live current receipt.",
+        "intent": "Explain where historical snapshots are appended and how the correct trigger is bound to the issue.",
+        "operator": "edit"
+      },
+      {
+        "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+        "frombyte": 8998,
+        "tobyte": 9049,
+        "description": "Clarify the relationship between per-issue live receipts and appended trigger-file receipt snapshots.",
+        "intent": "Make the workflow’s persistent receipt locations and responsibilities explicit.",
+        "operator": "edit"
+      }
+    ],
     "matchedExample": null,
     "mode": null,
     "changeList": null,
@@ -42,8 +107,8 @@
     "loopNumber": null
   },
   "done": false,
-  "request": 5,
-  "lastCommentId": 6215909861,
+  "request": 6,
+  "lastCommentId": 6215924087,
   "newFiles": [],
   "history": [
     {
@@ -186,6 +251,186 @@
           }
         ],
         "requirements": null,
+        "matchedExample": null,
+        "mode": null,
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null
+      }
+    },
+    {
+      "request": 5,
+      "render": 9,
+      "loopNumber": null,
+      "values": {
+        "$requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "frombyte": 773,
+            "tobyte": 799,
+            "description": "Resolve the trigger identifier into the exact procedureName+nonce JSON path and verify the trigger’s issue binding before appending.",
+            "intent": "Append each run receipt to the correct trigger JSON rather than leaving it only in issue-runs/<issue-number>.json.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "frombyte": 7055,
+            "tobyte": 7166,
+            "description": "After saving the issue receipt, append a deduplicated receipt snapshot to its bound trigger JSON using the current content SHA.",
+            "intent": "Keep the trigger JSON’s receipt history synchronized with issue-comment workflow advances while retaining the canonical per-issue receipt.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+            "frombyte": 434,
+            "tobyte": 534,
+            "description": "Add tests for correct trigger-path resolution, issue binding, snapshot append, and duplicate suppression.",
+            "intent": "Verify the runner appends to the matching procedureName+nonce file and rejects mismatched targets.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+            "frombyte": 4301,
+            "tobyte": 6375,
+            "description": "Initialize the trigger JSON receipt history with the first persisted receipt when consuming a new trigger.",
+            "intent": "Ensure the correct procedure nonce file starts with its initial receipt so later workflow advances can append.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+            "frombyte": 1526,
+            "tobyte": 1613,
+            "description": "Test initial receipt history creation and trigger identity/issue association.",
+            "intent": "Verify trigger initialization seeds the receipt history in the selected trigger JSON.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+            "frombyte": 1888,
+            "tobyte": 2104,
+            "description": "Add a schema definition for the appended receipt snapshot array.",
+            "intent": "Validate receipt snapshots persisted in each procedureName+nonce JSON file.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 1703,
+            "tobyte": 2190,
+            "description": "Document that the trigger JSON retains an append-only receipt history while issue-runs/<issue-number>.json remains the live current receipt.",
+            "intent": "Explain where historical snapshots are appended and how the correct trigger is bound to the issue.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 8998,
+            "tobyte": 9049,
+            "description": "Clarify the relationship between per-issue live receipts and appended trigger-file receipt snapshots.",
+            "intent": "Make the workflow’s persistent receipt locations and responsibilities explicit.",
+            "operator": "edit"
+          }
+        ]
+      },
+      "state": {
+        "render": 10,
+        "verbatimUserPrompt": "In that case update the worflow so that it appends the receipts to the correct procedurenonce.json",
+        "userIntent": "Update the workflow runner to append each persisted receipt snapshot to the trigger JSON named by that run’s procedureName and nonce, while retaining the per-issue run receipt.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "newFile": false
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "frombyte": 773,
+            "tobyte": 799,
+            "description": "Resolve the trigger identifier into the exact procedureName+nonce JSON path and verify the trigger’s issue binding before appending.",
+            "intent": "Append each run receipt to the correct trigger JSON rather than leaving it only in issue-runs/<issue-number>.json.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "frombyte": 7055,
+            "tobyte": 7166,
+            "description": "After saving the issue receipt, append a deduplicated receipt snapshot to its bound trigger JSON using the current content SHA.",
+            "intent": "Keep the trigger JSON’s receipt history synchronized with issue-comment workflow advances while retaining the canonical per-issue receipt.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.test.js",
+            "frombyte": 434,
+            "tobyte": 534,
+            "description": "Add tests for correct trigger-path resolution, issue binding, snapshot append, and duplicate suppression.",
+            "intent": "Verify the runner appends to the matching procedureName+nonce file and rejects mismatched targets.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+            "frombyte": 4301,
+            "tobyte": 6375,
+            "description": "Initialize the trigger JSON receipt history with the first persisted receipt when consuming a new trigger.",
+            "intent": "Ensure the correct procedure nonce file starts with its initial receipt so later workflow advances can append.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.test.js",
+            "frombyte": 1526,
+            "tobyte": 1613,
+            "description": "Test initial receipt history creation and trigger identity/issue association.",
+            "intent": "Verify trigger initialization seeds the receipt history in the selected trigger JSON.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/trigger.template.schema.json",
+            "frombyte": 1888,
+            "tobyte": 2104,
+            "description": "Add a schema definition for the appended receipt snapshot array.",
+            "intent": "Validate receipt snapshots persisted in each procedureName+nonce JSON file.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 1703,
+            "tobyte": 2190,
+            "description": "Document that the trigger JSON retains an append-only receipt history while issue-runs/<issue-number>.json remains the live current receipt.",
+            "intent": "Explain where historical snapshots are appended and how the correct trigger is bound to the issue.",
+            "operator": "edit"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 8998,
+            "tobyte": 9049,
+            "description": "Clarify the relationship between per-issue live receipts and appended trigger-file receipt snapshots.",
+            "intent": "Make the workflow’s persistent receipt locations and responsibilities explicit.",
+            "operator": "edit"
+          }
+        ],
         "matchedExample": null,
         "mode": null,
         "changeList": null,
