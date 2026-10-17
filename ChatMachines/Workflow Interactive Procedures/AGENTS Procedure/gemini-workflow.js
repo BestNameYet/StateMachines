@@ -99,6 +99,18 @@ function buildGeminiRequest(state) {
   const request = JSON.parse(fs.readFileSync(path.join(__dirname,'gemini-request-template.json'),'utf8'));
   // Send the complete workflow-owned state, without substituting into old screens.
   request.state = structuredClone(state);
+  // File bodies reach the supervisor only through its own explicit reads.
+  const omitContents = files => {
+    for (const file of files || []) if (Object.hasOwn(file, 'content')) {
+      delete file.content;
+      file.contentOmitted = true;
+    }
+  };
+  for (const entry of request.state.commandResults || []) {
+    omitContents(entry.command?.files);
+    if (!(entry.actor?.type === 'supervisor' && entry.command?.name === 'read_files')) omitContents(entry.result?.files);
+  }
+  for (const response of Object.values(request.state.workerResponses || {})) omitContents(response.files);
   request.commandMenu=structuredClone(commandMenu);
   request.state.controls ??= [];
   if(!Array.isArray(request.state.controls))throw Error('Control history must be an array.');

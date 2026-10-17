@@ -7,6 +7,24 @@ const {validateGeminiResponse,buildGeminiRequest,validateGeminiScreen,generateGe
 const {lastGeminiScreen}=require('./render-gemini.js');
 
 async function test() {
+  const visibilityState={verbatimUserPrompt:'Review outputs',renderedScreens:[],variables:[],commandResults:[
+    {actor:{type:'supervisor'},command:{name:'read_files'},result:{files:[{path:'own.js',content:'requested read'}]}},
+    {actor:{type:'worker',nonce:'a'},command:{name:'read_files'},result:{files:[{path:'other.js',content:'worker read'}]}},
+    {actor:{type:'worker',nonce:'a'},command:{name:'write_files',files:[{path:'new.js',description:'Source',content:'worker write'}]},result:{files:[{path:'new.js',description:'Source'}]}},
+    {actor:{type:'supervisor'},command:{name:'write_files',files:[{path:'own.js',content:'write'}]},result:{files:[]}},
+    {command:{name:'read_files'},result:{files:[{path:'legacy.js',content:'unattributed'}]}}
+  ],workerResponses:{a:{nonce:'a',values:{summary:'Saved'},files:[{path:'new.js',description:'Source',content:'output'}]}}};
+  const beforeVisibility=structuredClone(visibilityState);
+  const projected=buildGeminiRequest(visibilityState).state;
+  assert.equal(projected.commandResults[0].result.files[0].content,'requested read');
+  assert.equal(projected.commandResults[1].result.files[0].content,undefined);
+  assert.equal(projected.commandResults[2].command.files[0].content,undefined);
+  assert.equal(projected.commandResults[3].command.files[0].content,undefined);
+  assert.equal(projected.commandResults[4].result.files[0].content,undefined);
+  assert.deepEqual(projected.workerResponses.a.files,[{path:'new.js',description:'Source',contentOmitted:true}]);
+  assert.equal(projected.workerResponses.a.values.summary,'Saved');
+  assert.deepEqual(visibilityState,beforeVisibility);
+
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'gemini-issue-'));
   const oldFetch=global.fetch, oldEnv={...process.env};
   const issue={number:700,title:'AGENTS Procedure',created_at:'2026-10-17T00:00:00Z',state:'open',body:'### Procedure acknowledgement\n- [x] I agree'};

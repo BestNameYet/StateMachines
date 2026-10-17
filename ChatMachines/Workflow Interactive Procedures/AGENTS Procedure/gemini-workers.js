@@ -61,7 +61,7 @@ async function runGeminiWorkers(record,storage,save,{generate=callGemini}={}){
   const {assignment,key,response}=result.value;
   bindAssignmentWorker(record,assignment,response.nonce);
   record.state.workerResponses??={};record.state.workerResponses[key]=response;await save();
-  if(response.files.length)await executeCommands(record,[{name:'write_files',files:response.files}],storage,save);
+  if(response.files.length)await executeCommands(record,[{name:'write_files',files:response.files}],storage,save,{actor:{type:'worker',nonce:response.nonce},requestId:key});
   acceptGeminiValues(record,{nonce:response.nonce,assignmentId:assignment.id,values:response.values});await save();
  }
  if(errors.length)throw Error('Worker execution failed: '+errors.join('; ')+'. Accepted results remain saved; type retry.');
