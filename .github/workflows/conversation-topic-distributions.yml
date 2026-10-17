@@ -1,0 +1,42 @@
+name: Conversation topic group distributions
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-distribution/count.py'
+      - .github/workflows/conversation-topic-distributions.yml
+permissions:
+  contents: write
+  actions: read
+jobs:
+  count:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 39028957505
+          name: consolidated-topic-catalog
+          path: merged
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 39029607411
+          name: hierarchical-topic-groups
+          path: clustered
+      - name: Count conversation memberships
+        run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-distribution/count.py'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: conversation-group-distributions
+          path: 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-distribution/outputs/'
+      - name: Save distribution results
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-distribution/outputs/'
+          git commit -m 'Save conversation distributions for 12 and 25 topic groups'
+          git push origin HEAD:main
