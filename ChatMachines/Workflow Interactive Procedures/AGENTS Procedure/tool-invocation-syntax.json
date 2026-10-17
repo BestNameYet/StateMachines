@@ -1,15 +1,15 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "1.1.0",
   "title": "Tool invocation syntax and data change classification",
   "purpose": "Machine-readable rules for identifying integrations and operations in toolInvocations arrays, extracting create/mutate/delete operations, and making every such operation mandatory in the change list.",
   "sourceSample": {
     "repository": "BestNameYet/StateMachines",
     "branch": "main",
     "directory": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/",
-    "numericRunFilesRead": 44,
-    "filesWithInvocations": 14,
-    "invocationRecords": 74,
-    "distinctToolIdentifiers": 12,
+    "numericRunFilesRead": 46,
+    "filesWithInvocations": 15,
+    "invocationRecords": 76,
+    "distinctToolIdentifiers": 13,
     "parseErrors": 0
   },
   "effectClasses": [
@@ -130,7 +130,7 @@
   "observedToolCatalog": [
     {
       "tool": "mcp__codex_apps__github_create_file",
-      "count": 15,
+      "count": 16,
       "effect": "create",
       "targetKind": "GitHub repository file and commit",
       "changeListRequired": true,
@@ -217,6 +217,14 @@
       "effect": "conditional",
       "targetKind": "Depends on command",
       "changeListRequired": "if command creates, mutates, or deletes data"
+    },
+    {
+      "tool": "functions.exec",
+      "count": 1,
+      "effect": "conditional",
+      "targetKind": "Depends on the executed JavaScript and called tools",
+      "changeListRequired": "if executed code creates, mutates, or deletes data",
+      "note": "Inspect the code and nested operations; the wrapper name alone does not establish the effect."
     }
   ],
   "illustrativeExamples": [
@@ -258,5 +266,52 @@
     "Invocation arguments determine the operation and target; a tool name by itself may be insufficient.",
     "Git object creation and branch-ref mutation are distinct persistence boundaries.",
     "No delete tool was observed in this sample; the delete class is defined for future arrays."
-  ]
+  ],
+  "effectPartitionRule": {
+    "dataChangingEffects": [
+      "create",
+      "mutate",
+      "delete"
+    ],
+    "readOnlyEffects": [
+      "read"
+    ],
+    "unresolvedEffects": [
+      "conditional",
+      "unknown"
+    ],
+    "classificationUnit": "The concrete operation represented by an invocation, not the tool root or wrapper name.",
+    "steps": [
+      "Inspect the exact invocation arguments and command text to identify each operation and affected target.",
+      "Classify an operation as create when it brings a new target or object into existence; classify it as delete when it removes a target; classify it as mutate when it changes an existing target or state.",
+      "Classify an operation as read only when it only retrieves or inspects data and makes no data change.",
+      "If one invocation combines reads with a create, mutate, or delete, place it in the data-changing group and retain its read sub-operations in the evidence.",
+      "If the effect depends on target state or cannot be determined from the invocation and evidence, assign conditional or unknown and keep it outside both final groups until resolved.",
+      "Record outcome independently from effect: failed or blocked data-changing attempts remain in the data-changing group and must be reported as attempts.",
+      "Partition resolved records into dataChanging, with create/mutate/delete subgroups, and readOnly; reconcile only dataChanging records against the mandatory change list."
+    ],
+    "partitionOutput": {
+      "dataChanging": {
+        "subgroups": [
+          "create",
+          "mutate",
+          "delete"
+        ],
+        "changeListRequired": true
+      },
+      "readOnly": {
+        "effects": [
+          "read"
+        ],
+        "changeListRequired": false
+      },
+      "unresolved": {
+        "effects": [
+          "conditional",
+          "unknown"
+        ],
+        "mustResolveBeforeFinalReconciliation": true
+      }
+    }
+  }
 }
