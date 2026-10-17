@@ -36,7 +36,36 @@
         "value": "Use one Gemini supervisor and exactly three Gemini workers, with shared access at the repository root, to copy every source-code file recursively into the root subdirectory source-code-copy/. Include all YAML/YML, JavaScript variants, Python, other source-code languages, and HTML containing JavaScript; include other actual code/configuration source formats as appropriate. Preserve original bytes and executable modes, preserve each file's original repository-relative path beneath source-code-copy/, and leave all original files unchanged. Include hidden source directories such as .github. Exclude source-code-copy/ itself so copies are never recursively copied. Have the supervisor inventory the root, decompose the source inventory into three disjoint, roughly balanced assignments, and have the three Gemini workers perform the copying through the workflow's copy_files operation. The workers must not connect to GitHub or receive GitHub credentials. Use read_files only when needed for classification; do not rewrite source contents through model generation. Verify every selected original has a matching destination Git blob, account for omitted or ambiguous file types, save a source-to-copy manifest and coverage/verification summary beneath source-code-copy/, and have the supervisor evaluate coverage and process before declaring completion. Source-file copying is the actual task; do not stop at producing a plan or list. Work from current saved state and retain worker nonces between calls."
       }
     ],
-    "controls": [],
+    "controls": [
+      {
+        "target": {
+          "outcome": "All source-code and configuration files are recursively copied into source-code-copy/ with relative paths, bytes, and modes preserved, accompanied by a source-to-copy manifest and coverage/verification summary under source-code-copy/.",
+          "process": "The supervisor inventories the repository root, classifies source files, divides them into three balanced disjoint assignments for three Gemini workers, oversees the workers copying files via copy_files, verifies Git blob identities, accounts for omitted/ambiguous files, and saves manifest and verification summaries."
+        },
+        "current": {
+          "outcome": "Procedure initialized with repository-root access; no files have been inventoried or copied yet.",
+          "process": "Procedure mode and verbatim user prompt captured; repository files have not yet been inventoried."
+        },
+        "gap": {
+          "outcome": [
+            "Repository inventory is not yet retrieved.",
+            "Source files have not been copied to source-code-copy/.",
+            "Manifest and coverage summary files do not exist."
+          ],
+          "process": [
+            "Inventory repository files to identify all source candidates.",
+            "Classify files and split the source inventory into three disjoint balanced sets.",
+            "Assign the copying tasks to three Gemini workers using copy_files.",
+            "Verify blob hashes and write the manifest and summary files."
+          ]
+        },
+        "mode": "continue",
+        "progress": {
+          "reduced": false,
+          "description": "Initial baseline: repository inventory must be obtained before decomposing files into worker assignments."
+        }
+      }
+    ],
     "noProgressTurns": 0,
     "renderedScreens": [
       {
@@ -225,5 +254,42 @@
   },
   "view": "instruction",
   "geminiStarted": true,
-  "geminiPending": true
+  "geminiPending": true,
+  "geminiAssessmentRequest": 3,
+  "pendingSupervisorResponse": {
+    "control": {
+      "target": {
+        "outcome": "All source-code and configuration files are recursively copied into source-code-copy/ with relative paths, bytes, and modes preserved, accompanied by a source-to-copy manifest and coverage/verification summary under source-code-copy/.",
+        "process": "The supervisor inventories the repository root, classifies source files, divides them into three balanced disjoint assignments for three Gemini workers, oversees the workers copying files via copy_files, verifies Git blob identities, accounts for omitted/ambiguous files, and saves manifest and verification summaries."
+      },
+      "current": {
+        "outcome": "Procedure initialized with repository-root access; no files have been inventoried or copied yet.",
+        "process": "Procedure mode and verbatim user prompt captured; repository files have not yet been inventoried."
+      },
+      "gap": {
+        "outcome": [
+          "Repository inventory is not yet retrieved.",
+          "Source files have not been copied to source-code-copy/.",
+          "Manifest and coverage summary files do not exist."
+        ],
+        "process": [
+          "Inventory repository files to identify all source candidates.",
+          "Classify files and split the source inventory into three disjoint balanced sets.",
+          "Assign the copying tasks to three Gemini workers using copy_files.",
+          "Verify blob hashes and write the manifest and summary files."
+        ]
+      },
+      "mode": "continue",
+      "progress": {
+        "reduced": false,
+        "description": "Initial baseline: repository inventory must be obtained before decomposing files into worker assignments."
+      }
+    },
+    "screen": null,
+    "commands": [
+      {
+        "name": "view_inventory"
+      }
+    ]
+  }
 }
