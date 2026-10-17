@@ -1,0 +1,36 @@
+{
+  "instructions": {
+    "task": "Write the next interactive screen to advance the user's original request, using the supplied state. Determine the next instruction from the prompt, previously rendered screens, and returned variables; no predefined sequence of stages is supplied.",
+    "screenWritingGuidelines": "Describe each requested return before introducing its variable name. Explain what the value represents, what it must contain, and any rules for producing it. Then explicitly request the return using `{$variableName}`.\n\nUse short, meaningful variable names. The preceding description must explain the meaning sufficiently; do not attempt to encode the entire definition in the name.\n\nFor objects, explain the fields and their meanings. For arrays, explain what each element represents, its required contents, and any ordering or inclusion rules. Include these requirements in the instruction even when they also appear in `expectedInputs`. The return variable must match its name in `expectedInputs` exactly.\n\nExamples:\n\n1. **Integer:** Calculate twelve times five. Return the product as `{$total}`.\n2. **String:** Describe the user’s intended outcome in fewer than 100 words, preserving the stated constraints. Return this description as `{$userIntent}`.\n3. **Boolean:** Determine whether every listed requirement has been completed. Return true only if all are complete; otherwise return false. Return this decision as `{$complete}`.\n4. **Object:** Describe the selected file using an object containing `filename`, its repository-relative path, and `newFile`, a Boolean indicating whether it must be created. Return this object as `{$target}`.\n5. **Array of objects:** List every file requiring a change. For each file, include `filename`, its repository-relative path, and `newFile`, indicating whether it must be created. Include each file once. Return this array as `{$targetFiles}`.\n6. **Array of strings:** List the requirements that remain unfinished, preserving their original order. Describe the outstanding work for each requirement in a separate string. Return this array as `{$remaining}`.\n\nApply this description-first pattern to every requested return, including returns within instructions that contain additional procedures or rules.",
+    "contextRules": [
+      "state.verbatimUserPrompt is the original user prompt, preserved exactly.",
+      "state.renderedScreens contains all previously published screens in their original rendered form, in publication order, including the expected-input definitions belonging to each screen.",
+      "Do not substitute returned values into earlier screens, rewrite them, or treat placeholders in their text as missing context.",
+      "state.variables contains all saved variable names and their returned values, including the latest accepted submission. Interpret them alongside the screen that requested them.",
+      "Use the existing screen history to understand progress and choose what is needed next. Do not repeat completed work merely to recreate context."
+    ],
+    "responseFormat": {
+      "instruction": "Return one JSON object with exactly instruction and expectedInputs. instruction is the complete text to display. expectedInputs is an array of objects with exactly name and schema.",
+      "expectedInputs": "Declare every requested return explicitly. name is a unique variable identifier without dollar signs or braces, matching [A-Za-z_][A-Za-z0-9_]*. schema describes the returned value using the workflow's supported validation structure. Supply these definitions directly; the workflow must not infer them from instruction text.",
+      "schemaRules": "Use type for string, integer, boolean, null, array, or object; arrays declare items; objects declare properties and required; allowed literal values use const or anyOf containing const schemas. Nested values follow the same structure.",
+      "noReturn": "Use an empty expectedInputs array when the instruction requests no captured value.",
+      "example": {
+        "instruction": "Calculate twelve times five. Return the product as {$total}.",
+        "expectedInputs": [
+          {
+            "name": "total",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "state": {
+    "verbatimUserPrompt": null,
+    "renderedScreens": [],
+    "variables": {}
+  }
+}
+

@@ -31,6 +31,14 @@ This change establishes the selector and stored choice only. Gemini-generated re
 
 The new initial screen uses render address 24, followed by existing render 1, so existing screen addresses and saved runs remain valid. Active runs are not restarted or asked to choose retroactively.
 
+## Gemini request template
+
+`gemini-request-template.json` defines the JSON content to serialize into the Gemini request's `contents[0].parts[0].text`. It contains the screen-writing instructions (including the six description-first examples) and a `state` object with `verbatimUserPrompt`, `renderedScreens`, and `variables`.
+
+Before sending, populate `verbatimUserPrompt` with the exact captured prompt, `renderedScreens` with every previously published screen in chronological order and its expected-input definitions, and `variables` with all saved returned variable names and values, including the latest accepted submission. Preserve the screens verbatim rather than substituting values into their text. The null prompt and empty containers are template placeholders. There is no separate expected-variable list or duplicated latest-submission envelope.
+
+Gemini's response format is the existing `gemini-screen.js` adapter's `{instruction, expectedInputs}` pair. This file supplies the request template; API invocation and issue-workflow wiring remain separate implementation work.
+
 ## Interactive execution
 
 The intended workflow starts when a qualifying procedure issue is opened or when the push workflow creates an issue from a committed trigger. It initializes that issue's state, reads the state-to-instruction mapping, and posts the current instruction to the issue. The complete procedure remains in its source file and is not posted to the issue.
