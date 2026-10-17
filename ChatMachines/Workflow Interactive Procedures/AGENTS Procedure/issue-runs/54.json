@@ -186,6 +186,349 @@
           }
         ],
         "assignmentId": "task_gemini_passage_boundary_design"
+      },
+      {
+        "name": "summary",
+        "value": "Validated 34 conversations, 306 mapping nodes, and 272 message objects from one smallest source bin in each batch 00–03. Explicit children fields are absent in this sample; inverse-parent adjacency reveals 3 branch points. Source content parts include mixed JSON values; metadata paths are conditional. Unobserved keys remain unverified outside the sample. topic/project/outputs are absent as direct conversation keys and require evidence-grounded derivation.",
+        "assignmentId": "task_chatgpt_second_pass_validation"
+      },
+      {
+        "name": "fieldPaths",
+        "value": [
+          {
+            "fieldName": "id",
+            "jsonPath": "$[*].id",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "conversation_id",
+            "jsonPath": "$[*].conversation_id",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "title",
+            "jsonPath": "$[*].title",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "create_time",
+            "jsonPath": "$[*].create_time",
+            "observedTypes": [
+              "number"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "update_time",
+            "jsonPath": "$[*].update_time",
+            "observedTypes": [
+              "number"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "current_node",
+            "jsonPath": "$[*].current_node",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "mapping",
+            "jsonPath": "$[*].mapping",
+            "observedTypes": [
+              "object"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "default_model_slug",
+            "jsonPath": "$[*].default_model_slug",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "mapping entry key",
+            "jsonPath": "$[*].mapping{nodeId}",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 306 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "parent",
+            "jsonPath": "$[*].mapping[nodeId].parent",
+            "observedTypes": [
+              "null",
+              "string"
+            ],
+            "presenceRate": "306/306 eligible node records; 306 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "children",
+            "jsonPath": "$[*].mapping[nodeId].children",
+            "observedTypes": [],
+            "presenceRate": "0/306 eligible node records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "message",
+            "jsonPath": "$[*].mapping[nodeId].message",
+            "observedTypes": [
+              "null",
+              "object"
+            ],
+            "presenceRate": "306/306 eligible node records; 306 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "message.id",
+            "jsonPath": "$[*].mapping[nodeId].message.id",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "272/272 eligible message records; 272 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "message.author.role",
+            "jsonPath": "$[*].mapping[nodeId].message.author.role",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "272/272 eligible message records; 272 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "message.create_time",
+            "jsonPath": "$[*].mapping[nodeId].message.create_time",
+            "observedTypes": [
+              "number"
+            ],
+            "presenceRate": "272/272 eligible message records; 272 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "message.content.parts",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts",
+            "observedTypes": [
+              "array"
+            ],
+            "presenceRate": "224/272 eligible message records; 224 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "asset_pointer",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].asset_pointer",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "20/272 eligible message records; 51 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "asset_pointer",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].audio_asset_pointer.asset_pointer",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "2/272 eligible message records; 2 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "attachments",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata.attachments",
+            "observedTypes": [
+              "array"
+            ],
+            "presenceRate": "20/272 eligible message records; 20 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "content_references",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata.content_references",
+            "observedTypes": [
+              "array"
+            ],
+            "presenceRate": "157/272 eligible message records; 157 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "file_name",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "metadata",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].audio_asset_pointer.metadata",
+            "observedTypes": [
+              "object"
+            ],
+            "presenceRate": "2/272 eligible message records; 2 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "metadata",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].metadata",
+            "observedTypes": [
+              "object"
+            ],
+            "presenceRate": "20/272 eligible message records; 51 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "metadata",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata",
+            "observedTypes": [
+              "object"
+            ],
+            "presenceRate": "218/272 eligible message records; 218 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "metadata",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata.content_references[*].metadata",
+            "observedTypes": [
+              "null"
+            ],
+            "presenceRate": "12/272 eligible message records; 33 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "metadata_sources",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "mime_type",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].mime_type",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "1/272 eligible message records; 1 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "mime_type",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata.attachments[*].mime_type",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "3/272 eligible message records; 4 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "size_bytes",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].audio_asset_pointer.size_bytes",
+            "observedTypes": [
+              "number"
+            ],
+            "presenceRate": "2/272 eligible message records; 2 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "size_bytes",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].size_bytes",
+            "observedTypes": [
+              "number"
+            ],
+            "presenceRate": "20/272 eligible message records; 51 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "source",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "source_title",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "source_type",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "source_url",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "sources",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata.content_references[*].sources",
+            "observedTypes": [
+              "array"
+            ],
+            "presenceRate": "4/272 eligible message records; 4 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "topic",
+            "jsonPath": "$[*].topic",
+            "observedTypes": [],
+            "presenceRate": "0/34 eligible conversation records; 0 occurrences",
+            "validationStatus": "absent as direct root key in sample; derived analytical output"
+          },
+          {
+            "fieldName": "project",
+            "jsonPath": "$[*].project",
+            "observedTypes": [],
+            "presenceRate": "0/34 eligible conversation records; 0 occurrences",
+            "validationStatus": "absent as direct root key in sample; derived analytical output"
+          },
+          {
+            "fieldName": "outputs",
+            "jsonPath": "$[*].outputs",
+            "observedTypes": [],
+            "presenceRate": "0/34 eligible conversation records; 0 occurrences",
+            "validationStatus": "absent as direct root key in sample; derived analytical output"
+          }
+        ],
+        "assignmentId": "task_chatgpt_second_pass_validation"
+      },
+      {
+        "name": "stagedFiles",
+        "value": [
+          "project/extracted/conversations-011/second_pass_field_validation.json",
+          "project/extracted/conversations-011/second_pass_field_validation.md"
+        ],
+        "assignmentId": "task_chatgpt_second_pass_validation"
       }
     ],
     "controls": [
@@ -697,6 +1040,10 @@
       {
         "assignmentId": "task_gemini_passage_boundary_design",
         "nonce": "gemini_passage_boundary_99b1"
+      },
+      {
+        "assignmentId": "task_chatgpt_second_pass_validation",
+        "nonce": "chatgpt54_20261017_a7c9"
       }
     ],
     "workerResponses": {
@@ -971,12 +1318,351 @@
             }
           ]
         }
+      },
+      {
+        "render": 2,
+        "assignmentId": "task_chatgpt_second_pass_validation",
+        "nonce": "chatgpt54_20261017_a7c9",
+        "worker": "chatgpt",
+        "values": {
+          "summary": "Validated 34 conversations, 306 mapping nodes, and 272 message objects from one smallest source bin in each batch 00–03. Explicit children fields are absent in this sample; inverse-parent adjacency reveals 3 branch points. Source content parts include mixed JSON values; metadata paths are conditional. Unobserved keys remain unverified outside the sample. topic/project/outputs are absent as direct conversation keys and require evidence-grounded derivation.",
+          "fieldPaths": [
+            {
+              "fieldName": "id",
+              "jsonPath": "$[*].id",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "conversation_id",
+              "jsonPath": "$[*].conversation_id",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "title",
+              "jsonPath": "$[*].title",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "create_time",
+              "jsonPath": "$[*].create_time",
+              "observedTypes": [
+                "number"
+              ],
+              "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "update_time",
+              "jsonPath": "$[*].update_time",
+              "observedTypes": [
+                "number"
+              ],
+              "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "current_node",
+              "jsonPath": "$[*].current_node",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "mapping",
+              "jsonPath": "$[*].mapping",
+              "observedTypes": [
+                "object"
+              ],
+              "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "default_model_slug",
+              "jsonPath": "$[*].default_model_slug",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "mapping entry key",
+              "jsonPath": "$[*].mapping{nodeId}",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "34/34 eligible conversation records; 306 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "parent",
+              "jsonPath": "$[*].mapping[nodeId].parent",
+              "observedTypes": [
+                "null",
+                "string"
+              ],
+              "presenceRate": "306/306 eligible node records; 306 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "children",
+              "jsonPath": "$[*].mapping[nodeId].children",
+              "observedTypes": [],
+              "presenceRate": "0/306 eligible node records; 0 occurrences",
+              "validationStatus": "absent in sample; not globally disproven"
+            },
+            {
+              "fieldName": "message",
+              "jsonPath": "$[*].mapping[nodeId].message",
+              "observedTypes": [
+                "null",
+                "object"
+              ],
+              "presenceRate": "306/306 eligible node records; 306 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "message.id",
+              "jsonPath": "$[*].mapping[nodeId].message.id",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "272/272 eligible message records; 272 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "message.author.role",
+              "jsonPath": "$[*].mapping[nodeId].message.author.role",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "272/272 eligible message records; 272 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "message.create_time",
+              "jsonPath": "$[*].mapping[nodeId].message.create_time",
+              "observedTypes": [
+                "number"
+              ],
+              "presenceRate": "272/272 eligible message records; 272 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "message.content.parts",
+              "jsonPath": "$[*].mapping[nodeId].message.content.parts",
+              "observedTypes": [
+                "array"
+              ],
+              "presenceRate": "224/272 eligible message records; 224 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "asset_pointer",
+              "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].asset_pointer",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "20/272 eligible message records; 51 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "asset_pointer",
+              "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].audio_asset_pointer.asset_pointer",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "2/272 eligible message records; 2 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "attachments",
+              "jsonPath": "$[*].mapping[nodeId].message.metadata.attachments",
+              "observedTypes": [
+                "array"
+              ],
+              "presenceRate": "20/272 eligible message records; 20 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "content_references",
+              "jsonPath": "$[*].mapping[nodeId].message.metadata.content_references",
+              "observedTypes": [
+                "array"
+              ],
+              "presenceRate": "157/272 eligible message records; 157 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "file_name",
+              "jsonPath": "not established from sample",
+              "observedTypes": [],
+              "presenceRate": "0/272 eligible message records; 0 occurrences",
+              "validationStatus": "absent in sample; not globally disproven"
+            },
+            {
+              "fieldName": "metadata",
+              "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].audio_asset_pointer.metadata",
+              "observedTypes": [
+                "object"
+              ],
+              "presenceRate": "2/272 eligible message records; 2 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "metadata",
+              "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].metadata",
+              "observedTypes": [
+                "object"
+              ],
+              "presenceRate": "20/272 eligible message records; 51 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "metadata",
+              "jsonPath": "$[*].mapping[nodeId].message.metadata",
+              "observedTypes": [
+                "object"
+              ],
+              "presenceRate": "218/272 eligible message records; 218 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "metadata",
+              "jsonPath": "$[*].mapping[nodeId].message.metadata.content_references[*].metadata",
+              "observedTypes": [
+                "null"
+              ],
+              "presenceRate": "12/272 eligible message records; 33 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "metadata_sources",
+              "jsonPath": "not established from sample",
+              "observedTypes": [],
+              "presenceRate": "0/272 eligible message records; 0 occurrences",
+              "validationStatus": "absent in sample; not globally disproven"
+            },
+            {
+              "fieldName": "mime_type",
+              "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].mime_type",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "1/272 eligible message records; 1 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "mime_type",
+              "jsonPath": "$[*].mapping[nodeId].message.metadata.attachments[*].mime_type",
+              "observedTypes": [
+                "string"
+              ],
+              "presenceRate": "3/272 eligible message records; 4 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "size_bytes",
+              "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].audio_asset_pointer.size_bytes",
+              "observedTypes": [
+                "number"
+              ],
+              "presenceRate": "2/272 eligible message records; 2 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "size_bytes",
+              "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].size_bytes",
+              "observedTypes": [
+                "number"
+              ],
+              "presenceRate": "20/272 eligible message records; 51 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "source",
+              "jsonPath": "not established from sample",
+              "observedTypes": [],
+              "presenceRate": "0/272 eligible message records; 0 occurrences",
+              "validationStatus": "absent in sample; not globally disproven"
+            },
+            {
+              "fieldName": "source_title",
+              "jsonPath": "not established from sample",
+              "observedTypes": [],
+              "presenceRate": "0/272 eligible message records; 0 occurrences",
+              "validationStatus": "absent in sample; not globally disproven"
+            },
+            {
+              "fieldName": "source_type",
+              "jsonPath": "not established from sample",
+              "observedTypes": [],
+              "presenceRate": "0/272 eligible message records; 0 occurrences",
+              "validationStatus": "absent in sample; not globally disproven"
+            },
+            {
+              "fieldName": "source_url",
+              "jsonPath": "not established from sample",
+              "observedTypes": [],
+              "presenceRate": "0/272 eligible message records; 0 occurrences",
+              "validationStatus": "absent in sample; not globally disproven"
+            },
+            {
+              "fieldName": "sources",
+              "jsonPath": "$[*].mapping[nodeId].message.metadata.content_references[*].sources",
+              "observedTypes": [
+                "array"
+              ],
+              "presenceRate": "4/272 eligible message records; 4 occurrences",
+              "validationStatus": "verified in sample"
+            },
+            {
+              "fieldName": "topic",
+              "jsonPath": "$[*].topic",
+              "observedTypes": [],
+              "presenceRate": "0/34 eligible conversation records; 0 occurrences",
+              "validationStatus": "absent as direct root key in sample; derived analytical output"
+            },
+            {
+              "fieldName": "project",
+              "jsonPath": "$[*].project",
+              "observedTypes": [],
+              "presenceRate": "0/34 eligible conversation records; 0 occurrences",
+              "validationStatus": "absent as direct root key in sample; derived analytical output"
+            },
+            {
+              "fieldName": "outputs",
+              "jsonPath": "$[*].outputs",
+              "observedTypes": [],
+              "presenceRate": "0/34 eligible conversation records; 0 occurrences",
+              "validationStatus": "absent as direct root key in sample; derived analytical output"
+            }
+          ],
+          "stagedFiles": [
+            "project/extracted/conversations-011/second_pass_field_validation.json",
+            "project/extracted/conversations-011/second_pass_field_validation.md"
+          ]
+        }
       }
     ]
   },
   "done": false,
-  "request": 3,
-  "lastCommentId": 6237408672,
+  "request": 4,
+  "lastCommentId": 6238922706,
   "newFiles": [],
   "history": [
     {
@@ -1246,6 +1932,344 @@
           }
         ]
       }
+    },
+    {
+      "request": 3,
+      "render": 2,
+      "assignmentId": "task_chatgpt_second_pass_validation",
+      "values": {
+        "summary": "Validated 34 conversations, 306 mapping nodes, and 272 message objects from one smallest source bin in each batch 00–03. Explicit children fields are absent in this sample; inverse-parent adjacency reveals 3 branch points. Source content parts include mixed JSON values; metadata paths are conditional. Unobserved keys remain unverified outside the sample. topic/project/outputs are absent as direct conversation keys and require evidence-grounded derivation.",
+        "fieldPaths": [
+          {
+            "fieldName": "id",
+            "jsonPath": "$[*].id",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "conversation_id",
+            "jsonPath": "$[*].conversation_id",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "title",
+            "jsonPath": "$[*].title",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "create_time",
+            "jsonPath": "$[*].create_time",
+            "observedTypes": [
+              "number"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "update_time",
+            "jsonPath": "$[*].update_time",
+            "observedTypes": [
+              "number"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "current_node",
+            "jsonPath": "$[*].current_node",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "mapping",
+            "jsonPath": "$[*].mapping",
+            "observedTypes": [
+              "object"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "default_model_slug",
+            "jsonPath": "$[*].default_model_slug",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 34 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "mapping entry key",
+            "jsonPath": "$[*].mapping{nodeId}",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "34/34 eligible conversation records; 306 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "parent",
+            "jsonPath": "$[*].mapping[nodeId].parent",
+            "observedTypes": [
+              "null",
+              "string"
+            ],
+            "presenceRate": "306/306 eligible node records; 306 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "children",
+            "jsonPath": "$[*].mapping[nodeId].children",
+            "observedTypes": [],
+            "presenceRate": "0/306 eligible node records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "message",
+            "jsonPath": "$[*].mapping[nodeId].message",
+            "observedTypes": [
+              "null",
+              "object"
+            ],
+            "presenceRate": "306/306 eligible node records; 306 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "message.id",
+            "jsonPath": "$[*].mapping[nodeId].message.id",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "272/272 eligible message records; 272 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "message.author.role",
+            "jsonPath": "$[*].mapping[nodeId].message.author.role",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "272/272 eligible message records; 272 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "message.create_time",
+            "jsonPath": "$[*].mapping[nodeId].message.create_time",
+            "observedTypes": [
+              "number"
+            ],
+            "presenceRate": "272/272 eligible message records; 272 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "message.content.parts",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts",
+            "observedTypes": [
+              "array"
+            ],
+            "presenceRate": "224/272 eligible message records; 224 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "asset_pointer",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].asset_pointer",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "20/272 eligible message records; 51 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "asset_pointer",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].audio_asset_pointer.asset_pointer",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "2/272 eligible message records; 2 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "attachments",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata.attachments",
+            "observedTypes": [
+              "array"
+            ],
+            "presenceRate": "20/272 eligible message records; 20 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "content_references",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata.content_references",
+            "observedTypes": [
+              "array"
+            ],
+            "presenceRate": "157/272 eligible message records; 157 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "file_name",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "metadata",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].audio_asset_pointer.metadata",
+            "observedTypes": [
+              "object"
+            ],
+            "presenceRate": "2/272 eligible message records; 2 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "metadata",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].metadata",
+            "observedTypes": [
+              "object"
+            ],
+            "presenceRate": "20/272 eligible message records; 51 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "metadata",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata",
+            "observedTypes": [
+              "object"
+            ],
+            "presenceRate": "218/272 eligible message records; 218 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "metadata",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata.content_references[*].metadata",
+            "observedTypes": [
+              "null"
+            ],
+            "presenceRate": "12/272 eligible message records; 33 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "metadata_sources",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "mime_type",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].mime_type",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "1/272 eligible message records; 1 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "mime_type",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata.attachments[*].mime_type",
+            "observedTypes": [
+              "string"
+            ],
+            "presenceRate": "3/272 eligible message records; 4 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "size_bytes",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].audio_asset_pointer.size_bytes",
+            "observedTypes": [
+              "number"
+            ],
+            "presenceRate": "2/272 eligible message records; 2 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "size_bytes",
+            "jsonPath": "$[*].mapping[nodeId].message.content.parts[*].size_bytes",
+            "observedTypes": [
+              "number"
+            ],
+            "presenceRate": "20/272 eligible message records; 51 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "source",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "source_title",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "source_type",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "source_url",
+            "jsonPath": "not established from sample",
+            "observedTypes": [],
+            "presenceRate": "0/272 eligible message records; 0 occurrences",
+            "validationStatus": "absent in sample; not globally disproven"
+          },
+          {
+            "fieldName": "sources",
+            "jsonPath": "$[*].mapping[nodeId].message.metadata.content_references[*].sources",
+            "observedTypes": [
+              "array"
+            ],
+            "presenceRate": "4/272 eligible message records; 4 occurrences",
+            "validationStatus": "verified in sample"
+          },
+          {
+            "fieldName": "topic",
+            "jsonPath": "$[*].topic",
+            "observedTypes": [],
+            "presenceRate": "0/34 eligible conversation records; 0 occurrences",
+            "validationStatus": "absent as direct root key in sample; derived analytical output"
+          },
+          {
+            "fieldName": "project",
+            "jsonPath": "$[*].project",
+            "observedTypes": [],
+            "presenceRate": "0/34 eligible conversation records; 0 occurrences",
+            "validationStatus": "absent as direct root key in sample; derived analytical output"
+          },
+          {
+            "fieldName": "outputs",
+            "jsonPath": "$[*].outputs",
+            "observedTypes": [],
+            "presenceRate": "0/34 eligible conversation records; 0 occurrences",
+            "validationStatus": "absent as direct root key in sample; derived analytical output"
+          }
+        ],
+        "stagedFiles": [
+          "project/extracted/conversations-011/second_pass_field_validation.json",
+          "project/extracted/conversations-011/second_pass_field_validation.md"
+        ]
+      }
     }
   ],
   "toolInvocations": [],
@@ -1259,6 +2283,6 @@
   },
   "view": "instruction",
   "geminiStarted": true,
-  "geminiPending": false,
+  "geminiPending": true,
   "geminiAssessmentRequest": 3
 }
