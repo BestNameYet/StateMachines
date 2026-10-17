@@ -74,7 +74,8 @@ class OutputTests(unittest.TestCase):
             )
             jsonl = (output / "assignments.jsonl").read_text(encoding="utf-8")
             records = [json.loads(line) for line in jsonl.splitlines()]
-            csv_rows = list(csv.DictReader((output / "assignments.csv").open(encoding="utf-8")))
+            with (output / "assignments.csv").open(encoding="utf-8") as csv_file:
+                csv_rows = list(csv.DictReader(csv_file))
             topics = json.loads((output / "topics.json").read_text(encoding="utf-8"))
 
         self.assertEqual([row["topic_id"] for row in records], [0, -1])
