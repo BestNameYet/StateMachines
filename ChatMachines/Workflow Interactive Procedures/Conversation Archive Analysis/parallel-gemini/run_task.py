@@ -71,7 +71,10 @@ def call(prompt, api_key, model, opener=urllib.request.urlopen, images=None):
     parts = [{'text': prompt}]
     for image in images or []:
         parts.append({'inline_data': {'mime_type': image['mime_type'], 'data': image['inline_data']}})
-    data = json.dumps({'contents': [{'role': 'user', 'parts': parts}]}).encode()
+    payload = {'contents': [{'role': 'user', 'parts': parts}]}
+    if images:
+        payload['generationConfig'] = {'responseMimeType': 'application/json'}
+    data = json.dumps(payload).encode()
     request = urllib.request.Request(url, data=data, headers={
         'Content-Type': 'application/json', 'x-goog-api-key': api_key}, method='POST')
     for attempt in range(3):
