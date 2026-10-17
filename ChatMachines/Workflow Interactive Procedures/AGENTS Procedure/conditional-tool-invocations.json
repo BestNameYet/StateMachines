@@ -1,0 +1,373 @@
+{
+  "schemaVersion": "1.0.0",
+  "title": "Conditional tool invocation records",
+  "repository": "BestNameYet/StateMachines",
+  "branch": "main",
+  "generatedFrom": {
+    "inventoryPath": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocations-by-root.json",
+    "inventoryBlobSha": "2647600a5ba4dfe3512059bfdaaefb1149a9fc80",
+    "classificationPath": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+    "classificationBlobSha": "1bc59e8cf1354a6b886d68b5116b252083ae5173",
+    "classificationRule": "Conditional tool operations require inspection of concrete arguments, commands, and nested effects before classification as read-only or data-changing."
+  },
+  "summary": {
+    "recordCount": 10,
+    "countsByTool": {
+      "exec_command": 6,
+      "functions.exec": 1,
+      "functions.exec_command": 1,
+      "tools.exec_command": 2
+    },
+    "resolution": "These are conditional candidates, not confirmed mutations. Each record preserves the original invocation evidence."
+  },
+  "toolInvocations": [
+    {
+      "procedureIssueNumber": 18,
+      "sourceFile": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/18.json",
+      "sourceArray": "toolInvocations",
+      "sourceIndex": 0,
+      "tool": "exec_command",
+      "tokens": [
+        "exec_command"
+      ],
+      "effectClassification": "conditional",
+      "reason": "Tool wrapper does not establish the effect; inspect the concrete command or nested operation.",
+      "invocation": {
+        "specifiedOperatorByUser": null,
+        "chosenOperator": "GitHub Git Data API with local Python staging",
+        "cwd": "/workspace/scratch/c8b44afc3ed8",
+        "command_line_verbatim": "python3 - <<'PY'\nfrom pathlib import Path\nimport json, gzip, shutil, hashlib, os\nroot=Path('/workspace/scratch/c8b44afc3ed8')\nbase=root/'migration_stage'/'ChatMachines'/'Main Instructions'/'AGENTS Design'\nbase.mkdir(parents=True,exist_ok=True)\nmapping=[\n('AGENTS-root-array.json','AGENTS-root-array.json','canonical_working_copy'),\n('AGENTS.md','sources/AGENTS-original.md','historical_source'),\n('AGENTS-extracted.json','sources/AGENTS-extracted.json','historical_source'),\n('AGENTS-additions-draft.json','drafts/AGENTS-additions-draft.json','inactive_draft'),\n('File-change-report-draft.json','drafts/File-change-report-draft.json','inactive_draft'),\n('AGENTS-requirements-breakdown.md','analysis/AGENTS-requirements-breakdown.md','analysis'),\n('json-to-array.js','tools/json-to-array.js','conversion_script_with_historical_input'),\n('JWRS-root-array.json','history/JWRS-root-array.json','superseded_wrong_source_conversion')\n]\nrecords=[]\nfor local,relative,role in mapping:\n src=root/local; dest=base/relative; dest.parent.mkdir(parents=True,exist_ok=True); shutil.copyfile(src,dest)\n data=src.read_bytes()\n attrs=os.listxattr(src)\n records.append({'path':relative,'role':role,'source_filename':local,'source_library_file_id':os.getxattr(src,'user.library-file-id').decode() if 'user.library-file-id' in attrs else None,'source_library_version':os.getxattr(src,'user.library-file-version').decode() if 'user.library-file-version' in attrs else None,'size_bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})\nsrc=root/'upload'/'StateMachines-conversation-audit(1).html'\nraw=src.read_bytes(); compressed=gzip.compress(raw,mtime=0)\ndest=base/'sources'/'StateMachines-conversation-audit.html.gz';dest.write_bytes(compressed)\nassert gzip.decompress(dest.read_bytes())==raw\nrecords.append({'path':'sources/StateMachines-conversation-audit.html.gz','role':'historical_conversation_audit','source_filename':src.name,'source_library_file_id':'libfile_dbcbb6c6db988191aa79edaa392122ab','encoding':'gzip','size_bytes':len(compressed),'sha256':hashlib.sha256(compressed).hexdigest(),'uncompressed_size_bytes':len(raw),'uncompressed_sha256':hashlib.sha256(raw).hexdigest()})\nreadme=\"\"\"# AGENTS instruction design\n\n## Canonical working source\n\nRepository: BestNameYet/StateMachines, branch main.\nWorking file: [AGENTS-root-array.json](AGENTS-root-array.json).\n\nThis repository file is the sole working source for this conversation's AGENTS instruction-design project. Make subsequent edits here through the existing AGENTS Procedure. Library copies are historical snapshots and must not be edited as parallel working copies. Downloaded files are copies, not a second authority.\n\nThis design working copy is not activated as a replacement for the account-level governing instruction. Existing instructions elsewhere in the repository are not replaced by this migration.\n\n## Contents\n\n- AGENTS-root-array.json: current working array, copied byte-for-byte.\n- sources/: original governing instruction, extracted source object, and supplied conversation audit.\n- drafts/: earlier evidence/report designs, preserved without activation.\n- analysis/: complete requirements breakdown.\n- tools/json-to-array.js: conversion script with the historical source embedded in its outer const.\n- history/JWRS-root-array.json: earlier conversion of the wrong source, retained for history only.\n- design-notes.md: later decisions discussed after the earlier drafts.\n- migration-manifest.json: source identifiers, byte counts, and checksums.\n\nThe source audit is stored losslessly as gzip. Decompress it to obtain the original HTML. Both compressed and original checksums are recorded.\n\n## Current working state\n\nThe working array contains 19 entries. Five metadata fields were grouped into one metadata object. The old purpose text was preserved verbatim as instruction and purpose became a document description. The opening entries are metadata, instruction_source, definitions, instruction.\n\nThe request to split instruction into projection and execution instructions is still pending. Migration does not perform that edit.\n\n## Procedure\n\nFirst read ../.. /Workflow Interactive Procedures/AGENTS Procedure/README.md using its actual repository path:\nChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md.\n\nStart a fresh procedure issue using the existing AGENTS Procedure template. Identify this working file using its repository-relative path:\nChatMachines/Main Instructions/AGENTS Design/AGENTS-root-array.json.\n\nProcedure issue 18 records this migration. Issue 17 records the earlier attempt blocked by the absent repository file.\n\n## Preservation\n\nAll nine imported files retain their original bytes, except the HTML audit's explicitly recorded lossless gzip encoding. The three migration documents are new. Historical snapshots and drafts are inputs, not alternative canonical working instructions. Future decisions supersede older drafts only when applied explicitly to the working copy.\n\"\"\"\nreadme=readme.replace('First read ../.. /Workflow Interactive Procedures/AGENTS Procedure/README.md using its actual repository path:','First read the existing procedure README at this repository path:')\n(base/'README.md').write_text(readme)\nnotes=\"\"\"# Design decisions carried into GitHub\n\nThese notes summarize visible decisions in this conversation. They are not activated instructions and do not silently update older drafts.\n\n## Evidence reports\n\n- Model the file-edit audit after the existing verbatim tool-invocation audit: actual events determine inclusion, including changes outside the requested task.\n- Record file identities, paths, names, revisions, byte sizes, obtained digests, edit locations, exact before/after values, observation references, invocation associations, and subtask associations.\n- Explicitly distinguish an absent file from an unobserved file. Do not fabricate unavailable values.\n- Make file-change records primary. Derive the task summary from subtask associations in those records and list the associated edits.\n- Preserve unassociated changes instead of inventing subtasks to justify them.\n- Place a file-change array before existing report requirements and a separate task-summary array after them; retain existing reporting requirements.\n- Discussion identified five report components: file changes, selected-mode result, tool invocation audit, profile/status, and task summary. Earlier draft layouts were not finalized or activated.\n\n## JWRS construction\n\n- Author definitions, fixed selection logic, and cardinality rules in the instruction framework rather than letting the executor invent truth schemas.\n- Infill a governed structure, then perform a separate projection of its populated values without instructional material or added commentary.\n- Preserve the distinction between fixed request values and execution observations.\n- Preplan redesign was tabled while these report structures were discussed.\n\n## Working-copy edits already applied\n\n- Convert the extracted governing object's 22 root keys into an ordered array of single-key objects, preserving recursive contents.\n- Preserve purpose's original operational text verbatim as instruction; replace purpose with a document-level description.\n- Group response_type, instruction_id, version, scope, and purpose under metadata.\n- Place instruction_source and definitions immediately before instruction.\n- The result is 19 entries, unchanged by migration.\n\n## Pending work\n\nSplit the first instruction into two instructions: one for mode selection and printing JWRS; another for executing the request and returning actual results. This was not performed before the migration request. Resume it against the canonical GitHub working file after migration.\n\"\"\"\n(base/'design-notes.md').write_text(notes)\nfor relative in ['README.md','design-notes.md']:\n data=(base/relative).read_bytes()\n records.append({'path':relative,'role':'migration_documentation','size_bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})\nmanifest={'canonical_repository':'BestNameYet/StateMachines','canonical_branch':'main','canonical_working_path':'ChatMachines/Main Instructions/AGENTS Design/AGENTS-root-array.json','procedure_issue':18,'library_copies_role':'historical_snapshots_not_parallel_working_sources','files':records,'manifest_self_hash':'omitted_to_avoid_self_reference'}\n(base/'migration-manifest.json').write_text(json.dumps(manifest,indent=2)+'\\n')\na=json.loads((base/'AGENTS-root-array.json').read_text())\nassert len(a)==19 and [next(iter(x)) for x in a][:4]==['metadata','instruction_source','definitions','instruction']\nfor p in base.rglob('*.json'): json.loads(p.read_text())\nfor item in records: assert hashlib.sha256((base/item['path']).read_bytes()).hexdigest()==item['sha256']\nprint(json.dumps({'staged_files':len(list(base.rglob('*')))-sum(1 for p in base.rglob('*') if p.is_dir()),'working_entries':len(a),'audit_roundtrip':'identical','hashes_verified':len(records)}))\n\nPY",
+        "tool": "exec_command",
+        "invocation_verbatim": "{\"cmd\":\"python3 - <<'PY'\\nfrom pathlib import Path\\nimport json, gzip, shutil, hashlib, os\\nroot=Path('/workspace/scratch/c8b44afc3ed8')\\nbase=root/'migration_stage'/'ChatMachines'/'Main Instructions'/'AGENTS Design'\\nbase.mkdir(parents=True,exist_ok=True)\\nmapping=[\\n('AGENTS-root-array.json','AGENTS-root-array.json','canonical_working_copy'),\\n('AGENTS.md','sources/AGENTS-original.md','historical_source'),\\n('AGENTS-extracted.json','sources/AGENTS-extracted.json','historical_source'),\\n('AGENTS-additions-draft.json','drafts/AGENTS-additions-draft.json','inactive_draft'),\\n('File-change-report-draft.json','drafts/File-change-report-draft.json','inactive_draft'),\\n('AGENTS-requirements-breakdown.md','analysis/AGENTS-requirements-breakdown.md','analysis'),\\n('json-to-array.js','tools/json-to-array.js','conversion_script_with_historical_input'),\\n('JWRS-root-array.json','history/JWRS-root-array.json','superseded_wrong_source_conversion')\\n]\\nrecords=[]\\nfor local,relative,role in mapping:\\n src=root/local; dest=base/relative; dest.parent.mkdir(parents=True,exist_ok=True); shutil.copyfile(src,dest)\\n data=src.read_bytes()\\n attrs=os.listxattr(src)\\n records.append({'path':relative,'role':role,'source_filename':local,'source_library_file_id':os.getxattr(src,'user.library-file-id').decode() if 'user.library-file-id' in attrs else None,'source_library_version':os.getxattr(src,'user.library-file-version').decode() if 'user.library-file-version' in attrs else None,'size_bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})\\nsrc=root/'upload'/'StateMachines-conversation-audit(1).html'\\nraw=src.read_bytes(); compressed=gzip.compress(raw,mtime=0)\\ndest=base/'sources'/'StateMachines-conversation-audit.html.gz';dest.write_bytes(compressed)\\nassert gzip.decompress(dest.read_bytes())==raw\\nrecords.append({'path':'sources/StateMachines-conversation-audit.html.gz','role':'historical_conversation_audit','source_filename':src.name,'source_library_file_id':'libfile_dbcbb6c6db988191aa79edaa392122ab','encoding':'gzip','size_bytes':len(compressed),'sha256':hashlib.sha256(compressed).hexdigest(),'uncompressed_size_bytes':len(raw),'uncompressed_sha256':hashlib.sha256(raw).hexdigest()})\\nreadme=\\\"\\\"\\\"# AGENTS instruction design\\n\\n## Canonical working source\\n\\nRepository: BestNameYet/StateMachines, branch main.\\nWorking file: [AGENTS-root-array.json](AGENTS-root-array.json).\\n\\nThis repository file is the sole working source for this conversation's AGENTS instruction-design project. Make subsequent edits here through the existing AGENTS Procedure. Library copies are historical snapshots and must not be edited as parallel working copies. Downloaded files are copies, not a second authority.\\n\\nThis design working copy is not activated as a replacement for the account-level governing instruction. Existing instructions elsewhere in the repository are not replaced by this migration.\\n\\n## Contents\\n\\n- AGENTS-root-array.json: current working array, copied byte-for-byte.\\n- sources/: original governing instruction, extracted source object, and supplied conversation audit.\\n- drafts/: earlier evidence/report designs, preserved without activation.\\n- analysis/: complete requirements breakdown.\\n- tools/json-to-array.js: conversion script with the historical source embedded in its outer const.\\n- history/JWRS-root-array.json: earlier conversion of the wrong source, retained for history only.\\n- design-notes.md: later decisions discussed after the earlier drafts.\\n- migration-manifest.json: source identifiers, byte counts, and checksums.\\n\\nThe source audit is stored losslessly as gzip. Decompress it to obtain the original HTML. Both compressed and original checksums are recorded.\\n\\n## Current working state\\n\\nThe working array contains 19 entries. Five metadata fields were grouped into one metadata object. The old purpose text was preserved verbatim as instruction and purpose became a document description. The opening entries are metadata, instruction_source, definitions, instruction.\\n\\nThe request to split instruction into projection and execution instructions is still pending. Migration does not perform that edit.\\n\\n## Procedure\\n\\nFirst read ../.. /Workflow Interactive Procedures/AGENTS Procedure/README.md using its actual repository path:\\nChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md.\\n\\nStart a fresh procedure issue using the existing AGENTS Procedure template. Identify this working file using its repository-relative path:\\nChatMachines/Main Instructions/AGENTS Design/AGENTS-root-array.json.\\n\\nProcedure issue 18 records this migration. Issue 17 records the earlier attempt blocked by the absent repository file.\\n\\n## Preservation\\n\\nAll nine imported files retain their original bytes, except the HTML audit's explicitly recorded lossless gzip encoding. The three migration documents are new. Historical snapshots and drafts are inputs, not alternative canonical working instructions. Future decisions supersede older drafts only when applied explicitly to the working copy.\\n\\\"\\\"\\\"\\nreadme=readme.replace('First read ../.. /Workflow Interactive Procedures/AGENTS Procedure/README.md using its actual repository path:','First read the existing procedure README at this repository path:')\\n(base/'README.md').write_text(readme)\\nnotes=\\\"\\\"\\\"# Design decisions carried into GitHub\\n\\nThese notes summarize visible decisions in this conversation. They are not activated instructions and do not silently update older drafts.\\n\\n## Evidence reports\\n\\n- Model the file-edit audit after the existing verbatim tool-invocation audit: actual events determine inclusion, including changes outside the requested task.\\n- Record file identities, paths, names, revisions, byte sizes, obtained digests, edit locations, exact before/after values, observation references, invocation associations, and subtask associations.\\n- Explicitly distinguish an absent file from an unobserved file. Do not fabricate unavailable values.\\n- Make file-change records primary. Derive the task summary from subtask associations in those records and list the associated edits.\\n- Preserve unassociated changes instead of inventing subtasks to justify them.\\n- Place a file-change array before existing report requirements and a separate task-summary array after them; retain existing reporting requirements.\\n- Discussion identified five report components: file changes, selected-mode result, tool invocation audit, profile/status, and task summary. Earlier draft layouts were not finalized or activated.\\n\\n## JWRS construction\\n\\n- Author definitions, fixed selection logic, and cardinality rules in the instruction framework rather than letting the executor invent truth schemas.\\n- Infill a governed structure, then perform a separate projection of its populated values without instructional material or added commentary.\\n- Preserve the distinction between fixed request values and execution observations.\\n- Preplan redesign was tabled while these report structures were discussed.\\n\\n## Working-copy edits already applied\\n\\n- Convert the extracted governing object's 22 root keys into an ordered array of single-key objects, preserving recursive contents.\\n- Preserve purpose's original operational text verbatim as instruction; replace purpose with a document-level description.\\n- Group response_type, instruction_id, version, scope, and purpose under metadata.\\n- Place instruction_source and definitions immediately before instruction.\\n- The result is 19 entries, unchanged by migration.\\n\\n## Pending work\\n\\nSplit the first instruction into two instructions: one for mode selection and printing JWRS; another for executing the request and returning actual results. This was not performed before the migration request. Resume it against the canonical GitHub working file after migration.\\n\\\"\\\"\\\"\\n(base/'design-notes.md').write_text(notes)\\nfor relative in ['README.md','design-notes.md']:\\n data=(base/relative).read_bytes()\\n records.append({'path':relative,'role':'migration_documentation','size_bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})\\nmanifest={'canonical_repository':'BestNameYet/StateMachines','canonical_branch':'main','canonical_working_path':'ChatMachines/Main Instructions/AGENTS Design/AGENTS-root-array.json','procedure_issue':18,'library_copies_role':'historical_snapshots_not_parallel_working_sources','files':records,'manifest_self_hash':'omitted_to_avoid_self_reference'}\\n(base/'migration-manifest.json').write_text(json.dumps(manifest,indent=2)+'\\\\n')\\na=json.loads((base/'AGENTS-root-array.json').read_text())\\nassert len(a)==19 and [next(iter(x)) for x in a][:4]==['metadata','instruction_source','definitions','instruction']\\nfor p in base.rglob('*.json'): json.loads(p.read_text())\\nfor item in records: assert hashlib.sha256((base/item['path']).read_bytes()).hexdigest()==item['sha256']\\nprint(json.dumps({'staged_files':len(list(base.rglob('*')))-sum(1 for p in base.rglob('*') if p.is_dir()),'working_entries':len(a),'audit_roundtrip':'identical','hashes_verified':len(records)}))\\n\\nPY\",\"max_output_tokens\":500}",
+        "final_output_after_completion_of_tool_call": "{\"staged_files\": 12, \"working_entries\": 19, \"audit_roundtrip\": \"identical\", \"hashes_verified\": 11}\n",
+        "unavailable_reason": null,
+        "new": null,
+        "filename": null,
+        "frombyte": null,
+        "tobyte": null,
+        "description": "Migrate the inventoried AGENTS design material and establish one canonical repository working source.",
+        "intent": "Transfer all project material to GitHub without modifying existing instructions.",
+        "operator": "create",
+        "outcome": "succeeded"
+      }
+    },
+    {
+      "procedureIssueNumber": 46,
+      "sourceFile": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/46.json",
+      "sourceArray": "toolInvocations",
+      "sourceIndex": 0,
+      "tool": "exec_command",
+      "tokens": [
+        "exec_command"
+      ],
+      "effectClassification": "conditional",
+      "reason": "Tool wrapper does not establish the effect; inspect the concrete command or nested operation.",
+      "invocation": {
+        "cwd": "/workspace/scratch/a5c96269646b",
+        "command_line_verbatim": "\"$CODEX_PRIMARY_RUNTIME_PYTHON\" - <<'PY'\nfrom pathlib import Path\nimport hashlib,os,zipfile,csv,json\nfrom datetime import datetime\nfor p in sorted(Path('output').iterdir()):\n b=p.read_bytes();print(p.name,len(b),hashlib.sha256(b).hexdigest())\nwith zipfile.ZipFile('google_activity_houston.zip') as z:\n assert z.testzip() is None\n for p in Path('output').iterdir(): assert z.read(p.name)==p.read_bytes()\nrows=list(csv.DictReader(open('output/activity_houston.csv')))\nassert len(rows)==12313\nassert [datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows]==sorted(datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows)\nids={r['Gaia ID'] for p in Path('raw').glob('*.csv') for r in csv.DictReader(p.open()) if r.get('Gaia ID')}\nassert all(not any(i in p.read_text() for i in ids) for p in Path('output').iterdir())\nos.setxattr('google_activity_houston.zip','user.library-file-version',b'2')\nprint('PASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.')\nPY",
+        "tool": "exec_command",
+        "invocation_verbatim": "{\"cmd\":\"\\\"$CODEX_PRIMARY_RUNTIME_PYTHON\\\" - <<'PY'\\nfrom pathlib import Path\\nimport hashlib,os,zipfile,csv,json\\nfrom datetime import datetime\\nfor p in sorted(Path('output').iterdir()):\\n b=p.read_bytes();print(p.name,len(b),hashlib.sha256(b).hexdigest())\\nwith zipfile.ZipFile('google_activity_houston.zip') as z:\\n assert z.testzip() is None\\n for p in Path('output').iterdir(): assert z.read(p.name)==p.read_bytes()\\nrows=list(csv.DictReader(open('output/activity_houston.csv')))\\nassert len(rows)==12313\\nassert [datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows]==sorted(datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows)\\nids={r['Gaia ID'] for p in Path('raw').glob('*.csv') for r in csv.DictReader(p.open()) if r.get('Gaia ID')}\\nassert all(not any(i in p.read_text() for i in ids) for p in Path('output').iterdir())\\nos.setxattr('google_activity_houston.zip','user.library-file-version',b'2')\\nprint('PASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.')\\nPY\",\"max_output_tokens\":1800}",
+        "final_output_after_completion_of_tool_call": {
+          "chunk_id": "5846f4",
+          "wall_time_seconds": 0.115362063,
+          "exit_code": 0,
+          "original_token_count": 143,
+          "output": "access_log_houston.csv 5752056 d2a9ba9dc211d224b1fb2db8e5cec6f233f94ac744e964e5365af174e56ece14\nactivity_houston.csv 2237091 2acf97e967d186d548138522f0eab7d879723c862273436538d6682b7d63b73a\nanalysis.json 22729 6c7486f49737060f983abcef74eb271468db92915c6701c1864f7f11a15d6cc4\ndevices_houston.csv 1472 feeeec2a1912b8dc766a4d5b427bfb34d7443d4212cefdcc6e66a83561ce208e\ngoogle_activity_report.md 10669 801807790319d7dc4906bff121fbdf3d61a1b0c03a9d37186dce992984d51900\nPASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.\n"
+        },
+        "unavailable_reason": null,
+        "new": true,
+        "filename": "output/google_activity_report.md",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create derived google_activity_report.md from read-only archive sources, omit Gaia identifier values and use Houston-normalized times where applicable.",
+        "intent": "Provide source-grounded monthly activity chronology and earliest timestamp with limitations, without source modifications.",
+        "operator": "local analysis and file generation",
+        "specifiedOperatorByUser": "using the connected app if available",
+        "chosenOperator": "Google Drive connector for source retrieval; local Python for derived output and verification",
+        "outcome": "succeeded"
+      }
+    },
+    {
+      "procedureIssueNumber": 46,
+      "sourceFile": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/46.json",
+      "sourceArray": "toolInvocations",
+      "sourceIndex": 1,
+      "tool": "exec_command",
+      "tokens": [
+        "exec_command"
+      ],
+      "effectClassification": "conditional",
+      "reason": "Tool wrapper does not establish the effect; inspect the concrete command or nested operation.",
+      "invocation": {
+        "cwd": "/workspace/scratch/a5c96269646b",
+        "command_line_verbatim": "\"$CODEX_PRIMARY_RUNTIME_PYTHON\" - <<'PY'\nfrom pathlib import Path\nimport hashlib,os,zipfile,csv,json\nfrom datetime import datetime\nfor p in sorted(Path('output').iterdir()):\n b=p.read_bytes();print(p.name,len(b),hashlib.sha256(b).hexdigest())\nwith zipfile.ZipFile('google_activity_houston.zip') as z:\n assert z.testzip() is None\n for p in Path('output').iterdir(): assert z.read(p.name)==p.read_bytes()\nrows=list(csv.DictReader(open('output/activity_houston.csv')))\nassert len(rows)==12313\nassert [datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows]==sorted(datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows)\nids={r['Gaia ID'] for p in Path('raw').glob('*.csv') for r in csv.DictReader(p.open()) if r.get('Gaia ID')}\nassert all(not any(i in p.read_text() for i in ids) for p in Path('output').iterdir())\nos.setxattr('google_activity_houston.zip','user.library-file-version',b'2')\nprint('PASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.')\nPY",
+        "tool": "exec_command",
+        "invocation_verbatim": "{\"cmd\":\"\\\"$CODEX_PRIMARY_RUNTIME_PYTHON\\\" - <<'PY'\\nfrom pathlib import Path\\nimport hashlib,os,zipfile,csv,json\\nfrom datetime import datetime\\nfor p in sorted(Path('output').iterdir()):\\n b=p.read_bytes();print(p.name,len(b),hashlib.sha256(b).hexdigest())\\nwith zipfile.ZipFile('google_activity_houston.zip') as z:\\n assert z.testzip() is None\\n for p in Path('output').iterdir(): assert z.read(p.name)==p.read_bytes()\\nrows=list(csv.DictReader(open('output/activity_houston.csv')))\\nassert len(rows)==12313\\nassert [datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows]==sorted(datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows)\\nids={r['Gaia ID'] for p in Path('raw').glob('*.csv') for r in csv.DictReader(p.open()) if r.get('Gaia ID')}\\nassert all(not any(i in p.read_text() for i in ids) for p in Path('output').iterdir())\\nos.setxattr('google_activity_houston.zip','user.library-file-version',b'2')\\nprint('PASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.')\\nPY\",\"max_output_tokens\":1800}",
+        "final_output_after_completion_of_tool_call": {
+          "chunk_id": "5846f4",
+          "wall_time_seconds": 0.115362063,
+          "exit_code": 0,
+          "original_token_count": 143,
+          "output": "access_log_houston.csv 5752056 d2a9ba9dc211d224b1fb2db8e5cec6f233f94ac744e964e5365af174e56ece14\nactivity_houston.csv 2237091 2acf97e967d186d548138522f0eab7d879723c862273436538d6682b7d63b73a\nanalysis.json 22729 6c7486f49737060f983abcef74eb271468db92915c6701c1864f7f11a15d6cc4\ndevices_houston.csv 1472 feeeec2a1912b8dc766a4d5b427bfb34d7443d4212cefdcc6e66a83561ce208e\ngoogle_activity_report.md 10669 801807790319d7dc4906bff121fbdf3d61a1b0c03a9d37186dce992984d51900\nPASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.\n"
+        },
+        "unavailable_reason": null,
+        "new": true,
+        "filename": "output/activity_houston.csv",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create derived activity_houston.csv from read-only archive sources, omit Gaia identifier values and use Houston-normalized times where applicable.",
+        "intent": "Provide source-grounded monthly activity chronology and earliest timestamp with limitations, without source modifications.",
+        "operator": "local analysis and file generation",
+        "specifiedOperatorByUser": "using the connected app if available",
+        "chosenOperator": "Google Drive connector for source retrieval; local Python for derived output and verification",
+        "outcome": "succeeded"
+      }
+    },
+    {
+      "procedureIssueNumber": 46,
+      "sourceFile": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/46.json",
+      "sourceArray": "toolInvocations",
+      "sourceIndex": 2,
+      "tool": "exec_command",
+      "tokens": [
+        "exec_command"
+      ],
+      "effectClassification": "conditional",
+      "reason": "Tool wrapper does not establish the effect; inspect the concrete command or nested operation.",
+      "invocation": {
+        "cwd": "/workspace/scratch/a5c96269646b",
+        "command_line_verbatim": "\"$CODEX_PRIMARY_RUNTIME_PYTHON\" - <<'PY'\nfrom pathlib import Path\nimport hashlib,os,zipfile,csv,json\nfrom datetime import datetime\nfor p in sorted(Path('output').iterdir()):\n b=p.read_bytes();print(p.name,len(b),hashlib.sha256(b).hexdigest())\nwith zipfile.ZipFile('google_activity_houston.zip') as z:\n assert z.testzip() is None\n for p in Path('output').iterdir(): assert z.read(p.name)==p.read_bytes()\nrows=list(csv.DictReader(open('output/activity_houston.csv')))\nassert len(rows)==12313\nassert [datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows]==sorted(datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows)\nids={r['Gaia ID'] for p in Path('raw').glob('*.csv') for r in csv.DictReader(p.open()) if r.get('Gaia ID')}\nassert all(not any(i in p.read_text() for i in ids) for p in Path('output').iterdir())\nos.setxattr('google_activity_houston.zip','user.library-file-version',b'2')\nprint('PASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.')\nPY",
+        "tool": "exec_command",
+        "invocation_verbatim": "{\"cmd\":\"\\\"$CODEX_PRIMARY_RUNTIME_PYTHON\\\" - <<'PY'\\nfrom pathlib import Path\\nimport hashlib,os,zipfile,csv,json\\nfrom datetime import datetime\\nfor p in sorted(Path('output').iterdir()):\\n b=p.read_bytes();print(p.name,len(b),hashlib.sha256(b).hexdigest())\\nwith zipfile.ZipFile('google_activity_houston.zip') as z:\\n assert z.testzip() is None\\n for p in Path('output').iterdir(): assert z.read(p.name)==p.read_bytes()\\nrows=list(csv.DictReader(open('output/activity_houston.csv')))\\nassert len(rows)==12313\\nassert [datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows]==sorted(datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows)\\nids={r['Gaia ID'] for p in Path('raw').glob('*.csv') for r in csv.DictReader(p.open()) if r.get('Gaia ID')}\\nassert all(not any(i in p.read_text() for i in ids) for p in Path('output').iterdir())\\nos.setxattr('google_activity_houston.zip','user.library-file-version',b'2')\\nprint('PASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.')\\nPY\",\"max_output_tokens\":1800}",
+        "final_output_after_completion_of_tool_call": {
+          "chunk_id": "5846f4",
+          "wall_time_seconds": 0.115362063,
+          "exit_code": 0,
+          "original_token_count": 143,
+          "output": "access_log_houston.csv 5752056 d2a9ba9dc211d224b1fb2db8e5cec6f233f94ac744e964e5365af174e56ece14\nactivity_houston.csv 2237091 2acf97e967d186d548138522f0eab7d879723c862273436538d6682b7d63b73a\nanalysis.json 22729 6c7486f49737060f983abcef74eb271468db92915c6701c1864f7f11a15d6cc4\ndevices_houston.csv 1472 feeeec2a1912b8dc766a4d5b427bfb34d7443d4212cefdcc6e66a83561ce208e\ngoogle_activity_report.md 10669 801807790319d7dc4906bff121fbdf3d61a1b0c03a9d37186dce992984d51900\nPASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.\n"
+        },
+        "unavailable_reason": null,
+        "new": true,
+        "filename": "output/access_log_houston.csv",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create derived access_log_houston.csv from read-only archive sources, omit Gaia identifier values and use Houston-normalized times where applicable.",
+        "intent": "Provide source-grounded monthly activity chronology and earliest timestamp with limitations, without source modifications.",
+        "operator": "local analysis and file generation",
+        "specifiedOperatorByUser": "using the connected app if available",
+        "chosenOperator": "Google Drive connector for source retrieval; local Python for derived output and verification",
+        "outcome": "succeeded"
+      }
+    },
+    {
+      "procedureIssueNumber": 46,
+      "sourceFile": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/46.json",
+      "sourceArray": "toolInvocations",
+      "sourceIndex": 3,
+      "tool": "exec_command",
+      "tokens": [
+        "exec_command"
+      ],
+      "effectClassification": "conditional",
+      "reason": "Tool wrapper does not establish the effect; inspect the concrete command or nested operation.",
+      "invocation": {
+        "cwd": "/workspace/scratch/a5c96269646b",
+        "command_line_verbatim": "\"$CODEX_PRIMARY_RUNTIME_PYTHON\" - <<'PY'\nfrom pathlib import Path\nimport hashlib,os,zipfile,csv,json\nfrom datetime import datetime\nfor p in sorted(Path('output').iterdir()):\n b=p.read_bytes();print(p.name,len(b),hashlib.sha256(b).hexdigest())\nwith zipfile.ZipFile('google_activity_houston.zip') as z:\n assert z.testzip() is None\n for p in Path('output').iterdir(): assert z.read(p.name)==p.read_bytes()\nrows=list(csv.DictReader(open('output/activity_houston.csv')))\nassert len(rows)==12313\nassert [datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows]==sorted(datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows)\nids={r['Gaia ID'] for p in Path('raw').glob('*.csv') for r in csv.DictReader(p.open()) if r.get('Gaia ID')}\nassert all(not any(i in p.read_text() for i in ids) for p in Path('output').iterdir())\nos.setxattr('google_activity_houston.zip','user.library-file-version',b'2')\nprint('PASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.')\nPY",
+        "tool": "exec_command",
+        "invocation_verbatim": "{\"cmd\":\"\\\"$CODEX_PRIMARY_RUNTIME_PYTHON\\\" - <<'PY'\\nfrom pathlib import Path\\nimport hashlib,os,zipfile,csv,json\\nfrom datetime import datetime\\nfor p in sorted(Path('output').iterdir()):\\n b=p.read_bytes();print(p.name,len(b),hashlib.sha256(b).hexdigest())\\nwith zipfile.ZipFile('google_activity_houston.zip') as z:\\n assert z.testzip() is None\\n for p in Path('output').iterdir(): assert z.read(p.name)==p.read_bytes()\\nrows=list(csv.DictReader(open('output/activity_houston.csv')))\\nassert len(rows)==12313\\nassert [datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows]==sorted(datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows)\\nids={r['Gaia ID'] for p in Path('raw').glob('*.csv') for r in csv.DictReader(p.open()) if r.get('Gaia ID')}\\nassert all(not any(i in p.read_text() for i in ids) for p in Path('output').iterdir())\\nos.setxattr('google_activity_houston.zip','user.library-file-version',b'2')\\nprint('PASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.')\\nPY\",\"max_output_tokens\":1800}",
+        "final_output_after_completion_of_tool_call": {
+          "chunk_id": "5846f4",
+          "wall_time_seconds": 0.115362063,
+          "exit_code": 0,
+          "original_token_count": 143,
+          "output": "access_log_houston.csv 5752056 d2a9ba9dc211d224b1fb2db8e5cec6f233f94ac744e964e5365af174e56ece14\nactivity_houston.csv 2237091 2acf97e967d186d548138522f0eab7d879723c862273436538d6682b7d63b73a\nanalysis.json 22729 6c7486f49737060f983abcef74eb271468db92915c6701c1864f7f11a15d6cc4\ndevices_houston.csv 1472 feeeec2a1912b8dc766a4d5b427bfb34d7443d4212cefdcc6e66a83561ce208e\ngoogle_activity_report.md 10669 801807790319d7dc4906bff121fbdf3d61a1b0c03a9d37186dce992984d51900\nPASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.\n"
+        },
+        "unavailable_reason": null,
+        "new": true,
+        "filename": "output/devices_houston.csv",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create derived devices_houston.csv from read-only archive sources, omit Gaia identifier values and use Houston-normalized times where applicable.",
+        "intent": "Provide source-grounded monthly activity chronology and earliest timestamp with limitations, without source modifications.",
+        "operator": "local analysis and file generation",
+        "specifiedOperatorByUser": "using the connected app if available",
+        "chosenOperator": "Google Drive connector for source retrieval; local Python for derived output and verification",
+        "outcome": "succeeded"
+      }
+    },
+    {
+      "procedureIssueNumber": 46,
+      "sourceFile": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/46.json",
+      "sourceArray": "toolInvocations",
+      "sourceIndex": 4,
+      "tool": "exec_command",
+      "tokens": [
+        "exec_command"
+      ],
+      "effectClassification": "conditional",
+      "reason": "Tool wrapper does not establish the effect; inspect the concrete command or nested operation.",
+      "invocation": {
+        "cwd": "/workspace/scratch/a5c96269646b",
+        "command_line_verbatim": "\"$CODEX_PRIMARY_RUNTIME_PYTHON\" - <<'PY'\nfrom pathlib import Path\nimport hashlib,os,zipfile,csv,json\nfrom datetime import datetime\nfor p in sorted(Path('output').iterdir()):\n b=p.read_bytes();print(p.name,len(b),hashlib.sha256(b).hexdigest())\nwith zipfile.ZipFile('google_activity_houston.zip') as z:\n assert z.testzip() is None\n for p in Path('output').iterdir(): assert z.read(p.name)==p.read_bytes()\nrows=list(csv.DictReader(open('output/activity_houston.csv')))\nassert len(rows)==12313\nassert [datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows]==sorted(datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows)\nids={r['Gaia ID'] for p in Path('raw').glob('*.csv') for r in csv.DictReader(p.open()) if r.get('Gaia ID')}\nassert all(not any(i in p.read_text() for i in ids) for p in Path('output').iterdir())\nos.setxattr('google_activity_houston.zip','user.library-file-version',b'2')\nprint('PASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.')\nPY",
+        "tool": "exec_command",
+        "invocation_verbatim": "{\"cmd\":\"\\\"$CODEX_PRIMARY_RUNTIME_PYTHON\\\" - <<'PY'\\nfrom pathlib import Path\\nimport hashlib,os,zipfile,csv,json\\nfrom datetime import datetime\\nfor p in sorted(Path('output').iterdir()):\\n b=p.read_bytes();print(p.name,len(b),hashlib.sha256(b).hexdigest())\\nwith zipfile.ZipFile('google_activity_houston.zip') as z:\\n assert z.testzip() is None\\n for p in Path('output').iterdir(): assert z.read(p.name)==p.read_bytes()\\nrows=list(csv.DictReader(open('output/activity_houston.csv')))\\nassert len(rows)==12313\\nassert [datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows]==sorted(datetime.fromisoformat(r['timestamp_houston']).timestamp() for r in rows)\\nids={r['Gaia ID'] for p in Path('raw').glob('*.csv') for r in csv.DictReader(p.open()) if r.get('Gaia ID')}\\nassert all(not any(i in p.read_text() for i in ids) for p in Path('output').iterdir())\\nos.setxattr('google_activity_houston.zip','user.library-file-version',b'2')\\nprint('PASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.')\\nPY\",\"max_output_tokens\":1800}",
+        "final_output_after_completion_of_tool_call": {
+          "chunk_id": "5846f4",
+          "wall_time_seconds": 0.115362063,
+          "exit_code": 0,
+          "original_token_count": 143,
+          "output": "access_log_houston.csv 5752056 d2a9ba9dc211d224b1fb2db8e5cec6f233f94ac744e964e5365af174e56ece14\nactivity_houston.csv 2237091 2acf97e967d186d548138522f0eab7d879723c862273436538d6682b7d63b73a\nanalysis.json 22729 6c7486f49737060f983abcef74eb271468db92915c6701c1864f7f11a15d6cc4\ndevices_houston.csv 1472 feeeec2a1912b8dc766a4d5b427bfb34d7443d4212cefdcc6e66a83561ce208e\ngoogle_activity_report.md 10669 801807790319d7dc4906bff121fbdf3d61a1b0c03a9d37186dce992984d51900\nPASS: 12313 activity records; Gaia values absent; chronological order; ZIP bytes match all five deliverables.\n"
+        },
+        "unavailable_reason": null,
+        "new": true,
+        "filename": "output/analysis.json",
+        "frombyte": 0,
+        "tobyte": 0,
+        "description": "Create derived analysis.json from read-only archive sources, omit Gaia identifier values and use Houston-normalized times where applicable.",
+        "intent": "Provide source-grounded monthly activity chronology and earliest timestamp with limitations, without source modifications.",
+        "operator": "local analysis and file generation",
+        "specifiedOperatorByUser": "using the connected app if available",
+        "chosenOperator": "Google Drive connector for source retrieval; local Python for derived output and verification",
+        "outcome": "succeeded"
+      }
+    },
+    {
+      "procedureIssueNumber": 51,
+      "sourceFile": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/51.json",
+      "sourceArray": "toolInvocations",
+      "sourceIndex": 0,
+      "tool": "functions.exec",
+      "tokens": [
+        "functions",
+        "exec"
+      ],
+      "effectClassification": "conditional",
+      "reason": "Tool wrapper does not establish the effect; inspect the concrete command or nested operation.",
+      "invocation": {
+        "cwd": "/workspace/scratch/da1d0dca8a28",
+        "command_line_verbatim": null,
+        "tool": "functions.exec",
+        "invocation_verbatim": "const repo=\"BestNameYet/StateMachines\";\nconst listing=await tools.mcp__codex_apps__github_fetch({url:\"https://api.github.com/repos/BestNameYet/StateMachines/contents/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/issue-runs?ref=main\"});\nconst files=JSON.parse(listing.structuredContent.content).filter(x=>/^\\d+\\.json$/.test(x.name));\nconst fetched=await Promise.all(files.map(f=>tools.mcp__codex_apps__github_fetch_file({repository_full_name:repo,path:f.path,ref:\"main\"})));\nconst counts={}, issueCounts={}, errors=[]; let total=0;\nfor(let i=0;i<fetched.length;i++){try{const j=JSON.parse(fetched[i].structuredContent.content);const a=Array.isArray(j.toolInvocations)?j.toolInvocations:[];if(a.length)issueCounts[files[i].name]=a.length;for(const x of a){total++;const t=x.tool||\"(missing tool)\";counts[t]=(counts[t]||0)+1;}}catch(e){errors.push({file:files[i].name,error:String(e)});}}\ntext(JSON.stringify({fileCount:files.length,fetchCount:fetched.length,parseErrors:errors,total,issuesWithInvocations:issueCounts,toolCounts:counts}));",
+        "final_output_after_completion_of_tool_call": "{\"fileCount\":44,\"fetchCount\":44,\"parseErrors\":[],\"total\":74,\"issuesWithInvocations\":{\"13.json\":8,\"14.json\":3,\"18.json\":17,\"20.json\":6,\"21.json\":6,\"22.json\":1,\"24.json\":1,\"31.json\":8,\"32.json\":1,\"37.json\":8,\"42.json\":2,\"43.json\":2,\"45.json\":6,\"46.json\":5},\"toolCounts\":{\"mcp__codex_apps__github_create_file\":15,\"mcp__codex_apps__github_update_file\":17,\"tools.exec_command\":2,\"exec_command\":6,\"mcp__codex_apps__github_create_blob\":12,\"mcp__codex_apps__github_create_tree\":1,\"mcp__codex_apps__github_create_commit\":1,\"mcp__codex_apps__github_update_ref\":1,\"mcp__codex_apps__github_fetch\":2,\"mcp__codex_apps__github_fetch_file\":14,\"mcp__codex_apps__library_create_library_file\":2,\"functions.exec_command\":1}}",
+        "unavailable_reason": null,
+        "new": false,
+        "filename": null,
+        "frombyte": null,
+        "tobyte": null,
+        "description": "Read 44 numeric issue-run JSON files on main, parse toolInvocations arrays, and aggregate invocation totals by issue and tool identifier; no repository data was changed.",
+        "intent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax, then distinguish data creation, mutation, and deletion from reads or conditional commands.",
+        "operator": "inspect",
+        "specifiedOperatorByUser": null,
+        "chosenOperator": "inspect",
+        "outcome": "succeeded"
+      }
+    },
+    {
+      "procedureIssueNumber": 42,
+      "sourceFile": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/42.json",
+      "sourceArray": "toolInvocations",
+      "sourceIndex": 0,
+      "tool": "functions.exec_command",
+      "tokens": [
+        "functions",
+        "exec_command"
+      ],
+      "effectClassification": "conditional",
+      "reason": "Tool wrapper does not establish the effect; inspect the concrete command or nested operation.",
+      "invocation": {
+        "specifiedOperatorByUser": null,
+        "chosenOperator": "Python JSON traversal and type aggregation",
+        "cwd": "/workspace/scratch/da1d0dca8a28",
+        "command_line_verbatim": "python - <<'PY' [full command traversed sorted source_shards/conversations-*.json; recursively collected every object key and JSON value type; normalized numeric, UUID, UUID:index, turnNsearchN, and turnNproductN dictionary keys to <dynamic map key>; wrote conversation_archive_extraction/key_type_inventory.json as indented UTF-8 JSON] PY",
+        "tool": "functions.exec_command",
+        "invocation_verbatim": "tools.exec_command({cmd: <Python traversal script described in command_line_verbatim>, yield_time_ms:30000, max_output_tokens:1000})",
+        "final_output_after_completion_of_tool_call": "{\"path\":\"/workspace/scratch/da1d0dca8a28/conversation_archive_extraction/key_type_inventory.json\",\"bytes\":56708,\"records\":1334,\"shards\":14,\"distinct_keys\":442,\"dynamic_key_types\":[\"array\",\"object\"]}",
+        "unavailable_reason": "The compact procedure receipt does not reproduce the entire multiline script verbatim; the exact invoked script remains in the local tool transcript.",
+        "new": true,
+        "filename": "conversation_archive_extraction/key_type_inventory.json",
+        "frombyte": 0,
+        "tobyte": 56708,
+        "description": "Create a JSON inventory with 442 distinct key names and observed JSON type sets, plus scan coverage and dynamic-key handling metadata.",
+        "intent": "The user asked to grab every key by name and type across the conversation archive; the file records the exhaustive result while omitting conversation values.",
+        "operator": "create",
+        "outcome": "succeeded"
+      }
+    },
+    {
+      "procedureIssueNumber": 14,
+      "sourceFile": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/14.json",
+      "sourceArray": "toolInvocations",
+      "sourceIndex": 0,
+      "tool": "tools.exec_command",
+      "tokens": [
+        "tools",
+        "exec_command"
+      ],
+      "effectClassification": "conditional",
+      "reason": "Tool wrapper does not establish the effect; inspect the concrete command or nested operation.",
+      "invocation": {
+        "cwd": "/workspace/scratch/92da9c218e42",
+        "command_line_verbatim": "python3 /workspace/scratch/92da9c218e42/source-inspection/library-helper-20261015/library_upload.py <<'JSON'\n{\"uploads\":[{\"local_path\":\"/workspace/scratch/92da9c218e42/source-inspection/source-manifest.json\",\"purpose\":\"create_library_file\",\"library_artifact_type\":\"report\"},{\"local_path\":\"/workspace/scratch/92da9c218e42/source-inspection/inspection-report.md\",\"purpose\":\"create_library_file\",\"library_artifact_type\":\"report\"}]}\nJSON",
+        "unavailable_reason": null,
+        "new": true,
+        "frombyte": 0,
+        "tobyte": 0,
+        "intent": "Carry out checklist stage 1: retrieve the linked ChatGPT archive, preserve it unchanged, inspect its actual format and coverage, save a verified source manifest and inspection report, establish extraction and worker-access prerequisites, and update only completed checklist items. Stop before extraction, chunking, labeling, or analysis.",
+        "specifiedOperatorByUser": null,
+        "outcome": "succeeded",
+        "tool": "tools.exec_command",
+        "invocation_verbatim": "{\"cmd\":\"python3 /workspace/scratch/92da9c218e42/source-inspection/library-helper-20261015/library_upload.py <<'JSON'\\n{\\\"uploads\\\":[{\\\"local_path\\\":\\\"/workspace/scratch/92da9c218e42/source-inspection/source-manifest.json\\\",\\\"purpose\\\":\\\"create_library_file\\\",\\\"library_artifact_type\\\":\\\"report\\\"},{\\\"local_path\\\":\\\"/workspace/scratch/92da9c218e42/source-inspection/inspection-report.md\\\",\\\"purpose\\\":\\\"create_library_file\\\",\\\"library_artifact_type\\\":\\\"report\\\"}]}\\nJSON\",\"yield_time_ms\":1000,\"max_output_tokens\":2000}",
+        "final_output_after_completion_of_tool_call": {
+          "status": "succeeded",
+          "library_file_id": "libfile_0751e5c2be588191abda62f417f9a79d",
+          "file_id": "file_00000000575881f8a2f9021532d2ba04",
+          "filename": "source-manifest.json",
+          "bytes": 10858,
+          "readback_verified": true
+        },
+        "filename": "source-inspection/source-manifest.json",
+        "description": "Retrieve and inspect the Library archive without changing its original. Save a source manifest with current Library identity/version, filename, measured bytes, SHA-256, container format, conversation-bearing member structure, observed dates and metadata availability, branch/attachment indicators and parsing issues. Preserve source references without copying private conversation contents to GitHub.",
+        "operator": "create",
+        "chosenOperator": "create"
+      }
+    },
+    {
+      "procedureIssueNumber": 14,
+      "sourceFile": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/14.json",
+      "sourceArray": "toolInvocations",
+      "sourceIndex": 1,
+      "tool": "tools.exec_command",
+      "tokens": [
+        "tools",
+        "exec_command"
+      ],
+      "effectClassification": "conditional",
+      "reason": "Tool wrapper does not establish the effect; inspect the concrete command or nested operation.",
+      "invocation": {
+        "cwd": "/workspace/scratch/92da9c218e42",
+        "command_line_verbatim": "python3 /workspace/scratch/92da9c218e42/source-inspection/library-helper-20261015/library_upload.py <<'JSON'\n{\"uploads\":[{\"local_path\":\"/workspace/scratch/92da9c218e42/source-inspection/source-manifest.json\",\"purpose\":\"create_library_file\",\"library_artifact_type\":\"report\"},{\"local_path\":\"/workspace/scratch/92da9c218e42/source-inspection/inspection-report.md\",\"purpose\":\"create_library_file\",\"library_artifact_type\":\"report\"}]}\nJSON",
+        "unavailable_reason": null,
+        "new": true,
+        "frombyte": 0,
+        "tobyte": 0,
+        "intent": "Carry out checklist stage 1: retrieve the linked ChatGPT archive, preserve it unchanged, inspect its actual format and coverage, save a verified source manifest and inspection report, establish extraction and worker-access prerequisites, and update only completed checklist items. Stop before extraction, chunking, labeling, or analysis.",
+        "specifiedOperatorByUser": null,
+        "outcome": "succeeded",
+        "tool": "tools.exec_command",
+        "invocation_verbatim": "{\"cmd\":\"python3 /workspace/scratch/92da9c218e42/source-inspection/library-helper-20261015/library_upload.py <<'JSON'\\n{\\\"uploads\\\":[{\\\"local_path\\\":\\\"/workspace/scratch/92da9c218e42/source-inspection/source-manifest.json\\\",\\\"purpose\\\":\\\"create_library_file\\\",\\\"library_artifact_type\\\":\\\"report\\\"},{\\\"local_path\\\":\\\"/workspace/scratch/92da9c218e42/source-inspection/inspection-report.md\\\",\\\"purpose\\\":\\\"create_library_file\\\",\\\"library_artifact_type\\\":\\\"report\\\"}]}\\nJSON\",\"yield_time_ms\":1000,\"max_output_tokens\":2000}",
+        "final_output_after_completion_of_tool_call": {
+          "status": "succeeded",
+          "library_file_id": "libfile_bb250c290264819199e658d45b71f994",
+          "file_id": "file_00000000a4d081f7b4a582e3131d31a1",
+          "filename": "inspection-report.md",
+          "bytes": 5222,
+          "readback_verified": true
+        },
+        "filename": "source-inspection/inspection-report.md",
+        "description": "Save a readable source inspection report covering actual format, structure, date coverage including 2024–2025 versus the present, missing or malformed data, original preservation, next extraction method, and worker-access prerequisites. Distinguish verified observations from unresolved access decisions. Stop before extraction, chunking, labels or substantive analysis.",
+        "operator": "create",
+        "chosenOperator": "create"
+      }
+    }
+  ]
+}
