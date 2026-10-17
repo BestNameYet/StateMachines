@@ -30,6 +30,7 @@ function view(session) {
       session.state.renderedScreens.push({instruction:Object.fromEntries(screens[0]).instruction,expectedInputs:inputs[0]});
     }
   }
+  if(session.done){entries=[['completion','Procedure complete.']];screenInputs=[];}
   if(session.view==='state')entries=[['state',session.state]];
   const properties=Object.fromEntries(screenInputs.map(x=>['$'+x.name,x.schema]));
   return {id:session.id,render:session.state.render,done:session.done,entries,inputs:screenInputs,returnSchema:{type:'object',properties,required:Object.keys(properties),additionalProperties:false},state:session.state,newFiles:session.newFiles,fixture,history:session.history};

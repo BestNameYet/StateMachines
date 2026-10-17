@@ -1,6 +1,6 @@
 {
   "instructions": {
-    "task": "Write the next interactive screen to advance the user's original request, using the supplied state. Determine the next instruction from the prompt, previously rendered screens, and returned variables; no predefined sequence of stages is supplied.",
+    "task": "On every call, assess the user's original objective against the updated workflow-owned state. Generate a fresh semantic control assessment first. If the desired outcome and required process are both satisfied, choose completion mode and return no screen. Otherwise choose the next instruction that should reduce an identified gap. There is no predefined sequence of stages.",
     "screenWritingGuidelines": "Describe each requested return before introducing its variable name. Explain what the value represents, what it must contain, and any rules for producing it. Then explicitly request the return using `{$variableName}`.\n\nUse short, meaningful variable names. The preceding description must explain the meaning sufficiently; do not attempt to encode the entire definition in the name.\n\nFor objects, explain the fields and their meanings. For arrays, explain what each element represents, its required contents, and any ordering or inclusion rules. Include these requirements in the instruction even when they also appear in `expectedInputs`. The return variable must match its name in `expectedInputs` exactly.\n\nExamples:\n\n1. **Integer:** Calculate twelve times five. Return the product as `{$total}`.\n2. **String:** Describe the user\u2019s intended outcome in fewer than 100 words, preserving the stated constraints. Return this description as `{$userIntent}`.\n3. **Boolean:** Determine whether every listed requirement has been completed. Return true only if all are complete; otherwise return false. Return this decision as `{$complete}`.\n4. **Object:** Describe the selected file using an object containing `filename`, its repository-relative path, and `newFile`, a Boolean indicating whether it must be created. Return this object as `{$target}`.\n5. **Array of objects:** List every file requiring a change. For each file, include `filename`, its repository-relative path, and `newFile`, indicating whether it must be created. Include each file once. Return this array as `{$targetFiles}`.\n6. **Array of strings:** List the requirements that remain unfinished, preserving their original order. Describe the outstanding work for each requirement in a separate string. Return this array as `{$remaining}`.\n\nApply this description-first pattern to every requested return, including returns within instructions that contain additional procedures or rules.",
     "contextRules": [
       "state.verbatimUserPrompt is the original user prompt, preserved exactly.",
@@ -11,10 +11,29 @@
       "The workflow owns persistence and validation. You do not retain state between calls; each request includes the complete saved state."
     ],
     "responseFormat": {
-      "instruction": "Return one JSON object with exactly instruction and expectedInputs. instruction is the complete text to display. expectedInputs is an array of objects with exactly name and schema.",
+      "instruction": "Return one JSON object. Continue mode contains exactly control, instruction, and expectedInputs. Completion mode contains exactly control. control has target, current, gap, and mode; target and current each have nonempty outcome and process description strings; gap has outcome and process arrays of nonempty strings; mode is continue or completion.",
       "expectedInputs": "Declare every requested return explicitly. name is a unique variable identifier without dollar signs or braces, matching [A-Za-z_][A-Za-z0-9_]*. schema describes the returned value using the workflow's supported validation structure. Supply these definitions directly; the workflow must not infer them from instruction text.",
       "schemaRules": "Use type for string, integer, boolean, null, array, or object; arrays declare items; objects declare properties and required; allowed literal values use const or anyOf containing const schemas. Nested values follow the same structure.",
       "example": {
+        "control": {
+          "target": {
+            "outcome": "The executor returns the integer product of twelve and five.",
+            "process": "The executor calculates the requested product and submits it."
+          },
+          "current": {
+            "outcome": "The prompt is captured; no product has been returned.",
+            "process": "The executor has not yet submitted the calculation."
+          },
+          "gap": {
+            "outcome": [
+              "The product has not been returned."
+            ],
+            "process": [
+              "The executor must calculate and submit the product."
+            ]
+          },
+          "mode": "continue"
+        },
         "instruction": "Calculate twelve times five. Return the product as {$total}.",
         "expectedInputs": [
           {
@@ -25,12 +44,38 @@
           }
         ]
       },
-      "requiredReturn": "Every screen must request at least one returned value and expectedInputs must be nonempty. Each input must be described in instruction and explicitly requested using {$name}."
+      "requiredReturn": "In continue mode every screen must request at least one returned value and expectedInputs must be nonempty. Each input must be described in instruction and explicitly requested using {$name}. Completion mode returns no screen and therefore requests no value.",
+      "completionExample": {
+        "control": {
+          "target": {
+            "outcome": "The executor returns the integer product of twelve and five.",
+            "process": "The executor calculates the requested product and submits it."
+          },
+          "current": {
+            "outcome": "The executor returned total = 60, matching twelve times five.",
+            "process": "The recorded screen requested the calculation and the subsequent return supplied the correct integer product."
+          },
+          "gap": {
+            "outcome": [],
+            "process": []
+          },
+          "mode": "completion"
+        }
+      }
+    },
+    "controlLoop": {
+      "target": "Decompose the original request in context into the outcomes, tasks, process requirements, and constraints needed to fulfill it. Materialize the desired outcome and required process in control.target; do not silently weaken the original goal to match the work already done.",
+      "current": "Read the rendered screens and recorded returned variables to assess the supported current outcome and the actions and state changes that produced it. Materialize that assessment in control.current. A request to do work or a reported intention is not evidence that it happened; identify insufficient or contradictory evidence as a gap.",
+      "gap": "Compare both the resulting state with the desired state AND the actual actions/state changes with the requested process. Materialize every remaining, omitted, unfinished, contradictory, or unverified part in control.gap.outcome or control.gap.process. A correct final output does not excuse an unmet method, scope, ordering, or other process requirement.",
+      "nextMove": "If either gap array is nonempty, set control.mode to continue and generate a descriptive screen with nonempty expectedInputs that addresses the next useful action, verification, correction, or missing information. Reassess from the newly returned state on the following call.",
+      "completion": "Choose control.mode completion only when both gap arrays are empty and the recorded state supports satisfaction of every requested outcome and required process. Explain that support in control.current. Uncertainty or a blocker does not itself establish completion. In completion mode return only control, with no instruction or expectedInputs; the workflow saves the assessment and stops without adding another screen.",
+      "history": "Compute a new control on every call. state.controls is the chronological array of previous assessments for reference; it is not the current assessment and must not simply be carried forward. The workflow appends each valid returned control to this array. Do not include control in the rendered instruction or invent saved history entries."
     }
   },
   "state": {
     "verbatimUserPrompt": null,
     "renderedScreens": [],
-    "variables": []
+    "variables": [],
+    "controls": []
   }
 }

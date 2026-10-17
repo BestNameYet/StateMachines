@@ -42,12 +42,41 @@ function validateGeminiScreen(response) {
   return screen;
 }
 
+function validateControl(control) {
+  const object=(value,keys,label)=>{
+    if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==keys.length||keys.some(k=>!Object.hasOwn(value,k)))throw Error(label+' must contain exactly '+keys.join(', ')+'.');
+  };
+  object(control,['target','current','gap','mode'],'control');
+  for(const key of ['target','current']) {
+    object(control[key],['outcome','process'],'control.'+key);
+    for(const field of ['outcome','process'])if(typeof control[key][field]!=='string'||!control[key][field].trim())throw Error('control.'+key+'.'+field+' needs a nonempty description.');
+  }
+  object(control.gap,['outcome','process'],'control.gap');
+  for(const field of ['outcome','process'])if(!Array.isArray(control.gap[field])||control.gap[field].some(v=>typeof v!=='string'||!v.trim()))throw Error('control.gap.'+field+' must be an array of nonempty descriptions.');
+  if(!['continue','completion'].includes(control.mode))throw Error('control.mode must be continue or completion.');
+  const gaps=control.gap.outcome.length+control.gap.process.length;
+  if(control.mode==='completion'&&gaps)throw Error('Completion requires both outcome and process gaps to be empty.');
+  if(control.mode==='continue'&&!gaps)throw Error('Continue requires an identified outcome or process gap.');
+  return structuredClone(control);
+}
+
+function validateGeminiResponse(response) {
+  const message=typeof response==='string'?JSON.parse(response):response;
+  if(!message||typeof message!=='object'||Array.isArray(message))throw Error('Gemini response must be an object.');
+  const control=validateControl(message.control);
+  const keys=control.mode==='completion'?['control']:['control','instruction','expectedInputs'];
+  if(Object.keys(message).length!==keys.length||keys.some(k=>!Object.hasOwn(message,k)))throw Error(control.mode+' response must contain exactly '+keys.join(', ')+'.');
+  return {control,screen:control.mode==='completion'?null:validateGeminiScreen({instruction:message.instruction,expectedInputs:message.expectedInputs})};
+}
+
 function buildGeminiRequest(state) {
   if (typeof state.verbatimUserPrompt !== 'string') throw Error('Verbatim user prompt is missing.');
   if (!Array.isArray(state.renderedScreens) || !Array.isArray(state.variables)) throw Error('Screen and variable arrays are required.');
   const request = JSON.parse(fs.readFileSync(path.join(__dirname,'gemini-request-template.json'),'utf8'));
   // Send the complete workflow-owned state, without substituting into old screens.
   request.state = structuredClone(state);
+  request.state.controls ??= [];
+  if(!Array.isArray(request.state.controls))throw Error('Control history must be an array.');
   return request;
 }
 
@@ -68,25 +97,39 @@ async function callGemini(request, {fetchImpl=fetch, apiKey=process.env.GEMINI_A
 }
 
 async function generateGeminiScreen(record, saveRecord, {generate=callGemini,maxAttempts=3}={}) {
+  if(record.done)return null;
   if (!record.geminiPending) return lastGeminiScreen(record.state);
   const request = buildGeminiRequest(record.state);
   for (let attempt=1; attempt<=maxAttempts; attempt++) {
     const response = await generate(structuredClone(request));
-    let screen;
-    try {screen = validateGeminiScreen(response);}
+    let assessment;
+    try {assessment = validateGeminiResponse(response);}
     catch (error) {
-      if (attempt===maxAttempts) throw Error('Gemini screen format rejected: '+error.message);
-      request.correction = {previousResponse:response,validationError:error.message,instruction:'Return a corrected instruction and expectedInputs JSON object. Preserve the task and supplied state.'};
+      if (attempt===maxAttempts) throw Error('Gemini response format rejected: '+error.message);
+      request.correction = {previousResponse:response,validationError:error.message,instruction:'Return a corrected response with a fresh control assessment. Continue mode requires instruction and expectedInputs; completion mode contains only control. Preserve the task and supplied state.'};
       continue;
     }
-    record.geminiPending = false;
-    try {return await saveGeminiScreen(record, screen, saveRecord);}
-    catch (error) {record.geminiPending = true; throw error;}
+    const previousState=record.state,previousDone=record.done,previousPending=record.geminiPending;
+    record.state={...previousState,controls:[...(previousState.controls||[]),assessment.control]};
+    record.geminiPending=false;
+    try {
+      if(assessment.control.mode==='completion') {
+        record.done=true;
+        await saveRecord();
+        return null;
+      }
+      return await saveGeminiScreen(record,assessment.screen,saveRecord);
+    } catch(error) {
+      record.state=previousState;record.geminiPending=previousPending;
+      if(previousDone===undefined)delete record.done;else record.done=previousDone;
+      throw error;
+    }
   }
-  throw Error('Gemini screen was not generated.');
+  throw Error('Gemini response was not generated.');
 }
 
 function acceptGeminiValues(record, values, fileRoot) {
+  if(record.done)throw Error('This run has finished.');
   if (record.geminiPending) throw Error('The previous return is saved. Type retry to request the next Gemini screen; do not repeat the work.');
   if (!values || typeof values!=='object' || Array.isArray(values)) throw Error('Return a JSON object of variable names and values.');
   const screen = lastGeminiScreen(record.state);
@@ -104,4 +147,4 @@ function acceptGeminiValues(record, values, fileRoot) {
   record.view = 'instruction';
 }
 
-module.exports = {validateInputSchema,validateGeminiScreen,buildGeminiRequest,callGemini,generateGeminiScreen,acceptGeminiValues};
+module.exports = {validateControl,validateGeminiResponse,validateInputSchema,validateGeminiScreen,buildGeminiRequest,callGemini,generateGeminiScreen,acceptGeminiValues};

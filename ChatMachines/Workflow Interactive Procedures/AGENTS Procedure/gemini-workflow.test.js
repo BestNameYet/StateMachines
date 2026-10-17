@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const os=require('node:os');
 const path=require('node:path');
 const {main}=require('./issue-workflow.js');
-const {buildGeminiRequest,validateGeminiScreen,generateGeminiScreen,acceptGeminiValues}=require('./gemini-workflow.js');
+const {validateGeminiResponse,buildGeminiRequest,validateGeminiScreen,generateGeminiScreen,acceptGeminiValues}=require('./gemini-workflow.js');
 const {lastGeminiScreen}=require('./render-gemini.js');
 
 async function test() {
@@ -11,7 +11,7 @@ async function test() {
   const oldFetch=global.fetch, oldEnv={...process.env};
   const issue={number:700,title:'AGENTS Procedure',created_at:'2026-10-17T00:00:00Z',state:'open',body:'### Procedure acknowledgement\n- [x] I agree'};
   const comments=[], requests=[], documents=new Map();
-  let nextId=1, geminiCalls=0, failGemini=false, badFirst=true;
+  let nextId=1, geminiCalls=0, failGemini=false, badFirst=true, completeNext=false;
   const reply=body=>{comments.push({id:nextId++,user:{type:'User'},body});};
   const response=(body,status=200)=>({ok:status>=200&&status<300,status,json:async()=>body});
   global.fetch=async(url,options={})=>{
@@ -24,7 +24,9 @@ async function test() {
       assert(Array.isArray(request.state.variables));
       assert(request.instructions.screenWritingGuidelines.includes('{$variableName}'));
       if(failGemini)return response({},503);
-      const screen=badFirst?(badFirst=false,{instruction:'Bad format'}):{
+      const control={target:{outcome:'Product returned',process:'Calculate and submit'},current:{outcome:'Recorded values assessed',process:'Recorded actions assessed'},gap:completeNext?{outcome:[],process:[]}:{outcome:['Confirm the requested product'],process:[]},mode:completeNext?'completion':'continue'};
+      const screen=completeNext?{control}:badFirst?(badFirst=false,{instruction:'Bad format'}):{
+        control,
         instruction:'Calculate twelve times five. Return the product as {$total}.',
         expectedInputs:[{name:'total',schema:{type:'integer'}}]
       };
@@ -62,11 +64,13 @@ async function test() {
     reply('{$verbatimUserPrompt}: "Calculate twelve times five."');await run();
     let record=saved();
     assert.equal(geminiCalls,2);
-    assert(requests[1].correction.validationError.includes('expectedInputs'));
+    assert(requests[1].correction.validationError.includes('control'));
     assert.equal(record.state.renderedScreens.length,3);
+    assert.equal(record.state.controls.length,1);
     assert.equal(record.state.render,2);
     assert(comments.at(-1).body.includes('Return the product as {$total}.'));
     assert(!comments.at(-1).body.includes('"schema"'));
+    assert(!comments.at(-1).body.includes('"control"'));
     const contract=structuredClone(lastGeminiScreen(record.state).expectedInputs);
     reply('state');await run();
     assert(comments.at(-1).body.includes('## State'));
@@ -116,7 +120,36 @@ async function test() {
     assert.deepEqual(multi,multiBefore);
     acceptGeminiValues(multi,{items:[{count:1}],confirmed:true},__dirname);
     assert.deepEqual(multi.state.variables,[{name:'items',value:[{count:1}]},{name:'confirmed',value:true}]);
-    console.log('End-to-end mocked GitHub/Gemini: mode selection, format correction, direct comments, schema rejection, saved values, navigation, API recovery, full-state replay, and append-only variables passed.');
+    const validControl={target:{outcome:'Return product',process:'Calculate and submit'},current:{outcome:'60 returned',process:'Calculation submitted'},gap:{outcome:[],process:[]},mode:'completion'};
+    assert.equal(validateGeminiResponse({control:validControl}).screen,null);
+    for(const control of [
+      {...validControl,mode:'continue'},
+      {...validControl,gap:{outcome:[],process:['Wrong operator used']}},
+      {...validControl,current:{outcome:'',process:'Submitted'}},
+      {...validControl,mode:'unknown'}
+    ])assert.throws(()=>validateGeminiResponse({control}));
+    assert.throws(()=>validateGeminiResponse({control:validControl,instruction:'Unwanted screen',expectedInputs:[]}));
+    const failedSave={...structuredClone(record),geminiPending:true};
+    const beforeFailedSave=structuredClone(failedSave);
+    await assert.rejects(()=>generateGeminiScreen(failedSave,async()=>{throw Error('save failed');},{generate:async()=>({control:validControl})}),/save failed/);
+    assert.deepEqual(failedSave,beforeFailedSave);
+    const beforeCompletion=saved();
+    completeNext=true;
+    reply('{$total}: 60');await run();
+    const completed=saved();
+    assert.equal(completed.done,true);
+    assert.equal(completed.geminiPending,false);
+    assert.equal(completed.state.renderedScreens.length,beforeCompletion.state.renderedScreens.length);
+    assert.equal(completed.state.controls.length,beforeCompletion.state.controls.length+1);
+    assert.equal(completed.state.controls.at(-1).mode,'completion');
+    assert.equal(requests.at(-1).state.controls.length,beforeCompletion.state.controls.length);
+    assert.equal(issue.state,'closed');
+    assert(comments.at(-1).body.includes('Procedure complete'));
+    assert(!comments.at(-1).body.includes('### Menu'));
+    const callsAtCompletion=geminiCalls;
+    reply('retry');await run();
+    assert.equal(geminiCalls,callsAtCompletion);
+    console.log('End-to-end mocked GitHub/Gemini: mode selection, format correction, direct comments, schema rejection, saved values, navigation, API recovery, full-state replay, append-only variables, control history, completion consistency, rollback, and issue closure passed.');
   } finally {
     global.fetch=oldFetch;
     for(const key of Object.keys(process.env))if(!Object.hasOwn(oldEnv,key))delete process.env[key];

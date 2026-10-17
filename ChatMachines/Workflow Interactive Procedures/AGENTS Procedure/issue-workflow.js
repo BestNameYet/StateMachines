@@ -129,6 +129,7 @@ function applyReturn(record,payload,fileRoot) {
   record.view='instruction';
   if(payload.variable==='procedureMode'&&payload.value==='gemini') {
     record.state.variables=[{name:'procedureMode',value:'gemini'}];
+    record.state.controls=[];
     record.state.renderedScreens=[{instruction:Object.fromEntries(screens[23]).instruction,expectedInputs:inputsFor(screens[23])}];
   }
   if(startingGemini){
