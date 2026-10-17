@@ -21,7 +21,6 @@ function loadScreens() {
 }
 
 function render(entries) {
-  if (!Array.isArray(entries)) return JSON.stringify(entries, null, 2);
   return "{\n" + entries.map((entry) =>
     "  " + JSON.stringify(entry[0]) + ": " +
     JSON.stringify(entry[1], null, 2).replace(/\n/g, "\n  ")
@@ -49,12 +48,6 @@ function entriesForState(state, screens = loadScreens(), toolInvocations = []) {
 function renderState(state, screens = loadScreens()) {
   if (!state || typeof state !== "object" || Array.isArray(state)) {
     throw new Error("Renderer requires a state object.");
-  }
-  if (state.procedureMode === 'gemini' && Array.isArray(state.renderedScreens)) {
-    if (!Number.isInteger(state.render) || state.render < 0 || state.render >= state.renderedScreens.length) {
-      throw new Error('Gemini render index is out of range.');
-    }
-    return render(state.renderedScreens[state.render]);
   }
   return render(entriesForState(state,screens));
 }

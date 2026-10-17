@@ -17,8 +17,8 @@ function screenFromGeminiResponse(response) {
   if (typeof message.instruction !== 'string' || !message.instruction.trim()) {
     throw new Error('Gemini screen instruction must be a nonempty string.');
   }
-  if (!Array.isArray(message.expectedInputs)) {
-    throw new Error('Gemini screen expectedInputs must be an array.');
+  if (!Array.isArray(message.expectedInputs) || !message.expectedInputs.length) {
+    throw new Error('Gemini screen expectedInputs must be a nonempty array.');
   }
   const names = new Set();
   for (const input of message.expectedInputs) {

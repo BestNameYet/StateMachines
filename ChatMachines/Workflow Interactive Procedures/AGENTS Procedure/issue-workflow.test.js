@@ -183,7 +183,8 @@ for (const procedureMode of ['normal','gemini']) {
   applyReturn(restored,{variable:'verbatimUserPrompt',value:'Preserve this prompt.'},root);
   assert.equal(restored.state.verbatimUserPrompt,'Preserve this prompt.');
   assert.equal(restored.state.procedureMode,procedureMode);
-  assert.equal(restored.state.render,2);
+  assert.equal(restored.geminiStarted,procedureMode==='gemini'?true:undefined);
+  assert.equal(restored.state.render,procedureMode==='gemini'?1:2);
   assert.equal(restored.history[0].values.$procedureMode,procedureMode);
 }
 // A previously saved run continues at its current screen, without reinitializing.

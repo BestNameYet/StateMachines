@@ -27,7 +27,7 @@ The workflow reuses an issue carrying the exact trigger marker if a run is retri
 
 Every new run starts with the same mode-selection screen, regardless of how it was initiated. Reply `${procedureMode}: "normal"` or `${procedureMode}: "gemini"`. The existing declared-type validator accepts only those two values, and the selection is retained in state and history. Both choices then show the existing verbatim-prompt screen. `procedureMode` is separate from the existing `mode` field used for fidelity/accountability selection.
 
-This change establishes the selector and stored choice only. Gemini-generated rendering after prompt capture is not connected yet; both selections currently continue through the existing procedure.
+Normal mode follows the predefined transition map. Gemini mode captures the verbatim prompt, then calls the Gemini API to generate each subsequent screen. The workflow owns all state, validation, persistence, publication, and navigation; each API request contains the full saved state. Gemini does not retain the state between calls. Configure the existing `GEMINI_API_KEY` repository secret; `GEMINI_MODEL` is optional and defaults to the model used by the existing Gemini integration.
 
 The new initial screen uses render address 24, followed by existing render 1, so existing screen addresses and saved runs remain valid. Active runs are not restarted or asked to choose retroactively.
 
@@ -35,15 +35,25 @@ The new initial screen uses render address 24, followed by existing render 1, so
 
 `gemini-request-template.json` defines the JSON content to serialize into the Gemini request's `contents[0].parts[0].text`. It contains the screen-writing instructions (including the six description-first examples) and a `state` object with `verbatimUserPrompt`, `renderedScreens`, and `variables`.
 
-Before sending, populate `verbatimUserPrompt` with the exact captured prompt, `renderedScreens` with every previously published screen in chronological order and its expected-input definitions, and `variables` with all saved returned variable names and values, including the latest accepted submission. Preserve the screens verbatim rather than substituting values into their text. The null prompt and empty containers are template placeholders. There is no separate expected-variable list or duplicated latest-submission envelope.
+Before sending, populate `verbatimUserPrompt` with the exact captured prompt, `renderedScreens` with every previously published screen in chronological order and its expected-input definitions, and `variables` with an array of `{name, value}` entries appended in submission order, including the latest accepted submission. Variables are not predefined. The last entry for a repeated name contains its latest accepted value. Preserve the screens verbatim rather than substituting values into their text. The null prompt and empty containers are template placeholders. There is no separate expected-variable list or duplicated latest-submission envelope.
 
-Gemini's response format is the existing `gemini-screen.js` adapter's `{instruction, expectedInputs}` pair. This file supplies the request template; API invocation and issue-workflow wiring remain separate implementation work.
+Gemini's response format is the existing `gemini-screen.js` adapter's `{instruction, expectedInputs}` pair. `gemini-workflow.js` fills this template with the saved state, serializes it into a user-role message, and calls generateContent. A malformed response is sent back with its validation error for correction, up to three response attempts. Only a valid screen with a nonempty expected-input array and supported schemas is saved.
 
 ### Stored Gemini screens
 
 `screenFromGeminiResponse()` returns a JSON-serializable `{instruction, expectedInputs}` object. `saveGeminiScreen(record, response, saveRecord)` appends that object to `record.state.renderedScreens`, sets `state.render` to its zero-based array index, and invokes the caller's existing run-record saver. It returns the same stored object. A failed save restores the previous in-memory state and throws. Publication remains separate; the helper does not post a comment or record publication success.
 
-`renderState()` renders the object at `state.renderedScreens[state.render]` in Gemini mode, including after the run record is reloaded. Normal mode retains its predefined screens and existing numbering. These helpers are available for the upcoming Gemini workflow integration; the issue runner is not wired to call them yet.
+`render-gemini.js` provides `renderGeminiScreen(screen)`, which returns the instruction text verbatim, and `lastGeminiScreen(state)`, which retrieves the final array entry. The Gemini issue path uses that last object directly, not positional field mappings. Its expected-input definitions remain stored for the workflow validator; they are not printed as instruction JSON. Normal mode retains its predefined renderer and numbering. After an API or format failure, accepted variables and the last screen remain saved. Type `retry` to request the next screen without repeating the substantive work.
+
+### Screen navigation and returns
+
+Every active issue screen includes a command menu. Type `state` to have the workflow post the saved-state screen; type `back` to post the current instruction again. These commands preserve the current request and expected inputs, do not advance the procedure, and do not call Gemini. Inputs can be submitted from either view. Captured values are no longer embedded in the instruction screen. The HTML interface exposes the same typed commands.
+
+Gemini instructions use `{$variableName}`. Submit a single return as `{$variableName}: JSON value`, or submit multiple returns as a JSON object with bare names as keys, for example `{"total":60,"confirmed":true}`. The existing `${variableName}: value` spelling remains accepted. The workflow checks exactly the requested keys and validates their types, object fields, array contents, and allowed values. It rejects unsupported schema keywords rather than pretending to enforce them. An invalid submission does not update variables, advance the request, or call Gemini. Accepted values are appended to the variables array before the next API call. A repeated name preserves the earlier entry and appends its latest value.
+
+The screen array stores the mode-choice and prompt-capture instructions followed by valid generated objects. The last object supplies the active instruction and expected inputs. Publication tracking continues to use the existing request receipts; saving a generated object does not claim that its comment was published successfully. `state`/`back` display posts do not append a new Gemini instruction to that array.
+
+Run `node gemini-screen.test.js` and `node gemini-workflow.test.js` for object storage and the mocked end-to-end issue/API cycle. Source pushes also run a live API check when Gemini generation sources change and the secret is available. That check generates, validates, saves, and renders one screen; its log distinguishes a live call from a skipped check. The live check does not create issues or perform user file tasks.
 
 ## Interactive execution
 
@@ -104,7 +114,7 @@ The AGENTS Selenium setup GitHub Actions workflow installs Node and Python, inst
 
 Every active issue screen includes shared communication instructions from `renderIssue()`. After a confirmed submission, check after 10, 20, and 30 additional seconds (60 seconds total). If no response appears, resubmit the identical return once, without repeating the substantive work, then use the same bounded checks. Stop and report pending if the response still does not appear. New requests, completion, validation errors, and rate limits end the ordinary waiting path. Communication calls are excluded from execution reports to avoid self-referential reporting. Completion comments do not instruct the agent to submit or poll again.
 
-Start a run using the AGENTS Procedure issue template or the commit trigger described above. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction and captured values as a comment. The full procedure is not posted.
+Start a run using the AGENTS Procedure issue template or the commit trigger described above. The workflow always enforces AGENTS Procedure — <UTC creation timestamp>, including after title edits, initializes a separate state, and posts the current instruction with the shared communication and navigation wrapper. The full procedure is not posted.
 
 Reply using ${variableName}: value, where value is JSON of the declared type. For example:
 
@@ -128,7 +138,7 @@ The issue runner stores hidden communication metadata in the state object. `expe
 
 Existing run records without `renderedRequests` import their published request markers from bot comments once. Subsequent publication checks use the saved list. Comment reads still collect incoming returns and deduplicate validation-error messages. Publication and state persistence are separate GitHub operations: if a comment succeeds but saving its publication receipt fails, the stored list can lag behind the comment.
 
-Each run is saved as issue-runs/<issue-number>.json with the state, current request number, input history, and state snapshots. For trigger-backed runs, the runner also appends each distinct updated receipt to the matching issue-run-triggers/<procedureIdentifier>.json, preserving the trigger’s initial receipt and metadata. The state itself retains its existing input fields, render number, and loop counter. Workflow runs for the same issue are serialized, and the runner reads pending JSON comments in order. Bot comments do not trigger another processing cycle. Terminal runs post completion and close the issue while preserving its history. No Gemini calls or Selenium runs are made by this workflow.
+Each run is saved as issue-runs/<issue-number>.json with the state, current request number, input history, and state snapshots. For trigger-backed runs, the runner also appends each distinct updated receipt to the matching issue-run-triggers/<procedureIdentifier>.json, preserving the trigger’s initial receipt and metadata. The state itself retains its existing input fields, render number, and loop counter. Workflow runs for the same issue are serialized, and the runner reads pending JSON comments in order. Bot comments do not trigger another processing cycle. Terminal runs post completion and close the issue while preserving its history. Normal-mode issue processing makes no Gemini calls. Gemini mode calls generateContent after prompt capture and after each accepted return; it does not use Selenium. The separate Selenium harness remains available for testing.
 
 Run the local issue adapter checks with node issue-workflow.test.js. They verify the adapter without creating an actual GitHub issue.
 

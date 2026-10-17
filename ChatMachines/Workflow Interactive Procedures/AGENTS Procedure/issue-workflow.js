@@ -3,6 +3,8 @@ const path = require('node:path');
 const {compileTransitionMap,applyValidatedValues} = require('./transitions.js');
 const {loadScreens,entriesForState} = require('./render-instructions.js');
 const {inputsFor, validate} = require('./validator.js');
+const {lastGeminiScreen,renderGeminiScreen} = require('./render-gemini.js');
+const {generateGeminiScreen,acceptGeminiValues} = require('./gemini-workflow.js');
 const {appendProcedureReceipt} = require('./issue-run-trigger.js');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));
 const map = compileTransitionMap(JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8')));
@@ -69,6 +71,7 @@ function startRun(issue) {
   return record;
 }
 function setExpectedInputs(record) {
+  if(record.geminiStarted)return;
   record.state.expectedInputs={request:record.request,render:record.state.render,inputs:record.done?[]:inputsFor(screens[record.state.render-1])};
 }
 function restoreCommunicationState(record,comments,issueNumber) {
@@ -85,11 +88,19 @@ async function publishCurrent(record,issueNumber,post,save,body) {
   if(record.state.renderedRequests.includes(record.request))return false;
   await post(body ?? renderIssue(record,issueNumber));
   record.state.renderedRequests.push(record.request);
+  if(record.state.procedureMode==='gemini'&&!record.geminiStarted&&record.state.render===1) {
+    record.state.renderedScreens.push({instruction:Object.fromEntries(screens[0]).instruction,expectedInputs:inputsFor(screens[0])});
+  }
   await save();
   return true;
 }
 function applyReturn(record,payload,fileRoot) {
   if(record.done)throw Error('This run has finished.');
+  if(record.geminiStarted){
+    if(!record.geminiPending&&!record.state.renderedRequests.includes(record.request))throw Error('Current Gemini screen has not been published.');
+    const values=payload.values || (payload.variable?{[payload.variable]:payload.value}:payload);
+    return acceptGeminiValues(record,values,fileRoot);
+  }
   if([13,17].includes(record.state.render))throw Error('Tool invocations must be submitted in the run-specific JSON file and committed; a comment return cannot advance this render.');
   const expected=record.state.expectedInputs;
   if(expected?.render!==record.state.render || expected?.request!==record.request)throw Error('Current screen has not been rendered; expected inputs are unavailable.');
@@ -108,12 +119,24 @@ function applyReturn(record,payload,fileRoot) {
   const appliedValues={...values};
   delete appliedValues.$toolInvocations;
   applyValidatedValues(draft,JSON.stringify(appliedValues));
-  const result=map(draft);
+  const startingGemini=record.state.procedureMode==='gemini'&&record.state.render===1;
+  const result=startingGemini?draft:map(draft);
   if(Object.hasOwn(values,'$toolInvocations'))record.toolInvocations=[...(record.toolInvocations || []),...structuredClone(values.$toolInvocations)];
   record.history.push({request:record.request,render:record.state.render,loopNumber:record.state.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
   record.state=result==='halt'?draft:result;
   if(payload.variable==='targetFiles')record.newFiles=payload.value.filter(file=>file.newFile).map(file=>file.filename);
   record.done=result==='halt';record.request++;
+  record.view='instruction';
+  if(payload.variable==='procedureMode'&&payload.value==='gemini') {
+    record.state.variables=[{name:'procedureMode',value:'gemini'}];
+    record.state.renderedScreens=[{instruction:Object.fromEntries(screens[23]).instruction,expectedInputs:inputsFor(screens[23])}];
+  }
+  if(startingGemini){
+    record.state.variables.push({name:'verbatimUserPrompt',value:payload.value});
+    record.geminiStarted=true;
+    record.geminiPending=true;
+    delete record.state.expectedInputs;
+  }
 }
 function acceptToolInvocationSubmission(record,records,fileRoot) {
   if(record.done)throw Error('This run has finished.');
@@ -134,20 +157,21 @@ function acceptToolInvocationSubmission(record,records,fileRoot) {
   if(!record.done)setExpectedInputs(record);
   return record;
 }
-function parseReturn(body) {
+function parseReturn(body,allowObject=false) {
   const text=body.trim();
   const fenced=text.match(/^\x60{3,}(?:json|text|javascript)?\s*\n([\s\S]*?)\n\x60{3,}$/i);
   const source=(fenced?fenced[1]:text).trim();
   if(source==='{}')return {};
-  const match=source.match(/^\$\{([A-Za-z_][\w$]*)\}\s*:\s*([\s\S]+)$/);
+  if(allowObject&&source.startsWith('{')&&!source.startsWith('{$')){const values=JSON.parse(source);return {values};}
+  const match=source.match(/^(?:\$\{([A-Za-z_][\w$]*)\}|\{\$([A-Za-z_][\w$]*)\})\s*:\s*([\s\S]+)$/);
   if(!match)throw Error('Return must use ${variableName}: JSON value.');
-  return {variable:match[1],value:JSON.parse(match[2])};
+  return {variable:match[1]||match[2],value:JSON.parse(match[3])};
 }
 function renderIssue(record,issueNumber,options={}) {
   setExpectedInputs(record);
   const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':named-return -->';
   if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
-  const entries=entriesForState(record.state,screens,record.toolInvocations || []);
+  const entries=record.geminiStarted?[]:entriesForState(record.state,screens,record.toolInvocations || []);
   for(const entry of entries)if(entry[0]==='toolInvocationFile')entry[1]={
     procedureIssueNumber:issueNumber,
     path:'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/'+issueNumber+'-tool-invocations.json',
@@ -164,10 +188,10 @@ function renderIssue(record,issueNumber,options={}) {
   const instruction=Object.fromEntries(entries.map(([key,value])=>key==='toolInvocationReport'&&reportUrl
     ? [key,{procedureIssueNumber:issueNumber,recordCount:(record.toolInvocations||[]).length,file:reportUrl}]
     : [key,value]));
-  const {expectedInputs,renderedRequests,...visibleState}=record.state;
+  const menu='\n\n### Menu\nType `state` to view the saved state, or `back` to return to this instruction. You may submit the current expected inputs from either view.';
   const communication=[
     '### Communication instructions',
-    'Submit the current instruction\'s return as ${variableName}: JSON value, or {} when no return variable is requested.',
+    'Submit the current instruction\'s return as {$variableName}: JSON value. For multiple Gemini inputs, submit one JSON object with their names as keys. Normal steps with no captured return accept {}.',
     'After GitHub confirms your submission, check for a newer request, procedure completion, or a validation error after 10 seconds, then 20 more seconds, then 30 more seconds (60 seconds total). Do not poll continuously.',
     'If a newer request or completion appears, stop waiting for this request and follow that result. If a validation error appears, read it and the current instruction before correcting your return; do not blindly repeat a rejected return.',
     'If no response appears after 60 seconds, resubmit the exact same return once to this issue to retrigger processing. Do not redo the substantive work or change the submitted values. The runner validates against stored expected inputs and skips publishing request numbers already recorded as rendered.',
@@ -181,8 +205,12 @@ function renderIssue(record,issueNumber,options={}) {
   const summary=([14,18].includes(record.state.render)&&record.lastToolInvocationSummary)
     ? '\n\n### Tool invocation JSON accepted\n'+renderToolInvocationSummary(record.lastToolInvocationSummary)
     : '';
-  return marker+'\n## Render '+record.state.render+'\n\n'+communication+summary+'\n\n'+fence(instruction)+
-    '\n\n<details><summary>Captured values</summary>\n\n'+fence({state:visibleState})+'\n\n</details>'+reportLink;
+  const content=record.view==='state'
+    ? '## State\n\n'+fence(record.state)
+    : record.geminiStarted
+      ? renderGeminiScreen(lastGeminiScreen(record.state))
+      : fence(instruction);
+  return marker+'\n## Render '+record.state.render+'\n\n'+communication+summary+'\n\n'+content+reportLink+menu;
 }
 function renderToolInvocationSummary(summary) {
   const format=object=>Object.entries(object||{}).map(([name,count])=>'`'+name+'`: '+count).join(', ')||'none';
@@ -221,6 +249,7 @@ async function main() {
   if(event.action==='edited')return;
   const record=stored?JSON.parse(Buffer.from(stored.content,'base64').toString('utf8')):startRun(issue);
   const outbox=[];
+  let navigationOnly=false;
   let initializeToolInvocationFile=false;
   let comments=[],page=1;
   while(true){const batch=await api('GET','/issues/'+number+'/comments?per_page=100&page='+page++);comments.push(...batch);if(batch.length<100)break;}
@@ -228,13 +257,24 @@ async function main() {
   for(const comment of comments){
     if(comment.id<=record.lastCommentId||comment.user.type==='Bot')continue;
     if(record.done){record.lastCommentId=comment.id;continue;}
+    const command=comment.body.trim().toLowerCase();
+    if(['state','back','retry'].includes(command)) {
+      navigationOnly=command!=='retry';
+      if(command!=='retry') {
+        record.view=command==='state'?'state':'instruction';
+        const marker='<!-- agents-procedure:'+number+':navigation:'+comment.id+' -->';
+        outbox.push({marker,body:marker+'\n'+renderIssue(record,number)});
+      }
+      record.lastCommentId=comment.id;
+      continue;
+    }
     if(!/^\s*(?:\$\{|[\[{"\d-]|true\b|false\b|null\b|\x60{3,})/.test(comment.body)) {record.lastCommentId=comment.id;continue;}
     const errorMarker='<!-- agents-procedure:'+number+':error:'+comment.id+' -->';
     try {
-      const payload=parseReturn(comment.body);
+      const payload=parseReturn(comment.body,record.geminiStarted===true);
       const priorRender=record.state.render;
       applyReturn(record,payload,process.env.GITHUB_WORKSPACE);
-      if(priorRender===3&&payload.variable==='exampleMatch'&&payload.value===false)initializeToolInvocationFile=true;
+      if(!record.geminiStarted&&priorRender===3&&payload.variable==='exampleMatch'&&payload.value===false)initializeToolInvocationFile=true;
     } catch(error){outbox.push({marker:errorMarker,body:errorMarker+'\nReturn rejected: '+error.message+'\n\nState and current request are unchanged.'});}
     record.lastCommentId=comment.id;
   }
@@ -261,7 +301,16 @@ async function main() {
       await api('PUT',inputRoute,{message:'Initialize AGENTS Procedure issue '+number+' tool-invocation file',content:Buffer.from(JSON.stringify(artifact,null,2)+'\n').toString('base64')});
     }
   }
-  const reportRequested=(screens[record.state.render-1]||[]).some(([key])=>key==='toolInvocationReport');
+  let geminiFailed=record.geminiPending&&navigationOnly;
+  if(record.geminiPending&&!navigationOnly){
+    try {await generateGeminiScreen(record,saveRecord);}
+    catch(error){
+      geminiFailed=true;
+      const marker='<!-- agents-procedure:'+number+':gemini-error:'+record.request+' -->';
+      outbox.push({marker,body:marker+'\n'+error.message+'\n\nYour accepted values remain saved. Type `retry` to request the next screen. Type `state` or `back` to view the saved state or last saved instruction.'});
+    }
+  }
+  const reportRequested=!record.geminiStarted&&(screens[record.state.render-1]||[]).some(([key])=>key==='toolInvocationReport');
   let reportUrl=null;
   if(reportRequested) {
     const artifactText=JSON.stringify(toolInvocationArtifact(record,number),null,2)+'\n';
@@ -272,11 +321,11 @@ async function main() {
     if(existingText!==artifactText)await api('PUT',artifactRoute,{message:'Save AGENTS Procedure issue '+number+' tool-invocation report',content:Buffer.from(artifactText).toString('base64'),...(artifactStored?.sha?{sha:artifactStored.sha}:{})});
     reportUrl=toolInvocationArtifactUrl(repository,number);
   }
-  const rendered=record.state.renderedRequests.includes(record.request)?null:renderIssue(record,number,{toolInvocationReportUrl:reportUrl});
+  const rendered=geminiFailed||record.state.renderedRequests.includes(record.request)?null:renderIssue(record,number,{toolInvocationReportUrl:reportUrl});
   for(const body of [rendered,...outbox.map(item=>item.body)])if(body && body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
   await saveRecord();
   for(const item of outbox)if(!comments.some(c=>c.body.includes(item.marker)))await api('POST','/issues/'+number+'/comments',{body:item.body});
-  await publishCurrent(record,number,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord,rendered);
+  if(!geminiFailed)await publishCurrent(record,number,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord,rendered);
   if(process.env.GITHUB_EVENT_NAME!=='push' && record.triggerIdentifier) {
     const triggerRelative=path.relative(process.env.GITHUB_WORKSPACE,triggerPathForRecord(record)).split(path.sep).join('/');
     const triggerRoute='/contents/'+triggerRelative.split('/').map(encodeURIComponent).join('/');
@@ -289,6 +338,6 @@ async function main() {
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,toolInvocationInputArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+module.exports={main,startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,toolInvocationInputArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
 
 

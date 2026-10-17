@@ -1,7 +1,8 @@
 const assert = require('node:assert/strict');
 const {screenFromGeminiResponse, saveGeminiScreen} = require('./gemini-screen.js');
-const {render, renderState, renderScreen, loadScreens} = require('./render-instructions.js');
+const {renderState, renderScreen, loadScreens} = require('./render-instructions.js');
 const {validate} = require('./validator.js');
+const {renderGeminiScreen,lastGeminiScreen}=require('./render-gemini.js');
 
 async function main() {
   const message = {
@@ -10,7 +11,7 @@ async function main() {
   };
   const screen = screenFromGeminiResponse(JSON.stringify(message));
   assert.deepEqual(screen, message);
-  assert.deepEqual(JSON.parse(render(screen)), message);
+  assert.equal(renderGeminiScreen(screen), message.instruction);
   validate('continue', screen.expectedInputs[0].schema);
   assert.throws(() => validate('unknown', screen.expectedInputs[0].schema));
   screen.expectedInputs[0].schema.anyOf[0].const = 'changed';
@@ -23,20 +24,19 @@ async function main() {
   assert.strictEqual(first, run.state.renderedScreens[0]);
   assert.equal(run.state.render, 0);
   assert.equal(Object.hasOwn(first, 'render'), false);
-  assert.deepEqual(JSON.parse(renderState(run.state)), message);
+  assert.deepEqual(lastGeminiScreen(run.state), message);
   assert.deepEqual(JSON.parse(persisted).state.renderedScreens[0], message);
   const secondMessage = {instruction: 'Return a description as {$description}.', expectedInputs: [{name: 'description', schema: {type: 'string'}}]};
   const second = await saveGeminiScreen(run, secondMessage, save);
   assert.strictEqual(second, run.state.renderedScreens[1]);
   assert.equal(run.state.render, 1);
   assert.deepEqual(first, message);
-  assert.deepEqual(JSON.parse(renderState(run.state)), secondMessage);
+  assert.deepEqual(lastGeminiScreen(run.state), secondMessage);
   const restored = JSON.parse(persisted);
-  assert.deepEqual(JSON.parse(renderState(restored.state)), secondMessage);
+  assert.deepEqual(lastGeminiScreen(restored.state), secondMessage);
   restored.state.render = 0;
-  assert.deepEqual(JSON.parse(renderState(restored.state)), message);
-  restored.state.render = -1;
-  assert.throws(() => renderState(restored.state), /out of range/);
+  assert.deepEqual(lastGeminiScreen(restored.state), secondMessage);
+  assert.throws(()=>lastGeminiScreen({renderedScreens:[]}), /No saved/);
   const before = structuredClone(run);
   await assert.rejects(() => saveGeminiScreen(run, secondMessage, async () => {throw Error('save failed');}), /save failed/);
   assert.deepEqual(run, before);

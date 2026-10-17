@@ -12,8 +12,10 @@ async function main(){
  assert.equal(gemini.inputs[0].name,'procedureMode');
  gemini=(await submit(gemini,{$procedureMode:'gemini'})).data;
  assert.equal(gemini.render,1);assert.equal(gemini.state.procedureMode,'gemini');
- gemini=(await submit(gemini,{$verbatimUserPrompt:'Exact prompt'})).data;
- assert.equal(gemini.state.procedureMode,'gemini');assert.equal(gemini.state.verbatimUserPrompt,'Exact prompt');
+ const nav=await post('/api/submit',{id:gemini.id,command:'state'});
+ assert.equal(nav.status,200);assert.equal(nav.data.entries[0][0],'state');
+ const back=await post('/api/submit',{id:gemini.id,command:'back'});
+ assert.equal(back.status,200);assert.equal(back.data.inputs[0].name,'verbatimUserPrompt');
  let s=(await start()).data;assert.equal(s.render,24);
  assert.equal((await submit(s,{$procedureMode:"invalid"})).status,400);
  s=(await submit(s,{$procedureMode:"normal"})).data;assert.equal(s.render,1);

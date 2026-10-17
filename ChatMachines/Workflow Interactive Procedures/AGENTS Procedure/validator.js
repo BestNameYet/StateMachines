@@ -69,7 +69,7 @@ function validate(value, schema, where = 'value', context = {}) {
     if (!schema.anyOf.some(option => { try { validate(value,option,where,context); return true; } catch { return false; } })) throw Error(where + ' does not match an allowed type/value.');
     return;
   }
-  if (Object.hasOwn(schema,'const') && value !== schema.const) throw Error(where + ' must equal ' + schema.const);
+  if (Object.hasOwn(schema,'const') && JSON.stringify(value) !== JSON.stringify(schema.const)) throw Error(where + ' must equal ' + schema.const);
   const kind = schema.type;
   if (kind === 'null' && value !== null) throw Error(where + ' must be null.');
   if (kind === 'string' && typeof value !== 'string') throw Error(where + ' must be a string.');
@@ -82,7 +82,7 @@ function validate(value, schema, where = 'value', context = {}) {
   if (kind === 'object') {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error(where + ' must be an object.');
     for (const key of schema.required || []) if (!Object.hasOwn(value,key)) throw Error(where + '.' + key + ' is required.');
-    if(schema.toolInvocation) {
+    if(schema.toolInvocation || schema.additionalProperties === false) {
       const unexpected=Object.keys(value).filter(key=>!Object.hasOwn(schema.properties,key));
       if(unexpected.length)throw Error(where+' has unexpected field(s): '+unexpected.join(', ')+'.');
     }

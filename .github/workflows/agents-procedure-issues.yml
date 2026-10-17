@@ -17,16 +17,24 @@ on:
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-render.json'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/validator.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/gemini-*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/gemini-request-template.json'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/render-gemini.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/render-instructions.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface*'
 
 permissions:
   contents: read
 
 jobs:
   check:
+    timeout-minutes: 10
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -35,9 +43,27 @@ jobs:
         run: |
           node transitions.test.js
           node interface.test.js
+          node gemini-screen.test.js
+          node gemini-workflow.test.js
           node issue-workflow.test.js
           node issue-run-trigger.test.js
           node issue-run-tool-invocations.test.js
+
+      - name: Verify live Gemini screen generation when its sources change
+        working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: |
+          if ! git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -Eq 'AGENTS Procedure/(gemini-workflow.js|gemini-screen.js|gemini-request-template.json|render-gemini.js)$'; then
+            echo 'No Gemini generation source changed; no live call requested.'
+            exit 0
+          fi
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo 'Live Gemini check not performed: GEMINI_API_KEY is missing.'
+            exit 0
+          fi
+          node gemini-live-check.js
 
   create-from-trigger:
     if: github.event_name == 'push'
@@ -110,5 +136,7 @@ jobs:
         working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
         run: node issue-workflow.js
 
