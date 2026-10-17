@@ -1,0 +1,95 @@
+name: Classify conversations into 12 labels
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/conversation-classifier-12/classify.py'
+      - 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/conversation-classifier-12/config.json'
+      - .github/workflows/classify-conversations-12.yml
+permissions:
+  contents: write
+  actions: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/requirements.txt'
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 39028957505
+          name: consolidated-topic-catalog
+          path: merged
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 39029607411
+          name: hierarchical-topic-groups
+          path: clustered
+      - run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/conversation-classifier-12/classify.py' prepare
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prepared-fixed-12
+          path: prepared/
+          retention-days: 30
+  classify:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        batch: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/requirements.txt'
+      - uses: actions/download-artifact@v4
+        with:
+          name: prepared-fixed-12
+          path: prepared
+      - run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/conversation-classifier-12/classify.py' classify --batch ${{ matrix.batch }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fixed-12-batch-${{ matrix.batch }}
+          path: batch-results/
+          retention-days: 30
+  collect:
+    needs: [prepare, classify]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/requirements.txt'
+      - uses: actions/download-artifact@v4
+        with:
+          name: prepared-fixed-12
+          path: prepared
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fixed-12-batch-*
+          path: results
+          merge-multiple: true
+      - run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/conversation-classifier-12/classify.py' collect
+      - uses: actions/upload-artifact@v4
+        with:
+          name: conversations-classified-12-labels
+          path: 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/conversation-classifier-12/outputs/'
+      - name: Save classifications
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/conversation-classifier-12/outputs/'
+          git commit -m 'Save fixed 12-label conversation classifications'
+          git push origin HEAD:main
