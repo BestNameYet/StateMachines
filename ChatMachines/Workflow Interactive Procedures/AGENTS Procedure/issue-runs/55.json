@@ -1,7 +1,7 @@
 {
   "state": {
     "render": 1,
-    "verbatimUserPrompt": null,
+    "verbatimUserPrompt": "Use one Gemini supervisor and exactly three Gemini workers, with shared access at the repository root, to copy every source-code file recursively into the root subdirectory source-code-copy/. Include all YAML/YML, JavaScript variants, Python, other source-code languages, and HTML containing JavaScript; include other actual code/configuration source formats as appropriate. Preserve original bytes and executable modes, preserve each file's original repository-relative path beneath source-code-copy/, and leave all original files unchanged. Include hidden source directories such as .github. Exclude source-code-copy/ itself so copies are never recursively copied. Have the supervisor inventory the root, decompose the source inventory into three disjoint, roughly balanced assignments, and have the three Gemini workers perform the copying through the workflow's copy_files operation. The workers must not connect to GitHub or receive GitHub credentials. Use read_files only when needed for classification; do not rewrite source contents through model generation. Verify every selected original has a matching destination Git blob, account for omitted or ambiguous file types, save a source-to-copy manifest and coverage/verification summary beneath source-code-copy/, and have the supervisor evaluate coverage and process before declaring completion. Source-file copying is the actual task; do not stop at producing a plan or list. Work from current saved state and retain worker nonces between calls.",
     "userIntent": null,
     "exampleMatch": null,
     "minimalResult": null,
@@ -21,18 +21,6 @@
       1,
       2
     ],
-    "expectedInputs": {
-      "request": 2,
-      "render": 1,
-      "inputs": [
-        {
-          "name": "verbatimUserPrompt",
-          "schema": {
-            "type": "string"
-          }
-        }
-      ]
-    },
     "workspace": {
       "path": ".",
       "access": "repository-root",
@@ -42,6 +30,10 @@
       {
         "name": "procedureMode",
         "value": "gemini"
+      },
+      {
+        "name": "verbatimUserPrompt",
+        "value": "Use one Gemini supervisor and exactly three Gemini workers, with shared access at the repository root, to copy every source-code file recursively into the root subdirectory source-code-copy/. Include all YAML/YML, JavaScript variants, Python, other source-code languages, and HTML containing JavaScript; include other actual code/configuration source formats as appropriate. Preserve original bytes and executable modes, preserve each file's original repository-relative path beneath source-code-copy/, and leave all original files unchanged. Include hidden source directories such as .github. Exclude source-code-copy/ itself so copies are never recursively copied. Have the supervisor inventory the root, decompose the source inventory into three disjoint, roughly balanced assignments, and have the three Gemini workers perform the copying through the workflow's copy_files operation. The workers must not connect to GitHub or receive GitHub credentials. Use read_files only when needed for classification; do not rewrite source contents through model generation. Verify every selected original has a matching destination Git blob, account for omitted or ambiguous file types, save a source-to-copy manifest and coverage/verification summary beneath source-code-copy/, and have the supervisor evaluate coverage and process before declaring completion. Source-file copying is the actual task; do not stop at producing a plan or list. Work from current saved state and retain worker nonces between calls."
       }
     ],
     "controls": [],
@@ -79,8 +71,8 @@
     ]
   },
   "done": false,
-  "request": 2,
-  "lastCommentId": 6238439495,
+  "request": 3,
+  "lastCommentId": 6238447999,
   "newFiles": [],
   "history": [
     {
@@ -136,6 +128,93 @@
           "manifest": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/55/manifest.json"
         }
       }
+    },
+    {
+      "request": 2,
+      "render": 1,
+      "loopNumber": null,
+      "values": {
+        "$verbatimUserPrompt": "Use one Gemini supervisor and exactly three Gemini workers, with shared access at the repository root, to copy every source-code file recursively into the root subdirectory source-code-copy/. Include all YAML/YML, JavaScript variants, Python, other source-code languages, and HTML containing JavaScript; include other actual code/configuration source formats as appropriate. Preserve original bytes and executable modes, preserve each file's original repository-relative path beneath source-code-copy/, and leave all original files unchanged. Include hidden source directories such as .github. Exclude source-code-copy/ itself so copies are never recursively copied. Have the supervisor inventory the root, decompose the source inventory into three disjoint, roughly balanced assignments, and have the three Gemini workers perform the copying through the workflow's copy_files operation. The workers must not connect to GitHub or receive GitHub credentials. Use read_files only when needed for classification; do not rewrite source contents through model generation. Verify every selected original has a matching destination Git blob, account for omitted or ambiguous file types, save a source-to-copy manifest and coverage/verification summary beneath source-code-copy/, and have the supervisor evaluate coverage and process before declaring completion. Source-file copying is the actual task; do not stop at producing a plan or list. Work from current saved state and retain worker nonces between calls."
+      },
+      "state": {
+        "render": 1,
+        "verbatimUserPrompt": "Use one Gemini supervisor and exactly three Gemini workers, with shared access at the repository root, to copy every source-code file recursively into the root subdirectory source-code-copy/. Include all YAML/YML, JavaScript variants, Python, other source-code languages, and HTML containing JavaScript; include other actual code/configuration source formats as appropriate. Preserve original bytes and executable modes, preserve each file's original repository-relative path beneath source-code-copy/, and leave all original files unchanged. Include hidden source directories such as .github. Exclude source-code-copy/ itself so copies are never recursively copied. Have the supervisor inventory the root, decompose the source inventory into three disjoint, roughly balanced assignments, and have the three Gemini workers perform the copying through the workflow's copy_files operation. The workers must not connect to GitHub or receive GitHub credentials. Use read_files only when needed for classification; do not rewrite source contents through model generation. Verify every selected original has a matching destination Git blob, account for omitted or ambiguous file types, save a source-to-copy manifest and coverage/verification summary beneath source-code-copy/, and have the supervisor evaluate coverage and process before declaring completion. Source-file copying is the actual task; do not stop at producing a plan or list. Work from current saved state and retain worker nonces between calls.",
+        "userIntent": null,
+        "exampleMatch": null,
+        "minimalResult": null,
+        "targetFiles": null,
+        "requirements": null,
+        "matchedExample": null,
+        "mode": null,
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null,
+        "procedureMode": "gemini",
+        "workers": [],
+        "renderedRequests": [
+          1,
+          2
+        ],
+        "expectedInputs": {
+          "request": 2,
+          "render": 1,
+          "inputs": [
+            {
+              "name": "verbatimUserPrompt",
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "workspace": {
+          "path": ".",
+          "access": "repository-root",
+          "manifest": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/55/manifest.json"
+        },
+        "variables": [
+          {
+            "name": "procedureMode",
+            "value": "gemini"
+          }
+        ],
+        "controls": [],
+        "noProgressTurns": 0,
+        "renderedScreens": [
+          {
+            "instruction": "Select the procedure mode: normal or Gemini. <\"normal\" | \"gemini\">: ${procedureMode}",
+            "expectedInputs": [
+              {
+                "name": "procedureMode",
+                "schema": {
+                  "anyOf": [
+                    {
+                      "const": "normal"
+                    },
+                    {
+                      "const": "gemini"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "instruction": "Repeat the user prompt verbatim. <string>: ${verbatimUserPrompt}",
+            "expectedInputs": [
+              {
+                "name": "verbatimUserPrompt",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "toolInvocations": [],
@@ -144,5 +223,7 @@
     "1:0": true,
     "2:0": true
   },
-  "view": "instruction"
+  "view": "instruction",
+  "geminiStarted": true,
+  "geminiPending": true
 }
