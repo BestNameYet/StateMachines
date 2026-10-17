@@ -23,7 +23,7 @@ function issueNumberFromChangedPath(filePath) {
 function parseToolInvocationSubmission(source,issueNumber) {
   const document=JSON.parse(source);
   if(!document||typeof document!=='object'||Array.isArray(document))throw Error('The JSON file must contain an object.');
-  const unexpected=Object.keys(document).filter(key=>!['procedureIssueNumber','statistics','toolInvocations','submissionAccepted'].includes(key));
+  const unexpected=Object.keys(document).filter(key=>!['procedureIssueNumber','toolInvocations','submissionAccepted'].includes(key));
   if(unexpected.length)throw Error('The JSON file has unexpected top-level field(s): '+unexpected.join(', ')+'.');
   if(document.procedureIssueNumber!==issueNumber)throw Error('procedureIssueNumber must equal '+issueNumber+'.');
   if(document.submissionAccepted!==undefined&&typeof document.submissionAccepted!=='boolean')throw Error('submissionAccepted must be a boolean when present.');
