@@ -57,11 +57,17 @@ Run `node gemini-screen.test.js` and `node gemini-workflow.test.js` for object s
 
 ### Semantic control loop and completion
 
-Every Gemini call receives the updated state and independently materializes a new `control` object. It contains `target` and `current` (each with outcome and process description strings), `gap` (outcome and process arrays), and `mode` (`continue` or `completion`). The target is derived from the original user request, decomposed into outcomes, tasks, required methods, and constraints. Current status is assessed from the rendered screens, recorded returns, and supported changes. The gap compares both the final state against the desired state and the actions/state changes against the requested process. Missing or contradictory evidence remains a gap.
+Every Gemini call receives the updated state and independently materializes a new `control` object. It contains `target` and `current` (each with outcome and process description strings), `gap` (outcome and process arrays), `progress` (`reduced` Boolean and a description of the observed change), and `mode` (`continue` or `completion`). The target is derived from the original user request, decomposed into outcomes, tasks, required methods, and constraints. Current status is assessed from the rendered screens, recorded returns, and supported changes. The gap compares both the final state against the desired state and the actions/state changes against the requested process. Missing or contradictory evidence remains a gap.
 
 The workflow appends every valid assessment to `state.controls` in chronological order and includes that history in later requests. There is no separate current-control field. Gemini recalculates rather than reusing the last assessment. Controls are not included in instruction comments; they are visible through the explicit state view.
 
 A continue response must have an identified gap and a screen aimed at reducing it. A completion response must have both gap arrays empty and contains only `control`: no instruction, expected inputs, or extra screen. The workflow persists the assessment, marks the run done, posts the existing completion notice, and closes the issue while preserving its records. Format validation enforces structure and consistency of mode/gaps; Gemini makes the semantic judgment about whether outcome and process are satisfied. A failed response or save does not append a control or discard earlier history.
+
+### Three-turn stall limit
+
+The workflow counts consecutive accepted operator turns for which Gemini reports `control.progress.reduced: false`. The initial assessment is a baseline and does not count. Actual reduction resets `state.noProgressTurns` to zero. Three consecutive turns without reduction stop the run as **stalled/incomplete**, preserve its remaining gaps and control history, and close the issue without another instruction. This is distinct from successful completion. Gemini reports observed progress; the workflow enforces the count. Navigation, format-correction retries, and failed API calls do not count as additional operator turns.
+
+Necessary preparatory work reduces the gap: finishing a required prerequisite, obtaining necessary information, resolving uncertainty, or completing required setup changes the supported state and reduces remaining work, even before the final output changes. One of five equally weighted prerequisite steps completes one fifth of that section. Rewording the gap, weakening the target, unrelated activity, and repeating completed work do not count. Each progress description identifies the relevant state change. Closeness alone or a prediction that the gap is impossible does not halt the loop.
 
 ## Interactive execution
 

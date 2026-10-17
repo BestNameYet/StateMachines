@@ -11,7 +11,7 @@
       "The workflow owns persistence and validation. You do not retain state between calls; each request includes the complete saved state."
     ],
     "responseFormat": {
-      "instruction": "Return one JSON object. Continue mode contains exactly control, instruction, and expectedInputs. Completion mode contains exactly control. control has target, current, gap, and mode; target and current each have nonempty outcome and process description strings; gap has outcome and process arrays of nonempty strings; mode is continue or completion.",
+      "instruction": "Return one JSON object. Continue mode contains exactly control, instruction, and expectedInputs. Completion mode contains exactly control. control has target, current, gap, progress, and mode; target and current each have nonempty outcome and process description strings; gap has outcome and process arrays of nonempty strings; mode is continue or completion. progress contains exactly reduced (Boolean) and description (a nonempty description of the observed change or lack of reduction).",
       "expectedInputs": "Declare every requested return explicitly. name is a unique variable identifier without dollar signs or braces, matching [A-Za-z_][A-Za-z0-9_]*. schema describes the returned value using the workflow's supported validation structure. Supply these definitions directly; the workflow must not infer them from instruction text.",
       "schemaRules": "Use type for string, integer, boolean, null, array, or object; arrays declare items; objects declare properties and required; allowed literal values use const or anyOf containing const schemas. Nested values follow the same structure.",
       "example": {
@@ -32,7 +32,11 @@
               "The executor must calculate and submit the product."
             ]
           },
-          "mode": "continue"
+          "mode": "continue",
+          "progress": {
+            "reduced": false,
+            "description": "Initial baseline: the calculation and submission remain to be done."
+          }
         },
         "instruction": "Calculate twelve times five. Return the product as {$total}.",
         "expectedInputs": [
@@ -59,7 +63,11 @@
             "outcome": [],
             "process": []
           },
-          "mode": "completion"
+          "mode": "completion",
+          "progress": {
+            "reduced": true,
+            "description": "The new returned integer total=60 completes the requested calculation and submission."
+          }
         }
       }
     },
@@ -69,13 +77,16 @@
       "gap": "Compare both the resulting state with the desired state AND the actual actions/state changes with the requested process. Materialize every remaining, omitted, unfinished, contradictory, or unverified part in control.gap.outcome or control.gap.process. A correct final output does not excuse an unmet method, scope, ordering, or other process requirement.",
       "nextMove": "If either gap array is nonempty, set control.mode to continue and generate a descriptive screen with nonempty expectedInputs that addresses the next useful action, verification, correction, or missing information. Reassess from the newly returned state on the following call.",
       "completion": "Choose control.mode completion only when both gap arrays are empty and the recorded state supports satisfaction of every requested outcome and required process. Explain that support in control.current. Uncertainty or a blocker does not itself establish completion. In completion mode return only control, with no instruction or expectedInputs; the workflow saves the assessment and stops without adding another screen.",
-      "history": "Compute a new control on every call. state.controls is the chronological array of previous assessments for reference; it is not the current assessment and must not simply be carried forward. The workflow appends each valid returned control to this array. Do not include control in the rendered instruction or invent saved history entries."
+      "history": "Compute a new control on every call. state.controls is the chronological array of previous assessments for reference; it is not the current assessment and must not simply be carried forward. The workflow appends each valid returned control to this array. Do not include control in the rendered instruction or invent saved history entries.",
+      "progress": "Compare the latest accepted returned state with the preceding assessment and identify whether it reduces the work remaining toward the original outcome or required process. Materialize control.progress as {reduced: Boolean, description: string}. Describe the specific supported state change and the prerequisite or gap it addresses. Necessary preparatory work is part of the remaining work: completing one of five equally weighted prerequisite steps completes one fifth of that section even if the final output has not changed. Completing required investigation, resolving uncertainty, obtaining needed information, or performing a required setup step therefore counts as progress. Rewording gaps, changing the target, repeated intentions, unrelated activity, or repeating already completed preparation does not count. On the first assessment report reduced=false and describe the baseline; it is not a stalled turn.",
+      "stallRule": "The workflow counts consecutive accepted operator turns with progress.reduced=false. The first assessment establishes the baseline and is not counted; any actual reduction resets the count to zero. Three consecutive turns without reduction stop the procedure as stalled/incomplete, preserving its remaining gaps. Do not mark completion merely because the goal is close or assume an unbridgeable gap. Continue choosing useful moves intended to reduce the gap until the objective is met or the workflow stops the run."
     }
   },
   "state": {
     "verbatimUserPrompt": null,
     "renderedScreens": [],
     "variables": [],
-    "controls": []
+    "controls": [],
+    "noProgressTurns": 0
   }
 }

@@ -130,6 +130,7 @@ function applyReturn(record,payload,fileRoot) {
   if(payload.variable==='procedureMode'&&payload.value==='gemini') {
     record.state.variables=[{name:'procedureMode',value:'gemini'}];
     record.state.controls=[];
+    record.state.noProgressTurns=0;
     record.state.renderedScreens=[{instruction:Object.fromEntries(screens[23]).instruction,expectedInputs:inputsFor(screens[23])}];
   }
   if(startingGemini){
@@ -171,7 +172,9 @@ function parseReturn(body,allowObject=false) {
 function renderIssue(record,issueNumber,options={}) {
   setExpectedInputs(record);
   const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':named-return -->';
-  if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
+  if(record.done)return record.state.stopReason==='stalled'
+    ? marker+'\n## Procedure stopped — stalled\n\nThree consecutive turns did not reduce the remaining gap. The objective is incomplete. All submitted values, remaining gaps, and control assessments are preserved in the run record.'
+    : marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
   const entries=record.geminiStarted?[]:entriesForState(record.state,screens,record.toolInvocations || []);
   for(const entry of entries)if(entry[0]==='toolInvocationFile')entry[1]={
     procedureIssueNumber:issueNumber,

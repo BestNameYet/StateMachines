@@ -24,7 +24,7 @@ async function test() {
       assert(Array.isArray(request.state.variables));
       assert(request.instructions.screenWritingGuidelines.includes('{$variableName}'));
       if(failGemini)return response({},503);
-      const control={target:{outcome:'Product returned',process:'Calculate and submit'},current:{outcome:'Recorded values assessed',process:'Recorded actions assessed'},gap:completeNext?{outcome:[],process:[]}:{outcome:['Confirm the requested product'],process:[]},mode:completeNext?'completion':'continue'};
+      const control={target:{outcome:'Product returned',process:'Calculate and submit'},current:{outcome:'Recorded values assessed',process:'Recorded actions assessed'},gap:completeNext?{outcome:[],process:[]}:{outcome:['Confirm the requested product'],process:[]},progress:{reduced:true,description:'The latest returned value completes a required prerequisite.'},mode:completeNext?'completion':'continue'};
       const screen=completeNext?{control}:badFirst?(badFirst=false,{instruction:'Bad format'}):{
         control,
         instruction:'Calculate twelve times five. Return the product as {$total}.',
@@ -120,7 +120,7 @@ async function test() {
     assert.deepEqual(multi,multiBefore);
     acceptGeminiValues(multi,{items:[{count:1}],confirmed:true},__dirname);
     assert.deepEqual(multi.state.variables,[{name:'items',value:[{count:1}]},{name:'confirmed',value:true}]);
-    const validControl={target:{outcome:'Return product',process:'Calculate and submit'},current:{outcome:'60 returned',process:'Calculation submitted'},gap:{outcome:[],process:[]},mode:'completion'};
+    const validControl={target:{outcome:'Return product',process:'Calculate and submit'},current:{outcome:'60 returned',process:'Calculation submitted'},gap:{outcome:[],process:[]},progress:{reduced:true,description:'The returned value satisfies the requested calculation.'},mode:'completion'};
     assert.equal(validateGeminiResponse({control:validControl}).screen,null);
     for(const control of [
       {...validControl,mode:'continue'},
@@ -133,6 +133,29 @@ async function test() {
     const beforeFailedSave=structuredClone(failedSave);
     await assert.rejects(()=>generateGeminiScreen(failedSave,async()=>{throw Error('save failed');},{generate:async()=>({control:validControl})}),/save failed/);
     assert.deepEqual(failedSave,beforeFailedSave);
+    const stalledRun={request:1,history:[],newFiles:[],geminiPending:true,state:{procedureMode:'gemini',verbatimUserPrompt:'Finish a task with required preparatory steps.',variables:[],renderedScreens:[],controls:[]}};
+    const controlFor=reduced=>({target:{outcome:'Task finished',process:'Complete required preparations'},current:{outcome:'Final output remains unfinished',process:reduced?'A necessary prerequisite was completed':'No prerequisite or outcome changed'},gap:{outcome:['Finish task'],process:['Complete remaining prerequisites']},progress:{reduced,description:reduced?'Completed one of five necessary preparation steps, reducing remaining work in that section by one fifth.':'The latest return shows no reduction in necessary remaining work.'},mode:'continue'});
+    const move=async reduced=>generateGeminiScreen(stalledRun,async()=>{},{generate:async()=>({control:controlFor(reduced),instruction:'Perform the next required preparation. Return its status as {$status}.',expectedInputs:[{name:'status',schema:{type:'string'}}]})});
+    await move(false);
+    assert.equal(stalledRun.state.noProgressTurns,0); // initial baseline does not count
+    for(const expected of [1,2]) {
+      acceptGeminiValues(stalledRun,{status:'unchanged'},__dirname);await move(false);
+      assert.equal(stalledRun.state.noProgressTurns,expected);assert(!stalledRun.done);
+    }
+    acceptGeminiValues(stalledRun,{status:'first required preparation complete'},__dirname);await move(true);
+    assert.equal(stalledRun.state.noProgressTurns,0);assert(!stalledRun.done);
+    for(const expected of [1,2,3]) {
+      acceptGeminiValues(stalledRun,{status:'unchanged'},__dirname);
+      const previousScreens=stalledRun.state.renderedScreens.length;
+      await move(false);
+      assert.equal(stalledRun.state.noProgressTurns,expected);
+      if(expected<3)assert(!stalledRun.done);
+      else assert.equal(stalledRun.state.renderedScreens.length,previousScreens);
+    }
+    assert.equal(stalledRun.done,true);assert.equal(stalledRun.state.stopReason,'stalled');
+    const stoppedComment=require('./issue-workflow.js').renderIssue(stalledRun,701);
+    assert(stoppedComment.includes('objective is incomplete'));assert(!stoppedComment.includes('Procedure complete'));
+    assert.throws(()=>acceptGeminiValues(stalledRun,{status:'more'},__dirname),/finished/);
     const beforeCompletion=saved();
     completeNext=true;
     reply('{$total}: 60');await run();

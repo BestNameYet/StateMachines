@@ -46,7 +46,9 @@ function validateControl(control) {
   const object=(value,keys,label)=>{
     if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length!==keys.length||keys.some(k=>!Object.hasOwn(value,k)))throw Error(label+' must contain exactly '+keys.join(', ')+'.');
   };
-  object(control,['target','current','gap','mode'],'control');
+  object(control,['target','current','gap','progress','mode'],'control');
+  object(control.progress,['reduced','description'],'control.progress');
+  if(typeof control.progress.reduced!=='boolean'||typeof control.progress.description!=='string'||!control.progress.description.trim())throw Error('control.progress requires Boolean reduced and a nonempty description of the observed state change.');
   for(const key of ['target','current']) {
     object(control[key],['outcome','process'],'control.'+key);
     for(const field of ['outcome','process'])if(typeof control[key][field]!=='string'||!control[key][field].trim())throw Error('control.'+key+'.'+field+' needs a nonempty description.');
@@ -110,10 +112,12 @@ async function generateGeminiScreen(record, saveRecord, {generate=callGemini,max
       continue;
     }
     const previousState=record.state,previousDone=record.done,previousPending=record.geminiPending;
-    record.state={...previousState,controls:[...(previousState.controls||[]),assessment.control]};
+    const noProgressTurns=(previousState.controls||[]).length===0?0:assessment.control.progress.reduced?0:(previousState.noProgressTurns||0)+1;
+    record.state={...previousState,noProgressTurns,controls:[...(previousState.controls||[]),assessment.control]};
     record.geminiPending=false;
     try {
-      if(assessment.control.mode==='completion') {
+      if(assessment.control.mode==='completion'||noProgressTurns>=3) {
+        record.state.stopReason=assessment.control.mode==='completion'?'completed':'stalled';
         record.done=true;
         await saveRecord();
         return null;
