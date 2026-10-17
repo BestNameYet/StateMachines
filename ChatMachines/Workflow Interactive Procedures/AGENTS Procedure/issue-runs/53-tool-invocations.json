@@ -1,4 +1,59 @@
 {
   "procedureIssueNumber": 53,
-  "toolInvocations": null
+  "toolInvocations": [
+    {
+      "cwd": null,
+      "command_line_verbatim": null,
+      "tool": "functions.exec",
+      "invocation_verbatim": null,
+      "final_output_after_completion_of_tool_call": "Script error: ReferenceError: TextEncoder is not defined. The error occurred in the result-formatting expression after the GitHub create_file call had returned; the resulting file was independently verified afterward.",
+      "unavailable_reason": "The isolated JavaScript cell's complete source is not retained in the GitHub tool report; it performed the live issue-run listing/fetch, array extraction, root grouping, and create_file call.",
+      "new": null,
+      "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocations-by-root.json",
+      "frombyte": 0,
+      "tobyte": 352804,
+      "description": "Read the live run records, extracted and sorted 76 invocation records under a 4-root hierarchy, then initiated creation of the JSON catalog; the wrapper errored after the create call.",
+      "intent": "Extract every array member and organize the tool identifiers by root and successive tokens.",
+      "operator": "extract and create",
+      "specifiedOperatorByUser": "\"organize them by root\"; \"sort them by root\"; organize by \"whatever the next attribute is, whatever the next token is, and whatever the next token is\".",
+      "chosenOperator": "GitHub Contents API reads with JavaScript JSON traversal and hierarchical sorting.",
+      "outcome": "failed"
+    },
+    {
+      "cwd": null,
+      "command_line_verbatim": null,
+      "tool": "mcp__codex_apps__github_create_file",
+      "invocation_verbatim": null,
+      "final_output_after_completion_of_tool_call": "The create call's response was not surfaced because the surrounding JavaScript cell errored afterward. Subsequent GitHub readback verified the created file on main with blob SHA 2647600a5ba4dfe3512059bfdaaefb1149a9fc80; it contains 76 records and 13 distinct tool identifiers.",
+      "unavailable_reason": "The content argument was generated in memory from the fetched source arrays and was not retained separately from the resulting repository file.",
+      "new": true,
+      "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocations-by-root.json",
+      "frombyte": 0,
+      "tobyte": 352804,
+      "description": "Created the root-sorted tool-invocation JSON inventory on main.",
+      "intent": "Preserve every invocation array member and make the records sortable by root and token path.",
+      "operator": "create",
+      "specifiedOperatorByUser": "\"organize them by root\"; \"sort them by root\"; organize by \"whatever the next attribute is, whatever the next token is, and whatever the next token is\".",
+      "chosenOperator": "GitHub create_file through connected repository integration.",
+      "outcome": "succeeded"
+    },
+    {
+      "cwd": null,
+      "command_line_verbatim": null,
+      "tool": "mcp__codex_apps__github_fetch_file",
+      "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocations-by-root.json\",\"ref\":\"main\"}",
+      "final_output_after_completion_of_tool_call": "Readback SHA 2647600a5ba4dfe3512059bfdaaefb1149a9fc80; 352804 bytes, 76 invocation entries, 13 distinct tool identifiers, 4 roots, lexically sorted.",
+      "unavailable_reason": null,
+      "new": false,
+      "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocations-by-root.json",
+      "frombyte": 0,
+      "tobyte": 352804,
+      "description": "Read back and verified the persisted JSON inventory and its counts/sort order.",
+      "intent": "Verify the requested extracted and root-sorted catalog was saved correctly.",
+      "operator": "inspect",
+      "specifiedOperatorByUser": "\"organize them by root\"; \"sort them by root\"; organize by \"whatever the next attribute is, whatever the next token is, and whatever the next token is\".",
+      "chosenOperator": "GitHub file readback and JSON validation.",
+      "outcome": "succeeded"
+    }
+  ]
 }
