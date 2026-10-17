@@ -82,7 +82,7 @@ assert(linkedReport.includes('[Open the complete tool-invocation JSON](<'+report
 assert(!linkedReport.includes('simulated test output'));
 const linkedJson=JSON.parse(linkedReport.match(/`{3,}json\n([\s\S]*?)\n`{3,}/)[1]);
 assert.deepEqual(linkedJson.toolInvocationReport,{procedureIssueNumber:99,recordCount:1,file:reportUrl});
-assert.deepEqual(toolInvocationArtifact(executionRun,99),{procedureIssueNumber:99,statistics:executionRun.lastToolInvocationSummary,toolInvocations:[invocation],submissionAccepted:true});
+assert.deepEqual(toolInvocationArtifact(executionRun,99),{procedureIssueNumber:99,toolInvocations:[invocation],submissionAccepted:true});
 const toolFileRun=structuredClone(executionRun);toolFileRun.state.render=17;
 const toolFileInstruction=JSON.parse(renderIssue(toolFileRun,99).match(/`{3,}json\n([\s\S]*?)\n`{3,}/)[1]).toolInvocationFile;
 assert.equal(toolFileInstruction.path,'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/99-tool-invocations.json');
