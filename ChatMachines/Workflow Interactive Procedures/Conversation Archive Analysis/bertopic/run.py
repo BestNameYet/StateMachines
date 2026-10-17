@@ -213,7 +213,7 @@ def fit(args: argparse.Namespace) -> None:
     model = BERTopic(
         embedding_model=config["embedding_model"],
         min_topic_size=config["min_topic_size"],
-        calculate_probabilities=False,
+        calculate_probabilities=bool(config.get("calculate_probabilities", False)),
         language=config.get("language", "english"),
         verbose=True,
     )
