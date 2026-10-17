@@ -11,7 +11,8 @@ import urllib.parse
 import urllib.request
 
 DEFAULT_MODEL = 'gemini-3.8-flash'
-IMAGE_TYPES = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg'}
+PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
+JPEG_SIGNATURE = b'\xff\xd8\xff'
 
 
 def collect(root, assigned, max_bytes):
@@ -38,13 +39,20 @@ def collect(root, assigned, max_bytes):
         total += len(data)
         if total > max_bytes:
             raise ValueError('Assignment exceeds max_bytes; subdivide it. Nothing was truncated.')
-        suffix = item.suffix.lower()
-        if suffix in IMAGE_TYPES:
+        if data.startswith(PNG_SIGNATURE):
+            mime_type = 'image/png'
+        elif data.startswith(JPEG_SIGNATURE):
+            mime_type = 'image/jpeg'
+        else:
+            mime_type = None
+        if mime_type:
             files.append({'path': rel.as_posix(), 'bytes': len(data),
                           'sha256': hashlib.sha256(data).hexdigest(),
-                          'mime_type': IMAGE_TYPES[suffix],
+                          'mime_type': mime_type,
                           'inline_data': base64.b64encode(data).decode('ascii')})
             continue
+        if item.suffix.lower() in ('.png', '.jpg', '.jpeg'):
+            raise ValueError('Image file does not contain supported PNG or JPEG data: ' + str(rel))
         try:
             text = data.decode('utf-8')
         except UnicodeDecodeError:
