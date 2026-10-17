@@ -3,7 +3,6 @@ const path=require('node:path');
 const {isDeepStrictEqual}=require('node:util');
 const {
   acceptToolInvocationSubmission,
-  appendProcedureReceipt,
   issueNumberForEvent,
   publishCurrent,
   renderIssue,
@@ -13,6 +12,7 @@ const {
   toolInvocationArtifactPath,
   toolInvocationArtifactUrl
 }=require('./issue-workflow.js');
+const {appendProcedureReceipt}=require('./issue-run-trigger.js');
 
 const procedureDirectory='ChatMachines/Workflow Interactive Procedures/AGENTS Procedure';
 function issueNumberFromChangedPath(filePath) {
@@ -75,6 +75,19 @@ async function main() {
     compareFallbackUsed=true;
   }
   console.log(JSON.stringify({event:'push',before:event.before||null,after:event.after||null,payloadPathCount:payloadPaths.length,compareFallbackUsed,submissionPaths}));
+  async function appendBoundProcedureReceipt(record,issueNumber) {
+    if(!record.triggerIdentifier)return;
+    const triggerPath=path.relative(process.env.GITHUB_WORKSPACE,require('./issue-workflow.js').triggerPathForRecord(record)).split(path.sep).join('/');
+    const triggerRoute='/contents/'+encodedPath(triggerPath);
+    const triggerStored=await api('GET',triggerRoute,undefined,true);
+    if(!triggerStored)throw Error('Bound procedure trigger file was not found: '+triggerPath);
+    const trigger=JSON.parse(Buffer.from(triggerStored.content,'base64').toString('utf8'));
+    const updated=appendProcedureReceipt(trigger,record,issueNumber);
+    if(updated) {
+      await api('PUT',triggerRoute,{message:'Append AGENTS Procedure issue '+issueNumber+' receipt to '+record.triggerIdentifier,content:Buffer.from(JSON.stringify(updated,null,2)+'\n').toString('base64'),sha:triggerStored.sha});
+      console.log('Appended receipt for issue #'+issueNumber+' to '+triggerPath+'.');
+    }
+  }
   for(const filePath of submissionPaths) {
     const number=issueNumberFromChangedPath(filePath);
     const issue=await api('GET','/issues/'+number);
@@ -104,7 +117,7 @@ async function main() {
         console.log('Ignoring null toolInvocations for issue #'+number+' because render '+record.state.render+' is not waiting for them.');
         continue;
       }
-      if(isAcceptedReport(inputText)&&isDeepStrictEqual(submitted,record.toolInvocations||[])) { console.log('Ignoring already accepted tool-invocation report for issue #'+number+'.'); continue; }
+      if(isAcceptedReport(inputText)&&isDeepStrictEqual(submitted,record.toolInvocations||[])) { await appendBoundProcedureReceipt(record,number); console.log('Already accepted tool-invocation report for issue #'+number+'; receipt reconciliation complete.'); continue; }
       const newRecords=appendedToolInvocationRecords(submitted,record.toolInvocations||[]);
       acceptToolInvocationSubmission(record,newRecords,process.env.GITHUB_WORKSPACE);
     } catch(error) {
@@ -126,18 +139,10 @@ async function main() {
     if(rendered&&rendered.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
     await saveRecord();
     await publishCurrent(record,number,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord,rendered);
-    if(record.triggerIdentifier) {
-      const triggerPath=path.relative(process.env.GITHUB_WORKSPACE,require('./issue-workflow.js').triggerPathForRecord(record)).split(path.sep).join('/');
-      const triggerRoute='/contents/'+encodedPath(triggerPath);
-      const triggerStored=await api('GET',triggerRoute,undefined,true);
-      if(!triggerStored)throw Error('Bound procedure trigger file was not found: '+triggerPath);
-      const trigger=JSON.parse(Buffer.from(triggerStored.content,'base64').toString('utf8'));
-      const updated=appendProcedureReceipt(trigger,record,number);
-      if(updated)await api('PUT',triggerRoute,{message:'Append AGENTS Procedure issue '+number+' receipt to '+record.triggerIdentifier,content:Buffer.from(JSON.stringify(updated,null,2)+'\n').toString('base64'),sha:triggerStored.sha});
-    }
+    await appendBoundProcedureReceipt(record,number);
     console.log('Validated tool-invocation JSON and advanced issue #'+number+' to render '+record.state.render);
   }
 }
 
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={issueNumberFromChangedPath,changedPathsFromEvent,parseToolInvocationSubmission,appendedToolInvocationRecords,isAcceptedReport};
+module.exports={issueNumberFromChangedPath,changedPathsFromEvent,parseToolInvocationSubmission,appendedToolInvocationRecords,isAcceptedReport,appendProcedureReceipt};
