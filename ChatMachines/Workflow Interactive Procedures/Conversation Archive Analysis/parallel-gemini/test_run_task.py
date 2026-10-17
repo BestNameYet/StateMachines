@@ -36,7 +36,7 @@ class Tests(unittest.TestCase):
 
             def model(prompt, key, model, images=None):
                 seen.update(prompt=prompt, key=key, images=images)
-                return '{"image":"conversation.png","messages":[]}', {'finishReason': 'STOP'}
+                return '{"image":"conversation.png","messages":[],"unreadable_regions":[]}', {'finishReason': 'STOP'}
 
             out = root / 'out'
             result = runner.run(root, 'conversation.png', 'Extract messages and authors', out, request_fn=model)
@@ -46,6 +46,15 @@ class Tests(unittest.TestCase):
             manifest = (out / 'source-manifest.json').read_text()
             self.assertIn('sha256', manifest)
             self.assertNotIn('inline_data', manifest)
+
+    def test_rejects_malformed_image_extraction_json(self):
+        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {'GEMINI_API_KEY': 'test-key'}):
+            root = Path(temp)
+            (root / 'conversation.jpg').write_bytes(b'jpg sample bytes')
+            def model(*args, **kwargs):
+                return 'not json', {'finishReason': 'STOP'}
+            with self.assertRaisesRegex(RuntimeError, 'not valid JSON'):
+                runner.run(root, 'conversation.jpg', 'Extract', root / 'out', request_fn=model)
 
     def test_api_contract_and_incomplete_output(self):
         class Response:
