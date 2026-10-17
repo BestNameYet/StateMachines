@@ -18,6 +18,7 @@ on:
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-render.json'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/validator.js'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/gemini-*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/supervisor-tools*.js'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/gemini-request-template.json'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/render-gemini.js'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/render-instructions.js'
@@ -45,6 +46,7 @@ jobs:
           node interface.test.js
           node gemini-screen.test.js
           node gemini-workflow.test.js
+          node supervisor-tools.test.js
           node issue-workflow.test.js
           node issue-run-trigger.test.js
           node issue-run-tool-invocations.test.js
@@ -118,7 +120,7 @@ jobs:
       (github.event_name == 'issues' && !github.event.issue.pull_request) ||
       (github.event_name == 'issue_comment' && !github.event.issue.pull_request && github.event.comment.user.type != 'Bot')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     concurrency:
       group: agents-procedure-issue-${{ github.event.issue.number }}
       cancel-in-progress: false

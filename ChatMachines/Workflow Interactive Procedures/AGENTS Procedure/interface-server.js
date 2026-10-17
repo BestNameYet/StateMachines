@@ -6,7 +6,7 @@ const {compileTransitionMap,applyValidatedValues} = require('./transitions.js');
 const renderer = require('./render-instructions.js');
 const {inputsFor,validate} = require('./validator.js');
 const {startRun,setExpectedInputs,applyReturn}=require('./issue-workflow.js');
-const {generateGeminiScreen}=require('./gemini-workflow.js');
+const {registerWorker,requestWorkerInstruction,generateGeminiScreen}=require('./gemini-workflow.js');
 const {lastGeminiScreen,renderGeminiScreen}=require('./render-gemini.js');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));
 const map = compileTransitionMap(JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8')));
@@ -22,7 +22,7 @@ function view(session) {
   if(session.geminiStarted) {
     const screen=lastGeminiScreen(session.state);
     entries=[['instruction',renderGeminiScreen(screen)]];
-    screenInputs=screen.expectedInputs;
+    screenInputs=screen.assignments?[{name:'nonce',schema:{type:'string'}},{name:'assignmentId',schema:{type:'string'}},{name:'values',schema:{type:'object',properties:{},required:[],additionalProperties:true}}]:screen.expectedInputs;
   }
   if(!session.state.renderedRequests.includes(session.request)) {
     session.state.renderedRequests.push(session.request);
@@ -37,6 +37,8 @@ function view(session) {
 }
 async function body(req) {let text='';for await(const chunk of req){text+=chunk;if(text.length>2000000)throw Error('Submission too large.');}return JSON.parse(text || '{}');}
 async function handleSubmit(session,data) {
+  if(data.command?.startsWith('register ')){const a=data.command.trim().split(/\s+/);registerWorker(session,a[1],a[2]);return view(session);}
+  if(data.command?.startsWith('next ')){requestWorkerInstruction(session,data.command.slice(5).trim());await generateGeminiScreen(session,async()=>{});return view(session);}
   if(data.command!==undefined) {
     if(!['state','back','retry'].includes(data.command))throw Error('Unknown menu command.');
     if(data.command==='retry'&&session.geminiPending)await generateGeminiScreen(session,async()=>{});

@@ -51,6 +51,7 @@ async function saveGeminiScreen(record, response, saveRecord) {
     throw new Error('renderedScreens must be an array.');
   }
   const screen = screenFromGeminiResponse(response);
+  if(previous.standingInstructions)screen.standingInstructions=previous.standingInstructions;
   const renderedScreens = [...(previous.renderedScreens || []), screen];
   record.state = {...previous, renderedScreens, render: renderedScreens.length - 1};
   try {

@@ -3,8 +3,10 @@ const path = require('node:path');
 const {compileTransitionMap,applyValidatedValues} = require('./transitions.js');
 const {loadScreens,entriesForState} = require('./render-instructions.js');
 const {inputsFor, validate} = require('./validator.js');
-const {lastGeminiScreen,renderGeminiScreen} = require('./render-gemini.js');
-const {generateGeminiScreen,acceptGeminiValues} = require('./gemini-workflow.js');
+const {lastGeminiScreen,renderGeminiScreen,broadcastParts} = require('./render-gemini.js');
+const {registerWorker,requestWorkerInstruction,generateGeminiScreen,acceptGeminiValues} = require('./gemini-workflow.js');
+const {initializeWorkspace,workspaceBase}=require('./supervisor-tools.js');
+const {runGeminiWorkers}=require('./gemini-workers.js');
 const {appendProcedureReceipt} = require('./issue-run-trigger.js');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));
 const map = compileTransitionMap(JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8')));
@@ -66,6 +68,7 @@ function startRun(issue) {
   const result=map(state);
   const identifier=triggerIdentifier(issue);
   const record={state:result==='halt'?state:result,done:result==='halt',request:1,lastCommentId:0,newFiles:[],history:[],toolInvocations:[],...(identifier?{triggerIdentifier:identifier}:{})};
+  record.state.workers=require('./supervisor-tools.js').workers.map(w=>({...w}));
   record.state.renderedRequests=[];
   record.state.expectedInputs=null;
   return record;
@@ -86,7 +89,15 @@ function restoreCommunicationState(record,comments,issueNumber) {
 }
 async function publishCurrent(record,issueNumber,post,save,body) {
   if(record.state.renderedRequests.includes(record.request))return false;
-  await post(body ?? renderIssue(record,issueNumber));
+  const screen=record.geminiStarted&&!record.done&&record.view!=='state'?lastGeminiScreen(record.state):null;
+  const parts=(screen?.assignments||screen?.standingInstructions)?broadcastParts(screen).map((instruction,index)=>renderIssue(record,issueNumber,{instruction,part:index})): [body ?? renderIssue(record,issueNumber)];
+  if(parts.some(p=>p.length>65000))throw Error('A complete screen exceeds 65,000 characters. Shorten the assignment or shared rules.');
+  record.publishedParts??={};
+  for(let i=0;i<parts.length;i++){
+    const key=record.request+':'+i;
+    if(record.publishedParts[key])continue;
+    await post(parts[i]);record.publishedParts[key]=true;if(screen?.assignments||screen?.standingInstructions)await save();
+  }
   record.state.renderedRequests.push(record.request);
   if(record.state.procedureMode==='gemini'&&!record.geminiStarted&&record.state.render===1) {
     record.state.renderedScreens.push({instruction:Object.fromEntries(screens[0]).instruction,expectedInputs:inputsFor(screens[0])});
@@ -192,7 +203,8 @@ function renderIssue(record,issueNumber,options={}) {
   const instruction=Object.fromEntries(entries.map(([key,value])=>key==='toolInvocationReport'&&reportUrl
     ? [key,{procedureIssueNumber:issueNumber,recordCount:(record.toolInvocations||[]).length,file:reportUrl}]
     : [key,value]));
-  const menu='\n\n### Menu\nType `state` to view the saved state, or `back` to return to this instruction. You may submit the current expected inputs from either view.';
+  const workerMenu=record.geminiStarted?'\nWorker IDs: '+(record.state.workers||require('./supervisor-tools.js').workers).map(w=>w.id).join(', ')+'. First use `register <nonce> <chatgpt|gemini>`. Include `nonce` in assignment return JSON. Type `next <nonce>` to request another instruction only when that worker has no pending expected returns.':'';
+  const menu='\n\n### Menu\nType `state` to view the saved state, or `back` to return to this instruction. You may submit the current expected inputs from either view.'+workerMenu;
   const communication=[
     '### Communication instructions',
     'Submit the current instruction\'s return as {$variableName}: JSON value. For multiple Gemini inputs, submit one JSON object with their names as keys. Normal steps with no captured return accept {}.',
@@ -212,9 +224,9 @@ function renderIssue(record,issueNumber,options={}) {
   const content=record.view==='state'
     ? '## State\n\n'+fence(record.state)
     : record.geminiStarted
-      ? renderGeminiScreen(lastGeminiScreen(record.state))
+      ? (options.instruction??renderGeminiScreen(lastGeminiScreen(record.state)))
       : fence(instruction);
-  return marker+'\n## Render '+record.state.render+'\n\n'+communication+summary+'\n\n'+content+reportLink+menu;
+  return marker+(options.part===undefined?'':'\n<!-- broadcast-part:'+options.part+' -->')+'\n## Render '+record.state.render+'\n\n'+communication+summary+'\n\n'+content+reportLink+menu;
 }
 function renderToolInvocationSummary(summary) {
   const format=object=>Object.entries(object||{}).map(([name,count])=>'`'+name+'`: '+count).join(', ')||'none';
@@ -252,6 +264,14 @@ async function main() {
   // Title edits enforce naming only; they do not advance or initialize a run.
   if(event.action==='edited')return;
   const record=stored?JSON.parse(Buffer.from(stored.content,'base64').toString('utf8')):startRun(issue);
+  record.issueNumber=number;
+  const workspacePath=workspaceBase+number;
+  const fileRoute=p=>'/contents/'+(workspacePath+'/'+p).split('/').map(encodeURIComponent).join('/');
+  const workspaceStorage={
+    read:async p=>{const f=await api('GET',fileRoute(p),undefined,true);if(!f)return null;if(f.type&&f.type!=='file')throw Error('Not a regular file.');return Buffer.from(f.content,'base64').toString('utf8');},
+    write:async(p,text)=>{const f=await api('GET',fileRoute(p),undefined,true);await api('PUT',fileRoute(p),{message:'Update issue '+number+' workspace: '+p,content:Buffer.from(text).toString('base64'),...(f?{sha:f.sha}:{})});},
+    list:async()=>{const files=[];async function walk(p=''){const entries=await api('GET',fileRoute(p).replace(/\/$/,''),undefined,true);for(const e of entries||[]){const name=p?p+'/'+e.name:e.name;if(e.type==='dir')await walk(name);else if(e.type==='file')files.push(name);}}await walk();return files;}
+  };
   const outbox=[];
   let navigationOnly=false;
   let initializeToolInvocationFile=false;
@@ -262,6 +282,17 @@ async function main() {
     if(comment.id<=record.lastCommentId||comment.user.type==='Bot')continue;
     if(record.done){record.lastCommentId=comment.id;continue;}
     const command=comment.body.trim().toLowerCase();
+    if(command.startsWith('register ')){
+      const marker='<!-- agents-procedure:'+number+':worker-register:'+comment.id+' -->';
+      try{const args=comment.body.trim().split(/\s+/);if(args.length!==3)throw Error('Use register <nonce> <chatgpt|gemini>.');if(!record.geminiStarted)throw Error('Worker registration requires Gemini mode.');const b=registerWorker(record,args[1],args[2]);outbox.push({marker,body:marker+'\nWorker registered: `'+b.workerId+'`. Use nonce `'+b.nonce+'` on returns and `next '+b.nonce+'` when no expected returns are pending.'});}catch(error){outbox.push({marker,body:marker+'\n'+error.message});}
+      navigationOnly=true;record.lastCommentId=comment.id;continue;
+    }
+    if(command.startsWith('next ')){
+      const workerId=comment.body.trim().slice(5).trim();
+      const marker='<!-- agents-procedure:'+number+':worker-next:'+comment.id+' -->';
+      try{requestWorkerInstruction(record,workerId);navigationOnly=false;}catch(error){outbox.push({marker,body:marker+'\n'+error.message});}
+      record.lastCommentId=comment.id;continue;
+    }
     if(['state','back','retry'].includes(command)) {
       navigationOnly=command!=='retry';
       if(command!=='retry') {
@@ -290,6 +321,8 @@ async function main() {
   // Persist the accepted return and buffered tool calls before publishing or linking the report.
   if(!record.done)setExpectedInputs(record);
   await saveRecord();
+  await initializeWorkspace(record,workspaceStorage);
+  await saveRecord();
   if(initializeToolInvocationFile) {
     const inputPath=toolInvocationArtifactPath(number);
     const relative=path.relative(process.env.GITHUB_WORKSPACE,inputPath).split(path.sep).join('/');
@@ -307,7 +340,7 @@ async function main() {
   }
   let geminiFailed=record.geminiPending&&navigationOnly;
   if(record.geminiPending&&!navigationOnly){
-    try {await generateGeminiScreen(record,saveRecord);}
+    try {await generateGeminiScreen(record,saveRecord,{storage:workspaceStorage});}
     catch(error){
       geminiFailed=true;
       const marker='<!-- agents-procedure:'+number+':gemini-error:'+record.request+' -->';
@@ -326,10 +359,22 @@ async function main() {
     reportUrl=toolInvocationArtifactUrl(repository,number);
   }
   const rendered=geminiFailed||record.state.renderedRequests.includes(record.request)?null:renderIssue(record,number,{toolInvocationReportUrl:reportUrl});
-  for(const body of [rendered,...outbox.map(item=>item.body)])if(body && body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
+  for(const body of [(record.geminiStarted&&!record.done&&(lastGeminiScreen(record.state).assignments||lastGeminiScreen(record.state).standingInstructions))?null:rendered,...outbox.map(item=>item.body)])if(body && body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
   await saveRecord();
   for(const item of outbox)if(!comments.some(c=>c.body.includes(item.marker)))await api('POST','/issues/'+number+'/comments',{body:item.body});
   if(!geminiFailed)await publishCurrent(record,number,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord,rendered);
+  if(!geminiFailed&&!navigationOnly&&record.geminiStarted&&!record.done){
+    try {
+      for(let group=0;group<4;group++){
+        await runGeminiWorkers(record,workspaceStorage,saveRecord);
+        if(!record.geminiPending)break;
+        await generateGeminiScreen(record,saveRecord,{storage:workspaceStorage});
+        await publishCurrent(record,number,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord);
+        if(record.done)break;
+        if(group===3)await api('POST','/issues/'+number+'/comments',{body:'The current broadcast is saved. Type `retry` to continue worker execution.'});
+      }
+    } catch(error){await saveRecord();await api('POST','/issues/'+number+'/comments',{body:error.message+'\n\nSaved results are preserved. Type `retry` to continue.'});}
+  }
   if(process.env.GITHUB_EVENT_NAME!=='push' && record.triggerIdentifier) {
     const triggerRelative=path.relative(process.env.GITHUB_WORKSPACE,triggerPathForRecord(record)).split(path.sep).join('/');
     const triggerRoute='/contents/'+triggerRelative.split('/').map(encodeURIComponent).join('/');

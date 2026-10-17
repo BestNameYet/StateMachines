@@ -3,6 +3,7 @@ const path = require('node:path');
 const {screenFromGeminiResponse, saveGeminiScreen} = require('./gemini-screen.js');
 const {lastGeminiScreen} = require('./render-gemini.js');
 const {validate} = require('./validator.js');
+const {workers,commandMenu,validateCommands,executeCommands,initializeWorkspace,localStorage}=require('./supervisor-tools.js');
 
 // Deliberately accept only the schema vocabulary enforced by the workflow.
 function validateInputSchema(schema) {
@@ -66,9 +67,30 @@ function validateGeminiResponse(response) {
   const message=typeof response==='string'?JSON.parse(response):response;
   if(!message||typeof message!=='object'||Array.isArray(message))throw Error('Gemini response must be an object.');
   const control=validateControl(message.control);
-  const keys=control.mode==='completion'?['control']:['control','instruction','expectedInputs'];
-  if(Object.keys(message).length!==keys.length||keys.some(k=>!Object.hasOwn(message,k)))throw Error(control.mode+' response must contain exactly '+keys.join(', ')+'.');
-  return {control,screen:control.mode==='completion'?null:validateGeminiScreen({instruction:message.instruction,expectedInputs:message.expectedInputs})};
+  if(control.mode==='completion') {
+    if(Object.keys(message).length!==1)throw Error('completion response must contain exactly control.');
+    return {control,screen:null,commands:[]};
+  }
+  const allowed=['control','commands','instruction','expectedInputs','assignments'];
+  if(Object.keys(message).some(k=>!allowed.includes(k)))throw Error('Unexpected response field.');
+  const commands=message.commands===undefined?[]:validateCommands(message.commands);
+  let screen=null;
+  if(message.assignments!==undefined){
+    if(message.instruction!==undefined||message.expectedInputs!==undefined)throw Error('Use assignments or a single screen, not both.');
+    if(!Array.isArray(message.assignments)||!message.assignments.length||message.assignments.length>4)throw Error('Provide one to four assignments.');
+    const ids=new Set();let chatgpt=0,gemini=0;
+    const assignments=message.assignments.map(a=>{
+      if(!a||Object.keys(a).filter(k=>k!=='workerId').sort().join(',')!=='expectedInputs,id,instruction,worker'||typeof a.id!=='string'||!/^[A-Za-z0-9_-]+$/.test(a.id)||ids.has(a.id))throw Error('Assignment needs a unique id, worker, instruction, expectedInputs.');
+      ids.add(a.id);if(a.worker==='chatgpt')chatgpt++;else if(a.worker==='gemini')gemini++;else throw Error('worker must be chatgpt or gemini.');
+      if(a.workerId!==undefined&&!workers.some(w=>w.id===a.workerId&&w.type===a.worker))throw Error('Invalid workerId.');
+      return {id:a.id,worker:a.worker,workerId:a.workerId||(a.worker==='chatgpt'?'chatgpt-1':'gemini-'+gemini),...validateGeminiScreen({instruction:a.instruction,expectedInputs:a.expectedInputs})};
+    });
+    if(new Set(assignments.map(a=>a.workerId)).size!==assignments.length)throw Error('A worker can have only one assignment per broadcast.');
+    if(chatgpt>1||gemini>3)throw Error('At most one ChatGPT and three Gemini workers.');
+    screen={instruction:'Worker assignments',expectedInputs:[],assignments};
+  }else if(message.instruction!==undefined||message.expectedInputs!==undefined)screen=validateGeminiScreen({instruction:message.instruction,expectedInputs:message.expectedInputs});
+  if(!screen&&!commands.length)throw Error('Continue requires commands or a screen.');
+  return {control,screen,commands};
 }
 
 function buildGeminiRequest(state) {
@@ -77,6 +99,7 @@ function buildGeminiRequest(state) {
   const request = JSON.parse(fs.readFileSync(path.join(__dirname,'gemini-request-template.json'),'utf8'));
   // Send the complete workflow-owned state, without substituting into old screens.
   request.state = structuredClone(state);
+  request.commandMenu=structuredClone(commandMenu);
   request.state.controls ??= [];
   if(!Array.isArray(request.state.controls))throw Error('Control history must be an array.');
   return request;
@@ -98,23 +121,64 @@ async function callGemini(request, {fetchImpl=fetch, apiKey=process.env.GEMINI_A
   return text;
 }
 
-async function generateGeminiScreen(record, saveRecord, {generate=callGemini,maxAttempts=3}={}) {
+async function generateGeminiScreen(record, saveRecord, {generate=callGemini,maxAttempts=3,storage,maxExchanges=12}={}) {
   if(record.done)return null;
   if (!record.geminiPending) return lastGeminiScreen(record.state);
+  storage??=localStorage(path.join(__dirname,'issue-workspaces',String(record.issueNumber||record.id||'local')));
+  await initializeWorkspace(record,storage);
+  if(record.pendingSupervisorResponse){
+    const pending=record.pendingSupervisorResponse;
+    await executeCommands(record,pending.commands,storage,saveRecord);
+    const recoveredState=structuredClone(record.state);
+    delete record.pendingSupervisorResponse;
+    try {
+    if(pending.screen){
+      record.geminiPending=false;
+      if(pending.screen.assignments){const screen={...pending.screen,standingInstructions:record.state.standingInstructions||'Follow the shared objective and your assignment.'};record.state={...record.state,renderedScreens:[...record.state.renderedScreens,screen],render:record.state.renderedScreens.length};await saveRecord();return screen;}
+      return saveGeminiScreen(record,pending.screen,saveRecord);
+    }
+    await saveRecord();
+    }catch(error){record.state=recoveredState;record.pendingSupervisorResponse=pending;record.geminiPending=true;throw error;}
+  }
+  // A saved command-only response can resume without reissuing its commands.
+  for(let exchange=0;exchange<maxExchanges;exchange++) {
   const request = buildGeminiRequest(record.state);
   for (let attempt=1; attempt<=maxAttempts; attempt++) {
     const response = await generate(structuredClone(request));
     let assessment;
-    try {assessment = validateGeminiResponse(response);}
+    try {assessment = validateGeminiResponse(response);
+      if(record.state.workerInstructionRequests?.some(r=>r.request===record.request)){
+        const old=lastGeminiScreen(record.state);
+        const pending=(old.assignments||[]).filter(a=>!(record.state.assignmentReturns||[]).some(r=>r.assignmentId===a.id));
+        if(pending.length){
+          if(assessment.control.mode==='completion')throw Error('Workers still have pending expected returns.');
+          if(assessment.screen&&!assessment.screen.assignments)throw Error('Keep outstanding worker assignments; use assignments for new work.');
+          if(assessment.screen){
+            const fresh=assessment.screen.assignments;
+            if(fresh.some(a=>pending.some(p=>p.workerId===a.workerId)))throw Error('Cannot replace a worker with pending expected returns.');
+            assessment.screen.assignments=[...pending,...fresh];
+            if(new Set(assessment.screen.assignments.map(a=>a.id)).size!==assessment.screen.assignments.length)throw Error('Assignment ids must be unique.');
+            if(assessment.screen.assignments.length>4)throw Error('Too many worker assignments.');
+          }
+        }
+      }
+      if(assessment.screen?.assignments){
+        const oldIds=new Set((record.state.assignmentReturns||[]).map(r=>r.assignmentId));
+        if(assessment.screen.assignments.some(a=>oldIds.has(a.id)))throw Error('Assignment ids must be unique across the run.');
+      }
+    }
     catch (error) {
       if (attempt===maxAttempts) throw Error('Gemini response format rejected: '+error.message);
-      request.correction = {previousResponse:response,validationError:error.message,instruction:'Return a corrected response with a fresh control assessment. Continue mode requires instruction and expectedInputs; completion mode contains only control. Preserve the task and supplied state.'};
+      request.correction = {previousResponse:response,validationError:error.message,instruction:'Return a corrected response with a fresh control assessment. Continue mode requires commands, assignments, or instruction and expectedInputs; completion mode contains only control. Preserve the task and supplied state.'};
       continue;
     }
+    let durableState;
     const previousState=record.state,previousDone=record.done,previousPending=record.geminiPending;
-    const noProgressTurns=(previousState.controls||[]).length===0?0:assessment.control.progress.reduced?0:(previousState.noProgressTurns||0)+1;
+    const noProgressTurns=(previousState.controls||[]).length===0?0:assessment.control.progress.reduced?0:record.geminiAssessmentRequest===record.request?(previousState.noProgressTurns||0):(previousState.noProgressTurns||0)+1;
     record.state={...previousState,noProgressTurns,controls:[...(previousState.controls||[]),assessment.control]};
     record.geminiPending=false;
+    const previousAssessmentRequest=record.geminiAssessmentRequest;
+    record.geminiAssessmentRequest=record.request;
     try {
       if(assessment.control.mode==='completion'||noProgressTurns>=3) {
         record.state.stopReason=assessment.control.mode==='completion'?'completed':'stalled';
@@ -122,14 +186,33 @@ async function generateGeminiScreen(record, saveRecord, {generate=callGemini,max
         await saveRecord();
         return null;
       }
+      // Save the command intent before executing side effects.
+      if(assessment.commands.length){
+        record.geminiPending=true;
+        record.pendingSupervisorResponse=assessment;
+        await saveRecord();
+        await executeCommands(record,assessment.commands,storage,saveRecord);
+        durableState=structuredClone(record.state);
+        delete record.pendingSupervisorResponse;
+      }
+      if(!assessment.screen){record.geminiPending=true;await saveRecord();break;}
+      record.geminiPending=false;
+      if(assessment.screen.assignments){
+        const screen={...assessment.screen,standingInstructions:record.state.standingInstructions||'Follow the shared objective and your assignment.'};
+        record.state={...record.state,renderedScreens:[...record.state.renderedScreens,screen],render:record.state.renderedScreens.length};
+        await saveRecord();return screen;
+      }
       return await saveGeminiScreen(record,assessment.screen,saveRecord);
     } catch(error) {
+      if(assessment.commands.length){if(durableState)record.state=durableState;record.pendingSupervisorResponse=assessment;record.geminiPending=true;throw error;}
       record.state=previousState;record.geminiPending=previousPending;
+      record.geminiAssessmentRequest=previousAssessmentRequest;
       if(previousDone===undefined)delete record.done;else record.done=previousDone;
       throw error;
     }
   }
-  throw Error('Gemini response was not generated.');
+  }
+  throw Error('Supervisor exchange limit reached. Saved state is preserved; type retry to continue.');
 }
 
 function acceptGeminiValues(record, values, fileRoot) {
@@ -137,6 +220,27 @@ function acceptGeminiValues(record, values, fileRoot) {
   if (record.geminiPending) throw Error('The previous return is saved. Type retry to request the next Gemini screen; do not repeat the work.');
   if (!values || typeof values!=='object' || Array.isArray(values)) throw Error('Return a JSON object of variable names and values.');
   const screen = lastGeminiScreen(record.state);
+  if(screen.assignments){
+    if(Object.keys(values).filter(k=>k!=='nonce').sort().join(',')!=='assignmentId,values')throw Error('Return {"assignmentId":"id","values":{...}}.');
+    const assignment=screen.assignments.find(a=>a.id===values.assignmentId);
+    if(!assignment)throw Error('Unknown assignment.');
+    const identityDraft=structuredClone(record);
+    registerWorker(identityDraft,values.nonce,assignment.worker,assignment.workerId);
+    const binding=record.state.workerBindings?.find(b=>b.workerId===assignment.workerId);
+    if(binding&&values.nonce!==binding.nonce)throw Error('Worker nonce does not match this assignment.');
+    if((record.state.assignmentReturns||[]).some(r=>r.assignmentId===assignment.id))throw Error('Assignment return already accepted.');
+    const returned=values.values;
+    if(!returned||typeof returned!=='object'||Array.isArray(returned)||Object.keys(returned).length!==assignment.expectedInputs.length||assignment.expectedInputs.some(i=>!Object.hasOwn(returned,i.name)))throw Error('Returned keys must match this assignment.');
+    for(const i of assignment.expectedInputs)validate(returned[i.name],i.schema,i.name,{root:fileRoot,newFiles:record.newFiles});
+    registerWorker(record,values.nonce,assignment.worker,assignment.workerId);
+    record.state.assignmentReturns??=[];
+    record.state.assignmentReturns.push({render:record.state.render,assignmentId:assignment.id,worker:assignment.worker,values:structuredClone(returned)});
+    for(const i of assignment.expectedInputs)record.state.variables.push({name:i.name,value:structuredClone(returned[i.name]),assignmentId:assignment.id});
+    record.history.push({request:record.request,render:record.state.render,assignmentId:assignment.id,values:structuredClone(returned)});
+    const all=screen.assignments.every(a=>record.state.assignmentReturns.some(r=>r.assignmentId===a.id));
+    if(all){record.request++;record.geminiPending=true;}
+    record.view='instruction';return;
+  }
   const names = screen.expectedInputs.map(input=>input.name);
   if (Object.keys(values).length!==names.length || Object.keys(values).some(name=>!names.includes(name))) throw Error('Returned keys must exactly match: '+names.join(', '));
   for (const input of screen.expectedInputs) {
@@ -151,4 +255,32 @@ function acceptGeminiValues(record, values, fileRoot) {
   record.view = 'instruction';
 }
 
-module.exports = {validateControl,validateGeminiResponse,validateInputSchema,validateGeminiScreen,buildGeminiRequest,callGemini,generateGeminiScreen,acceptGeminiValues};
+function registerWorker(record,nonce,type,workerId){
+ if(typeof nonce!=='string'||!/^[A-Za-z0-9_-]{1,128}$/.test(nonce))throw Error('Worker nonce must be 1–128 letters, digits, underscores or hyphens.');
+ if(!['chatgpt','gemini'].includes(type))throw Error('Worker type must be chatgpt or gemini.');
+ const bindings=record.state.workerBindings||[];
+ const prior=bindings.find(b=>b.nonce===nonce);
+ if(prior){if(prior.type!==type||(workerId&&prior.workerId!==workerId))throw Error('Nonce is already bound to a different worker.');return prior;}
+ const slot=(record.state.workers||workers).find(w=>w.type===type&&(!workerId||w.id===workerId)&&!bindings.some(b=>b.workerId===w.id));
+ if(!slot)throw Error('No unregistered worker slot is available for this type.');
+ const binding={nonce,workerId:slot.id,type};
+ record.state.workerBindings??=[];record.state.workerBindings.push(binding);return binding;
+}
+function requestWorkerInstruction(record,workerId){
+ workerId=record.state.workerBindings?.find(b=>b.nonce===workerId)?.workerId||workerId;
+ if(record.done)throw Error('This run has finished.');
+ if(!record.geminiStarted)throw Error('Worker commands require Gemini mode.');
+ const worker=(record.state.workers||workers).find(w=>w.id===workerId);
+ if(!worker)throw Error('Unknown worker ID.');
+ if(record.geminiPending)throw Error('A supervisor request is already pending. Type retry.');
+ const screen=lastGeminiScreen(record.state);
+ const pending=(screen.assignments||[]).some(a=>a.workerId===workerId&&!(record.state.assignmentReturns||[]).some(r=>r.assignmentId===a.id));
+ if(pending)throw Error('Submit this worker’s pending expected returns before requesting another instruction.');
+ if(!screen.assignments&&screen.expectedInputs.length)throw Error('Current screen still has pending expected returns.');
+ record.request++;
+ record.state.workerInstructionRequests??=[];
+ record.state.workerInstructionRequests.push({workerId,request:record.request,message:'This worker has no pending expected returns and requests its next instruction.'});
+ record.geminiPending=true;record.view='instruction';
+}
+
+module.exports = {registerWorker,requestWorkerInstruction,validateControl,validateGeminiResponse,validateInputSchema,validateGeminiScreen,buildGeminiRequest,callGemini,generateGeminiScreen,acceptGeminiValues};

@@ -37,7 +37,7 @@ The new initial screen uses render address 24, followed by existing render 1, so
 
 Before sending, populate `verbatimUserPrompt` with the exact captured prompt, `renderedScreens` with every previously published screen in chronological order and its expected-input definitions, and `variables` with an array of `{name, value}` entries appended in submission order, including the latest accepted submission. Variables are not predefined. The last entry for a repeated name contains its latest accepted value. Preserve the screens verbatim rather than substituting values into their text. The null prompt and empty containers are template placeholders. There is no separate expected-variable list or duplicated latest-submission envelope.
 
-Gemini returns `control` on every call. Continue responses also include the `{instruction, expectedInputs}` screen pair handled by `gemini-screen.js`; completion responses contain only `control`. `gemini-workflow.js` fills this template with the saved state, serializes it into a user-role message, and calls generateContent. A malformed response is sent back with its validation error for correction, up to three response attempts. Only validated responses are saved; continue screens require nonempty expected inputs and supported schemas.
+Gemini returns `control` on every call. Continue responses may include commands, an `{instruction, expectedInputs}` screen, or worker assignments; completion responses contain only `control`. `gemini-workflow.js` fills this template with the saved state, serializes it into a user-role message, and calls generateContent. A malformed response is sent back with its validation error for correction, up to three response attempts. Only validated responses are saved; continue screens require nonempty expected inputs and supported schemas.
 
 ### Stored Gemini screens
 
@@ -51,7 +51,7 @@ Every active issue screen includes a command menu. Type `state` to have the work
 
 Gemini instructions use `{$variableName}`. Submit a single return as `{$variableName}: JSON value`, or submit multiple returns as a JSON object with bare names as keys, for example `{"total":60,"confirmed":true}`. The existing `${variableName}: value` spelling remains accepted. The workflow checks exactly the requested keys and validates their types, object fields, array contents, and allowed values. It rejects unsupported schema keywords rather than pretending to enforce them. An invalid submission does not update variables, advance the request, or call Gemini. Accepted values are appended to the variables array before the next API call. A repeated name preserves the earlier entry and appends its latest value.
 
-The screen array stores the mode-choice and prompt-capture instructions followed by valid generated objects. The last object supplies the active instruction and expected inputs. Publication tracking continues to use the existing request receipts; saving a generated object does not claim that its comment was published successfully. `state`/`back` display posts do not append a new Gemini instruction to that array.
+The screen array stores the mode-choice and prompt-capture instructions followed by valid generated screen or assignment-broadcast objects. Command-only exchanges do not append screens. The last object supplies the active instruction and expected inputs. Publication tracking continues to use the existing request receipts; saving a generated object does not claim that its comment was published successfully. `state`/`back` display posts do not append a new Gemini instruction to that array.
 
 Run `node gemini-screen.test.js` and `node gemini-workflow.test.js` for object storage and the mocked end-to-end issue/API cycle. Source pushes also run a live API check when Gemini generation sources change and the secret is available. That check generates, validates, saves, and renders one screen, submits the computed integer product, then requires a completion assessment with no additional screen; its log distinguishes live calls from a skipped check. The live check does not create issues or perform user file tasks.
 
@@ -61,7 +61,7 @@ Every Gemini call receives the updated state and independently materializes a ne
 
 The workflow appends every valid assessment to `state.controls` in chronological order and includes that history in later requests. There is no separate current-control field. Gemini recalculates rather than reusing the last assessment. Controls are not included in instruction comments; they are visible through the explicit state view.
 
-A continue response must have an identified gap and a screen aimed at reducing it. A completion response must have both gap arrays empty and contains only `control`: no instruction, expected inputs, or extra screen. The workflow persists the assessment, marks the run done, posts the existing completion notice, and closes the issue while preserving its records. Format validation enforces structure and consistency of mode/gaps; Gemini makes the semantic judgment about whether outcome and process are satisfied. A failed response or save does not append a control or discard earlier history.
+A continue response must have an identified gap and commands or a screen aimed at reducing it. A completion response must have both gap arrays empty and contains only `control`: no instruction, expected inputs, or extra screen. The workflow persists the assessment, marks the run done, posts the existing completion notice, and closes the issue while preserving its records. Format validation enforces structure and consistency of mode/gaps; Gemini makes the semantic judgment about whether outcome and process are satisfied. A failed response or save does not append a control or discard earlier history.
 
 ### Three-turn stall limit
 
@@ -196,3 +196,62 @@ When `exampleMatch` returns false, the issue runner creates `issue-runs/<issue-n
 
 
 
+
+## Supervisor workspace and commands
+
+Each procedure issue gets a persistent repository folder at `issue-workspaces/<issue-number>/` beneath this directory, initialized with `manifest.json`. The issue number binds the workspace; the workflow uses authenticated GitHub Contents operations rather than depending on its checkout staying current. The supervisor can read and write that folder and every subfolder. Workers place full created or modified files there. Changes to original source paths outside the workspace are not implicitly applied.
+
+Every supervisor request contains the entire instruction template, original objective, complete current state, and `commandMenu`. Each menu entry describes its arguments and returned information. State includes workspace location, chronological command requests/results, saved variables, screen history, controls, and assignment returns. File paths in commands are relative to the issue workspace. Absolute paths, traversal, symlinks in the local adapter, and direct replacement of the managed manifest are rejected.
+
+Commands are JSON objects in the optional `commands` array:
+
+- `{"name":"view_inventory"}` recursively returns file paths and manifest descriptions. Files created outside the write command appear with a blank description until their manifest entry is supplied.
+- `{"name":"read_files","paths":["rules.md","src/task.js"]}` returns contents or per-file not-found errors.
+- `{"name":"write_files","files":[{"path":"rules.md","description":"Worker rules","content":"Full contents"}]}` creates or replaces UTF-8 files and updates their descriptions. JavaScript source can be saved; writing it does not execute it.
+- `{"name":"set_standing_instructions","instruction":"Full shared rules"}` replaces the rules that accompany every subsequent rendered instruction or assignment broadcast.
+
+A continue response can contain **commands only**. Omit all screen fields; do not supply a blank instruction. The workflow saves command intent, executes commands, records their results, and calls Gemini again with the full updated package and menu. The last screen remains unchanged. Commands may also accompany a screen: commands execute first, then the supplied screen is saved and published. To make a screen decision using command results, request commands without a screen first. Failed commands return an error in the command result. Interrupted command batches can resume using saved command receipts. A request permits up to 12 internal exchanges before pausing with `retry`; this is a resumable runtime bound, not semantic completion or a stalled outcome. Internal exchanges do not add operator turns to the three-turn stall counter.
+
+## Worker broadcasts
+
+Instead of a single instruction/expectedInputs pair, the supervisor can return:
+
+```json
+{
+  "control": "the same required control object, not this placeholder",
+  "assignments": [
+    {
+      "id": "worker-one",
+      "worker": "chatgpt",
+      "instruction": "Calculate twelve times five. Return the product as {$total}.",
+      "expectedInputs": [{"name":"total","schema":{"type":"integer"}}]
+    }
+  ]
+}
+```
+
+Use one to four assignments, at most one `chatgpt` and three `gemini`. IDs are unique within the broadcast. Every assignment has its own nonempty expected inputs and uses the same description-first return instructions and supported schema vocabulary. Variable names may repeat between workers; assignment IDs keep their returns separate.
+
+The workflow saves the broadcast as one serializable screen object containing assignments and the standing-instruction snapshot. Its renderer publishes up to three successive comments:
+
+1. **A:** full standing instructions and shared work rules.
+2. **B:** the first two assignments, stacked vertically.
+3. **C:** the remaining one or two assignments, when present.
+
+Each complete comment, including the communication wrapper, must fit within 65,000 characters. Oversized comments fail before any part is posted; content is never silently truncated. Each part has its own saved publication receipt, so retrying a partially published broadcast resumes the remaining parts. The broadcast's inputs become available only after all parts are published. As with existing comment receipts, a post that succeeds before its receipt save fails can be duplicated on recovery.
+
+Workers choose a nonce at the beginning and keep using it. Return `{"nonce":"my-worker-nonce","assignmentId":"worker-one","values":{"total":60}}`. The first valid return can register the nonce, or the worker can first type `register my-worker-nonce chatgpt`. Later returns must use that same nonce, bound to the same worker ID. The workflow validates only that assignment's expected keys and schemas. Accepted returns are stored independently, and variables carry their assignment ID. Duplicate accepted returns are rejected. The supervisor is called again after all assignments return, with the full updated state. No worker edits the issue screen directly and no separate screen-write queue is needed.
+
+`gemini-workers.js` dispatches up to three Gemini assignments concurrently after publication. Each receives the standing instructions, its assignment/expected inputs, complete saved state, and current workspace files. It returns exactly `{nonce, values, files}`; files is an array of `{path, description, content}`, or empty. The coordinator validates results, saves response receipts, writes files through the workspace command implementation, and applies returns serially. Failed workers can be retried without repeating accepted workers. Workers generate text/source; no arbitrary JavaScript execution tool is provided. The ChatGPT assignment is performed by the connected operator using the issue instructions and submitted through the ordinary issue reply. The runner processes up to four successive all-Gemini broadcasts in one event, then requests `retry` to continue. A mixed broadcast waits for its ChatGPT return.
+
+The HTML adapter displays broadcasts together and exposes assignmentId/values inputs. Its workspace and session behavior remain local; automatic Gemini worker dispatch is implemented in the issue runner.
+
+Run `node supervisor-tools.test.js` for command-only full-state replay, inventory/descriptions, workspace isolation, concurrent Gemini worker dispatch, independent returns, unchanged-screen behavior, and recovery after partial three-comment publication. These tests use mocked model calls; they do not prove an external issue run or execution of generated source.
+
+### Request another worker instruction
+
+At initialization, state assigns stable worker IDs: `chatgpt-1`, `gemini-1`, `gemini-2`, and `gemini-3`. Broadcast assignments can explicitly supply `workerId`; otherwise it is assigned by type and slot. Each worker can hold only one active assignment, and assignment IDs must be unique across a run.
+
+The worker menu includes `next <workerId>`, for example `next chatgpt-1`. The workflow rejects this command if that worker has pending expected returns, if a supervisor call is already pending, or if the ID is unknown. Otherwise it records the identified worker’s request in `state.workerInstructionRequests` and sends Gemini the complete current package. Other workers’ unfinished assignments are carried forward into the next broadcast with their expected inputs intact. A worker request does not fabricate an empty return or complete an assignment.
+
+The worker nonce is an input chosen by the worker and retained across all of its responses in that issue. `register <nonce> <chatgpt|gemini>` explicitly registers before work; registration also occurs on the first valid assignment return. A nonce cannot be reused for a different worker or type, and a registered worker cannot silently change its nonce. Gemini workers choose a nonce on their first API response and receive that identity on subsequent assignments. Use `next <nonce>` for the next-instruction command. Nonces associate returns; they are not authentication credentials.
