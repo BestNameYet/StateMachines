@@ -1,6 +1,6 @@
 /**
- * Convert Gemini's JSON message into the entry-pair format used by loadScreens()
- * and consumed by render(), renderScreen(), and entriesForState().
+ * Convert Gemini's JSON message into a JSON-serializable screen object.
+ * The same object is stored in the run and consumed by the renderer.
  *
  * Input: { instruction: string, expectedInputs: [{ name: string, schema: object }] }
  * Expected inputs are supplied by Gemini, never inferred from instruction text.
@@ -31,10 +31,35 @@ function screenFromGeminiResponse(response) {
     if (names.has(input.name)) throw new Error('Duplicate expected input: ' + input.name);
     names.add(input.name);
   }
-  return [
-    ['instruction', message.instruction],
-    ['expectedInputs', structuredClone(message.expectedInputs)]
-  ];
+  return {
+    instruction: message.instruction,
+    expectedInputs: structuredClone(message.expectedInputs)
+  };
 }
 
-module.exports = { screenFromGeminiResponse };
+/** Save a generated screen through the caller's existing run-record saver.
+ * Its zero-based array position is the render address; no address is stored in
+ * the screen itself. Publication remains the caller's responsibility.
+ */
+async function saveGeminiScreen(record, response, saveRecord) {
+  if (record?.state?.procedureMode !== 'gemini') {
+    throw new Error('Generated screens can only be saved in Gemini mode.');
+  }
+  if (typeof saveRecord !== 'function') throw new Error('A run-record saver is required.');
+  const previous = record.state;
+  if (previous.renderedScreens !== undefined && !Array.isArray(previous.renderedScreens)) {
+    throw new Error('renderedScreens must be an array.');
+  }
+  const screen = screenFromGeminiResponse(response);
+  const renderedScreens = [...(previous.renderedScreens || []), screen];
+  record.state = {...previous, renderedScreens, render: renderedScreens.length - 1};
+  try {
+    await saveRecord();
+  } catch (error) {
+    record.state = previous;
+    throw error;
+  }
+  return record.state.renderedScreens[record.state.render];
+}
+
+module.exports = { screenFromGeminiResponse, saveGeminiScreen };

@@ -39,6 +39,12 @@ Before sending, populate `verbatimUserPrompt` with the exact captured prompt, `r
 
 Gemini's response format is the existing `gemini-screen.js` adapter's `{instruction, expectedInputs}` pair. This file supplies the request template; API invocation and issue-workflow wiring remain separate implementation work.
 
+### Stored Gemini screens
+
+`screenFromGeminiResponse()` returns a JSON-serializable `{instruction, expectedInputs}` object. `saveGeminiScreen(record, response, saveRecord)` appends that object to `record.state.renderedScreens`, sets `state.render` to its zero-based array index, and invokes the caller's existing run-record saver. It returns the same stored object. A failed save restores the previous in-memory state and throws. Publication remains separate; the helper does not post a comment or record publication success.
+
+`renderState()` renders the object at `state.renderedScreens[state.render]` in Gemini mode, including after the run record is reloaded. Normal mode retains its predefined screens and existing numbering. These helpers are available for the upcoming Gemini workflow integration; the issue runner is not wired to call them yet.
+
 ## Interactive execution
 
 The intended workflow starts when a qualifying procedure issue is opened or when the push workflow creates an issue from a committed trigger. It initializes that issue's state, reads the state-to-instruction mapping, and posts the current instruction to the issue. The complete procedure remains in its source file and is not posted to the issue.
