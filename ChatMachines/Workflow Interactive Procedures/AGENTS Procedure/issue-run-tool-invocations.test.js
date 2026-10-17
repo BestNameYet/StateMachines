@@ -1,8 +1,10 @@
 const assert=require('node:assert/strict');
-const {issueNumberFromChangedPath,parseToolInvocationSubmission,appendedToolInvocationRecords,isAcceptedReport}=require('./issue-run-tool-invocations.js');
+const {issueNumberFromChangedPath,changedPathsFromEvent,parseToolInvocationSubmission,appendedToolInvocationRecords,isAcceptedReport}=require('./issue-run-tool-invocations.js');
 
 const path='ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/45-tool-invocations.json';
 assert.equal(issueNumberFromChangedPath(path),45);
+assert.deepEqual(changedPathsFromEvent({commits:[{added:['a.json'],modified:[path]}]}),['a.json',path]);
+assert.deepEqual(changedPathsFromEvent({commits:[]},[{filename:path},path]),[path]);
 assert.equal(issueNumberFromChangedPath(path.replace('45-','0-')),null);
 assert.equal(issueNumberFromChangedPath(path.replace('45-','45x-')),null);
 assert.deepEqual(parseToolInvocationSubmission(JSON.stringify({procedureIssueNumber:45,toolInvocations:[]}),45),[]);
