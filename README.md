@@ -38,6 +38,7 @@ Only the region between the index markers below is generated; other README conte
 | [ChatMachines/Main Instructions/AGENTS Design/README.md](./ChatMachines/Main%20Instructions/AGENTS%20Design/README.md) |
 | [ChatMachines/SeleniumServer/README.md](./ChatMachines/SeleniumServer/README.md) |
 | [ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/README.md) |
+| [ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/54/project/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/issue-workspaces/54/project/README.md) |
 | [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/README.md) |
 | [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/bertopic/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/bertopic/README.md) |
 | [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/conversation-classifier-12/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/conversation-classifier-12/README.md) |
