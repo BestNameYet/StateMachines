@@ -1,6 +1,6 @@
 {
   "state": {
-    "render": 20,
+    "render": 21,
     "verbatimUserPrompt": "Are these sufficient for analysis.  Look at the checklist and decide the ksys based on the upcoming task",
     "userIntent": "Assess the current key plan against Stage 3 of the checklist, select the conversation and message fields needed for representative sampling and analysis design, and update the plan if incomplete. Keep sample text in Library and document the still-open Library-to-worker handoff prerequisite.",
     "exampleMatch": false,
@@ -77,9 +77,9 @@
           "requirement": {
             "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
             "frombyte": 0,
-            "tobyte": 8489,
-            "description": "Revise the existing plan for checklist Stage 3. Prioritize conversation identity, title, dates and inventory metrics; selectively capture message/node IDs, branch links, speaker roles, timestamps, and references to sampled content and attachments. Distinguish fields required for design from deferred metadata, and record that sample text stays in Library and the Library-to-worker handoff remains an open gate.",
-            "intent": "Use the checklist's next incomplete task—representative sampling and analysis design—to select the keys needed to identify question/context types, preserve source/branch references, compare available periods, and design passage boundaries.",
+            "tobyte": 14591,
+            "description": "Replace Library-specific source handling language with a repository-only plan. Record that the live repo listing contains conversations-000.json through conversations-013.json, export_manifest.json, and the key inventory; direct any Stage 3 sample inspection to those existing repo files only, and do not initiate Library access or handoff.",
+            "intent": "Apply the user's latest direction to use the repository only while keeping the Stage 3 key selection aligned with the checklist.",
             "operator": "update"
           },
           "errors": [],
@@ -88,60 +88,37 @@
               "change": {
                 "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
                 "frombyte": 0,
-                "tobyte": 8489,
-                "description": "Replaced the broad metadata list with a Stage 3 plan that includes conversation/date identifiers, existing inventory metrics, selective message and branch references, speaker/timestamp fields, sampled source-content access, attachment limitations, deferred settings, and the open handoff gate.",
-                "intent": "Select the fields needed for representative sampling and analysis design without copying private conversation text into GitHub.",
+                "tobyte": 14591,
+                "description": "Replaced Library-specific source handling with a repository-only Stage 3 plan that names the 14 conversation shards, manifest, and key inventory as sources and directs sampling to existing repository files.",
+                "intent": "Apply the user's repo-only direction while keeping Stage 3 key selection aligned with the checklist.",
                 "operator": "update"
               },
-              "requirementPart": "Stage 3 key selection",
-              "description": "The plan now selects conversation/date IDs, inventory metrics, selective node/message branch fields, speaker roles, timestamps, sampled content references, and attachment descriptors."
+              "requirementPart": "Repository-only Stage 3 source and sampling plan",
+              "description": "The update enumerates all 14 shard files and the existing manifest/key inventory, points sample inspection to those files, and removes Library-specific handling."
             }
           ],
           "parts": [
             {
-              "part": "Conversation identifiers, titles, dates, and existing inventory metrics",
-              "description": "Prioritize those fields for sample selection and comparison periods.",
+              "part": "Record the existing repository sources: conversations-000.json through conversations-013.json, export_manifest.json, and key_type_inventory.json.",
+              "description": "The current file lists the repository directory, all 14 shard filenames, the manifest, and the key inventory.",
               "status": "Complete"
             },
             {
-              "part": "Message/node references, branch links, speaker roles, timestamps, and sampled content/attachment references",
-              "description": "Preserve ordered exchange structure and evidence pointers.",
+              "part": "Direct Stage 3 sample inspection to those existing repository files.",
+              "description": "The data_handling.sample_text field points to selected shard files in the listed repository directory.",
               "status": "Complete"
             },
             {
-              "part": "Separate required Stage 3 fields from deferred metadata",
-              "description": "Keep irrelevant conversation settings out of the immediate pass.",
+              "part": "Do not initiate Library access or external archive handoff.",
+              "description": "The repository_scope field limits sampling to files already present and says not to initiate an external archive handoff; the current document contains no Library reference.",
               "status": "Complete"
-            },
-            {
-              "part": "Use Library for sample text and document the Library handoff gate",
-              "description": "Superseded by the user's later direction to use the repo only.",
-              "status": "Incomplete"
             }
           ],
-          "status": "Incomplete",
-          "remainderRequirements": [
-            {
-              "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
-              "frombyte": 0,
-              "tobyte": 14591,
-              "description": "Replace Library-specific source handling language with a repository-only plan. Record that the live repo listing contains conversations-000.json through conversations-013.json, export_manifest.json, and the key inventory; direct any Stage 3 sample inspection to those existing repo files only, and do not initiate Library access or handoff.",
-              "intent": "Apply the user's latest direction to use the repository only while keeping the Stage 3 key selection aligned with the checklist.",
-              "operator": "update"
-            }
-          ]
+          "status": "Complete",
+          "remainderRequirements": []
         }
       ],
-      "remainderRequirements": [
-        {
-          "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
-          "frombyte": 0,
-          "tobyte": 14591,
-          "description": "Replace Library-specific source handling language with a repository-only plan. Record that the live repo listing contains conversations-000.json through conversations-013.json, export_manifest.json, and the key inventory; direct any Stage 3 sample inspection to those existing repo files only, and do not initiate Library access or handoff.",
-          "intent": "Apply the user's latest direction to use the repository only while keeping the Stage 3 key selection aligned with the checklist.",
-          "operator": "update"
-        }
-      ]
+      "remainderRequirements": []
     },
     "rescissionRequirements": [],
     "loopNumber": 2,
@@ -168,301 +145,53 @@
       20
     ],
     "expectedInputs": {
-      "request": 20,
-      "render": 20,
+      "request": 21,
+      "render": 21,
       "inputs": [
         {
-          "name": "completionAssessment",
+          "name": "requirementsCompleted",
           "schema": {
-            "type": "object",
-            "properties": {
-              "requirementAssessments": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "requirement": {
-                      "type": "object",
-                      "properties": {
-                        "filename": {
-                          "type": "string",
-                          "format": "file-reference"
-                        },
-                        "frombyte": {
-                          "type": "integer"
-                        },
-                        "tobyte": {
-                          "type": "integer"
-                        },
-                        "description": {
-                          "type": "string"
-                        },
-                        "intent": {
-                          "type": "string"
-                        },
-                        "operator": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "filename",
-                        "frombyte",
-                        "tobyte",
-                        "description",
-                        "intent",
-                        "operator"
-                      ]
-                    },
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "change": {
-                            "type": "object",
-                            "properties": {
-                              "filename": {
-                                "type": "string",
-                                "format": "file-reference"
-                              },
-                              "frombyte": {
-                                "type": "integer"
-                              },
-                              "tobyte": {
-                                "type": "integer"
-                              },
-                              "description": {
-                                "type": "string"
-                              },
-                              "intent": {
-                                "type": "string"
-                              },
-                              "operator": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "filename",
-                              "frombyte",
-                              "tobyte",
-                              "description",
-                              "intent",
-                              "operator"
-                            ]
-                          },
-                          "field": {
-                            "anyOf": [
-                              {
-                                "const": "filename"
-                              },
-                              {
-                                "const": "operator"
-                              }
-                            ]
-                          },
-                          "expected": {
-                            "type": "string"
-                          },
-                          "actual": {
-                            "type": "string"
-                          },
-                          "description": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "change",
-                          "field",
-                          "expected",
-                          "actual",
-                          "description"
-                        ]
-                      }
-                    },
-                    "changeContributions": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "change": {
-                            "type": "object",
-                            "properties": {
-                              "filename": {
-                                "type": "string",
-                                "format": "file-reference"
-                              },
-                              "frombyte": {
-                                "type": "integer"
-                              },
-                              "tobyte": {
-                                "type": "integer"
-                              },
-                              "description": {
-                                "type": "string"
-                              },
-                              "intent": {
-                                "type": "string"
-                              },
-                              "operator": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "filename",
-                              "frombyte",
-                              "tobyte",
-                              "description",
-                              "intent",
-                              "operator"
-                            ]
-                          },
-                          "requirementPart": {
-                            "type": "string"
-                          },
-                          "description": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "change",
-                          "requirementPart",
-                          "description"
-                        ]
-                      }
-                    },
-                    "parts": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "part": {
-                            "type": "string"
-                          },
-                          "description": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "anyOf": [
-                              {
-                                "const": "Complete"
-                              },
-                              {
-                                "const": "Incomplete"
-                              }
-                            ]
-                          }
-                        },
-                        "required": [
-                          "part",
-                          "description",
-                          "status"
-                        ]
-                      }
-                    },
-                    "status": {
-                      "anyOf": [
-                        {
-                          "const": "Complete"
-                        },
-                        {
-                          "const": "Incomplete"
-                        }
-                      ]
-                    },
-                    "remainderRequirements": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "filename": {
-                            "type": "string",
-                            "format": "file-reference"
-                          },
-                          "frombyte": {
-                            "type": "integer"
-                          },
-                          "tobyte": {
-                            "type": "integer"
-                          },
-                          "description": {
-                            "type": "string"
-                          },
-                          "intent": {
-                            "type": "string"
-                          },
-                          "operator": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "filename",
-                          "frombyte",
-                          "tobyte",
-                          "description",
-                          "intent",
-                          "operator"
-                        ]
-                      }
-                    }
-                  },
-                  "required": [
-                    "requirement",
-                    "errors",
-                    "changeContributions",
-                    "parts",
-                    "status",
-                    "remainderRequirements"
-                  ]
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "filename": {
+                  "type": "string",
+                  "format": "file-reference"
+                },
+                "frombyte": {
+                  "type": "integer"
+                },
+                "tobyte": {
+                  "type": "integer"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "intent": {
+                  "type": "string"
+                },
+                "operator": {
+                  "type": "string"
                 }
               },
-              "remainderRequirements": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "filename": {
-                      "type": "string",
-                      "format": "file-reference"
-                    },
-                    "frombyte": {
-                      "type": "integer"
-                    },
-                    "tobyte": {
-                      "type": "integer"
-                    },
-                    "description": {
-                      "type": "string"
-                    },
-                    "intent": {
-                      "type": "string"
-                    },
-                    "operator": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "filename",
-                    "frombyte",
-                    "tobyte",
-                    "description",
-                    "intent",
-                    "operator"
-                  ]
-                }
-              }
-            },
-            "required": [
-              "requirementAssessments",
-              "remainderRequirements"
-            ]
+              "required": [
+                "filename",
+                "frombyte",
+                "tobyte",
+                "description",
+                "intent",
+                "operator"
+              ]
+            }
           }
         }
       ]
     }
   },
   "done": false,
-  "request": 20,
-  "lastCommentId": 6231373296,
+  "request": 21,
+  "lastCommentId": 6231380926,
   "newFiles": [],
   "history": [
     {
@@ -2999,6 +2728,500 @@
                   "reconciliation",
                   "missedRequirements",
                   "unapprovedChanges"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": 20,
+      "render": 20,
+      "loopNumber": 2,
+      "values": {
+        "$completionAssessment": {
+          "requirementAssessments": [
+            {
+              "requirement": {
+                "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
+                "frombyte": 0,
+                "tobyte": 14591,
+                "description": "Replace Library-specific source handling language with a repository-only plan. Record that the live repo listing contains conversations-000.json through conversations-013.json, export_manifest.json, and the key inventory; direct any Stage 3 sample inspection to those existing repo files only, and do not initiate Library access or handoff.",
+                "intent": "Apply the user's latest direction to use the repository only while keeping the Stage 3 key selection aligned with the checklist.",
+                "operator": "update"
+              },
+              "errors": [],
+              "changeContributions": [
+                {
+                  "change": {
+                    "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
+                    "frombyte": 0,
+                    "tobyte": 14591,
+                    "description": "Replaced Library-specific source handling with a repository-only Stage 3 plan that names the 14 conversation shards, manifest, and key inventory as sources and directs sampling to existing repository files.",
+                    "intent": "Apply the user's repo-only direction while keeping Stage 3 key selection aligned with the checklist.",
+                    "operator": "update"
+                  },
+                  "requirementPart": "Repository-only Stage 3 source and sampling plan",
+                  "description": "The update enumerates all 14 shard files and the existing manifest/key inventory, points sample inspection to those files, and removes Library-specific handling."
+                }
+              ],
+              "parts": [
+                {
+                  "part": "Record the existing repository sources: conversations-000.json through conversations-013.json, export_manifest.json, and key_type_inventory.json.",
+                  "description": "The current file lists the repository directory, all 14 shard filenames, the manifest, and the key inventory.",
+                  "status": "Complete"
+                },
+                {
+                  "part": "Direct Stage 3 sample inspection to those existing repository files.",
+                  "description": "The data_handling.sample_text field points to selected shard files in the listed repository directory.",
+                  "status": "Complete"
+                },
+                {
+                  "part": "Do not initiate Library access or external archive handoff.",
+                  "description": "The repository_scope field limits sampling to files already present and says not to initiate an external archive handoff; the current document contains no Library reference.",
+                  "status": "Complete"
+                }
+              ],
+              "status": "Complete",
+              "remainderRequirements": []
+            }
+          ],
+          "remainderRequirements": []
+        }
+      },
+      "state": {
+        "render": 21,
+        "verbatimUserPrompt": "Are these sufficient for analysis.  Look at the checklist and decide the ksys based on the upcoming task",
+        "userIntent": "Assess the current key plan against Stage 3 of the checklist, select the conversation and message fields needed for representative sampling and analysis design, and update the plan if incomplete. Keep sample text in Library and document the still-open Library-to-worker handoff prerequisite.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
+            "newFile": false
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
+            "frombyte": 0,
+            "tobyte": 14591,
+            "description": "Replace Library-specific source handling language with a repository-only plan. Record that the live repo listing contains conversations-000.json through conversations-013.json, export_manifest.json, and the key inventory; direct any Stage 3 sample inspection to those existing repo files only, and do not initiate Library access or handoff.",
+            "intent": "Apply the user's latest direction to use the repository only while keeping the Stage 3 key selection aligned with the checklist.",
+            "operator": "update"
+          }
+        ],
+        "matchedExample": {
+          "example": 7,
+          "promptText": "Verify each requested file edit against the saved files, identify any missing or incorrect changes, and correct them."
+        },
+        "mode": "accountability",
+        "changeList": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
+            "frombyte": 0,
+            "tobyte": 8489,
+            "description": "Replaced the generic metadata plan with a Stage 3 sampling and analysis-design key plan.",
+            "intent": "Align captured fields with the checklist's next incomplete stage while preserving private source text in Library.",
+            "operator": "update"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
+            "frombyte": 0,
+            "tobyte": 14591,
+            "description": "Replaced Library-specific source handling with a repository-only Stage 3 plan that names the 14 conversation shards, manifest, and key inventory as sources and directs sampling to existing repository files.",
+            "intent": "Apply the user's repo-only direction while keeping Stage 3 key selection aligned with the checklist.",
+            "operator": "update"
+          }
+        ],
+        "requirementsCompleted": [],
+        "changeAssessment": {
+          "reconciliation": [
+            {
+              "requirement": {
+                "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
+                "frombyte": 0,
+                "tobyte": 14591,
+                "description": "Replace Library-specific source handling language with a repository-only plan. Record that the live repo listing contains conversations-000.json through conversations-013.json, export_manifest.json, and the key inventory; direct any Stage 3 sample inspection to those existing repo files only, and do not initiate Library access or handoff.",
+                "intent": "Apply the user's latest direction to use the repository only while keeping the Stage 3 key selection aligned with the checklist.",
+                "operator": "update"
+              },
+              "changeList": [
+                {
+                  "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
+                  "frombyte": 0,
+                  "tobyte": 14591,
+                  "description": "Replaced Library-specific source handling with a repository-only Stage 3 plan that names the 14 conversation shards, manifest, and key inventory as sources and directs sampling to existing repository files.",
+                  "intent": "Apply the user's repo-only direction while keeping Stage 3 key selection aligned with the checklist.",
+                  "operator": "update"
+                }
+              ]
+            }
+          ],
+          "missedRequirements": [],
+          "unapprovedChanges": []
+        },
+        "completionAssessment": {
+          "requirementAssessments": [
+            {
+              "requirement": {
+                "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
+                "frombyte": 0,
+                "tobyte": 14591,
+                "description": "Replace Library-specific source handling language with a repository-only plan. Record that the live repo listing contains conversations-000.json through conversations-013.json, export_manifest.json, and the key inventory; direct any Stage 3 sample inspection to those existing repo files only, and do not initiate Library access or handoff.",
+                "intent": "Apply the user's latest direction to use the repository only while keeping the Stage 3 key selection aligned with the checklist.",
+                "operator": "update"
+              },
+              "errors": [],
+              "changeContributions": [
+                {
+                  "change": {
+                    "filename": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/second_pass_value_keys.json",
+                    "frombyte": 0,
+                    "tobyte": 14591,
+                    "description": "Replaced Library-specific source handling with a repository-only Stage 3 plan that names the 14 conversation shards, manifest, and key inventory as sources and directs sampling to existing repository files.",
+                    "intent": "Apply the user's repo-only direction while keeping Stage 3 key selection aligned with the checklist.",
+                    "operator": "update"
+                  },
+                  "requirementPart": "Repository-only Stage 3 source and sampling plan",
+                  "description": "The update enumerates all 14 shard files and the existing manifest/key inventory, points sample inspection to those files, and removes Library-specific handling."
+                }
+              ],
+              "parts": [
+                {
+                  "part": "Record the existing repository sources: conversations-000.json through conversations-013.json, export_manifest.json, and key_type_inventory.json.",
+                  "description": "The current file lists the repository directory, all 14 shard filenames, the manifest, and the key inventory.",
+                  "status": "Complete"
+                },
+                {
+                  "part": "Direct Stage 3 sample inspection to those existing repository files.",
+                  "description": "The data_handling.sample_text field points to selected shard files in the listed repository directory.",
+                  "status": "Complete"
+                },
+                {
+                  "part": "Do not initiate Library access or external archive handoff.",
+                  "description": "The repository_scope field limits sampling to files already present and says not to initiate an external archive handoff; the current document contains no Library reference.",
+                  "status": "Complete"
+                }
+              ],
+              "status": "Complete",
+              "remainderRequirements": []
+            }
+          ],
+          "remainderRequirements": []
+        },
+        "rescissionRequirements": [],
+        "loopNumber": 2,
+        "renderedRequests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "expectedInputs": {
+          "request": 20,
+          "render": 20,
+          "inputs": [
+            {
+              "name": "completionAssessment",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "requirementAssessments": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "requirement": {
+                          "type": "object",
+                          "properties": {
+                            "filename": {
+                              "type": "string",
+                              "format": "file-reference"
+                            },
+                            "frombyte": {
+                              "type": "integer"
+                            },
+                            "tobyte": {
+                              "type": "integer"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "intent": {
+                              "type": "string"
+                            },
+                            "operator": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "filename",
+                            "frombyte",
+                            "tobyte",
+                            "description",
+                            "intent",
+                            "operator"
+                          ]
+                        },
+                        "errors": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "change": {
+                                "type": "object",
+                                "properties": {
+                                  "filename": {
+                                    "type": "string",
+                                    "format": "file-reference"
+                                  },
+                                  "frombyte": {
+                                    "type": "integer"
+                                  },
+                                  "tobyte": {
+                                    "type": "integer"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "intent": {
+                                    "type": "string"
+                                  },
+                                  "operator": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "filename",
+                                  "frombyte",
+                                  "tobyte",
+                                  "description",
+                                  "intent",
+                                  "operator"
+                                ]
+                              },
+                              "field": {
+                                "anyOf": [
+                                  {
+                                    "const": "filename"
+                                  },
+                                  {
+                                    "const": "operator"
+                                  }
+                                ]
+                              },
+                              "expected": {
+                                "type": "string"
+                              },
+                              "actual": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "change",
+                              "field",
+                              "expected",
+                              "actual",
+                              "description"
+                            ]
+                          }
+                        },
+                        "changeContributions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "change": {
+                                "type": "object",
+                                "properties": {
+                                  "filename": {
+                                    "type": "string",
+                                    "format": "file-reference"
+                                  },
+                                  "frombyte": {
+                                    "type": "integer"
+                                  },
+                                  "tobyte": {
+                                    "type": "integer"
+                                  },
+                                  "description": {
+                                    "type": "string"
+                                  },
+                                  "intent": {
+                                    "type": "string"
+                                  },
+                                  "operator": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "filename",
+                                  "frombyte",
+                                  "tobyte",
+                                  "description",
+                                  "intent",
+                                  "operator"
+                                ]
+                              },
+                              "requirementPart": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "change",
+                              "requirementPart",
+                              "description"
+                            ]
+                          }
+                        },
+                        "parts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "part": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  {
+                                    "const": "Complete"
+                                  },
+                                  {
+                                    "const": "Incomplete"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "part",
+                              "description",
+                              "status"
+                            ]
+                          }
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "const": "Complete"
+                            },
+                            {
+                              "const": "Incomplete"
+                            }
+                          ]
+                        },
+                        "remainderRequirements": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "filename": {
+                                "type": "string",
+                                "format": "file-reference"
+                              },
+                              "frombyte": {
+                                "type": "integer"
+                              },
+                              "tobyte": {
+                                "type": "integer"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "intent": {
+                                "type": "string"
+                              },
+                              "operator": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "filename",
+                              "frombyte",
+                              "tobyte",
+                              "description",
+                              "intent",
+                              "operator"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "requirement",
+                        "errors",
+                        "changeContributions",
+                        "parts",
+                        "status",
+                        "remainderRequirements"
+                      ]
+                    }
+                  },
+                  "remainderRequirements": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "filename": {
+                          "type": "string",
+                          "format": "file-reference"
+                        },
+                        "frombyte": {
+                          "type": "integer"
+                        },
+                        "tobyte": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "intent": {
+                          "type": "string"
+                        },
+                        "operator": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "filename",
+                        "frombyte",
+                        "tobyte",
+                        "description",
+                        "intent",
+                        "operator"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "requirementAssessments",
+                  "remainderRequirements"
                 ]
               }
             }
