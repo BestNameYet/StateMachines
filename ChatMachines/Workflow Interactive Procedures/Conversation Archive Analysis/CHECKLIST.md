@@ -65,6 +65,32 @@ Extraction is complete. The private Library package `chatgpt_conversations_stage
 
 The export package remains in Library. No text from its 1,334 extracted records was added to this repository; the separate Historical Build Dialogues JSON described above is already committed. Semantic reading, topic search, analysis, and synthesis of the export remain for later stages.
 
+## 2A. Repository preparation and key inventory — October 17, 2026
+
+This update supersedes the earlier statements that source conversation text is absent from GitHub and that extraction is the next milestone. Those statements describe the earlier storage arrangement. The current working dataset is committed under `key-extraction/`; the original archive and the separately recorded Stage 2 package are distinct artifacts.
+
+- [x] Split the 14 original shards into 134 consecutive conversation bins: 133 bins of 10 conversations and one of 4; retain original-shard and conversation-range references.
+- [x] Group bins by original shard using the requested 4/3/3/4 allocation: `batch-00` contains shards 01–04 (40 bins), `batch-01` shards 05–07 (30), `batch-02` shards 08–10 (30), and `batch-03` shards 11–14 (34).
+- [x] Measure each bin with Gemini's `countTokens` endpoint: 134 counts, 26,709,441 file tokens in total, ranging from 22,544 to 753,362 per file. These counts exclude processor prompt wrappers and the shared instruction. [Successful counting run](https://github.com/BestNameYet/StateMachines/actions/runs/39023538168).
+- [x] Greedily subdivide each batch in original file order, keeping bins intact, with each subdivision's sum of file-token counts strictly below 1,000,000. Created 33 subdivisions (9/7/10/7 by batch); largest sum 996,266. This is a file-token budget, not proof that the full serialized Gemini prompt fits a model limit. [Subdivision manifest](key-extraction/subdivisions-manifest.json) and [successful run](https://github.com/BestNameYet/StateMachines/actions/runs/39023934593).
+- [x] Save the updated [bin manifest](key-extraction/bins-manifest.json) with source identifiers, ranges, conversation counts, byte sizes, checksums, current paths, and per-file token counts. It accounts for all 134 bins and 1,334 conversations. The JavaScript scan rechecks every bin's checksum and conversation count.
+- [x] Build and launch a [single-worker iterator](parallel-gemini/iterate.py) over the 33 subdivisions, with checkpoint files and request starts at least 65 seconds apart. Its [run](https://github.com/BestNameYet/StateMachines/actions/runs/39024089212) was subsequently cancelled when direct JavaScript key extraction replaced Gemini for this task. Do not mark the Gemini queue complete.
+- [x] Implement and test [direct JavaScript recursive key extraction](key-extraction/extract-keys.mjs), then run it across every bin. Found 37,935 distinct exact object-key names, including 37,430 UUID-shaped names. [Inventory and source manifest](key-extraction/outputs/) and [successful workflow](https://github.com/BestNameYet/StateMachines/actions/runs/39024477972).
+- [x] Implement and test [non-UUID per-key counting](key-extraction/count-non-uuid-keys.mjs), then run it across all 134 bins / 1,334 conversations. Found 505 non-UUID key names and 1,112,747 total occurrences. Each key has its own count and observed JSON types. [JSON](key-extraction/outputs/non_uuid_key_counts.json), [CSV](key-extraction/outputs/non_uuid_key_counts.csv), [summary](key-extraction/outputs/non_uuid_key_counts_summary.json), and [successful workflow](https://github.com/BestNameYet/StateMachines/actions/runs/39024752012).
+- [x] Visualize the 50 most frequent non-UUID keys in the conversation UI, ordered by occurrence count. The saved count files above are the reproducible data source; the chart itself was displayed in chat.
+
+Counting convention: traverse all object properties at every nesting depth, including descendants beneath UUID keys. Exclude UUID-shaped property names only from the non-UUID report. Do not count array indexes; do count numeric names that are actual object properties. Combine identical key names across nesting locations. Consequently, these counts do not distinguish conversation titles from other `title` properties or establish which fields are needed for analysis.
+
+### Second-pass selection and remaining preparation
+
+The existing [second-pass value-key plan](extracted/conversations-011/second_pass_value_keys.json) selects fields by their proposed role in Stage 3: conversation identity/navigation, chronology, branch structure, message attribution/text, and evidence/attachment references. It is a purpose-based proposal, not a list selected from frequency ranking. Its stated limitation is that the earlier inventory flattened key names and types without establishing their JSON paths.
+
+- [ ] Verify each proposed second-pass field's actual path, scope, types, and availability against source records before extracting selected values.
+- [ ] Validate whether the proposed key set is sufficient for the chosen Stage 3 questions; retain the distinction between observed fields, derived values, and absent fields.
+- [ ] Perform the representative semantic sampling, analysis-matrix design, exchange/passage preparation, and pilot-quality checks listed in Stage 3 below. Structural parsing and key counting do not complete these tasks.
+
+The earlier [four-assignment Gemini retry](https://github.com/BestNameYet/StateMachines/actions/runs/39022384873) failed in all four analysis jobs and collection. The subsequent cancelled iterator is not evidence of completed key analysis; use the successful JavaScript outputs for the exhaustive key inventory.
+
 ## 3. Prepare classification passages and design the analysis
 
 - [ ] Inspect representative conversations to identify the kinds of questions and contexts present. Mark this as sampling.
@@ -229,6 +255,6 @@ Output: verification report, corrected findings, coverage ledger, and unresolved
 | Verification | Source references and findings | Citation partitions, coverage checks, and independent reviews. |
 | Final delivery | Verified/corrected outputs | Preparation can overlap; completion waits for checks. |
 
-The immediate next preparation milestone is one intact structured record per conversation, followed by a verified extraction inventory. Passage construction and label discovery follow that milestone; none of those archive-processing tasks is marked complete here.
+The current preparation milestone is validation of the proposed second-pass field paths and representative Stage 3 sampling, followed by analysis-matrix and exchange/passage design. Extraction, repository bin preparation, token measurement, subdivision, and exhaustive key counting are recorded above. Label discovery, catalog consolidation, classification, and substantive synthesis remain unchecked.
 
 Do not parallelize a downstream task before its required evidence or design decisions exist. The parallelizer schedules independent calls; this plan specifies which calls should be independent and when they are ready.
