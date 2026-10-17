@@ -2851,6 +2851,791 @@
       ],
       "toolInvocations": [],
       "triggerIdentifier": "toolInvocationSyntax202610162013"
+    },
+    {
+      "state": {
+        "render": 13,
+        "verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data.",
+        "userIntent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax. Define a machine-readable way to extract integrations whose operations create, mutate, or delete data; distinguish these from reads and conditional commands. The extracted create, mutate, and delete operations must be mandatory entries in the change list, with their targets and evidence recorded.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+            "newFile": true
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+            "frombyte": 0,
+            "tobyte": 12000,
+            "description": "Create a machine-readable JSON format and observed-tool catalog for parsing toolInvocations arrays. It must identify each integration and operation, classify effects as read/create/mutate/delete/conditional/unknown, retain target and evidence, and define extraction rules that make every create, mutate, or delete operation a mandatory change-list entry.",
+            "intent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax. Define a machine-readable way to extract integrations whose operations create, mutate, or delete data; distinguish these from reads and conditional commands. The extracted create, mutate, and delete operations must be mandatory entries in the change list, with their targets and evidence recorded.",
+            "operator": "create"
+          }
+        ],
+        "matchedExample": {
+          "example": 4,
+          "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+        },
+        "mode": "fidelity",
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null,
+        "renderedRequests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "expectedInputs": {
+          "request": 9,
+          "render": 13,
+          "inputs": [
+            {
+              "name": "toolInvocations",
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "cwd": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "command_line_verbatim": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tool": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "invocation_verbatim": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "final_output_after_completion_of_tool_call": {},
+                    "unavailable_reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "new": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "filename": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "frombyte": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tobyte": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "intent": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "operator": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "const": "succeeded"
+                        },
+                        {
+                          "const": "failed"
+                        },
+                        {
+                          "const": "blocked"
+                        },
+                        {
+                          "const": "unfinished"
+                        },
+                        {
+                          "const": "unknown"
+                        }
+                      ]
+                    },
+                    "specifiedOperatorByUser": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "chosenOperator": {
+                      "type": "string"
+                    },
+                    "http_method": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cwd",
+                    "command_line_verbatim",
+                    "tool",
+                    "invocation_verbatim",
+                    "final_output_after_completion_of_tool_call",
+                    "unavailable_reason",
+                    "new",
+                    "filename",
+                    "frombyte",
+                    "tobyte",
+                    "description",
+                    "intent",
+                    "operator",
+                    "specifiedOperatorByUser",
+                    "chosenOperator",
+                    "outcome"
+                  ],
+                  "toolInvocation": true
+                }
+              }
+            }
+          ]
+        }
+      },
+      "done": false,
+      "request": 9,
+      "lastCommentId": 6228998577,
+      "newFiles": [
+        "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json"
+      ],
+      "history": [
+        {
+          "request": 1,
+          "render": 1,
+          "loopNumber": null,
+          "values": {
+            "$verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data."
+          },
+          "state": {
+            "render": 2,
+            "verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data.",
+            "userIntent": null,
+            "exampleMatch": null,
+            "minimalResult": null,
+            "targetFiles": null,
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "renderedRequests": [
+              1
+            ],
+            "expectedInputs": {
+              "request": 1,
+              "render": 1,
+              "inputs": [
+                {
+                  "name": "verbatimUserPrompt",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "request": 2,
+          "render": 2,
+          "loopNumber": null,
+          "values": {
+            "$userIntent": "Analyze existing AGENTS Procedure issue-run records, extract toolInvocations arrays, identify observed tool names and invocation syntax, and distinguish read-only calls from tools or operations that create or mutate data. Use that sample to propose a syntax and define which tools should be classified as data-mutating."
+          },
+          "state": {
+            "render": 3,
+            "verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data.",
+            "userIntent": "Analyze existing AGENTS Procedure issue-run records, extract toolInvocations arrays, identify observed tool names and invocation syntax, and distinguish read-only calls from tools or operations that create or mutate data. Use that sample to propose a syntax and define which tools should be classified as data-mutating.",
+            "exampleMatch": null,
+            "minimalResult": null,
+            "targetFiles": null,
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "renderedRequests": [
+              1,
+              2
+            ],
+            "expectedInputs": {
+              "request": 2,
+              "render": 2,
+              "inputs": [
+                {
+                  "name": "userIntent",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "request": 3,
+          "render": 3,
+          "loopNumber": null,
+          "values": {
+            "$exampleMatch": false
+          },
+          "state": {
+            "render": 8,
+            "verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data.",
+            "userIntent": "Analyze existing AGENTS Procedure issue-run records, extract toolInvocations arrays, identify observed tool names and invocation syntax, and distinguish read-only calls from tools or operations that create or mutate data. Use that sample to propose a syntax and define which tools should be classified as data-mutating.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": null,
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "renderedRequests": [
+              1,
+              2,
+              3
+            ],
+            "expectedInputs": {
+              "request": 3,
+              "render": 3,
+              "inputs": [
+                {
+                  "name": "exampleMatch",
+                  "schema": {
+                    "type": "boolean"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "request": 4,
+          "render": 8,
+          "loopNumber": null,
+          "values": {
+            "$targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "newFile": true
+              }
+            ]
+          },
+          "state": {
+            "render": 9,
+            "verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data.",
+            "userIntent": "Analyze existing AGENTS Procedure issue-run records, extract toolInvocations arrays, identify observed tool names and invocation syntax, and distinguish read-only calls from tools or operations that create or mutate data. Use that sample to propose a syntax and define which tools should be classified as data-mutating.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "newFile": true
+              }
+            ],
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "renderedRequests": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "expectedInputs": {
+              "request": 4,
+              "render": 8,
+              "inputs": [
+                {
+                  "name": "targetFiles",
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "filename": {
+                          "type": "string",
+                          "format": "file-reference"
+                        },
+                        "newFile": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "filename",
+                        "newFile"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "request": 5,
+          "render": 9,
+          "loopNumber": null,
+          "values": {
+            "$requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "frombyte": 0,
+                "tobyte": 12000,
+                "description": "Create a JSON syntax and observed-tool catalog: define the per-entry fields needed to read toolInvocations arrays, provide representative invocation shapes, and classify each observed tool or command by effect and mutation boundary with evidence and limits.",
+                "intent": "Analyze existing AGENTS Procedure issue-run records, extract toolInvocations arrays, identify observed tool names and invocation syntax, and distinguish read-only calls from tools or operations that create or mutate data. Use that sample to propose a syntax and define which tools should be classified as data-mutating.",
+                "operator": "create"
+              }
+            ]
+          },
+          "state": {
+            "render": 10,
+            "verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data.",
+            "userIntent": "Analyze existing AGENTS Procedure issue-run records, extract toolInvocations arrays, identify observed tool names and invocation syntax, and distinguish read-only calls from tools or operations that create or mutate data. Use that sample to propose a syntax and define which tools should be classified as data-mutating.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "newFile": true
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "frombyte": 0,
+                "tobyte": 12000,
+                "description": "Create a JSON syntax and observed-tool catalog: define the per-entry fields needed to read toolInvocations arrays, provide representative invocation shapes, and classify each observed tool or command by effect and mutation boundary with evidence and limits.",
+                "intent": "Analyze existing AGENTS Procedure issue-run records, extract toolInvocations arrays, identify observed tool names and invocation syntax, and distinguish read-only calls from tools or operations that create or mutate data. Use that sample to propose a syntax and define which tools should be classified as data-mutating.",
+                "operator": "create"
+              }
+            ],
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "renderedRequests": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "expectedInputs": {
+              "request": 5,
+              "render": 9,
+              "inputs": [
+                {
+                  "name": "requirements",
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "filename": {
+                          "type": "string",
+                          "format": "file-reference"
+                        },
+                        "frombyte": {
+                          "type": "integer"
+                        },
+                        "tobyte": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "intent": {
+                          "type": "string"
+                        },
+                        "operator": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "filename",
+                        "frombyte",
+                        "tobyte",
+                        "description",
+                        "intent",
+                        "operator"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "request": 6,
+          "render": 10,
+          "loopNumber": null,
+          "values": {
+            "$userIntent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax. Define a machine-readable way to extract integrations whose operations create, mutate, or delete data; distinguish these from reads and conditional commands. The extracted create, mutate, and delete operations must be mandatory entries in the change list, with their targets and evidence recorded."
+          },
+          "state": {
+            "render": 11,
+            "verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data.",
+            "userIntent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax. Define a machine-readable way to extract integrations whose operations create, mutate, or delete data; distinguish these from reads and conditional commands. The extracted create, mutate, and delete operations must be mandatory entries in the change list, with their targets and evidence recorded.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "newFile": true
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "frombyte": 0,
+                "tobyte": 12000,
+                "description": "Create a JSON syntax and observed-tool catalog: define the per-entry fields needed to read toolInvocations arrays, provide representative invocation shapes, and classify each observed tool or command by effect and mutation boundary with evidence and limits.",
+                "intent": "Analyze existing AGENTS Procedure issue-run records, extract toolInvocations arrays, identify observed tool names and invocation syntax, and distinguish read-only calls from tools or operations that create or mutate data. Use that sample to propose a syntax and define which tools should be classified as data-mutating.",
+                "operator": "create"
+              }
+            ],
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "renderedRequests": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "expectedInputs": {
+              "request": 6,
+              "render": 10,
+              "inputs": [
+                {
+                  "name": "userIntent",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "request": 7,
+          "render": 11,
+          "loopNumber": null,
+          "values": {
+            "$matchedExample": {
+              "example": 4,
+              "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+            }
+          },
+          "state": {
+            "render": 12,
+            "verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data.",
+            "userIntent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax. Define a machine-readable way to extract integrations whose operations create, mutate, or delete data; distinguish these from reads and conditional commands. The extracted create, mutate, and delete operations must be mandatory entries in the change list, with their targets and evidence recorded.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "newFile": true
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "frombyte": 0,
+                "tobyte": 12000,
+                "description": "Create a JSON syntax and observed-tool catalog: define the per-entry fields needed to read toolInvocations arrays, provide representative invocation shapes, and classify each observed tool or command by effect and mutation boundary with evidence and limits.",
+                "intent": "Analyze existing AGENTS Procedure issue-run records, extract toolInvocations arrays, identify observed tool names and invocation syntax, and distinguish read-only calls from tools or operations that create or mutate data. Use that sample to propose a syntax and define which tools should be classified as data-mutating.",
+                "operator": "create"
+              }
+            ],
+            "matchedExample": {
+              "example": 4,
+              "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+            },
+            "mode": "fidelity",
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "renderedRequests": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "expectedInputs": {
+              "request": 7,
+              "render": 11,
+              "inputs": [
+                {
+                  "name": "matchedExample",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "example": {
+                        "type": "integer"
+                      },
+                      "promptText": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "example",
+                      "promptText"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "request": 8,
+          "render": 12,
+          "loopNumber": null,
+          "values": {
+            "$requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "frombyte": 0,
+                "tobyte": 12000,
+                "description": "Create a machine-readable JSON format and observed-tool catalog for parsing toolInvocations arrays. It must identify each integration and operation, classify effects as read/create/mutate/delete/conditional/unknown, retain target and evidence, and define extraction rules that make every create, mutate, or delete operation a mandatory change-list entry.",
+                "intent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax. Define a machine-readable way to extract integrations whose operations create, mutate, or delete data; distinguish these from reads and conditional commands. The extracted create, mutate, and delete operations must be mandatory entries in the change list, with their targets and evidence recorded.",
+                "operator": "create"
+              }
+            ]
+          },
+          "state": {
+            "render": 13,
+            "verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data.",
+            "userIntent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax. Define a machine-readable way to extract integrations whose operations create, mutate, or delete data; distinguish these from reads and conditional commands. The extracted create, mutate, and delete operations must be mandatory entries in the change list, with their targets and evidence recorded.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "newFile": true
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+                "frombyte": 0,
+                "tobyte": 12000,
+                "description": "Create a machine-readable JSON format and observed-tool catalog for parsing toolInvocations arrays. It must identify each integration and operation, classify effects as read/create/mutate/delete/conditional/unknown, retain target and evidence, and define extraction rules that make every create, mutate, or delete operation a mandatory change-list entry.",
+                "intent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax. Define a machine-readable way to extract integrations whose operations create, mutate, or delete data; distinguish these from reads and conditional commands. The extracted create, mutate, and delete operations must be mandatory entries in the change list, with their targets and evidence recorded.",
+                "operator": "create"
+              }
+            ],
+            "matchedExample": {
+              "example": 4,
+              "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+            },
+            "mode": "fidelity",
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "renderedRequests": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "expectedInputs": {
+              "request": 8,
+              "render": 12,
+              "inputs": [
+                {
+                  "name": "requirements",
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "filename": {
+                          "type": "string",
+                          "format": "file-reference"
+                        },
+                        "frombyte": {
+                          "type": "integer"
+                        },
+                        "tobyte": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "intent": {
+                          "type": "string"
+                        },
+                        "operator": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "filename",
+                        "frombyte",
+                        "tobyte",
+                        "description",
+                        "intent",
+                        "operator"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "toolInvocations": [],
+      "triggerIdentifier": "toolInvocationSyntax202610162013"
     }
   ]
 }
