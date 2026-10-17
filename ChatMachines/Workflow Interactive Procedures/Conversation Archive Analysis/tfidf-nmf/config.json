@@ -1,0 +1,40 @@
+{
+  "input": {
+    "manifest": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/key-extraction/bins-manifest.json"
+  },
+  "documents": {
+    "roles": [
+      "user",
+      "assistant"
+    ],
+    "min_words": 5,
+    "max_words_per_document": 1000
+  },
+  "tfidf": {
+    "lowercase": true,
+    "strip_accents": "unicode",
+    "stop_words": "english",
+    "ngram_range": [
+      1,
+      2
+    ],
+    "min_df": 3,
+    "max_df": 0.85,
+    "max_features": 30000,
+    "sublinear_tf": true
+  },
+  "nmf": {
+    "n_components": 20,
+    "init": "nndsvda",
+    "solver": "cd",
+    "beta_loss": "frobenius",
+    "max_iter": 400,
+    "tol": 0.0001,
+    "random_state": 42
+  },
+  "output": {
+    "terms_per_topic": 15,
+    "representatives_per_topic": 5,
+    "topics_per_document": 3
+  }
+}

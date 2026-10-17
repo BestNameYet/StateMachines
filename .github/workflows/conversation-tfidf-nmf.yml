@@ -1,0 +1,40 @@
+name: Conversation TF-IDF NMF
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/**'
+      - '.github/workflows/conversation-tfidf-nmf.yml'
+permissions:
+  contents: read
+concurrency:
+  group: conversation-tfidf-nmf
+  cancel-in-progress: false
+jobs:
+  topic-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned dependencies
+        run: python -m pip install -r 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/requirements.txt'
+      - name: Test preparation and model fitting
+        run: python -m unittest discover -s 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf' -p 'test_*.py'
+      - name: Fit configured corpus
+        if: github.event_name == 'workflow_dispatch'
+        run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/run.py' --config 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/config.json' --output nmf-results
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event_name == 'workflow_dispatch'
+        with:
+          name: conversation-tfidf-nmf-results
+          path: nmf-results/
+          retention-days: 30
+          if-no-files-found: warn
