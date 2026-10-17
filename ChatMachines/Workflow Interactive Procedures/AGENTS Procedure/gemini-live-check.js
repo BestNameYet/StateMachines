@@ -20,9 +20,9 @@ async function main() {
   acceptGeminiValues(record,{total:12*5},__dirname);
   await generateGeminiScreen(record,async()=>{saved=JSON.stringify(record);},{storage});
   if(!record.done||record.state.renderedScreens.length!==screenCount||record.state.controls.at(-1).mode!=='completion')throw Error('Live control loop did not complete without another screen.');
-  const workerRecord={request:1,geminiPending:false,history:[],state:{procedureMode:'gemini',verbatimUserPrompt:'Calculate twelve times five.',variables:[],controls:[],render:0,renderedScreens:[{instruction:'Worker assignment',standingInstructions:'Calculate the requested product. Return only the requested value and no files.',expectedInputs:[],assignments:[{id:'live-worker',worker:'gemini',workerId:'gemini-1',instruction:'Calculate twelve times five. Return the integer product as {$total}.',expectedInputs:[{name:'total',schema:{type:'integer'}}]}]}]}};
+  const workerRecord={request:1,geminiPending:false,history:[],state:{procedureMode:'gemini',verbatimUserPrompt:'Calculate twelve times five.',variables:[],controls:[],render:0,renderedScreens:[{instruction:'Worker assignment',standingInstructions:'Calculate the requested product. Return only the requested value and no files.',expectedInputs:[],assignments:[{id:'live-worker',worker:'gemini',instruction:'Calculate twelve times five. Return the integer product as {$total}.',expectedInputs:[{name:'total',schema:{type:'integer'}}]}]}]}};
   await runGeminiWorkers(workerRecord,storage,async()=>{});
-  if(workerRecord.state.assignmentReturns?.[0]?.values.total!==60||!workerRecord.state.workerBindings?.[0]?.nonce)throw Error('Live worker calculation or nonce registration failed.');
+  if(workerRecord.state.assignmentReturns?.[0]?.values.total!==60||!workerRecord.state.workers?.[0]?.nonce)throw Error('Live worker calculation or nonce registration failed.');
   fs.rmSync(root,{recursive:true,force:true});
   console.log(JSON.stringify({liveGemini:true,liveWorker:true,workerReturns:workerRecord.state.assignmentReturns,commandResults:record.state.commandResults,renderedInstruction,returnedTotal:60,completed:record.done,screenCount:record.state.renderedScreens.length,controls:JSON.parse(saved).state.controls},null,2));
 }

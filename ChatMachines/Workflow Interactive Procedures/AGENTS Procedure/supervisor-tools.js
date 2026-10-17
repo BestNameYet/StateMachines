@@ -1,7 +1,6 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
-const workers=[{id:'chatgpt-1',type:'chatgpt'},{id:'gemini-1',type:'gemini'},{id:'gemini-2',type:'gemini'},{id:'gemini-3',type:'gemini'}];
 const workspaceBase='ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/';
 const commandMenu=[
  {name:'view_inventory',description:'Recursively list workspace file paths and descriptions.',arguments:{},returns:'{files:[{path,description}]} for every workspace file recursively'},
@@ -36,7 +35,7 @@ function localStorage(root){
  return {read:async p=>fs.existsSync(resolve(p))?fs.readFileSync(resolve(p),'utf8'):null,write:async(p,text)=>{const f=resolve(p);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,text);},list:async()=>{const result=[];function walk(dir,prefix=''){if(!fs.existsSync(dir))return;for(const e of fs.readdirSync(dir,{withFileTypes:true})){if(e.isSymbolicLink())continue;const p=prefix+e.name;if(e.isDirectory())walk(path.join(dir,e.name),p+'/');else result.push(p);}}walk(root);return result;}};
 }
 async function initializeWorkspace(record,storage){
- record.state.workers??=structuredClone(workers);
+ record.state.workers??=[];
  if(!record.state.workspace)record.state.workspace={path:workspaceBase+record.issueNumber,manifest:'manifest.json'};
  if(await storage.read('manifest.json')===null)await storage.write('manifest.json',JSON.stringify({files:[]},null,2)+'\n');
 }
@@ -62,4 +61,4 @@ async function executeCommands(record,commands,storage,save){
   record.state.commandResults??=[];record.state.commandResults.push({id,command:structuredClone(command),result});await save();
  }
 }
-module.exports={workers,commandMenu,relativePath,validateCommands,localStorage,initializeWorkspace,executeCommands,workspaceBase};
+module.exports={commandMenu,relativePath,validateCommands,localStorage,initializeWorkspace,executeCommands,workspaceBase};
