@@ -1,0 +1,35 @@
+name: Conversation Gemini Iterator
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/iterator-trigger.json'
+permissions:
+  contents: read
+concurrency:
+  group: conversation-gemini-single-worker
+  cancel-in-progress: false
+jobs:
+  iterate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate iterator and existing worker
+        run: |
+          python -m py_compile 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/iterate.py'
+          python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/test_run_task.py'
+      - name: Iterate subdivisions with one worker
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/iterate.py' --config 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/iterator-trigger.json' --output iterator-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conversation-gemini-iterator
+          path: iterator-results/
+          retention-days: 30
