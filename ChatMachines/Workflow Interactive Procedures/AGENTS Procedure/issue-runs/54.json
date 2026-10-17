@@ -142,6 +142,50 @@
           }
         ],
         "assignmentId": "task_gemini_analysis_matrix_refinement"
+      },
+      {
+        "name": "designSummary",
+        "value": "The Stage 3 passage boundary specification establishes a four-tier structural hierarchy: Conversation -> Branch Path -> Ordered Turn Exchange -> Classification Passage. Natural conversation trees are decomposed into distinct, non-concatenated branch paths by following explicit parent-child pointer chains in the conversation mapping graph. Each branch path is partitioned into discrete turn exchanges (User prompt -> Assistant response, capturing intermediate tool operations). To ensure interpretive clarity without label contamination, every classification passage strictly delineates the active target exchange (the sole locus of label assignment and evidentiary quotation) from contextual framing (`contextBefore` for antecedent constraints and pronoun resolution; `contextAfter` for subsequent user corrections and reaction tracking). Overlap between sliding windows is tracked deterministically through explicit target node identifiers, preventing repeated context turns from inflating empirical evidence counts during synthesis.",
+        "assignmentId": "task_gemini_passage_boundary_design"
+      },
+      {
+        "name": "boundaryRules",
+        "value": {
+          "exchangeDefinition": "An exchange unit is an ordered bipartite or tripartite turn sequence within an isolated conversation branch: commencing with a user prompt node (`message.author.role == 'user'`), traversing any immediate tool invocation or system intermediary nodes, and terminating at the corresponding assistant response node (`message.author.role == 'assistant'`). Null-message structural nodes are bypassed by following direct edge pointers.",
+          "targetDelineation": "The target passage is the primary evaluative unit consisting strictly of the designated core exchange. Semantic labels (subject/topic, user purpose, analytical perspective, conversation outcome) must be assigned solely based on text within the target passage. All label-supporting citations must reference message IDs, node IDs, and character offsets located exclusively within this target boundary.",
+          "contextBeforeRules": "Preceding context (`contextBefore`) encompasses up to N antecedent exchanges along the exact directed ancestry chain (`node.parent`). It provides necessary referential grounding, pronoun resolution, and background constraint awareness. Topics, requests, or entities appearing exclusively within `contextBefore` must not contribute labels or primary evidence counts to the target unit.",
+          "contextAfterRules": "Subsequent context (`contextAfter`) encompasses up to M descendant exchanges following the target's terminal node along the designated active branch. It provides visibility into user reactions, corrections, or follow-ups to evaluate conversation outcomes. Post-target shifts or subsequent inquiries occurring in `contextAfter` must never back-propagate to label the target unit.",
+          "branchPreservationRules": "Conversation tree structures must be traversed from root to leaf via parent-to-child links. Every fork point (`children.length > 1`) generates distinct, isolated branch paths. Alternative sibling replies are never concatenated or interleaved into a synthetic linear sequence. Each branch path maintains its own independent exchange sequence indexed by branch and node ancestry.",
+          "overlapTrackingMechanism": "Each prepared passage is indexed by a deterministic composite key (`targetPassageId`) and explicitly lists its constituent `targetNodeIds` separately from `contextNodeIds`. Evidence indexing, topic frequency aggregations, and perspective synthesis algorithms must filter strictly on `targetNodeIds`, ensuring that passages sharing context windows never produce duplicate evidentiary weight."
+        },
+        "assignmentId": "task_gemini_passage_boundary_design"
+      },
+      {
+        "name": "candidateModels",
+        "value": [
+          {
+            "modelName": "Atomic Exchange Unit (1-Exchange Pair)",
+            "sizeWindow": "1 User Prompt + 1 Assistant Response (typically 200–800 tokens; 2 conversational turns)",
+            "rationale": "Isolates the immediate functional request and response to measure whether topic discovery and classification can operate at minimal conversational granularity without noise from adjacent topics.",
+            "advantages": "Eliminates intra-passage topic mixing; provides pinpoint citation accuracy and unambiguous speaker attribution; creates clean mapping boundaries that prevent adjacent discussion drift.",
+            "potentialRisks": "Higher vulnerability to contextual insufficiency on short, elliptic, or anaphoric follow-up prompts (e.g., 'why?', 'continue', or pronoun-heavy responses), requiring frequent fallback to contextBefore."
+          },
+          {
+            "modelName": "Sliding Triad Window (3-Exchange Sequence)",
+            "sizeWindow": "3 Sequential Exchanges: Target centered between 1 preceding and 1 succeeding exchange (~1,200–3,500 tokens; 6 conversational turns)",
+            "rationale": "Balances immediate request-reply mechanics with local conversational momentum, capturing immediate clarifications, corrections, and multi-turn explanations within a manageable context window.",
+            "advantages": "High contextual sufficiency for iterative tasks, software debugging, and multi-step reasoning; directly captures correction loops (Q2) and immediate assistant assumptions (Q3) in a unified window.",
+            "potentialRisks": "Moderate risk of topic mixing across abrupt conversational pivots; requires strict enforcement to ensure workers do not label background turns as target evidence."
+          },
+          {
+            "modelName": "Macro Sub-Session (Topical Phase / Multi-Exchange Window)",
+            "sizeWindow": "Variable Window of 5 to 10 Sequential Exchanges bounded by detected topic shifts or session pauses (up to 8,000 tokens; 10–20 turns)",
+            "rationale": "Evaluates whether macro-level user trajectories, protracted project designs, or extended relationship reflections can be captured holistically as unified episodes.",
+            "advantages": "Maximizes contextual sufficiency and thematic coherence for long-horizon goals (Q1) and chronological usage analysis (Q4); avoids artificial fragmentation of extended workflows.",
+            "potentialRisks": "Severe topic dilution and keyword mixing; citations become coarse or ambiguous across long transcripts; high risk of conflating distinct conversational shifts into a single generic label."
+          }
+        ],
+        "assignmentId": "task_gemini_passage_boundary_design"
       }
     ],
     "controls": [
@@ -887,6 +931,46 @@
             }
           ]
         }
+      },
+      {
+        "render": 2,
+        "assignmentId": "task_gemini_passage_boundary_design",
+        "nonce": "gemini_passage_boundary_99b1",
+        "worker": "gemini",
+        "values": {
+          "designSummary": "The Stage 3 passage boundary specification establishes a four-tier structural hierarchy: Conversation -> Branch Path -> Ordered Turn Exchange -> Classification Passage. Natural conversation trees are decomposed into distinct, non-concatenated branch paths by following explicit parent-child pointer chains in the conversation mapping graph. Each branch path is partitioned into discrete turn exchanges (User prompt -> Assistant response, capturing intermediate tool operations). To ensure interpretive clarity without label contamination, every classification passage strictly delineates the active target exchange (the sole locus of label assignment and evidentiary quotation) from contextual framing (`contextBefore` for antecedent constraints and pronoun resolution; `contextAfter` for subsequent user corrections and reaction tracking). Overlap between sliding windows is tracked deterministically through explicit target node identifiers, preventing repeated context turns from inflating empirical evidence counts during synthesis.",
+          "boundaryRules": {
+            "exchangeDefinition": "An exchange unit is an ordered bipartite or tripartite turn sequence within an isolated conversation branch: commencing with a user prompt node (`message.author.role == 'user'`), traversing any immediate tool invocation or system intermediary nodes, and terminating at the corresponding assistant response node (`message.author.role == 'assistant'`). Null-message structural nodes are bypassed by following direct edge pointers.",
+            "targetDelineation": "The target passage is the primary evaluative unit consisting strictly of the designated core exchange. Semantic labels (subject/topic, user purpose, analytical perspective, conversation outcome) must be assigned solely based on text within the target passage. All label-supporting citations must reference message IDs, node IDs, and character offsets located exclusively within this target boundary.",
+            "contextBeforeRules": "Preceding context (`contextBefore`) encompasses up to N antecedent exchanges along the exact directed ancestry chain (`node.parent`). It provides necessary referential grounding, pronoun resolution, and background constraint awareness. Topics, requests, or entities appearing exclusively within `contextBefore` must not contribute labels or primary evidence counts to the target unit.",
+            "contextAfterRules": "Subsequent context (`contextAfter`) encompasses up to M descendant exchanges following the target's terminal node along the designated active branch. It provides visibility into user reactions, corrections, or follow-ups to evaluate conversation outcomes. Post-target shifts or subsequent inquiries occurring in `contextAfter` must never back-propagate to label the target unit.",
+            "branchPreservationRules": "Conversation tree structures must be traversed from root to leaf via parent-to-child links. Every fork point (`children.length > 1`) generates distinct, isolated branch paths. Alternative sibling replies are never concatenated or interleaved into a synthetic linear sequence. Each branch path maintains its own independent exchange sequence indexed by branch and node ancestry.",
+            "overlapTrackingMechanism": "Each prepared passage is indexed by a deterministic composite key (`targetPassageId`) and explicitly lists its constituent `targetNodeIds` separately from `contextNodeIds`. Evidence indexing, topic frequency aggregations, and perspective synthesis algorithms must filter strictly on `targetNodeIds`, ensuring that passages sharing context windows never produce duplicate evidentiary weight."
+          },
+          "candidateModels": [
+            {
+              "modelName": "Atomic Exchange Unit (1-Exchange Pair)",
+              "sizeWindow": "1 User Prompt + 1 Assistant Response (typically 200–800 tokens; 2 conversational turns)",
+              "rationale": "Isolates the immediate functional request and response to measure whether topic discovery and classification can operate at minimal conversational granularity without noise from adjacent topics.",
+              "advantages": "Eliminates intra-passage topic mixing; provides pinpoint citation accuracy and unambiguous speaker attribution; creates clean mapping boundaries that prevent adjacent discussion drift.",
+              "potentialRisks": "Higher vulnerability to contextual insufficiency on short, elliptic, or anaphoric follow-up prompts (e.g., 'why?', 'continue', or pronoun-heavy responses), requiring frequent fallback to contextBefore."
+            },
+            {
+              "modelName": "Sliding Triad Window (3-Exchange Sequence)",
+              "sizeWindow": "3 Sequential Exchanges: Target centered between 1 preceding and 1 succeeding exchange (~1,200–3,500 tokens; 6 conversational turns)",
+              "rationale": "Balances immediate request-reply mechanics with local conversational momentum, capturing immediate clarifications, corrections, and multi-turn explanations within a manageable context window.",
+              "advantages": "High contextual sufficiency for iterative tasks, software debugging, and multi-step reasoning; directly captures correction loops (Q2) and immediate assistant assumptions (Q3) in a unified window.",
+              "potentialRisks": "Moderate risk of topic mixing across abrupt conversational pivots; requires strict enforcement to ensure workers do not label background turns as target evidence."
+            },
+            {
+              "modelName": "Macro Sub-Session (Topical Phase / Multi-Exchange Window)",
+              "sizeWindow": "Variable Window of 5 to 10 Sequential Exchanges bounded by detected topic shifts or session pauses (up to 8,000 tokens; 10–20 turns)",
+              "rationale": "Evaluates whether macro-level user trajectories, protracted project designs, or extended relationship reflections can be captured holistically as unified episodes.",
+              "advantages": "Maximizes contextual sufficiency and thematic coherence for long-horizon goals (Q1) and chronological usage analysis (Q4); avoids artificial fragmentation of extended workflows.",
+              "potentialRisks": "Severe topic dilution and keyword mixing; citations become coarse or ambiguous across long transcripts; high risk of conflating distinct conversational shifts into a single generic label."
+            }
+          ]
+        }
       }
     ]
   },
@@ -1120,6 +1204,45 @@
             "endDate": "2026-10-17",
             "focus": "Unobservable contemporary usage period (mid-August 2026 to October 2026).",
             "dataLimitations": "Completely absent from the archive export. No conversation or message records exist in this timeframe; contemporary comparisons cannot be synthesized or fabricated without new external export retrieval."
+          }
+        ]
+      }
+    },
+    {
+      "request": 3,
+      "render": 2,
+      "assignmentId": "task_gemini_passage_boundary_design",
+      "values": {
+        "designSummary": "The Stage 3 passage boundary specification establishes a four-tier structural hierarchy: Conversation -> Branch Path -> Ordered Turn Exchange -> Classification Passage. Natural conversation trees are decomposed into distinct, non-concatenated branch paths by following explicit parent-child pointer chains in the conversation mapping graph. Each branch path is partitioned into discrete turn exchanges (User prompt -> Assistant response, capturing intermediate tool operations). To ensure interpretive clarity without label contamination, every classification passage strictly delineates the active target exchange (the sole locus of label assignment and evidentiary quotation) from contextual framing (`contextBefore` for antecedent constraints and pronoun resolution; `contextAfter` for subsequent user corrections and reaction tracking). Overlap between sliding windows is tracked deterministically through explicit target node identifiers, preventing repeated context turns from inflating empirical evidence counts during synthesis.",
+        "boundaryRules": {
+          "exchangeDefinition": "An exchange unit is an ordered bipartite or tripartite turn sequence within an isolated conversation branch: commencing with a user prompt node (`message.author.role == 'user'`), traversing any immediate tool invocation or system intermediary nodes, and terminating at the corresponding assistant response node (`message.author.role == 'assistant'`). Null-message structural nodes are bypassed by following direct edge pointers.",
+          "targetDelineation": "The target passage is the primary evaluative unit consisting strictly of the designated core exchange. Semantic labels (subject/topic, user purpose, analytical perspective, conversation outcome) must be assigned solely based on text within the target passage. All label-supporting citations must reference message IDs, node IDs, and character offsets located exclusively within this target boundary.",
+          "contextBeforeRules": "Preceding context (`contextBefore`) encompasses up to N antecedent exchanges along the exact directed ancestry chain (`node.parent`). It provides necessary referential grounding, pronoun resolution, and background constraint awareness. Topics, requests, or entities appearing exclusively within `contextBefore` must not contribute labels or primary evidence counts to the target unit.",
+          "contextAfterRules": "Subsequent context (`contextAfter`) encompasses up to M descendant exchanges following the target's terminal node along the designated active branch. It provides visibility into user reactions, corrections, or follow-ups to evaluate conversation outcomes. Post-target shifts or subsequent inquiries occurring in `contextAfter` must never back-propagate to label the target unit.",
+          "branchPreservationRules": "Conversation tree structures must be traversed from root to leaf via parent-to-child links. Every fork point (`children.length > 1`) generates distinct, isolated branch paths. Alternative sibling replies are never concatenated or interleaved into a synthetic linear sequence. Each branch path maintains its own independent exchange sequence indexed by branch and node ancestry.",
+          "overlapTrackingMechanism": "Each prepared passage is indexed by a deterministic composite key (`targetPassageId`) and explicitly lists its constituent `targetNodeIds` separately from `contextNodeIds`. Evidence indexing, topic frequency aggregations, and perspective synthesis algorithms must filter strictly on `targetNodeIds`, ensuring that passages sharing context windows never produce duplicate evidentiary weight."
+        },
+        "candidateModels": [
+          {
+            "modelName": "Atomic Exchange Unit (1-Exchange Pair)",
+            "sizeWindow": "1 User Prompt + 1 Assistant Response (typically 200–800 tokens; 2 conversational turns)",
+            "rationale": "Isolates the immediate functional request and response to measure whether topic discovery and classification can operate at minimal conversational granularity without noise from adjacent topics.",
+            "advantages": "Eliminates intra-passage topic mixing; provides pinpoint citation accuracy and unambiguous speaker attribution; creates clean mapping boundaries that prevent adjacent discussion drift.",
+            "potentialRisks": "Higher vulnerability to contextual insufficiency on short, elliptic, or anaphoric follow-up prompts (e.g., 'why?', 'continue', or pronoun-heavy responses), requiring frequent fallback to contextBefore."
+          },
+          {
+            "modelName": "Sliding Triad Window (3-Exchange Sequence)",
+            "sizeWindow": "3 Sequential Exchanges: Target centered between 1 preceding and 1 succeeding exchange (~1,200–3,500 tokens; 6 conversational turns)",
+            "rationale": "Balances immediate request-reply mechanics with local conversational momentum, capturing immediate clarifications, corrections, and multi-turn explanations within a manageable context window.",
+            "advantages": "High contextual sufficiency for iterative tasks, software debugging, and multi-step reasoning; directly captures correction loops (Q2) and immediate assistant assumptions (Q3) in a unified window.",
+            "potentialRisks": "Moderate risk of topic mixing across abrupt conversational pivots; requires strict enforcement to ensure workers do not label background turns as target evidence."
+          },
+          {
+            "modelName": "Macro Sub-Session (Topical Phase / Multi-Exchange Window)",
+            "sizeWindow": "Variable Window of 5 to 10 Sequential Exchanges bounded by detected topic shifts or session pauses (up to 8,000 tokens; 10–20 turns)",
+            "rationale": "Evaluates whether macro-level user trajectories, protracted project designs, or extended relationship reflections can be captured holistically as unified episodes.",
+            "advantages": "Maximizes contextual sufficiency and thematic coherence for long-horizon goals (Q1) and chronological usage analysis (Q4); avoids artificial fragmentation of extended workflows.",
+            "potentialRisks": "Severe topic dilution and keyword mixing; citations become coarse or ambiguous across long transcripts; high risk of conflating distinct conversational shifts into a single generic label."
           }
         ]
       }
