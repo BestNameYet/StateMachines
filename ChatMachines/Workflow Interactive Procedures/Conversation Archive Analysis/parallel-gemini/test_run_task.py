@@ -44,7 +44,7 @@ class Tests(unittest.TestCase):
 
             def model(prompt, key, model, images=None):
                 seen.update(prompt=prompt, key=key, images=images)
-                return '{"image":"conversation.png","messages":[],"unreadable_regions":[]}', {'finishReason': 'STOP'}
+                return '{"image":"conversation.png","messages":[]}', {'finishReason': 'STOP'}
 
             out = root / 'out'
             result = runner.run(root, 'conversation.png', 'Extract messages and authors', out, request_fn=model)
@@ -69,8 +69,7 @@ class Tests(unittest.TestCase):
                 image_path = payload['assigned_path']
                 self.assertEqual(len(images), 1)
                 seen.append(image_path)
-                return json.dumps({'image': image_path, 'messages': [],
-                                   'unreadable_regions': []}), {'finishReason': 'STOP'}
+                return json.dumps({'image': image_path, 'messages': []}), {'finishReason': 'STOP'}
 
             out = root / 'out'
             result = runner.run(root, 'batch', 'Extract messages and authors', out,
