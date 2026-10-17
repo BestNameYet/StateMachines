@@ -93,10 +93,10 @@ The earlier [four-assignment Gemini retry](https://github.com/BestNameYet/StateM
 
 ## 3. Prepare classification passages and design the analysis
 
-- [ ] Inspect representative conversations to identify the kinds of questions and contexts present. Mark this as sampling.
+- [x] Inspect representative conversations to identify the kinds of questions and contexts present. Mark this as sampling.
 - [ ] Define and prioritize the user's analysis questions and intended practical outputs.
-- [ ] Populate the analysis matrix: question, subject, perspective, source material, method, evidence requirements, coverage standard, limitations, output, and next prompt.
-- [ ] Distinguish the user, people discussed, interactions, and ChatGPT as analytical subjects.
+- [x] Populate the analysis matrix: question, subject, perspective, source material, method, evidence requirements, coverage standard, limitations, output, and next prompt.
+- [x] Distinguish the user, people discussed, interactions, and ChatGPT as analytical subjects.
 - [ ] Define comparison periods from available dates rather than assumed eras.
 - [ ] Organize the prepared material as conversations → ordered exchanges → classification passages, preserving references to the original messages.
 - [ ] Give each passage a defined target and separately marked contextBefore/contextAfter. Label the target; surrounding context aids interpretation without automatically contributing its topics.
@@ -107,11 +107,19 @@ The earlier [four-assignment Gemini retry](https://github.com/BestNameYet/StateM
 - [ ] Keep conversations intact where feasible; link oversized conversation parts and related conversations.
 - [ ] Specify how overlap is tracked so repeated passages do not become independent evidence.
 - [ ] Generate chunk manifests and verify every source message is accounted for.
-- [ ] Define common output conventions for findings, citations, contradictions, uncertainty, and unanswered questions.
+- [x] Define common output conventions for findings, citations, contradictions, uncertainty, and unanswered questions.
 
 Output: analysis matrix, chunking decision, chunk manifest, and shared analytical conventions.
 
 Parallel opportunity: candidate approaches and independent question/perspective designs can be proposed concurrently from the same source inventory. Consolidate them before launching the full analytical pass. The final subdivision depends on those decisions.
+
+### Stage 3 initial topic-guided pilot — October 17, 2026
+
+The [pilot report](stage3-pilot/REPORT.md) uses the four-instance NMF results and 54-group merger to inspect eight bounded source windows from eight conversations. It records actual question/context types, source/node references and limitations. This is explicitly targeted sampling, not complete conversation reading or exhaustive semantic analysis.
+
+Completed outputs: [sampling record](stage3-pilot/sampling-record.json), [initial analysis matrix](stage3-pilot/analysis-matrix.json), [shared output conventions](stage3-pilot/output-conventions.json), and [provisional candidate topic index](stage3-pilot/candidate-topic-index.json). Matrix priorities are proposals; the user-prioritization item remains open. Topic 0's filler-dominated keywords were not a reliable topical label; its reviewed representative concerns a science-fiction design correction. Other windows distinguish technical clarification, business operations, construction, source checking, procedural modeling, marketing and employment/interpersonal contexts.
+
+The checked Stage 3 items represent this initial pilot and its documented conventions only. Exchange/passage construction, passage-size comparison, broader coverage, label validation and final catalog consolidation remain open. Computational coverage of 134 files / 1,334 conversations / 27,283 prepared windows does not imply those records were semantically read.
 
 ## 4. Prepare parallel assignments — before model calls
 
