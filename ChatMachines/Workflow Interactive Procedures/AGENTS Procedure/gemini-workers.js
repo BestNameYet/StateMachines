@@ -14,7 +14,7 @@ async function runGeminiWorkers(record,storage,save,{generate=callGemini}={}){
  const render=record.state.render;
  const pending=screen.assignments.filter(a=>a.worker==='gemini'&&!(record.state.assignmentReturns||[]).some(r=>r.assignmentId===a.id));
  if(!pending.length)return false;
- const paths=(await storage.list()).filter(p=>p!=='manifest.json'&&!p.startsWith('worker-context/'));
+ const paths=(record.state.workspace?.path==='.'?[]:await storage.list()).filter(p=>p!=='manifest.json'&&!p.startsWith('worker-context/'));
  const files=await Promise.all(paths.map(async p=>({path:p,content:await storage.read(p)})));
  let mutation=Promise.resolve();
  const bind=async(nonce,assignment)=>{
@@ -26,7 +26,7 @@ async function runGeminiWorkers(record,storage,save,{generate=callGemini}={}){
   if(record.state.workerResponses?.[key])return {assignment,key,response:record.state.workerResponses[key]};
   let identity=(record.state.workers||[]).find(w=>w.nonce===(assignment.nonce||(record.state.assignmentWorkers||[]).find(b=>b.assignmentId===assignment.id)?.nonce));
   if(!identity){
-    const raw=await generate({registration:{type:'gemini',assignmentId:assignment.id},instructions:{workerGuide:workerGuide(),projectReadme:await storage.read('project/README.md'),role:'Register as a Gemini worker before receiving your prepared assignment. Choose a unique nonce of 1–128 letters, digits, underscores or hyphens. Return JSON exactly {"nonce":"your-choice"}. Do not perform task work yet.'},state:structuredClone(record.state)});
+    const raw=await generate({registration:{type:'gemini',assignmentId:assignment.id},instructions:{workerGuide:workerGuide(),projectReadme:await storage.read(record.state.workspace?.path==='.'?'README.md':'project/README.md'),role:'Register as a Gemini worker before receiving your prepared assignment. Choose a unique nonce of 1–128 letters, digits, underscores or hyphens. Return JSON exactly {"nonce":"your-choice"}. Do not perform task work yet.'},state:structuredClone(record.state)});
     const registration=typeof raw==='string'?JSON.parse(raw):raw;
     if(!registration||Object.keys(registration).join(',')!=='nonce')throw Error('Worker registration requires exactly nonce.');
     identity=await bind(registration.nonce,assignment);
@@ -39,7 +39,7 @@ async function runGeminiWorkers(record,storage,save,{generate=callGemini}={}){
     request.state=context.state;request.history=context.history;request.workerHistory=context.workerHistory;request.verbatimUserPrompt=context.verbatimUserPrompt;request.reconstructionQueue=context.reconstructionQueue;request.reconstructionInstructions=context.reconstructionInstructions;
     request.instructions.context=context.instructions.role;
     request.instructions.workerGuide=workerGuide();
-    request.instructions.projectReadme=await storage.read('project/README.md');
+    request.instructions.projectReadme=await storage.read(record.state.workspace?.path==='.'?'README.md':'project/README.md');
     request.instructions.standingInstructions=record.state.standingInstructions||screen.standingInstructions;
     request.instructions.returnWritingGuidelines=JSON.parse(fs.readFileSync(path.join(__dirname,'gemini-request-template.json'),'utf8')).instructions.screenWritingGuidelines;
     const raw=await generate(structuredClone(request));response=typeof raw==='string'?JSON.parse(raw):raw;

@@ -10,7 +10,7 @@ async function test(){
  const record={issueNumber:99,request:1,history:[],geminiStarted:true,geminiPending:true,state:{procedureMode:'gemini',verbatimUserPrompt:'Inspect files and coordinate workers.',variables:[],renderedScreens:[{instruction:'Old screen',expectedInputs:[{name:'old',schema:{type:'string'}}]}],controls:[],renderedRequests:[]}};
  const requests=[];let calls=0;
  await generateGeminiScreen(record,async()=>{}, {storage,generate:async request=>{
-  requests.push(request);assert.equal(request.commandMenu.length,4);assert(request.instructions.screenWritingGuidelines.includes('{$variableName}'));
+  requests.push(request);assert.equal(request.commandMenu.length,5);assert(request.instructions.screenWritingGuidelines.includes('{$variableName}'));
   if(calls++===0)return {control,commands:[{name:'write_files',files:[{path:'nested/rules.js',description:'Worker rule source',content:'module.exports = 60;'}]},{name:'set_standing_instructions',instruction:'Verify your result and report evidence.'}]};
   if(calls===2){assert.equal(request.state.renderedScreens.length,1);assert.equal(request.state.commandResults.length,2);return {control,commands:[{name:'view_inventory'},{name:'read_files',paths:['nested/rules.js','missing.txt']}]};}
   assert.equal(request.state.commandResults.length,4);assert.equal(request.state.commandResults[2].result.files[0].description,'Worker rule source');assert.equal(request.state.commandResults[3].result.files[0].content,'module.exports = 60;');

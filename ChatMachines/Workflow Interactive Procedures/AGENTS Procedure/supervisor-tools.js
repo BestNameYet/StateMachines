@@ -3,6 +3,7 @@ const path=require('node:path');
 const crypto=require('node:crypto');
 const workspaceBase='ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/';
 const commandMenu=[
+ {name:'copy_files',description:'Copy existing source files byte-for-byte inside the configured workspace, preserving their Git blobs when repository-root access is enabled.',arguments:{files:[{source:'src/example.js',path:'source-code-copy/src/example.js',description:'Preserved source copy'}]},returns:'Source/destination paths and copied Git blob identities, or an error'},
  {name:'view_inventory',description:'Recursively list workspace file paths and descriptions.',arguments:{},returns:'{files:[{path,description}]} for every workspace file recursively'},
  {name:'read_files',description:'Read UTF-8 files inside this issue workspace.',arguments:{paths:['relative/path']},returns:'{files:[{path,content} or {path,error}]}'},
  {name:'write_files',description:'Create or replace workspace files, including JavaScript source and worker rules. Saves source without executing it.',arguments:{files:[{path:'relative/path',description:'Purpose of this file',content:'Full UTF-8 contents'}]},returns:'Saved file paths and descriptions, or an error'},
@@ -17,8 +18,9 @@ function validateCommands(commands){
  if(!Array.isArray(commands)||!commands.length)throw Error('commands must be a nonempty array.');
  for(const c of commands){
   if(!c||!commandMenu.some(m=>m.name===c.name))throw Error('Unknown supervisor command.');
-  const allowed={view_inventory:['name'],read_files:['name','paths'],write_files:['name','files'],set_standing_instructions:['name','instruction']}[c.name];
+  const allowed={view_inventory:['name'],read_files:['name','paths'],write_files:['name','files'],copy_files:['name','files'],set_standing_instructions:['name','instruction']}[c.name];
   if(Object.keys(c).length!==allowed.length||allowed.some(k=>!Object.hasOwn(c,k)))throw Error('Invalid arguments for '+c.name);
+  if(c.name==='copy_files'){if(!Array.isArray(c.files)||!c.files.length)throw Error('files must be nonempty.');const destinations=new Set();for(const f of c.files){relativePath(f.source);relativePath(f.path);if(f.source===f.path||destinations.has(f.path)||typeof f.description!=='string'||!f.description.trim()||Object.keys(f).sort().join(',')!=='description,path,source')throw Error('Each copy needs a distinct source, destination and description.');destinations.add(f.path);}}
   if(c.name==='read_files'){if(!Array.isArray(c.paths)||!c.paths.length)throw Error('paths must be nonempty.');c.paths.forEach(relativePath);}
   if(c.name==='write_files'){
    if(!Array.isArray(c.files)||!c.files.length)throw Error('files must be nonempty.');
@@ -37,7 +39,7 @@ function localStorage(root){
 async function initializeWorkspace(record,storage){
  record.state.workers??=[];
  if(!record.state.workspace)record.state.workspace={path:workspaceBase+record.issueNumber,manifest:'manifest.json'};
- if(await storage.read('manifest.json')===null)await storage.write('manifest.json',JSON.stringify({files:[]},null,2)+'\n');
+ if(await storage.read(storage.manifestPath||'manifest.json')===null)await storage.write(storage.manifestPath||'manifest.json',JSON.stringify({files:[]},null,2)+'\n');
 }
 async function executeCommands(record,commands,storage,save,{actor={type:'supervisor'},requestId=null}={}){
  validateCommands(commands);
@@ -46,15 +48,16 @@ async function executeCommands(record,commands,storage,save,{actor={type:'superv
   if(record.state.commandResults?.some(r=>r.id===id))continue;
   let result;
   try{
-   const manifest=JSON.parse(await storage.read('manifest.json')||'{"files":[]}');
+   const manifest=JSON.parse(await storage.read(storage.manifestPath||'manifest.json')||'{"files":[]}');
    if(command.name==='view_inventory'){
-    const files=(await storage.list()).filter(p=>p!=='manifest.json');
+    const files=(await storage.list()).filter(p=>p!==(storage.manifestPath||'manifest.json'));
     result={files:files.map(p=>({path:p,description:manifest.files.find(f=>f.path===p)?.description||''}))};
    }
+   if(command.name==='copy_files'){if(!storage.copyFiles)throw Error('copy_files is supported by repository-root storage.');result={files:await storage.copyFiles(command.files)};for(const f of command.files){const entry={path:f.path,description:f.description};const i=manifest.files.findIndex(e=>e.path===f.path);if(i<0)manifest.files.push(entry);else manifest.files[i]=entry;}await storage.write(storage.manifestPath||'manifest.json',JSON.stringify(manifest,null,2)+'\n');}
    if(command.name==='read_files')result={files:await Promise.all(command.paths.map(async p=>{const content=await storage.read(p);return content===null?{path:p,error:'File not found'}:{path:p,content};}))};
    if(command.name==='write_files'){
     for(const f of command.files){await storage.write(f.path,f.content);const entry={path:f.path,description:f.description};const i=manifest.files.findIndex(x=>x.path===f.path);if(i<0)manifest.files.push(entry);else manifest.files[i]=entry;}
-    await storage.write('manifest.json',JSON.stringify(manifest,null,2)+'\n');result={files:command.files.map(f=>({path:f.path,description:f.description}))};
+    await storage.write(storage.manifestPath||'manifest.json',JSON.stringify(manifest,null,2)+'\n');result={files:command.files.map(f=>({path:f.path,description:f.description}))};
    }
    if(command.name==='set_standing_instructions'){record.state.standingInstructions=command.instruction;result={updated:true};}
   }catch(error){result={error:error.message};}

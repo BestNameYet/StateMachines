@@ -5,6 +5,7 @@ const {loadScreens,entriesForState} = require('./render-instructions.js');
 const {inputsFor, validate} = require('./validator.js');
 const {lastGeminiScreen,renderGeminiScreen,broadcastParts} = require('./render-gemini.js');
 const {bindAssignmentWorker,registerWorker,requestWorkerInstruction,generateGeminiScreen,acceptGeminiValues} = require('./gemini-workflow.js');
+const {rootWorkspaceRequested,rootStorage}=require('./root-workspace.js');
 const {initializeWorkspace,workspaceBase}=require('./supervisor-tools.js');
 const {runGeminiWorkers}=require('./gemini-workers.js');
 const {executeWorkerCommands,registerPreparedWorker,registrationMessage}=require('./worker-registration.js');
@@ -268,11 +269,12 @@ async function main() {
   record.issueNumber=number;
   const workspacePath=workspaceBase+number;
   const fileRoute=p=>'/contents/'+(workspacePath+'/'+p).split('/').map(encodeURIComponent).join('/');
-  const workspaceStorage={
+  let workspaceStorage={
     read:async p=>{const f=await api('GET',fileRoute(p),undefined,true);if(!f)return null;if(f.type&&f.type!=='file')throw Error('Not a regular file.');return Buffer.from(f.content,'base64').toString('utf8');},
     write:async(p,text)=>{const f=await api('GET',fileRoute(p),undefined,true);await api('PUT',fileRoute(p),{message:'Update issue '+number+' workspace: '+p,content:Buffer.from(text).toString('base64'),...(f?{sha:f.sha}:{})});},
     list:async()=>{const files=[];async function walk(p=''){const entries=await api('GET',fileRoute(p).replace(/\/$/,''),undefined,true);for(const e of entries||[]){const name=p?p+'/'+e.name:e.name;if(e.type==='dir')await walk(name);else if(e.type==='file')files.push(name);}}await walk();return files;}
   };
+  if(rootWorkspaceRequested(issue)){workspaceStorage=rootStorage(api,number);record.state.workspace={path:'.',access:'repository-root',manifest:workspaceStorage.manifestPath};}
   const outbox=[];
   const workerCommands=[];
   const workerDeliveries=[];
