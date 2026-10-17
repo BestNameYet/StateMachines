@@ -1,0 +1,550 @@
+{
+  "purpose": "Stage 3 analysis-design key plan based on the Conversation Archive Analysis checklist.",
+  "source": {
+    "key_type_inventory": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/key_type_inventory.json",
+    "shards": 14,
+    "conversations": 1334,
+    "repository_directory": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/",
+    "export_manifest": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/export_manifest.json",
+    "shard_batches": "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/shard_batches.json",
+    "conversation_shards": [
+      "conversations-000.json",
+      "conversations-001.json",
+      "conversations-002.json",
+      "conversations-003.json",
+      "conversations-004.json",
+      "conversations-005.json",
+      "conversations-006.json",
+      "conversations-007.json",
+      "conversations-008.json",
+      "conversations-009.json",
+      "conversations-010.json",
+      "conversations-011.json",
+      "conversations-012.json",
+      "conversations-013.json"
+    ]
+  },
+  "checklist_alignment": {
+    "next_incomplete_stage": "3. Prepare classification passages and design the analysis.",
+    "immediate_work": [
+      "Sample representative conversations to discover question and context types.",
+      "Prioritize answerable questions and practical outputs; populate the analysis matrix.",
+      "Keep the user, people discussed, interactions, and ChatGPT as distinct analytical subjects.",
+      "Establish comparison periods from available dates.",
+      "Design conversations-to-exchanges-to-passages organization, references, context windows, branches, and a passage-size pilot."
+    ],
+    "preceding_stage_status": "Stage 2 extraction is marked complete in CHECKLIST.md. The repository directory contains the 14 extracted conversation shards (conversations-000.json through conversations-013.json), export_manifest.json, shard_batches.json, and key_type_inventory.json."
+  },
+  "adequacy_assessment": {
+    "current_plan_sufficient": false,
+    "reason": "The prior plan includes many conversation settings but does not specify how Stage 3 will inspect ordered exchanges, preserve branch/message references, or access representative source text. Metadata keys alone cannot reveal question/context types or support passage-boundary decisions."
+  },
+  "capture_for_stage3": {
+    "conversation_index": [
+      {
+        "key": "id",
+        "observed_types": [
+          "string"
+        ],
+        "purpose": "Stable conversation reference; preserve separately from conversation_id."
+      },
+      {
+        "key": "conversation_id",
+        "observed_types": [
+          "string"
+        ],
+        "purpose": "Conversation-level source identifier."
+      },
+      {
+        "key": "title",
+        "observed_types": [
+          "string"
+        ],
+        "purpose": "Sampling/navigation context; do not treat title as a verified topic label."
+      },
+      {
+        "key": "create_time",
+        "observed_types": [
+          "number"
+        ],
+        "purpose": "Place conversations in available comparison periods."
+      },
+      {
+        "key": "update_time",
+        "observed_types": [
+          "number"
+        ],
+        "purpose": "Record latest activity when selecting dated examples."
+      },
+      {
+        "key": "current_node",
+        "observed_types": [
+          "string"
+        ],
+        "purpose": "Retain the conversation's current branch endpoint where relevant."
+      }
+    ],
+    "existing_stage2_inventory_values": [
+      {
+        "name": "message_count",
+        "purpose": "Use the verified per-conversation count when available."
+      },
+      {
+        "name": "size_bytes",
+        "purpose": "Use the verified per-conversation byte size when available."
+      },
+      {
+        "name": "character_count",
+        "purpose": "Use the verified per-conversation character count when available."
+      },
+      {
+        "name": "message_date_range",
+        "purpose": "Use observed message timestamps to choose comparison periods."
+      },
+      {
+        "name": "attachment_availability",
+        "purpose": "Flag unavailable attachment payloads and source references."
+      },
+      {
+        "name": "source_reference",
+        "purpose": "Keep the source record and message reference needed to reopen evidence."
+      }
+    ],
+    "sample_structure": [
+      {
+        "key": "mapping",
+        "observed_types": [
+          "object"
+        ],
+        "purpose": "Traverse, do not copy the full graph."
+      },
+      {
+        "key": "mapping entry key / node id",
+        "observed_types": [
+          "dynamic key; verify in source schema"
+        ],
+        "purpose": "Stable reference for each sampled node."
+      },
+      {
+        "key": "parent",
+        "observed_types": [
+          "null",
+          "string"
+        ],
+        "purpose": "Preserve branch ancestry."
+      },
+      {
+        "key": "children",
+        "observed_types": [
+          "array"
+        ],
+        "purpose": "Preserve alternative replies and branch structure when present."
+      },
+      {
+        "key": "message",
+        "observed_types": [
+          "null",
+          "object"
+        ],
+        "purpose": "Skip null nodes; inspect message-bearing nodes."
+      },
+      {
+        "key": "message.id",
+        "observed_types": [
+          "string"
+        ],
+        "purpose": "Stable message citation reference; retain repeated IDs and distinguish nodes by node reference."
+      },
+      {
+        "key": "message.author.role",
+        "observed_types": [
+          "string"
+        ],
+        "purpose": "Attribute user, assistant, and tool messages correctly."
+      },
+      {
+        "key": "message.create_time",
+        "observed_types": [
+          "number"
+        ],
+        "purpose": "Order exchanges and distinguish event date from discussion date where available."
+      },
+      {
+        "key": "message.content.parts",
+        "observed_types": [
+          "array"
+        ],
+        "purpose": "Read exact source text for sampled conversations only; required to identify question/context types and test passage boundaries."
+      }
+    ],
+    "selected_metadata": [
+      {
+        "key": "metadata",
+        "observed_types": [
+          "null",
+          "object"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "attachments",
+        "observed_types": [
+          "array"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "asset_pointer",
+        "observed_types": [
+          "string"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "file_name",
+        "observed_types": [
+          "string"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "mime_type",
+        "observed_types": [
+          "string"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "size_bytes",
+        "observed_types": [
+          "number"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "source",
+        "observed_types": [
+          "string"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "source_title",
+        "observed_types": [
+          "string"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "source_url",
+        "observed_types": [
+          "null",
+          "string"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "source_type",
+        "observed_types": [
+          "null"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "sources",
+        "observed_types": [
+          "array"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "metadata_sources",
+        "observed_types": [
+          "array"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      },
+      {
+        "key": "content_references",
+        "observed_types": [
+          "array"
+        ],
+        "capture": "Only compact citation/source or attachment descriptors needed to reopen or characterize sampled evidence."
+      }
+    ],
+    "sampling_record": [
+      {
+        "name": "sampled",
+        "purpose": "Mark which conversations were actually inspected; do not imply exhaustive coverage."
+      },
+      {
+        "name": "sample_basis",
+        "purpose": "Record selection reason/stratum (date, size, branch, topic candidate, or other checklist-relevant criterion)."
+      },
+      {
+        "name": "coverage_status",
+        "purpose": "Keep inventoried, searched, read, analyzed, synthesized, and verified states distinct."
+      }
+    ]
+  },
+  "later_or_conditional": [
+    {
+      "key": "default_model_slug",
+      "observed_types": [
+        "string"
+      ],
+      "handling": "Retain for the later evolution-of-use comparison if the source record has it."
+    },
+    {
+      "key": "conversation_template_id",
+      "observed_types": [
+        "null",
+        "string"
+      ],
+      "handling": "Defer unless it is relevant to a selected Stage 3 question."
+    },
+    {
+      "keys": [
+        "is_archived",
+        "is_do_not_remember",
+        "is_read_only",
+        "is_starred",
+        "is_study_mode",
+        "memory_scope",
+        "pinned_time",
+        "plugin_ids",
+        "voice"
+      ],
+      "handling": "Defer; these settings do not determine Stage 3 questions, attribution, dates, or passage design."
+    }
+  ],
+  "derived_or_absent": [
+    {
+      "name": "topic",
+      "status": "not a direct key in the inventory",
+      "handling": "Discover from sampled source passages; do not pre-label by title."
+    },
+    {
+      "name": "project",
+      "status": "no project/project_id key observed",
+      "handling": "Record only with explicit source evidence; otherwise null."
+    },
+    {
+      "name": "outputs",
+      "status": "no direct outputs key observed",
+      "handling": "Describe only when sample evidence or attachment descriptors support it."
+    }
+  ],
+  "data_handling": {
+    "sample_text": "Read exact content.parts values only for selected samples from the conversation shard JSON files listed in source.conversation_shards within source.repository_directory. Do not copy conversation text or quotations into this key-plan file or issue comments.",
+    "attachments": "The checklist says omitted attachment payloads remain unavailable; preserve references and mark the limitation rather than inferring contents.",
+    "repository_scope": "For Stage 3 sampling, use only the listed files already present in source.repository_directory; do not initiate any external archive handoff."
+  },
+  "inventory_limitations": [
+    "key_type_inventory.json is recursive and flattened; it reports global key/type observations, not JSON paths. Verify paths and scope against the source record before extracting values.",
+    "The prior plan was not sufficient by itself for Stage 3 because it omitted message/branch structure and sampled source-content access."
+  ],
+  "observed_key_types": [
+    {
+      "key": "conversation_id",
+      "observed_types": [
+        "string"
+      ],
+      "observations": 1334
+    },
+    {
+      "key": "id",
+      "observed_types": [
+        "string"
+      ],
+      "observations": 80556
+    },
+    {
+      "key": "title",
+      "observed_types": [
+        "string"
+      ],
+      "observations": 46997
+    },
+    {
+      "key": "create_time",
+      "observed_types": [
+        "number"
+      ],
+      "observations": 37534
+    },
+    {
+      "key": "update_time",
+      "observed_types": [
+        "number"
+      ],
+      "observations": 1334
+    },
+    {
+      "key": "current_node",
+      "observed_types": [
+        "string"
+      ],
+      "observations": 1334
+    },
+    {
+      "key": "mapping",
+      "observed_types": [
+        "object"
+      ],
+      "observations": 1334
+    },
+    {
+      "key": "parent",
+      "observed_types": [
+        "null",
+        "string"
+      ],
+      "observations": 37534
+    },
+    {
+      "key": "children",
+      "observed_types": [
+        "array"
+      ],
+      "observations": 32
+    },
+    {
+      "key": "message",
+      "observed_types": [
+        "null",
+        "object"
+      ],
+      "observations": 37534
+    },
+    {
+      "key": "author",
+      "observed_types": [
+        "object"
+      ],
+      "observations": 36200
+    },
+    {
+      "key": "role",
+      "observed_types": [
+        "string"
+      ],
+      "observations": 36200
+    },
+    {
+      "key": "content",
+      "observed_types": [
+        "object",
+        "string"
+      ],
+      "observations": 41952
+    },
+    {
+      "key": "parts",
+      "observed_types": [
+        "array"
+      ],
+      "observations": 30816
+    },
+    {
+      "key": "metadata",
+      "observed_types": [
+        "null",
+        "object"
+      ],
+      "observations": 28627
+    },
+    {
+      "key": "attachments",
+      "observed_types": [
+        "array"
+      ],
+      "observations": 1446
+    },
+    {
+      "key": "asset_pointer",
+      "observed_types": [
+        "string"
+      ],
+      "observations": 2768
+    },
+    {
+      "key": "file_name",
+      "observed_types": [
+        "string"
+      ],
+      "observations": 45
+    },
+    {
+      "key": "mime_type",
+      "observed_types": [
+        "string"
+      ],
+      "observations": 1281
+    },
+    {
+      "key": "size_bytes",
+      "observed_types": [
+        "number"
+      ],
+      "observations": 2768
+    },
+    {
+      "key": "default_model_slug",
+      "observed_types": [
+        "string"
+      ],
+      "observations": 1334
+    },
+    {
+      "key": "source",
+      "observed_types": [
+        "string"
+      ],
+      "observations": 1883
+    },
+    {
+      "key": "source_title",
+      "observed_types": [
+        "string"
+      ],
+      "observations": 8
+    },
+    {
+      "key": "source_url",
+      "observed_types": [
+        "null",
+        "string"
+      ],
+      "observations": 672
+    },
+    {
+      "key": "source_type",
+      "observed_types": [
+        "null"
+      ],
+      "observations": 1
+    },
+    {
+      "key": "sources",
+      "observed_types": [
+        "array"
+      ],
+      "observations": 1074
+    },
+    {
+      "key": "metadata_sources",
+      "observed_types": [
+        "array"
+      ],
+      "observations": 270
+    },
+    {
+      "key": "content_references",
+      "observed_types": [
+        "array"
+      ],
+      "observations": 19607
+    }
+  ]
+}

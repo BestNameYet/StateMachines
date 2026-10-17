@@ -1,0 +1,268 @@
+# Analysis execution checklist
+
+This is the execution order for the archive-analysis project. Use the existing [AGENTS Procedure](../AGENTS%20Procedure/README.md) to carry out the work. Check items only after verifying their stated outputs. An uploaded result or completed API call is not proof of a valid analysis.
+
+## 0. Execution substrate — complete
+
+- [x] Build the Gemini parallelizer (parallel-gemini/ and Conversation Parallel Gemini workflow).
+- [x] Accept an array of repository paths and a shared assignment instruction.
+- [x] Run independent assignments concurrently with bounded parallelism.
+- [x] Preserve separate responses, source manifests, hashes, and task outcomes.
+- [x] Collect results and identify failed or missing assignments without cancelling successful jobs.
+- [x] Verify two real Gemini jobs running in parallel and successful result collection.
+- [x] Return the commit trigger to disabled after the smoke test.
+
+Evidence: [AGENTS build run #13](https://github.com/BestNameYet/StateMachines/issues/13) and [successful live parallel test](https://github.com/BestNameYet/StateMachines/actions/runs/38817942348). The two analysis jobs both started at 22:34:04 UTC on October 15, 2026 and completed successfully. This verifies the substrate, not analysis of the conversation archive.
+
+The parallelizer is already built. Do not include rebuilding it as an outstanding prerequisite.
+
+## 1. Retrieve and establish the source — sequential foundation
+
+- [x] Retrieve the linked Library archive and record its current identity, version, filename, size, and hash.
+- [x] Inspect its actual format, contents, date coverage, branches, attachments, and any parsing problems.
+- [x] Preserve an unchanged source and document where source and derived data will be held.
+- [x] Decide worker-data handling from the historical dialogues: keep the original archive and extracted records in Library; stage only each worker's assigned material into a temporary worker workspace; keep code and assignment manifests in GitHub. This records the data-handling policy, not a working access path.
+~~- [ ] Implement and verify a private Library-to-worker staging route (or equivalent). The current substrate accepts repository paths; Library access/import is not built into it. Complete and test the handoff before launching archive-analysis jobs, without automatically committing private conversations. Verify that each worker receives only its assigned material, keep unassigned conversation text out of prompts/logs/artifacts, and remove staged files from the temporary workspace when the job ends.~~
+- [x] Establish whether 2024–2025 and present-day material are both available; identify missing comparison sources.
+
+Output: source manifest, format/coverage report, documented private-data handling policy, and a tested worker-access route.
+
+Do not subdivide based only on the file's apparent size or assume the archive contains the complete account.
+
+### Stage 1 inspection result — October 15, 2026
+
+Source inspection and the worker-data handling decision are complete. The remaining handoff gate applies to the separate ChatGPT export package in Library; the Historical Build Dialogues reference is already committed in GitHub and can be assigned directly by repository path. The historical policy is to retain the export archive and extracted records in Library and stage only assigned material into a temporary worker workspace when that Library-held package is processed. Code and assignment manifests remain in GitHub. This policy appears in shared_chat_conversations.json, chat 6ad20a38-4b64-83e8-af9a-1810aa4b6515 (message 1d07c5e2-c1ee-5b31-951a-97797ed3bb86, 2026-10-16 02:51:11 UTC); its branched copy is chat 6ad20a64-aa6c-83e8-b41c-edfb92cfe8df. That conversation said the handoff was not then implemented. The existing parallelizer accepts repository paths, and its Actions workers check out the repository and read assigned files or directories. All 14 source shards parsed: 1,334 conversations, 36,200 messages. Observed message dates span August 25, 2024 through August 5, 2026; current October usage needs additional material. Attachment bytes are absent. Preserve six repeated message-ID occurrences, including one ID with differing payloads, during extraction.
+
+Recoverable reports:
+
+- Library /source-manifest.json — libfile_0751e5c2be588191abda62f417f9a79d
+- Library /inspection-report.md — libfile_bb250c290264819199e658d45b71f994
+- Original source remains libfile_8eeefed45af881919c1fdb5c15604019; SHA-256 b3baf3917796412b5096c21fad7356c6dba84aa916e38a68453c6a328b23b5f4.
+
+Repository-path worker access is implemented for files already in GitHub: `AGENTS Procedure/Historical Build Dialogues/shared_chat_conversations.json` is committed in the sibling folder. The parallelizer accepts repository-relative file or directory paths; each Actions worker checks out the repository and reads only its assigned path for its Gemini analysis. This historical-dialogue file can be assigned directly, without a Library handoff.
+
+The source dataset for this archive-analysis project is separate: `/chatgpt_conversations_stage2.zip` remains in the Library and is not committed in this repository. The current worker accepts repository paths only, so the Library-to-worker handoff remains open for that export package. The earlier blanket statement that no personal conversation text was committed to GitHub was inaccurate: the separate historical-dialogue JSON is present. Do not copy additional export-package contents into the repository without an explicit data-handling decision. No extraction, chunking, labeling, or semantic analysis of the source export has been performed. See [AGENTS inspection run #14](https://github.com/BestNameYet/StateMachines/issues/14).
+
+## 2. Extract each conversation and verify completeness — first preparation step
+
+- [x] Extract each conversation into its own structured record, preserving its ID, title, dates, original messages, message IDs, speakers, timestamps, branch relationships, and attachment references.
+- [x] Preserve original wording. Normalize export formatting only; do not summarize, rewrite, or assign topic labels during extraction.
+- [x] Reconstruct ordered user/assistant exchanges within each conversation branch without joining alternative replies into a fictitious linear conversation.
+- [x] Mark unavailable attachments and missing content explicitly rather than treating the remaining text as complete.
+- [x] Give every conversation and message a stable reference back to the original.
+- [x] Build the inventory: dates, titles, message counts, lengths, and metadata availability.
+- [x] Verify extraction counts and account for omitted, duplicate, empty, malformed, or unsupported records.
+- [x] Create the coverage ledger, distinguishing inventoried, searched, read, analyzed for a named question, synthesized, and verified.
+- [x] Establish attribution conventions for user statements, quoted third-party messages, assistant output, reports, and interpretations.
+
+Output: indexed source records, inventory, reference scheme, parsing exceptions, and initial coverage ledger.
+
+Parallel opportunity: after the format and reference scheme are fixed, independent conversations can be extracted in separate jobs. Combine and validate counts centrally before interpretation.
+
+### Stage 2 extraction result — October 16, 2026
+
+Extraction is complete. The private Library package `chatgpt_conversations_stage2.zip` contains one source-faithful JSON record per conversation, plus an index, coverage and integrity report, and the source asset-name map. It records 1,334 conversations and 36,200 messages; each generated record was reopened and checked against its source object. Branch alternatives and repeated message IDs are retained. The archive's omitted attachment payloads remain unavailable and are identified in the package. The package includes attribution conventions that preserve the export's speaker role and do not infer a new speaker for quoted or discussed people.
+
+The export package remains in Library. No text from its 1,334 extracted records was added to this repository; the separate Historical Build Dialogues JSON described above is already committed. Semantic reading, topic search, analysis, and synthesis of the export remain for later stages.
+
+## 2A. Repository preparation and key inventory — October 17, 2026
+
+This update supersedes the earlier statements that source conversation text is absent from GitHub and that extraction is the next milestone. Those statements describe the earlier storage arrangement. The current working dataset is committed under `key-extraction/`; the original archive and the separately recorded Stage 2 package are distinct artifacts.
+
+- [x] Split the 14 original shards into 134 consecutive conversation bins: 133 bins of 10 conversations and one of 4; retain original-shard and conversation-range references.
+- [x] Group bins by original shard using the requested 4/3/3/4 allocation: `batch-00` contains shards 01–04 (40 bins), `batch-01` shards 05–07 (30), `batch-02` shards 08–10 (30), and `batch-03` shards 11–14 (34).
+- [x] Measure each bin with Gemini's `countTokens` endpoint: 134 counts, 26,709,441 file tokens in total, ranging from 22,544 to 753,362 per file. These counts exclude processor prompt wrappers and the shared instruction. [Successful counting run](https://github.com/BestNameYet/StateMachines/actions/runs/39023538168).
+- [x] Greedily subdivide each batch in original file order, keeping bins intact, with each subdivision's sum of file-token counts strictly below 1,000,000. Created 33 subdivisions (9/7/10/7 by batch); largest sum 996,266. This is a file-token budget, not proof that the full serialized Gemini prompt fits a model limit. [Subdivision manifest](key-extraction/subdivisions-manifest.json) and [successful run](https://github.com/BestNameYet/StateMachines/actions/runs/39023934593).
+- [x] Save the updated [bin manifest](key-extraction/bins-manifest.json) with source identifiers, ranges, conversation counts, byte sizes, checksums, current paths, and per-file token counts. It accounts for all 134 bins and 1,334 conversations. The JavaScript scan rechecks every bin's checksum and conversation count.
+- [x] Build and launch a [single-worker iterator](parallel-gemini/iterate.py) over the 33 subdivisions, with checkpoint files and request starts at least 65 seconds apart. Its [run](https://github.com/BestNameYet/StateMachines/actions/runs/39024089212) was subsequently cancelled when direct JavaScript key extraction replaced Gemini for this task. Do not mark the Gemini queue complete.
+- [x] Implement and test [direct JavaScript recursive key extraction](key-extraction/extract-keys.mjs), then run it across every bin. Found 37,935 distinct exact object-key names, including 37,430 UUID-shaped names. [Inventory and source manifest](key-extraction/outputs/) and [successful workflow](https://github.com/BestNameYet/StateMachines/actions/runs/39024477972).
+- [x] Implement and test [non-UUID per-key counting](key-extraction/count-non-uuid-keys.mjs), then run it across all 134 bins / 1,334 conversations. Found 505 non-UUID key names and 1,112,747 total occurrences. Each key has its own count and observed JSON types. [JSON](key-extraction/outputs/non_uuid_key_counts.json), [CSV](key-extraction/outputs/non_uuid_key_counts.csv), [summary](key-extraction/outputs/non_uuid_key_counts_summary.json), and [successful workflow](https://github.com/BestNameYet/StateMachines/actions/runs/39024752012).
+- [x] Visualize the 50 most frequent non-UUID keys in the conversation UI, ordered by occurrence count. The saved count files above are the reproducible data source; the chart itself was displayed in chat.
+
+Counting convention: traverse all object properties at every nesting depth, including descendants beneath UUID keys. Exclude UUID-shaped property names only from the non-UUID report. Do not count array indexes; do count numeric names that are actual object properties. Combine identical key names across nesting locations. Consequently, these counts do not distinguish conversation titles from other `title` properties or establish which fields are needed for analysis.
+
+### Second-pass selection and remaining preparation
+
+The existing [second-pass value-key plan](extracted/conversations-011/second_pass_value_keys.json) selects fields by their proposed role in Stage 3: conversation identity/navigation, chronology, branch structure, message attribution/text, and evidence/attachment references. It is a purpose-based proposal, not a list selected from frequency ranking. Its stated limitation is that the earlier inventory flattened key names and types without establishing their JSON paths.
+
+- [ ] Verify each proposed second-pass field's actual path, scope, types, and availability against source records before extracting selected values.
+- [ ] Validate whether the proposed key set is sufficient for the chosen Stage 3 questions; retain the distinction between observed fields, derived values, and absent fields.
+- [ ] Perform the representative semantic sampling, analysis-matrix design, exchange/passage preparation, and pilot-quality checks listed in Stage 3 below. Structural parsing and key counting do not complete these tasks.
+
+The earlier [four-assignment Gemini retry](https://github.com/BestNameYet/StateMachines/actions/runs/39022384873) failed in all four analysis jobs and collection. The subsequent cancelled iterator is not evidence of completed key analysis; use the successful JavaScript outputs for the exhaustive key inventory.
+
+## 3. Prepare classification passages and design the analysis
+
+- [x] Inspect representative conversations to identify the kinds of questions and contexts present. Mark this as sampling.
+- [ ] Define and prioritize the user's analysis questions and intended practical outputs.
+- [x] Populate the analysis matrix: question, subject, perspective, source material, method, evidence requirements, coverage standard, limitations, output, and next prompt.
+- [x] Distinguish the user, people discussed, interactions, and ChatGPT as analytical subjects.
+- [ ] Define comparison periods from available dates rather than assumed eras.
+- [ ] Organize the prepared material as conversations → ordered exchanges → classification passages, preserving references to the original messages.
+- [ ] Give each passage a defined target and separately marked contextBefore/contextAfter. Label the target; surrounding context aids interpretation without automatically contributing its topics.
+- [ ] Choose provisional passage boundaries between complete exchanges, model input budgets, overlap, branch handling, and context needed for each question.
+- [ ] Do not group unrelated conversations by presumed topics before discovering labels. Use natural conversation structure for the initial preparation.
+- [ ] Compare a few passage sizes on the same conversations in the pilot; assess contextual sufficiency, topic mixing, citation accuracy, and label consistency rather than selecting an arbitrary word count.
+- [ ] Allow later label-discovery findings to refine mixed-topic passage boundaries; do not require perfect topic boundaries before discovery.
+- [ ] Keep conversations intact where feasible; link oversized conversation parts and related conversations.
+- [ ] Specify how overlap is tracked so repeated passages do not become independent evidence.
+- [ ] Generate chunk manifests and verify every source message is accounted for.
+- [x] Define common output conventions for findings, citations, contradictions, uncertainty, and unanswered questions.
+
+Output: analysis matrix, chunking decision, chunk manifest, and shared analytical conventions.
+
+Parallel opportunity: candidate approaches and independent question/perspective designs can be proposed concurrently from the same source inventory. Consolidate them before launching the full analytical pass. The final subdivision depends on those decisions.
+
+### Stage 3 initial topic-guided pilot — October 17, 2026
+
+The [pilot report](stage3-pilot/REPORT.md) uses the four-instance NMF results and 54-group merger to inspect eight bounded source windows from eight conversations. It records actual question/context types, source/node references and limitations. This is explicitly targeted sampling, not complete conversation reading or exhaustive semantic analysis.
+
+Completed outputs: [sampling record](stage3-pilot/sampling-record.json), [initial analysis matrix](stage3-pilot/analysis-matrix.json), [shared output conventions](stage3-pilot/output-conventions.json), and [provisional candidate topic index](stage3-pilot/candidate-topic-index.json). Matrix priorities are proposals; the user-prioritization item remains open. Topic 0's filler-dominated keywords were not a reliable topical label; its reviewed representative concerns a science-fiction design correction. Other windows distinguish technical clarification, business operations, construction, source checking, procedural modeling, marketing and employment/interpersonal contexts.
+
+The checked Stage 3 items represent this initial pilot and its documented conventions only. Exchange/passage construction, passage-size comparison, broader coverage, label validation and final catalog consolidation remain open. Computational coverage of 134 files / 1,334 conversations / 27,283 prepared windows does not imply those records were semantically read.
+
+## 4. Prepare parallel assignments — before model calls
+
+Historical worker-sizing direction (shared_chat_conversations.json, chat 6ad20a38-4b64-83e8-af9a-1810aa4b6515, messages 837925ba-1c87-5f3c-b986-0df9cb13e144 and e60a07ca-58f2-5aff-a843-54ec6c28e7ca): begin with one worker and a representative assignment; measure token load, elapsed time, cost, and analysis completeness; plan assignments at 80% of tested comfortable capacity; then estimate assignment count and concurrent workers against the user's target completion time. The earlier 80,000-token figure was only a tentative test starting point, not a validated effective-capacity limit. Recheck current model/account limits and judge the pilot's quality before scaling.
+
+- [ ] For each assignment, name its source path, question, perspective, relevant period, expected output, and dependencies.
+- [ ] Include the original message references and sufficient contextual material in every assignment.
+- [ ] Include shared definitions and attribution/evidence conventions consistently.
+- [ ] Build one paths array per group of independent assignments sharing the same instruction.
+- [ ] Set the concurrency and establish a workload/cost estimate from measured source sizes.
+- [ ] Check each assignment against both the substrate's byte limit and the selected model's token limits.
+- [ ] Define what constitutes failed, incomplete, or missing output and how it will be retried.
+- [ ] Run a small pilot, inspect its actual results against source passages, and revise assignment design before scaling.
+
+Output: assignment manifest, prompts, pilot findings, and batches ready for execution.
+
+Current substrate boundary: one batch uses one shared instruction. Different analytical lenses should initially use separate batches/instructions over the relevant paths. Arbitrary per-path instructions, context assembly, and automated dependencies are not existing features; build them only if the chosen plan needs them.
+
+## 5. Execute independent analytical passes — parallel
+
+### Label discovery — parallel over prepared passages
+
+- [ ] Ask Gemini to propose candidate labels from each unlabeled target passage, define each label, and cite supporting message references/passages.
+- [ ] Allow multiple labels and an insufficient-context result instead of forcing a single class.
+- [ ] Keep label dimensions separate: subject, user's purpose, analytical perspective, and conversation outcome.
+- [ ] Include topics, recurring concerns, questions, projects, and unfinished investigations outside relationship material.
+- [ ] Preserve candidate labels with their definitions, supporting references, uncertainty, and any boundary problems.
+
+### Consolidate labels — after discovery results
+
+- [ ] Merge synonymous labels, distinguish concepts incorrectly combined, and resolve inconsistent naming across workers.
+- [ ] Establish a versioned label catalog with definitions and inclusion/exclusion criteria grounded in the discovered examples.
+- [ ] Review candidate labels against original passages and retain disagreements or ambiguity rather than silently forcing a merge.
+- [ ] Refine passage boundaries where discovery revealed unrelated subjects mixed in one target; preserve source and overlap accounting.
+
+### Classify with the consolidated catalog — parallel again
+
+- [ ] Apply the same catalog version to all prepared target passages, permitting multiple labels across the separate dimensions.
+- [ ] Require evidence references for assigned labels; prevent surrounding context from supplying unsupported target labels.
+- [ ] Permit proposed new labels when the catalog does not fit, then review/consolidate those proposals and identify affected passages for reclassification.
+- [ ] Verify label consistency and coverage; distinguish proposed candidate labels from final applied labels.
+- [ ] Save labeled passages, catalog version, source references, unresolved cases, and updated coverage.
+- [ ] Use the resulting topic map to locate material for the perspective analyses below; it does not substitute for reading evidence.
+
+Do not start catalog-based classification before the catalog is consolidated. Discovery jobs can run concurrently with each other, and classification jobs can run concurrently after that dependency is satisfied.
+
+### The user
+
+- [ ] Examine expressed concerns, assumptions, emotions, decisions, and changes in interpretation.
+- [ ] Distinguish explicit statements from inferred motives.
+- [ ] Identify questions the user was trying to resolve and evidence of whether conversations helped.
+
+### People discussed
+
+- [ ] Separate their direct words from user reports and ChatGPT interpretations.
+- [ ] Assess reported behavior with contradictory evidence and alternative explanations.
+- [ ] Establish the provenance of diagnostic labels without treating labels as independent explanations or diagnosing from the archive.
+
+### Relationships and interactions
+
+- [ ] Identify recurring interaction sequences, conflict, boundaries, repair, and decisions.
+- [ ] Link patterns across relevant conversations without erasing context or treating repetition as corroboration.
+
+### ChatGPT's contribution
+
+- [ ] Identify advice, interpretations, assumptions, contradictions, corrections, and possible influence on later discussion.
+- [ ] Track when an assistant-introduced interpretation is later repeated as if independently established.
+
+### Evolution of use
+
+- [ ] Analyze available periods for purpose, user role, instruction specificity, interaction style, trust/verification, tools/artifacts, and outcomes.
+- [ ] Collect dated examples of both changes and continuities.
+- [ ] Identify uncertainty about model capabilities, available features, and circumstances.
+
+For every pass:
+
+- [ ] Save original inputs, output, source manifests, task outcome, and coverage updates.
+- [ ] Identify failed/missing jobs and retry only the affected assignments.
+- [ ] Inspect output quality; successful API completion alone does not satisfy an analysis question.
+
+Parallel opportunity: independent chunks within each pass can run simultaneously. Different perspectives can also run concurrently when they have the required context and no dependency on another pass. Not every chunk needs every lens.
+
+Output: evidence-linked findings, topic candidates, exceptions, and per-question coverage records.
+
+## 6. Combine findings — after their inputs are ready
+
+- [ ] Consolidate topic candidates and link related discussions across chunks.
+- [ ] Build the revisit catalog: significance, original question, where it stopped, unresolved work, source references, and next useful prompt.
+- [ ] Assemble event/discussion timelines; distinguish event dates from dates of discussion.
+- [ ] Synthesize each analytical perspective while preserving provenance and disagreement.
+- [ ] Compare usage periods using dated examples, continuities, exceptions, and missing data.
+- [ ] Separate changes in user behavior from changes in models/features/circumstances where the evidence permits.
+- [ ] Reconcile contradictions without silently selecting the most convenient result.
+- [ ] Connect perspectives without collapsing the user, other people, interactions, and ChatGPT into one explanation.
+- [ ] Return to original passages whenever synthesis depends on context not carried by the individual findings.
+
+Parallel opportunity: topic catalog, chronological reconstruction, perspective syntheses, and usage comparisons may proceed concurrently once each one's source findings are complete. Cross-perspective synthesis follows those outputs.
+
+Output: topic catalog, timelines, perspective analyses, usage comparison, and cross-perspective findings.
+
+## 7. Verify coverage and conclusions — independent checks
+
+- [ ] Verify source citations and quotations against original messages.
+- [ ] Check whether extraction/chunking accounted for the complete intended source.
+- [ ] Check whether each question received its declared level of coverage; distinguish sampling from exhaustive review.
+- [ ] Search for and inspect contradictory passages and plausible alternative explanations.
+- [ ] Identify claims based on repeated assertions or repeated model interpretations rather than independent evidence.
+- [ ] Check that original references survive synthesis and that conclusions are not merely summaries of summaries.
+- [ ] Check that diagnostic labels and inferred motives are represented according to their evidence.
+- [ ] Verify the actual saved outputs and classify every outstanding analysis question.
+- [ ] Route missing evidence or failed assignments back to the relevant stage.
+
+Parallel opportunity: citation checks can be partitioned; coverage accounting and independent reviews can run concurrently. Final conclusions must incorporate their results.
+
+Output: verification report, corrected findings, coverage ledger, and unresolved limitations.
+
+## 8. Deliver and preserve
+
+- [ ] Deliver a navigable topic/revisit catalog.
+- [ ] Deliver the requested perspective analyses and relevant timelines.
+- [ ] Deliver the dated comparison of ChatGPT use from 2024–2025 to the present, or state exactly what comparison data is missing.
+- [ ] Provide remaining questions, practical next steps, and prompts for continuing investigations.
+- [ ] Preserve stable links to evidence, analysis outputs, coverage, and verification results.
+- [ ] Preserve long-term deliverables outside expiring Actions artifacts as appropriate.
+- [ ] Save a continuation record stating what is complete, what remains, and where to resume.
+- [ ] Update this checklist from verified results and complete the AGENTS Procedure run.
+
+## Dependency and parallelization map
+
+| Stage | Must wait for | Parallel work available |
+| --- | --- | --- |
+| Source inspection | Source retrieval | Limited; first establish the format and available periods. |
+| Extraction/index | Format and reference conventions | Independent conversations or partitions. |
+| Analysis/chunk design | Inventory and representative inspection | Candidate lenses and methods; consolidate decisions. |
+| Assignment pilot | Chunk manifest and common conventions | Small independent assignments; inspect before scaling. |
+| Label discovery | Prepared target/context passages and validated pilot | Independent passages proposing labels. |
+| Label consolidation | Candidate labels and supporting evidence | Review distinct candidate groups; reconcile the final catalog. |
+| Catalog-based classification | Consolidated catalog and passage manifest | Independent passages using the same catalog version. |
+| Analytical passes | Relevant classified material, questions, and context | Independent chunks and context-complete perspectives. |
+| Synthesis | Relevant analytical outputs | Independent topic, timeline, perspective, and usage syntheses. |
+| Verification | Source references and findings | Citation partitions, coverage checks, and independent reviews. |
+| Final delivery | Verified/corrected outputs | Preparation can overlap; completion waits for checks. |
+
+The current preparation milestone is validation of the proposed second-pass field paths and representative Stage 3 sampling, followed by analysis-matrix and exchange/passage design. Extraction, repository bin preparation, token measurement, subdivision, and exhaustive key counting are recorded above. Label discovery, catalog consolidation, classification, and substantive synthesis remain unchecked.
+
+Do not parallelize a downstream task before its required evidence or design decisions exist. The parallelizer schedules independent calls; this plan specifies which calls should be independent and when they are ready.
