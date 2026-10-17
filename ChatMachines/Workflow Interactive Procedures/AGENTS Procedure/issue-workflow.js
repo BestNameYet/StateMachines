@@ -23,6 +23,17 @@ function triggerPathForRecord(record) {
   }
   return path.join(__dirname, 'issue-run-triggers', identifier + '.json');
 }
+function toolInvocationArtifactPath(issueNumber) {
+  if(!Number.isSafeInteger(issueNumber)||issueNumber<1)throw new Error('A valid procedure issue number is required.');
+  return path.join(__dirname,'issue-runs',issueNumber+'-tool-invocations.json');
+}
+function toolInvocationArtifactUrl(repository,issueNumber) {
+  const relative='ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/'+issueNumber+'-tool-invocations.json';
+  return 'https://github.com/'+repository+'/blob/main/'+relative.split('/').map(encodeURIComponent).join('/');
+}
+function toolInvocationArtifact(record,issueNumber) {
+  return {procedureIssueNumber:issueNumber,toolInvocations:structuredClone(record.toolInvocations||[])};
+}
 function issueNumberForEvent(event,overrideNumber) {
   const raw=overrideNumber ?? event.issue?.number;
   const number=typeof raw==='string'&&/^\d+$/.test(raw)?Number(raw):raw;
@@ -92,11 +103,16 @@ function parseReturn(body) {
   if(!match)throw Error('Return must use ${variableName}: JSON value.');
   return {variable:match[1],value:JSON.parse(match[2])};
 }
-function renderIssue(record,issueNumber) {
+function renderIssue(record,issueNumber,options={}) {
   setExpectedInputs(record);
   const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':named-return -->';
   if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
-  const instruction=Object.fromEntries(entriesForState(record.state,screens,record.toolInvocations || []));
+  const entries=entriesForState(record.state,screens,record.toolInvocations || []);
+  const reportEntry=entries.some(([key])=>key==='toolInvocationReport');
+  const reportUrl=options.toolInvocationReportUrl;
+  const instruction=Object.fromEntries(entries.map(([key,value])=>key==='toolInvocationReport'&&reportUrl
+    ? [key,{procedureIssueNumber:issueNumber,recordCount:(record.toolInvocations||[]).length,file:reportUrl}]
+    : [key,value]));
   const {expectedInputs,renderedRequests,...visibleState}=record.state;
   const communication=[
     '### Communication instructions',
@@ -108,8 +124,11 @@ function renderIssue(record,issueNumber) {
     'If submission or reading returns a rate-limit error, honor any Retry-After instruction and stop automatic retries for this turn. If submission success is uncertain, check once whether your comment exists before resubmitting.',
     'Procedure submission, polling, and recovery calls are communication operations; exclude them from the task-execution tool-invocation report so that submitting the report does not require reporting itself.'
   ].join('\n\n');
+  const reportLink=reportEntry&&reportUrl
+    ? '\n\n### Tool invocation report\n[Open the complete tool-invocation JSON](<'+reportUrl+'>)\n\nRecords: '+(record.toolInvocations||[]).length+'.'
+    : '';
   return marker+'\n## Render '+record.state.render+'\n\n'+communication+'\n\n'+fence(instruction)+
-    '\n\n<details><summary>Captured values</summary>\n\n'+fence({state:visibleState})+'\n\n</details>';
+    '\n\n<details><summary>Captured values</summary>\n\n'+fence({state:visibleState})+'\n\n</details>'+reportLink;
 }
 function canonicalTitle(issue) {
   return 'AGENTS Procedure — '+new Date(issue.created_at).toISOString();
@@ -153,14 +172,27 @@ async function main() {
     catch(error){outbox.push({marker:errorMarker,body:errorMarker+'\nReturn rejected: '+error.message+'\n\nState and current request are unchanged.'});}
     record.lastCommentId=comment.id;
   }
-  const rendered=record.state.renderedRequests.includes(record.request)?null:renderIssue(record,number);
-  for(const body of [rendered,...outbox.map(item=>item.body)])if(body && body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
-  // Persist the state before publishing. Markers prevent duplicate prompts on retries.
   let stateSha=stored?.sha;
   async function saveRecord() {
     const saved=await api('PUT',route,{message:'Save AGENTS Procedure issue '+number+' state',content:Buffer.from(JSON.stringify(record,null,2)+'\n').toString('base64'),...(stateSha?{sha:stateSha}:{})});
     stateSha=saved.content.sha;
   }
+  // Persist the accepted return and buffered tool calls before publishing or linking the report.
+  if(!record.done)setExpectedInputs(record);
+  await saveRecord();
+  const reportRequested=(screens[record.state.render-1]||[]).some(([key])=>key==='toolInvocationReport');
+  let reportUrl=null;
+  if(reportRequested) {
+    const artifactText=JSON.stringify(toolInvocationArtifact(record,number),null,2)+'\n';
+    const relative=path.relative(process.env.GITHUB_WORKSPACE,toolInvocationArtifactPath(number)).split(path.sep).join('/');
+    const artifactRoute='/contents/'+relative.split('/').map(encodeURIComponent).join('/');
+    const artifactStored=await api('GET',artifactRoute,undefined,true);
+    const existingText=artifactStored?Buffer.from(artifactStored.content,'base64').toString('utf8'):null;
+    if(existingText!==artifactText)await api('PUT',artifactRoute,{message:'Save AGENTS Procedure issue '+number+' tool-invocation report',content:Buffer.from(artifactText).toString('base64'),...(artifactStored?.sha?{sha:artifactStored.sha}:{})});
+    reportUrl=toolInvocationArtifactUrl(repository,number);
+  }
+  const rendered=record.state.renderedRequests.includes(record.request)?null:renderIssue(record,number,{toolInvocationReportUrl:reportUrl});
+  for(const body of [rendered,...outbox.map(item=>item.body)])if(body && body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
   await saveRecord();
   for(const item of outbox)if(!comments.some(c=>c.body.includes(item.marker)))await api('POST','/issues/'+number+'/comments',{body:item.body});
   await publishCurrent(record,number,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord,rendered);
@@ -176,5 +208,6 @@ async function main() {
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle,triggerIdentifier,triggerPathForRecord,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+module.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+
 

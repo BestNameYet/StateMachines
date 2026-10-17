@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {startRun,applyReturn,parseReturn,renderIssue,triggerIdentifier,triggerPathForRecord,issueNumberForEvent}=require('./issue-workflow.js');
+const {startRun,applyReturn,parseReturn,renderIssue,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,issueNumberForEvent}=require('./issue-workflow.js');
 assert.equal(issueNumberForEvent({},'42'),42);
 assert.equal(issueNumberForEvent({issue:{number:19}}),19);
 assert.equal(issueNumberForEvent({},'0'),null);
@@ -7,6 +7,9 @@ assert.equal(triggerIdentifier({body:'<!-- agents-procedure-trigger:buildProcedu
 assert.equal(startRun({body:'<!-- agents-procedure-trigger:buildProcedure12 -->'}).triggerIdentifier,'buildProcedure12');
 assert.equal(triggerPathForRecord({triggerIdentifier:'buildProcedure12'}),require('node:path').join(__dirname,'issue-run-triggers','buildProcedure12.json'));
 assert.throws(()=>triggerPathForRecord({triggerIdentifier:'../escape'}));
+assert.equal(toolInvocationArtifactPath(45),require('node:path').join(__dirname,'issue-runs','45-tool-invocations.json'));
+assert.throws(()=>toolInvocationArtifactPath(0));
+assert.equal(toolInvocationArtifactUrl('BestNameYet/StateMachines',45),'https://github.com/BestNameYet/StateMachines/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/issue-runs/45-tool-invocations.json');
 const r=startRun({body:'Test request'}),root=__dirname+'/fixtures';
 renderIssue(r,7);
 const before=structuredClone(r);
@@ -70,6 +73,20 @@ assert.equal(executionRun.state.render,18);
 assert.deepEqual(executionRun.toolInvocations,[invocation]);
 assert(!Object.hasOwn(executionRun.state,'toolInvocations'));
 assert(renderIssue(executionRun,99).includes('simulated test output'));
+const reportUrl=toolInvocationArtifactUrl('BestNameYet/StateMachines',99);
+const linkedReport=renderIssue(executionRun,99,{toolInvocationReportUrl:reportUrl});
+assert(linkedReport.includes('[Open the complete tool-invocation JSON](<'+reportUrl+'>)'));
+assert(!linkedReport.includes('simulated test output'));
+const linkedJson=JSON.parse(linkedReport.match(/`{3,}json\n([\s\S]*?)\n`{3,}/)[1]);
+assert.deepEqual(linkedJson.toolInvocationReport,{procedureIssueNumber:99,recordCount:1,file:reportUrl});
+assert.deepEqual(toolInvocationArtifact(executionRun,99),{procedureIssueNumber:99,toolInvocations:[invocation]});
+const oversizedReportRun=startRun({});
+oversizedReportRun.state.render=18;oversizedReportRun.state.mode='accountability';oversizedReportRun.state.loopNumber=1;
+oversizedReportRun.toolInvocations=Array.from({length:18},(_,i)=>({...invocation,id:i,invocation_verbatim:'x'.repeat(6000)}));
+const oversizedLinkedComment=renderIssue(oversizedReportRun,99,{toolInvocationReportUrl:reportUrl});
+assert(oversizedLinkedComment.length<65000);
+assert(!oversizedLinkedComment.includes('x'.repeat(100)));
+assert.equal(JSON.parse(oversizedLinkedComment.match(/`{3,}json\n([\s\S]*?)\n`{3,}/)[1]).toolInvocationReport.recordCount,18);
 const restored=JSON.parse(JSON.stringify(executionRun));
 restored.state.render=17;
 renderIssue(restored,99);
@@ -132,4 +149,5 @@ async function checkCommunicationState() {
   console.log('Expected inputs, unchanged rejected returns, publication tracking, retries, loop renders, and legacy migration passed.');
 }
 checkCommunicationState().catch(error=>{console.error(error);process.exitCode=1;});
+
 
