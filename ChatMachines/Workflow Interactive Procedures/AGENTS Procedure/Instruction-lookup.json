@@ -249,7 +249,7 @@
     ],
     [
       "steptext",
-      "Execute each requirement in ${requirements} using its specified operator, at its specified filename and location, performing the change described by its description and intent. Record the values returned for each actual tool call in ${toolInvocations}; use null for required fields that do not apply and explain unavailable information in unavailable_reason. Include specifiedOperatorByUser and chosenOperator from operator selection in each record. Do not invent calls or outputs. Return only the new records from this execution; the caller appends them to the stored report. <Array<any>>: ${toolInvocations}"
+      "Enter tool invocations in the JSON file at toolInvocationFile.path for this run. Use the exact procedureIssueNumber and JSON shape shown in toolInvocationFile.format; add http_method and url to web-tool records as shown in toolInvocationFile.webToolFields. Include only records from this execution, then commit the file to main. The workflow validates the committed file: if invalid, it leaves this render active and posts the validation error; if valid, it records the invocations, reports summary statistics, and automatically advances to the change-list instruction. <Array<any>>: ${toolInvocations}"
     ],
     [
       "operator",
@@ -305,6 +305,10 @@
         },
         "return": "${outcome}"
       }
+    ],
+    [
+      "toolInvocationFile",
+      null
     ]
   ],
   "14": [
@@ -352,7 +356,7 @@
     ],
     [
       "steptext",
-      "Execute each requirement in ${requirements} using its specified operator, at its specified filename and location, performing the change described by its description and intent. Record the values returned for each actual tool call in ${toolInvocations}; use null for required fields that do not apply and explain unavailable information in unavailable_reason. Include specifiedOperatorByUser and chosenOperator from operator selection in each record. Do not invent calls or outputs. Return only the new records from this execution; the caller appends them to the stored report. <Array<any>>: ${toolInvocations}"
+      "Enter tool invocations in the JSON file at toolInvocationFile.path for this run. Use the exact procedureIssueNumber and JSON shape shown in toolInvocationFile.format; add http_method and url to web-tool records as shown in toolInvocationFile.webToolFields. Include only records from this execution, then commit the file to main. The workflow validates the committed file: if invalid, it leaves this render active and posts the validation error; if valid, it records the invocations, reports summary statistics, and automatically advances to the change-list instruction. <Array<any>>: ${toolInvocations}"
     ],
     [
       "operator",
@@ -408,6 +412,10 @@
         },
         "return": "${outcome}"
       }
+    ],
+    [
+      "toolInvocationFile",
+      null
     ]
   ],
   "18": [

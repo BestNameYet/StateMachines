@@ -82,6 +82,10 @@ function validate(value, schema, where = 'value', context = {}) {
   if (kind === 'object') {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error(where + ' must be an object.');
     for (const key of schema.required || []) if (!Object.hasOwn(value,key)) throw Error(where + '.' + key + ' is required.');
+    if(schema.toolInvocation) {
+      const unexpected=Object.keys(value).filter(key=>!Object.hasOwn(schema.properties,key));
+      if(unexpected.length)throw Error(where+' has unexpected field(s): '+unexpected.join(', ')+'.');
+    }
     for (const [key,child] of Object.entries(schema.properties || {})) if (Object.hasOwn(value,key)) validate(value[key],child,where+'.'+key,{...context,newFile:value.newFile === true});
     if(schema.toolInvocation && (Object.hasOwn(value,'http_method') || Object.hasOwn(value,'url'))) {
       for(const key of ['http_method','url'])if(typeof value[key]!=='string'||!value[key])throw Error(where+'.'+key+' is required for web tools.');
@@ -98,3 +102,4 @@ function validate(value, schema, where = 'value', context = {}) {
   }
 }
 module.exports = {schemaFromType,inputsFor,validate};
+

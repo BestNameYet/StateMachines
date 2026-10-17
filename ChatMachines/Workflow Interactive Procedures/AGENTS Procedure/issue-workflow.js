@@ -32,7 +32,24 @@ function toolInvocationArtifactUrl(repository,issueNumber) {
   return 'https://github.com/'+repository+'/blob/main/'+relative.split('/').map(encodeURIComponent).join('/');
 }
 function toolInvocationArtifact(record,issueNumber) {
-  return {procedureIssueNumber:issueNumber,toolInvocations:structuredClone(record.toolInvocations||[])};
+  return {procedureIssueNumber:issueNumber,toolInvocations:structuredClone(record.toolInvocations||[]),submissionAccepted:true};
+}
+function countBy(records,selector) {
+  const counts=new Map();
+  for(const record of records) {
+    const label=selector(record)||'not specified';
+    counts.set(label,(counts.get(label)||0)+1);
+  }
+  return Object.fromEntries([...counts.entries()].sort((a,b)=>a[0].localeCompare(b[0])));
+}
+function toolInvocationSummary(batch,totalCount=batch.length) {
+  return {
+    submittedRecords:batch.length,
+    totalRecords:totalCount,
+    byTool:countBy(batch,record=>record.tool),
+    byRuntime:countBy(batch,record=>record.runtime||record.cwd),
+    commandLineRecords:batch.filter(record=>typeof record.command_line_verbatim==='string'&&record.command_line_verbatim.length>0).length
+  };
 }
 function issueNumberForEvent(event,overrideNumber) {
   const raw=overrideNumber ?? event.issue?.number;
@@ -70,6 +87,7 @@ async function publishCurrent(record,issueNumber,post,save,body) {
 }
 function applyReturn(record,payload,fileRoot) {
   if(record.done)throw Error('This run has finished.');
+  if([13,17].includes(record.state.render))throw Error('Tool invocations must be submitted in the run-specific JSON file and committed; a comment return cannot advance this render.');
   const expected=record.state.expectedInputs;
   if(expected?.render!==record.state.render || expected?.request!==record.request)throw Error('Current screen has not been rendered; expected inputs are unavailable.');
   const fields=expected.inputs;
@@ -94,6 +112,25 @@ function applyReturn(record,payload,fileRoot) {
   if(payload.variable==='targetFiles')record.newFiles=payload.value.filter(file=>file.newFile).map(file=>file.filename);
   record.done=result==='halt';record.request++;
 }
+function acceptToolInvocationSubmission(record,records,fileRoot) {
+  if(record.done)throw Error('This run has finished.');
+  const render=record.state.render;
+  if(![13,17].includes(render))throw Error('This issue is not waiting for a tool-invocation JSON submission.');
+  if(record.state.expectedInputs?.render!==render||record.state.expectedInputs?.request!==record.request)throw Error('The current tool-invocation render has not been published.');
+  const expected=inputsFor(screens[render-1]);
+  if(expected.length!==1||expected[0].name!=='toolInvocations')throw Error('The current render does not declare toolInvocations.');
+  validate(records,expected[0].schema,'toolInvocations',{root:fileRoot,newFiles:record.newFiles});
+  const draft=structuredClone(record.state);
+  const result=map(draft);
+  record.toolInvocations=[...(record.toolInvocations||[]),...structuredClone(records)];
+  record.history.push({request:record.request,render,loopNumber:record.state.loopNumber,values:{$toolInvocations:structuredClone(records)},state:structuredClone(draft)});
+  record.state=result==='halt'?draft:result;
+  record.done=result==='halt';
+  record.request++;
+  record.lastToolInvocationSummary=toolInvocationSummary(records,record.toolInvocations.length);
+  if(!record.done)setExpectedInputs(record);
+  return record;
+}
 function parseReturn(body) {
   const text=body.trim();
   const fenced=text.match(/^\x60{3,}(?:json|text|javascript)?\s*\n([\s\S]*?)\n\x60{3,}$/i);
@@ -108,6 +145,17 @@ function renderIssue(record,issueNumber,options={}) {
   const marker='<!-- agents-procedure:'+issueNumber+':request:'+record.request+':named-return -->';
   if(record.done)return marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
   const entries=entriesForState(record.state,screens,record.toolInvocations || []);
+  for(const entry of entries)if(entry[0]==='toolInvocationFile')entry[1]={
+    procedureIssueNumber:issueNumber,
+    path:'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/'+issueNumber+'-tool-invocations.json',
+    format:{procedureIssueNumber:issueNumber,toolInvocations:[{
+      cwd:null,command_line_verbatim:null,tool:'<tool name>',invocation_verbatim:'<invocation JSON>',
+      final_output_after_completion_of_tool_call:'<final output>',unavailable_reason:null,new:false,
+      filename:null,frombyte:null,tobyte:null,description:'<what changed>',intent:'<why>',operator:'<operator>',
+      specifiedOperatorByUser:null,chosenOperator:'<operator>',outcome:'succeeded'
+    }]},
+    webToolFields:{http_method:'<HTTP method>',url:'<URL>'}
+  };
   const reportEntry=entries.some(([key])=>key==='toolInvocationReport');
   const reportUrl=options.toolInvocationReportUrl;
   const instruction=Object.fromEntries(entries.map(([key,value])=>key==='toolInvocationReport'&&reportUrl
@@ -127,8 +175,18 @@ function renderIssue(record,issueNumber,options={}) {
   const reportLink=reportEntry&&reportUrl
     ? '\n\n### Tool invocation report\n[Open the complete tool-invocation JSON](<'+reportUrl+'>)\n\nRecords: '+(record.toolInvocations||[]).length+'.'
     : '';
-  return marker+'\n## Render '+record.state.render+'\n\n'+communication+'\n\n'+fence(instruction)+
+  const summary=([14,18].includes(record.state.render)&&record.lastToolInvocationSummary)
+    ? '\n\n### Tool invocation JSON accepted\n'+renderToolInvocationSummary(record.lastToolInvocationSummary)
+    : '';
+  return marker+'\n## Render '+record.state.render+'\n\n'+communication+summary+'\n\n'+fence(instruction)+
     '\n\n<details><summary>Captured values</summary>\n\n'+fence({state:visibleState})+'\n\n</details>'+reportLink;
+}
+function renderToolInvocationSummary(summary) {
+  const format=object=>Object.entries(object||{}).map(([name,count])=>'`'+name+'`: '+count).join(', ')||'none';
+  return 'Accepted '+summary.submittedRecords+' records in this file; '+summary.totalRecords+' records total in this run.\n\n'+
+    'By tool: '+format(summary.byTool)+'.\n\n'+
+    'By runtime or working directory: '+format(summary.byRuntime)+'.\n\n'+
+    'Records with a command line: '+summary.commandLineRecords+'.';
 }
 function canonicalTitle(issue) {
   return 'AGENTS Procedure — '+new Date(issue.created_at).toISOString();
@@ -208,6 +266,6 @@ async function main() {
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={startRun,applyReturn,parseReturn,renderIssue,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+module.exports={startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
 
 
