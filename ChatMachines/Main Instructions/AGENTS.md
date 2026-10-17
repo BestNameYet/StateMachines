@@ -1490,21 +1490,6 @@
         }
       ]
     },
-    "execution_result_rule": "AFTER (not instead of) the mandatory FIRST-printed current-prompt JWRS and actual SAME-TURN execution of the substantive user request, print one valid JSON array with exactly two elements: (1) the actual result conforming to the selected style's result_schema and, where needed, evidence/deviations/remaining work; (2) the universal profile and status suffix. The initial projection and final execution result are distinct JSON documents. If execution has not produced the requested outcome, do not report COMPLETE.",
-    "parallel_gemini_processor": {
-      "purpose": "Process multiple independent repository-relative text files or directories as separate Gemini analysis jobs using one shared instruction, then collect a result for each assignment.",
-      "use_cases": [
-        "Analyze independent conversation shards or other bounded text batches in parallel when each batch can receive the same instruction.",
-        "Extract or classify information from multiple text files when each assignment can be reviewed independently.",
-        "Run repeated per-file analysis where source references and separate outputs should be retained."
-      ],
-      "how_to_use": "Choose meaningful existing repository-relative paths, provide one shared instruction, and set maxParallel from 1 to 16 (default 4). Start the Conversation Parallel Gemini workflow manually in GitHub Actions or use the documented enabled trigger file.",
-      "readme": "https://github.com/BestNameYet/StateMachines/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/README.md#parallel-gemini-execution-substrate",
-      "limits": [
-        "Assignments must contain eligible UTF-8 text and stay within the documented 1,000,000 source-byte limit; binary images require preprocessing such as OCR before this processor can analyze their text.",
-        "The worker analyzes assigned sources and saves results; it does not edit the assigned sources, choose an analysis strategy, or subdivide an archive.",
-        "Each assignment produces a separate result. Review source evidence and synthesize results across assignments separately."
-      ]
-    }
+    "execution_result_rule": "AFTER (not instead of) the mandatory FIRST-printed current-prompt JWRS and actual SAME-TURN execution of the substantive user request, print one valid JSON array with exactly two elements: (1) the actual result conforming to the selected style's result_schema and, where needed, evidence/deviations/remaining work; (2) the universal profile and status suffix. The initial projection and final execution result are distinct JSON documents. If execution has not produced the requested outcome, do not report COMPLETE."
   }
 }
