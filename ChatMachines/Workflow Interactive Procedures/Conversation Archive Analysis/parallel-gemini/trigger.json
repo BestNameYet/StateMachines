@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-17T07:56:00.000Z",
+  "timestamp": "2026-10-17T08:05:00.000Z",
   "enabled": false,
   "paths": [
     "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/photo-archive/batch-01",
@@ -7,6 +7,6 @@
     "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/photo-archive/batch-03",
     "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/photo-archive/batch-04"
   ],
-  "instruction": "Inspect the assigned screenshot image and extract all visible text messages. Return valid JSON only, as one object with keys: image (assigned repository path), messages (array in visual reading order), and unreadable_regions (array). Each message object must contain author, text, timestamp, and confidence. Copy message text exactly, preserving punctuation, spelling, emoji, and meaningful line breaks. Set author to the sender name exactly as displayed when explicit; otherwise use null. Do not infer identity from bubble color, contact photos, or conversational context. Set timestamp to the visible message timestamp or null. Use confidence from 0 to 1 and explain uncertain characters in an optional note. Exclude app chrome and non-message UI text unless it is necessary to distinguish the author. Do not add text that is not visible.",
+  "instruction": "Extract every visible text message from the assigned screenshot. Return valid JSON only with this shape: {\"image\":\"<assigned repository path>\",\"messages\":[{\"author\":\"<displayed sender name or null>\",\"text\":\"<visible message text>\"}]}. Include only message author and message text. Preserve the visible text exactly and keep messages in visual reading order. Use null when no sender name is visibly displayed. Do not infer authors from colors, photos, or context. Do not include timestamps, confidence scores, unreadable-region descriptions, or other fields. Do not add text that is not visible.",
   "maxParallel": 4
 }
