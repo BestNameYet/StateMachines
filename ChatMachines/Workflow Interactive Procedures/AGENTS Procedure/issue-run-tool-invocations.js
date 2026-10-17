@@ -45,6 +45,14 @@ function isAcceptedReport(source) {
 function encodedPath(filePath) {
   return filePath.split('/').map(encodeURIComponent).join('/');
 }
+function changedPathsFromEvent(event, comparedFiles=[]) {
+  const paths=(event.commits||[]).flatMap(commit=>[...(commit.added||[]),...(commit.modified||[])]);
+  for(const file of comparedFiles) {
+    const filePath=typeof file==='string'?file:file?.filename;
+    if(typeof filePath==='string')paths.push(filePath);
+  }
+  return [...new Set(paths)];
+}
 async function main() {
   if(process.env.GITHUB_EVENT_NAME!=='push')return;
   const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
@@ -56,10 +64,19 @@ async function main() {
     if(!response.ok)throw Error('GitHub '+method+' '+route+' returned '+response.status);
     return response.status===204?null:response.json();
   }
-  const committedFiles=[...new Set((event.commits||[]).flatMap(commit=>[...(commit.added||[]),...(commit.modified||[]) ]))];
-  for(const filePath of committedFiles) {
+  const payloadPaths=changedPathsFromEvent(event);
+  let changedPaths=payloadPaths;
+  let submissionPaths=changedPaths.filter(filePath=>issueNumberFromChangedPath(filePath));
+  let compareFallbackUsed=false;
+  if(!submissionPaths.length && /^[0-9a-f]{40}$/i.test(event.before||'') && /^[0-9a-f]{40}$/i.test(event.after||'') && !/^0+$/.test(event.before)) {
+    const comparison=await api('GET','/compare/'+event.before+'...'+event.after);
+    changedPaths=changedPathsFromEvent(event,comparison.files||[]);
+    submissionPaths=changedPaths.filter(filePath=>issueNumberFromChangedPath(filePath));
+    compareFallbackUsed=true;
+  }
+  console.log(JSON.stringify({event:'push',before:event.before||null,after:event.after||null,payloadPathCount:payloadPaths.length,compareFallbackUsed,submissionPaths}));
+  for(const filePath of submissionPaths) {
     const number=issueNumberFromChangedPath(filePath);
-    if(!number)continue;
     const issue=await api('GET','/issues/'+number);
     const runPath=procedureDirectory+'/issue-runs/'+number+'.json';
     const runRoute='/contents/'+encodedPath(runPath);
@@ -74,7 +91,7 @@ async function main() {
     const inputPath=procedureDirectory+'/issue-runs/'+number+'-tool-invocations.json';
     const inputRoute='/contents/'+encodedPath(inputPath)+'?ref='+encodeURIComponent(event.after||'main');
     const input=await api('GET',inputRoute,undefined,true);
-    if(!input)continue;
+    if(!input)throw Error('Changed tool-invocation file was not found at commit '+(event.after||'main')+': '+inputPath);
     const inputText=Buffer.from(input.content,'base64').toString('utf8');
 
     const marker='<!-- agents-procedure:'+number+':tool-invocation-file:'+input.sha+' -->';
@@ -84,9 +101,10 @@ async function main() {
       submitted=parseToolInvocationSubmission(inputText,number);
       if(submitted===null) {
         if(record.state.render===13||record.state.render===17)throw Error('toolInvocations is null; replace it with an array of tool-invocation records.');
+        console.log('Ignoring null toolInvocations for issue #'+number+' because render '+record.state.render+' is not waiting for them.');
         continue;
       }
-      if(isAcceptedReport(inputText)&&isDeepStrictEqual(submitted,record.toolInvocations||[]))continue;
+      if(isAcceptedReport(inputText)&&isDeepStrictEqual(submitted,record.toolInvocations||[])) { console.log('Ignoring already accepted tool-invocation report for issue #'+number+'.'); continue; }
       const newRecords=appendedToolInvocationRecords(submitted,record.toolInvocations||[]);
       acceptToolInvocationSubmission(record,newRecords,process.env.GITHUB_WORKSPACE);
     } catch(error) {
@@ -122,4 +140,4 @@ async function main() {
 }
 
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={issueNumberFromChangedPath,parseToolInvocationSubmission,appendedToolInvocationRecords,isAcceptedReport};
+module.exports={issueNumberFromChangedPath,changedPathsFromEvent,parseToolInvocationSubmission,appendedToolInvocationRecords,isAcceptedReport};
