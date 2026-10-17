@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "1.0.0",
+  "evaluationDate": "2026-10-17",
+  "status": "completed",
+  "evaluatedModels": [
+    {
+      "modelId": "M1",
+      "modelName": "Model A: Atomic Exchange Unit (1 User Prompt + 1 Assistant Response)",
+      "turnWindow": "2 turns (User -> Assistant, including intermediate tool invocations)",
+      "tokenRange": "200–800 tokens",
+      "criterionScores": {
+        "contextualSufficiency": 3,
+        "topicMixingRiskIsolation": 5,
+        "citationPrecision": 5,
+        "branchStability": 5,
+        "labelingFeasibility": 3
+      },
+      "overallScore": 21,
+      "strengths": [
+        "Zero intra-passage topic mixing; pristine topic boundary isolation.",
+        "Unambiguous 1:1 attribution to exact message and mapping node IDs.",
+        "High graph branch resilience; immune to branch fork contamination.",
+        "Deterministic chunking boundaries require minimal metadata overhead."
+      ],
+      "weaknesses": [
+        "Fails on elliptic or anaphoric follow-up prompts ('continue', 'why?', code logs) without preceding context.",
+        "Cannot evaluate whether assistant advice was accepted, corrected, or abandoned without external turn linking.",
+        "Underperforms on Q2 (directive adaptation) and Q5 (multi-turn interpersonal interaction tracking)."
+      ]
+    },
+    {
+      "modelId": "M2",
+      "modelName": "Model B: Sliding Triad Window (Target Exchange bounded by 1 contextBefore and 1 contextAfter exchange)",
+      "turnWindow": "6 turns along active branch (2 contextBefore + 2 target + 2 contextAfter)",
+      "tokenRange": "1,200–3,500 tokens",
+      "criterionScores": {
+        "contextualSufficiency": 5,
+        "topicMixingRiskIsolation": 4,
+        "citationPrecision": 5,
+        "branchStability": 4,
+        "labelingFeasibility": 5
+      },
+      "overallScore": 23,
+      "strengths": [
+        "Maximizes contextual sufficiency by resolving antecedent constraints and pronouns via contextBefore.",
+        "Enables robust turn-by-turn directive-correction analysis (Q2) and downstream assumption tracing (Q3) via contextAfter.",
+        "Maintains pinpoint citation precision by restricting catalog labels strictly to the target exchange.",
+        "Deduplication rules prevent repeated context turns from inflating empirical topic weights."
+      ],
+      "weaknesses": [
+        "Requires strict prompt enforcement to prevent model workers from extracting labels from context turns.",
+        "Requires branch-aware DAG traversal to assemble context along valid ancestral/descendant paths."
+      ]
+    },
+    {
+      "modelId": "M3",
+      "modelName": "Model C: Macro Sub-Session (5 to 10 sequential exchanges along the branch)",
+      "turnWindow": "10–20 turns along active branch",
+      "tokenRange": "4,000–8,000 tokens",
+      "criterionScores": {
+        "contextualSufficiency": 4,
+        "topicMixingRiskIsolation": 1,
+        "citationPrecision": 2,
+        "branchStability": 2,
+        "labelingFeasibility": 2
+      },
+      "overallScore": 11,
+      "strengths": [
+        "Captures overarching multi-exchange workflows, complex procedural arcs, and cumulative project goals (Q1).",
+        "Preserves macro conversational momentum for chronological usage analysis (Q4)."
+      ],
+      "weaknesses": [
+        "Severe topic mixing and keyword dilution; multiple disparate tasks are forced into a single labeled passage.",
+        "Citation precision degrades; offsets become ambiguous across expansive turn sequences.",
+        "Fragile across conversation tree forks; creates excessive redundant overlap along shared parent nodes.",
+        "Incompatible with fine-grained Q2 correction pairs and Q5 four-layer interpersonal attribution."
+      ]
+    }
+  ],
+  "comparativeAnalysisByCriterion": {
+    "criterion1_ContextualSufficiency": "Model A struggles with anaphoric queries unless contextBefore is supplied. Model C supplies extensive context but often introduces irrelevant historical drift. Model B achieves perfect sufficiency by providing exactly the prerequisite problem setup and immediate antecedent instructions needed for unambiguous interpretation.",
+    "criterion2_TopicMixingRisk": "Model A provides near-perfect isolation (5/5). Model B achieves strong isolation (4/5) provided the target boundary is strictly enforced. Model C fails (1/5) due to high topic mixing across natural user pivots within extended sessions.",
+    "criterion3_CitationPrecision": "Models A and B allow exact node-level and character-level pointers (5/5) because the evaluative locus is a single exchange. Model C degrades to 2/5 as citations become diffuse and multi-headed.",
+    "criterion4_BranchStability": "Model A is intrinsically branch-stable (5/5). Model B maintains branch stability (4/5) by following parent pointers up and child pointers down the active branch. Model C (2/5) creates combinatorial explosion and redundancy when traversing deep branching DAGs.",
+    "criterion5_LabelingFeasibilityQ1toQ5": "Model B is the only architecture that simultaneously supports all five analytical questions: Q1 (project goal in target + contextBefore setup), Q2 (user correction in contextAfter), Q3 (assistant claim in target + adoption in contextAfter), Q4 (turn-level interaction rigor), and Q5 (four-layer epistemic isolation)."
+  },
+  "recommendedStandard": {
+    "architectureName": "Context-Bounded Sliding Triad Standard",
+    "targetScope": "1 Ordered Turn Exchange (User Prompt + Intermediate Tool Calls + Assistant Response)",
+    "contextBeforeAllocation": "1 Ancestor Exchange along active branch DAG (message.parent traversal)",
+    "contextAfterAllocation": "1 Descendant Exchange along active branch DAG",
+    "deduplicationKey": "conversation_id + '_' + target_user_node_id + '_' + target_assistant_node_id",
+    "evidenceRule": "Semantic labels and evidence quotes must derive 100% from the Target Exchange. Context turns provide referential awareness only." 
+  }
+}
