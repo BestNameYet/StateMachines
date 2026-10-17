@@ -233,7 +233,7 @@ Start manually in Actions → Conversation Parallel Gemini → Run workflow. Ent
 
 The placeholders above must be replaced with existing repository paths. Only a commit changing the enabled trigger launches API jobs; ordinary source changes run tests. Set enabled to false to disable a trigger update. A trigger does not automatically import the Library archive. Do not commit private conversation content just to satisfy the repository-path input; approve appropriate source storage before archive ingestion.
 
-Each task saves prompt.txt, source-manifest.json (paths, byte counts, SHA-256 hashes), response.txt, and result.json. Incomplete model answers are failures, not completed analyses. Each result identifies its assignment and source commit. Credentials are sent in a header and excluded from stored prompts and results.
+Each task saves prompt.txt, source-manifest.json (paths, byte counts, SHA-256 hashes), response.txt, and result.json. Image assignments are marked completed only when the response is valid JSON with the expected image, message, author, timestamp, confidence, and unreadable-region fields. Incomplete model answers are failures, not completed analyses. Each result identifies its assignment and source commit. Credentials are sent in a header and excluded from stored prompts and results.
 
 Actions uploads separate task artifacts plus parallel-gemini-collected, whose index.json lists every planned assignment, including failed or missing results. A task failure retains successful neighbors. The collection is an outcome index, not a semantic synthesis or proof of analysis quality. Artifacts expire after 30 days; preserve selected long-term results separately when needed.
 
