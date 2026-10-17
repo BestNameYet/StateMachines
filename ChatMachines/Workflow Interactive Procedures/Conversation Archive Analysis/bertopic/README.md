@@ -23,7 +23,7 @@ The pinned BERTopic release is 0.17.4. The default embedding backend uses Senten
 
 ## Extract branch dialogues
 
-Run [Extract branch dialogues](../../../../../.github/workflows/extract-conversation-dialogues.yml) manually from Actions and supply a repository-relative batch JSON path. The workflow runs `extract-dialogues.mjs` on Node 22 and uploads one `.txt` file for each non-empty root-to-leaf branch.
+Run [Extract branch dialogues](../../../../.github/workflows/extract-conversation-dialogues.yml) manually from Actions and supply a repository-relative batch JSON path. The workflow runs `extract-dialogues.mjs` on Node 22 and uploads one `.txt` file for each non-empty root-to-leaf branch.
 
 The transcript file body contains only `user:` and `assistant:` turns. It follows parent links, repeats shared context in each alternative branch, omits null nodes and other roles, and keeps the order of messages on each path. It does not force alternation when the source contains consecutive messages from the same role. Conversation IDs and branch numbers appear only in filenames.
 
