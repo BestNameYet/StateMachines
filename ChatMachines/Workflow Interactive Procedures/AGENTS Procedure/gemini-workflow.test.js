@@ -7,6 +7,22 @@ const {validateGeminiResponse,buildGeminiRequest,validateGeminiScreen,generateGe
 const {lastGeminiScreen}=require('./render-gemini.js');
 
 async function test() {
+  const {recordGeminiError,publishGeminiErrors}=require('./issue-workflow.js');
+  const errorRecord={request:3,lastCommentId:10};
+  const priorComments=[{body:'<!-- agents-procedure:55:gemini-error:3 -->'},{body:'<!-- agents-procedure:55:gemini-error:3:1 -->'}];
+  const first=recordGeminiError(errorRecord,55,Error('first failure'),priorComments);
+  assert.equal(first.sequence,2);
+  const second=recordGeminiError(errorRecord,55,Error('second failure'),priorComments);
+  assert.notEqual(first.marker,second.marker);
+  await assert.rejects(()=>publishGeminiErrors(errorRecord,priorComments,async()=>{throw Error('post failed');},async()=>{}),/post failed/);
+  assert.equal(first.published,false);
+  const restored=JSON.parse(JSON.stringify(errorRecord));let errorPosts=[];
+  await publishGeminiErrors(restored,priorComments,async body=>errorPosts.push({body}),async()=>{});
+  assert.equal(errorPosts.length,2);assert(errorPosts[0].body.includes(first.marker));
+  restored.geminiErrors[0].published=false;
+  await publishGeminiErrors(restored,[...priorComments,...errorPosts],async()=>{throw Error('Duplicate error post');},async()=>{});
+  assert(restored.geminiErrors[0].published);
+
   const loopDir=fs.mkdtempSync(path.join(os.tmpdir(),'supervisor-loop-'));
   const loopRecord={issueNumber:990,request:1,geminiPending:true,state:{procedureMode:'gemini',verbatimUserPrompt:'Inspect',variables:[],renderedScreens:[],controls:[]}};
   let exchanges=0;
@@ -215,3 +231,4 @@ async function test() {
   }
 }
 test().catch(e=>{console.error(e);process.exitCode=1;});
+

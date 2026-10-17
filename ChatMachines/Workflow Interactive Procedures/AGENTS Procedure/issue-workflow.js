@@ -240,6 +240,27 @@ function renderToolInvocationSummary(summary) {
 function canonicalTitle(issue) {
   return 'AGENTS Procedure — '+new Date(issue.created_at).toISOString();
 }
+function recordGeminiError(record,issueNumber,error,comments=[]) {
+  record.geminiErrors??=[];
+  let sequence=Math.max(0,...record.geminiErrors.map(e=>e.sequence||0))+1;
+  const markerFor=n=>'<!-- agents-procedure:'+issueNumber+':gemini-error:'+record.request+':'+n+' -->';
+  while(record.geminiErrors.some(e=>e.marker===markerFor(sequence))||comments.some(c=>c.body.includes(markerFor(sequence))))sequence++;
+  const marker=markerFor(sequence);
+  const failure={sequence,marker,request:record.request,submissionCommentId:record.lastCommentId,message:error.message,name:error.name,at:new Date().toISOString(),published:false};
+  failure.body=marker+'\n'+error.message+'\n\nYour accepted values remain saved. Type `retry` to request the next screen. Type `state` or `back` to view the saved state or last saved instruction.';
+  record.geminiErrors.push(failure);
+  console.error('Gemini supervisor failed: '+JSON.stringify({sequence,request:failure.request,name:failure.name,message:failure.message}));
+  return failure;
+}
+async function publishGeminiErrors(record,comments,post,save) {
+  for(const failure of record.geminiErrors||[]) {
+    if(failure.published||!failure.marker||!failure.body)continue;
+    if(!comments.some(c=>c.body.includes(failure.marker)))await post(failure.body);
+    failure.published=true;
+    try {await save();} catch(error) {failure.published=false;throw error;}
+  }
+}
+
 async function main() {
   const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
   const repository=process.env.GITHUB_REPOSITORY;
@@ -367,13 +388,13 @@ async function main() {
       await api('PUT',inputRoute,{message:'Initialize AGENTS Procedure issue '+number+' tool-invocation file',content:Buffer.from(JSON.stringify(artifact,null,2)+'\n').toString('base64')});
     }
   }
+  await publishGeminiErrors(record,comments,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord);
   let geminiFailed=record.geminiPending&&navigationOnly;
   if(record.geminiPending&&!navigationOnly){
     try {await generateGeminiScreen(record,saveRecord,{storage:workspaceStorage});}
     catch(error){
       geminiFailed=true;
-      const marker='<!-- agents-procedure:'+number+':gemini-error:'+record.request+' -->';
-      outbox.push({marker,body:marker+'\n'+error.message+'\n\nYour accepted values remain saved. Type `retry` to request the next screen. Type `state` or `back` to view the saved state or last saved instruction.'});
+      recordGeminiError(record,number,error,comments);
     }
   }
   const reportRequested=!record.geminiStarted&&(screens[record.state.render-1]||[]).some(([key])=>key==='toolInvocationReport');
@@ -391,6 +412,7 @@ async function main() {
   for(const body of [(record.geminiStarted&&!record.done&&(lastGeminiScreen(record.state).assignments||lastGeminiScreen(record.state).standingInstructions))?null:rendered,...outbox.map(item=>item.body)])if(body && body.length>65000)throw Error('Instruction exceeds the GitHub comment size; content was not truncated.');
   await saveRecord();
   for(const item of outbox)if(!comments.some(c=>c.body.includes(item.marker)))await api('POST','/issues/'+number+'/comments',{body:item.body});
+  await publishGeminiErrors(record,comments,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord);
   if(!geminiFailed)await publishCurrent(record,number,body=>api('POST','/issues/'+number+'/comments',{body}),saveRecord,rendered);
   if(!geminiFailed&&!navigationOnly&&record.geminiStarted&&!record.done){
     try {
@@ -416,6 +438,7 @@ async function main() {
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={main,startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,toolInvocationInputArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+module.exports={recordGeminiError,publishGeminiErrors,main,startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,toolInvocationInputArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+
 
 
