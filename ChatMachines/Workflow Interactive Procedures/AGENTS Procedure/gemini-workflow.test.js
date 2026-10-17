@@ -7,6 +7,22 @@ const {validateGeminiResponse,buildGeminiRequest,validateGeminiScreen,generateGe
 const {lastGeminiScreen}=require('./render-gemini.js');
 
 async function test() {
+  const loopDir=fs.mkdtempSync(path.join(os.tmpdir(),'supervisor-loop-'));
+  const loopRecord={issueNumber:990,request:1,geminiPending:true,state:{procedureMode:'gemini',verbatimUserPrompt:'Inspect',variables:[],renderedScreens:[],controls:[]}};
+  let exchanges=0;
+  const loopControl={target:{outcome:'Inspect',process:'Inspect'},current:{outcome:'Inspecting',process:'Inspecting'},gap:{outcome:['Finish'],process:[]},progress:{reduced:true,description:'Required inspection'},mode:'continue'};
+  try {
+    await generateGeminiScreen(loopRecord,async()=>{},{storage:require('./supervisor-tools.js').localStorage(loopDir),generate:async()=>{
+      exchanges++;
+      return exchanges<=13?{control:loopControl,commands:[{name:'view_inventory'}]}:{control:loopControl,instruction:'Return the result as {$result}.',expectedInputs:[{name:'result',schema:{type:'string'}}]};
+    }});
+    assert.equal(exchanges,14);assert.equal(loopRecord.state.commandResults.length,13);assert.equal(loopRecord.geminiPending,false);
+  } finally {fs.rmSync(loopDir,{recursive:true,force:true});}
+  await require('./gemini-workflow.js').callGemini({}, {apiKey:'test',fetchImpl:async(url,options)=>{
+    assert.equal(options.signal,undefined);
+    return {ok:true,json:async()=>({candidates:[{content:{parts:[{text:'{}'}]}}]})};
+  }});
+
   const visibilityState={verbatimUserPrompt:'Review outputs',renderedScreens:[],variables:[],commandResults:[
     {actor:{type:'supervisor'},command:{name:'read_files'},result:{files:[{path:'own.js',content:'requested read'}]}},
     {actor:{type:'worker',nonce:'a'},command:{name:'read_files'},result:{files:[{path:'other.js',content:'worker read'}]}},

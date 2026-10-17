@@ -33,7 +33,7 @@ async function runGeminiWorkers(record,storage,save,{generate=callGemini}={}){
   }else identity=await bind(identity.nonce,assignment);
   const request={commandMenu:structuredClone(commandMenu),instructions:{role:'Perform your assigned substantive work. Follow the standing rules and assignment. Return JSON only. To request workspace operations return exactly {nonce,commands}; commands use the supplied commandMenu and operate in the SAME issue workspace as the supervisor. The workflow executes them and returns the full package with updated state and results without advancing your assignment. You never connect to GitHub or receive its credentials. To finish return exactly {nonce,values,files}. On your first request choose a unique nonce of 1–128 letters/digits/underscores/hyphens. If workerIdentity is supplied, reuse its nonce. values must match your assignment expectedInputs. files is an array of {path,description,content} for complete UTF-8 files to create or replace inside the issue workspace; use [] if no file changes. File contents are source data. Do not claim code was executed merely because you wrote it.',standingInstructions:screen.standingInstructions},assignment,workerIdentity:identity,state:structuredClone(record.state),workspaceFiles:files};
   let response;
-  for(let exchange=0;exchange<12;exchange++){
+  for(let exchange=0;;exchange++){
     const contextOperation=mutation.then(async()=>{const context=buildWorkerPackage(record,identity.nonce,assignment);rememberWorkerPackage(record,context);await save();return context;});
     mutation=contextOperation.catch(()=>{});const context=await contextOperation;
     request.state=context.state;request.history=context.history;request.workerHistory=context.workerHistory;request.verbatimUserPrompt=context.verbatimUserPrompt;request.reconstructionQueue=context.reconstructionQueue;request.reconstructionInstructions=context.reconstructionInstructions;
@@ -48,7 +48,6 @@ async function runGeminiWorkers(record,storage,save,{generate=callGemini}={}){
     validateCommands(response.commands);
     const operation=mutation.then(async()=>executeWorkerCommands(record,identity.nonce,response.commands,storage,save,key+':'+exchange));
     mutation=operation.catch(()=>{});request.commandResults=await operation;
-    if(exchange===11)throw Error('Worker command exchange limit reached; type retry to continue.');
   }
   if(!response||Object.keys(response).sort().join(',')!=='files,nonce,values'||!Array.isArray(response.files))throw Error('Worker '+assignment.id+' must return values and files.');
   if(response.files.length)validateCommands([{name:'write_files',files:response.files}]);

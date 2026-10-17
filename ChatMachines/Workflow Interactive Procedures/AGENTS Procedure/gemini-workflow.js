@@ -122,8 +122,8 @@ async function callGemini(request, {fetchImpl=fetch, apiKey=process.env.GEMINI_A
   const response = await fetchImpl('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent', {
     method:'POST',
     headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
-    body:JSON.stringify({contents:[{role:'user',parts:[{text:JSON.stringify(request)}]}],generationConfig:{responseMimeType:'application/json'}}),
-    signal:AbortSignal.timeout(60000)
+    body:JSON.stringify({contents:[{role:'user',parts:[{text:JSON.stringify(request)}]}],generationConfig:{responseMimeType:'application/json'}})
+
   });
   if (!response.ok) throw Error('Gemini API returned HTTP '+response.status+'.');
   const result = await response.json();
@@ -133,7 +133,7 @@ async function callGemini(request, {fetchImpl=fetch, apiKey=process.env.GEMINI_A
   return text;
 }
 
-async function generateGeminiScreen(record, saveRecord, {generate=callGemini,maxAttempts=3,storage,maxExchanges=12}={}) {
+async function generateGeminiScreen(record, saveRecord, {generate=callGemini,maxAttempts=3,storage}={}) {
   if(record.done)return null;
   if (!record.geminiPending) return lastGeminiScreen(record.state);
   storage??=localStorage(path.join(__dirname,'issue-workspaces',String(record.issueNumber||record.id||'local')));
@@ -153,7 +153,7 @@ async function generateGeminiScreen(record, saveRecord, {generate=callGemini,max
     }catch(error){record.state=recoveredState;record.pendingSupervisorResponse=pending;record.geminiPending=true;throw error;}
   }
   // A saved command-only response can resume without reissuing its commands.
-  for(let exchange=0;exchange<maxExchanges;exchange++) {
+  while(true) {
   const request = buildGeminiRequest(record.state);
   for (let attempt=1; attempt<=maxAttempts; attempt++) {
     const response = await generate(structuredClone(request));
@@ -225,7 +225,6 @@ async function generateGeminiScreen(record, saveRecord, {generate=callGemini,max
     }
   }
   }
-  throw Error('Supervisor exchange limit reached. Saved state is preserved; type retry to continue.');
 }
 
 function acceptGeminiValues(record, values, fileRoot) {

@@ -53,6 +53,15 @@ async function test(){
  assert.equal(JSON.stringify({request:registrationRun.request,render:registrationRun.state.render,variables:registrationRun.state.variables,controls:registrationRun.state.controls,screens:registrationRun.state.renderedScreens}),taskSnapshot);
  await assert.rejects(()=>executeWorkerCommands(registrationRun,'unregistered',[{name:'view_inventory'}],storage,async()=>{},'bad'),/Register/);
 
+ const longWorker=structuredClone(record);
+ longWorker.state.renderedScreens.at(-1).assignments=[assignment('long-worker','gemini','result')];
+ let workerExchanges=0;
+ await runGeminiWorkers(longWorker,storage,async()=>{}, {generate:async request=>{
+   if(request.registration)return {nonce:'long-worker-nonce'};
+   workerExchanges++;
+   return workerExchanges<=13?{nonce:'long-worker-nonce',commands:[{name:'view_inventory'}]}:{nonce:'long-worker-nonce',values:{result:60},files:[]};
+ }});
+ assert.equal(workerExchanges,14);assert.equal(longWorker.state.assignmentReturns.length,1);
  const workerRun=structuredClone(record);workerRun.publishedParts={};
  let active=0,peak=0,thirdRegistered=false,startedBeforeAllRegistered=false;
  let releaseRegistration;const registrationGate=new Promise(resolve=>{releaseRegistration=resolve;});
