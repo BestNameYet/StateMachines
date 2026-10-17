@@ -50,4 +50,23 @@ class PipelineTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"checksum"):
                 load_documents(cfg,root)
 
+
+    def test_parallel_matches_sequential(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            bins=[]
+            for i in range(4):
+                record={"id":str(i),"mapping":{"node":{"message":{"id":str(i),"author":{"role":"user"},"content":{"parts":["apple orchard fruit harvest garden"]}}}}}
+                raw=json.dumps([record]).encode()
+                name="bin-%d.json"%i
+                (root/name).write_bytes(raw)
+                bins.append({"output":name,"conversation_count":1,"sha256":hashlib.sha256(raw).hexdigest()})
+            (root/"manifest.json").write_text(json.dumps({"conversation_count":4,"bins":bins}))
+            cfg=copy.deepcopy(CONFIG);cfg["input"]["manifest"]="manifest.json"
+            cfg["execution"]={"preprocess_workers":1}
+            sequential=load_documents(cfg,root)
+            cfg["execution"]["preprocess_workers"]=4
+            parallel=load_documents(cfg,root)
+            self.assertEqual(sequential,parallel)
+
 if __name__=="__main__": unittest.main()

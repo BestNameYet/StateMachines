@@ -8,7 +8,7 @@ A CPU-based, unsupervised baseline. No LLM, pretrained language model, API key, 
 - `run.py`: verify source hashes/counts, prepare message documents, fit one TF-IDF vocabulary and NMF model over the whole dataset, and save results.
 - `test_pipeline.py`: source integrity, branch identity, excluded content, window boundaries and end-to-end model checks.
 - `requirements.txt`: pinned runtime dependencies.
-- Workflow: `.github/workflows/conversation-tfidf-nmf.yml`. Pushes to this folder run tests only. Use **Run workflow** to fit the configured dataset; it uploads results and does not commit derived analysis automatically.
+- Workflow: `.github/workflows/conversation-tfidf-nmf.yml`. Ordinary pushes run tests only. Use **Run workflow**, or change and commit an enabled timestamped `trigger.json`, to fit the configured dataset; it uploads results and does not commit derived analysis automatically.
 
 From repository root:
 
@@ -40,3 +40,7 @@ Defaults: 20 topics, unigrams/bigrams, English stop words, minimum document freq
 Relative weights are normalized NMF activations, not probabilities. Only the configured top topics are emitted per document, so their displayed weights may sum to less than one. Topic numbers have meaning only within the fitted model. Compare representatives with source messages before interpreting labels. The model vocabulary and topic keywords are derived private data; the workflow stores them as repository-access-controlled Actions artifacts for 30 days. Preserve chosen runs separately before expiry.
 
 See the [scikit-learn topic extraction example](https://scikit-learn.org/stable/auto_examples/applications/plot_topics_extraction_with_nmf_lda.html).
+
+## Parallel preparation
+
+`execution.preprocess_workers` is set to 4. Four spawned Python subprocesses parse and verify bins and prepare text documents concurrently. Results merge in manifest order; tests compare serial and parallel output. TF-IDF vocabulary construction and NMF fitting use one shared corpus/model, with numeric libraries limited to two threads by the workflow. This does not fit four unrelated topic catalogs. The run report records phase timings and configuration; preparation logs report the observed process count.

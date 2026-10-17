@@ -1,6 +1,9 @@
 """Deterministic TF-IDF + NMF topic discovery; no language model or API calls."""
 import argparse
 from collections import Counter
+from concurrent.futures import ProcessPoolExecutor
+import multiprocessing
+import time
 import hashlib
 import json
 import os
@@ -78,37 +81,54 @@ def documents_for(conversation, source, record_index, config, counters):
             counters["documents_prepared"] += 1
             yield doc
 
+def prepare_bin(task):
+    item, source_root, repo_root, document_config = task
+    source_root, repo_root = Path(source_root), Path(repo_root)
+    relative = item["output"]
+    path = (source_root / relative).resolve()
+    if not path.is_relative_to(source_root):
+        raise ValueError("Source outside input directory")
+    raw = path.read_bytes()
+    digest = hashlib.sha256(raw).hexdigest()
+    if digest != item["sha256"]:
+        raise ValueError("Source checksum mismatch: " + relative)
+    records = json.loads(raw)
+    if not isinstance(records, list) or len(records) != item["conversation_count"]:
+        raise ValueError("Conversation count mismatch: " + relative)
+    source = path.relative_to(repo_root).as_posix()
+    documents, counters = [], Counter()
+    for index, record in enumerate(records):
+        counters["conversations_seen"] += 1
+        documents.extend(documents_for(record, source, index, document_config, counters))
+    return documents, {"path": source, "sha256": digest, "bytes": len(raw), "conversations": len(records)}, counters, os.getpid()
+
 def load_documents(config, repo_root):
     manifest_path = (repo_root / config["input"]["manifest"]).resolve()
     if not manifest_path.is_relative_to(repo_root):
         raise ValueError("Manifest outside repository")
     manifest = json.loads(manifest_path.read_text())
-    source_root = manifest_path.parent
-    documents, sources, counters = [], [], Counter()
-    seen = set()
-    for item in manifest["bins"]:
-        relative = item["output"]
-        if relative in seen:
-            raise ValueError("Duplicate source path: " + relative)
-        seen.add(relative)
-        path = (source_root / relative).resolve()
-        if not path.is_relative_to(source_root):
-            raise ValueError("Source outside input directory")
-        raw = path.read_bytes()
-        digest = hashlib.sha256(raw).hexdigest()
-        if digest != item["sha256"]:
-            raise ValueError("Source checksum mismatch: " + relative)
-        records = json.loads(raw)
-        if not isinstance(records, list) or len(records) != item["conversation_count"]:
-            raise ValueError("Conversation count mismatch: " + relative)
-        source = path.relative_to(repo_root).as_posix()
-        for index, record in enumerate(records):
-            counters["conversations_seen"] += 1
-            documents.extend(documents_for(record, source, index, config["documents"], counters))
-        sources.append({"path": source, "sha256": digest, "bytes": len(raw), "conversations": len(records)})
+    bins = manifest["bins"]
+    if len({item["output"] for item in bins}) != len(bins):
+        raise ValueError("Duplicate source path")
+    tasks = [(item, str(manifest_path.parent), str(repo_root), config["documents"]) for item in bins]
+    workers = min(config.get("execution", {}).get("preprocess_workers", 1), len(tasks))
+    documents, sources, counters, pids = [], [], Counter(), set()
+    def consume(results):
+        for docs, source, counts, pid in results:
+            documents.extend(docs)
+            sources.append(source)
+            counters.update(counts)
+            pids.add(pid)
+    if workers > 1:
+        with ProcessPoolExecutor(max_workers=workers, mp_context=multiprocessing.get_context("spawn")) as pool:
+            consume(pool.map(prepare_bin, tasks, chunksize=1))
+    else:
+        consume(map(prepare_bin, tasks))
     if counters["conversations_seen"] != manifest["conversation_count"]:
         raise ValueError("Dataset conversation coverage mismatch")
+    print(json.dumps({"phase": "preparation", "files": len(sources), "worker_processes_observed": len(pids)}), flush=True)
     return documents, sources, counters
+
 
 def fit(documents, config):
     tfidf = dict(config["tfidf"])
@@ -133,10 +153,13 @@ def run(config, repo_root, output):
     validate(config)
     if output.exists() and any(output.iterdir()):
         raise ValueError("Output directory must be empty; choose a new run directory")
+    started = time.perf_counter()
     documents, sources, counters = load_documents(config, repo_root)
+    prepared = time.perf_counter()
     if not documents:
         raise ValueError("No eligible text documents")
     vectorizer, model, scores, nonzero, notices = fit(documents, config)
+    fitted = time.perf_counter()
     output.mkdir(parents=True, exist_ok=True)
     features = vectorizer.get_feature_names_out()
     terms = config["output"]["terms_per_topic"]
@@ -162,6 +185,8 @@ def run(config, repo_root, output):
     dump(output / "config.json", config)
     dump(output / "sources.json", sources)
     report = {"source_commit": os.environ.get("GITHUB_SHA"), "sklearn_version": sklearn.__version__,
+              "execution": config.get("execution", {}),
+              "timings_seconds": {"preparation": prepared-started, "fit": fitted-prepared},
               "coverage": dict(counters), "modeled_documents": int(nonzero.sum()),
               "empty_after_vectorization": int((~nonzero).sum()), "features": len(features),
               "topics": len(topics), "iterations": model.n_iter_,
@@ -177,6 +202,9 @@ def run(config, repo_root, output):
     print(json.dumps(report, ensure_ascii=False))
 
 def validate(config):
+    workers = config.get("execution", {}).get("preprocess_workers", 1)
+    if type(workers) is not int or not 1 <= workers <= 32:
+        raise ValueError("preprocess_workers must be an integer from 1 to 32")
     docs = config["documents"]
     if not docs["roles"] or docs["min_words"] < 1 or docs["max_words_per_document"] < docs["min_words"]:
         raise ValueError("Invalid document configuration")

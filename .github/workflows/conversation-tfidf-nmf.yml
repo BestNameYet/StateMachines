@@ -21,6 +21,8 @@ jobs:
       MKL_NUM_THREADS: '2'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -28,11 +30,24 @@ jobs:
         run: python -m pip install -r 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/requirements.txt'
       - name: Test preparation and model fitting
         run: python -m unittest discover -s 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf' -p 'test_*.py'
+      - name: Detect explicit run request
+        id: request
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          trigger = 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/trigger.json'
+          changed = subprocess.check_output(['git','diff','--name-only','HEAD^','HEAD'],text=True).splitlines()
+          live = os.environ['EVENT_NAME']=='workflow_dispatch' or (trigger in changed and json.loads(Path(trigger).read_text()).get('enabled') is True)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('live='+str(live).lower()+'\n')
+          PY
       - name: Fit configured corpus
-        if: github.event_name == 'workflow_dispatch'
+        if: steps.request.outputs.live == 'true'
         run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/run.py' --config 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/config.json' --output nmf-results
       - uses: actions/upload-artifact@v4
-        if: always() && github.event_name == 'workflow_dispatch'
+        if: always() && steps.request.outputs.live == 'true'
         with:
           name: conversation-tfidf-nmf-results
           path: nmf-results/
