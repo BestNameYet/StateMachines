@@ -7,6 +7,17 @@ const {validateGeminiResponse,buildGeminiRequest,validateGeminiScreen,generateGe
 const {lastGeminiScreen}=require('./render-gemini.js');
 
 async function test() {
+  const {readRunRecord}=require('./issue-workflow.js');
+  const expectedRecord={request:4,state:{variables:[{name:'latest',value:60}]}};
+  const encoded=Buffer.from(JSON.stringify(expectedRecord)).toString('base64');
+  let blobReads=0;
+  assert.deepEqual(await readRunRecord({encoding:'none',content:'',sha:'large-state'},async(method,route)=>{
+    assert.equal(method,'GET');assert.equal(route,'/git/blobs/large-state');blobReads++;
+    return {encoding:'base64',content:encoded};
+  }),expectedRecord);
+  assert.equal(blobReads,1);
+  assert.deepEqual(await readRunRecord({encoding:'base64',content:encoded},async()=>{throw Error('Unnecessary fallback');}),expectedRecord);
+
   const {recordGeminiError,publishGeminiErrors}=require('./issue-workflow.js');
   const errorRecord={request:3,lastCommentId:10};
   const priorComments=[{body:'<!-- agents-procedure:55:gemini-error:3 -->'},{body:'<!-- agents-procedure:55:gemini-error:3:1 -->'}];
@@ -231,4 +242,5 @@ async function test() {
   }
 }
 test().catch(e=>{console.error(e);process.exitCode=1;});
+
 

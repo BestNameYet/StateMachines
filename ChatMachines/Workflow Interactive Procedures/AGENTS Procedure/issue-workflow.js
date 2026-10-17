@@ -251,6 +251,17 @@ async function publishGeminiErrors(record,comments,post,save) {
   }
 }
 
+async function readRunRecord(stored,api) {
+  if(!stored)return null;
+  let file=stored;
+  if(file.encoding==='none'||!file.content) {
+    if(!file.sha)throw Error('Stored run has no readable contents or Git blob identity.');
+    file=await api('GET','/git/blobs/'+file.sha);
+  }
+  if(file.encoding!=='base64'&&file.encoding!==undefined)throw Error('Unsupported run-record encoding.');
+  return JSON.parse(Buffer.from(file.content,'base64').toString('utf8'));
+}
+
 async function main() {
   const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
   const repository=process.env.GITHUB_REPOSITORY;
@@ -276,7 +287,7 @@ async function main() {
   if(issue.title!==title)await api('PATCH','/issues/'+number,{title});
   // Title edits enforce naming only; they do not advance or initialize a run.
   if(event.action==='edited')return;
-  const record=stored?JSON.parse(Buffer.from(stored.content,'base64').toString('utf8')):startRun(issue);
+  const record=stored?await readRunRecord(stored,api):startRun(issue);
   record.issueNumber=number;
   const workspacePath=workspaceBase+number;
   const fileRoute=p=>'/contents/'+(workspacePath+'/'+p).split('/').map(encodeURIComponent).join('/');
@@ -428,7 +439,8 @@ async function main() {
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={recordGeminiError,publishGeminiErrors,main,startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,toolInvocationInputArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+module.exports={readRunRecord,recordGeminiError,publishGeminiErrors,main,startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,toolInvocationInputArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+
 
 
 
