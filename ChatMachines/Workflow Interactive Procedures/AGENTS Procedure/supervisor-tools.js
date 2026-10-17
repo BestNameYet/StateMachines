@@ -39,10 +39,10 @@ async function initializeWorkspace(record,storage){
  if(!record.state.workspace)record.state.workspace={path:workspaceBase+record.issueNumber,manifest:'manifest.json'};
  if(await storage.read('manifest.json')===null)await storage.write('manifest.json',JSON.stringify({files:[]},null,2)+'\n');
 }
-async function executeCommands(record,commands,storage,save){
+async function executeCommands(record,commands,storage,save,{actor={type:'supervisor'},requestId=null}={}){
  validateCommands(commands);
  for(const command of commands){
-  const id=crypto.createHash('sha256').update(JSON.stringify([record.request,record.state.controls.length,command])).digest('hex');
+  const id=crypto.createHash('sha256').update(JSON.stringify([record.request,record.state.controls.length,actor,requestId,command])).digest('hex');
   if(record.state.commandResults?.some(r=>r.id===id))continue;
   let result;
   try{
@@ -58,7 +58,7 @@ async function executeCommands(record,commands,storage,save){
    }
    if(command.name==='set_standing_instructions'){record.state.standingInstructions=command.instruction;result={updated:true};}
   }catch(error){result={error:error.message};}
-  record.state.commandResults??=[];record.state.commandResults.push({id,command:structuredClone(command),result});await save();
+  record.state.commandResults??=[];record.state.commandResults.push({id,actor:structuredClone(actor),requestId,command:structuredClone(command),result});await save();
  }
 }
 module.exports={commandMenu,relativePath,validateCommands,localStorage,initializeWorkspace,executeCommands,workspaceBase};

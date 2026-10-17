@@ -7,6 +7,7 @@ const {lastGeminiScreen,renderGeminiScreen,broadcastParts} = require('./render-g
 const {bindAssignmentWorker,registerWorker,requestWorkerInstruction,generateGeminiScreen,acceptGeminiValues} = require('./gemini-workflow.js');
 const {initializeWorkspace,workspaceBase}=require('./supervisor-tools.js');
 const {runGeminiWorkers}=require('./gemini-workers.js');
+const {executeWorkerCommands,registerPreparedWorker,registrationMessage}=require('./worker-registration.js');
 const {appendProcedureReceipt} = require('./issue-run-trigger.js');
 const config = JSON.parse(fs.readFileSync(path.join(__dirname,'config.json'),'utf8'));
 const map = compileTransitionMap(JSON.parse(fs.readFileSync(path.join(__dirname,config.transitions),'utf8')));
@@ -203,7 +204,7 @@ function renderIssue(record,issueNumber,options={}) {
   const instruction=Object.fromEntries(entries.map(([key,value])=>key==='toolInvocationReport'&&reportUrl
     ? [key,{procedureIssueNumber:issueNumber,recordCount:(record.toolInvocations||[]).length,file:reportUrl}]
     : [key,value]));
-  const workerMenu=record.geminiStarted?'\nRegistered worker nonces: '+(record.state.workers||[]).map(w=>w.nonce+' ('+w.type+')').join(', ')+'. First use `register <nonce> <chatgpt|gemini>`. Include `nonce` in assignment return JSON. Type `next <nonce>` to request another instruction only when that worker has no pending expected returns.':'';
+  const workerMenu=record.geminiStarted?'\nRegistered worker nonces: '+(record.state.workers||[]).map(w=>w.nonce+' ('+w.type+')').join(', ')+'. First use `register <nonce> <chatgpt|gemini>`. Include `nonce` in assignment return JSON. For workspace commands submit `{"nonce":"your-nonce","commands":[{"name":"view_inventory"}]}`; use view_inventory, read_files, write_files, or set_standing_instructions. Type `next <nonce>` to request another instruction only when that worker has no pending expected returns.':'';
   const menu='\n\n### Menu\nType `state` to view the saved state, or `back` to return to this instruction. You may submit the current expected inputs from either view.'+workerMenu;
   const communication=[
     '### Communication instructions',
@@ -273,6 +274,8 @@ async function main() {
     list:async()=>{const files=[];async function walk(p=''){const entries=await api('GET',fileRoute(p).replace(/\/$/,''),undefined,true);for(const e of entries||[]){const name=p?p+'/'+e.name:e.name;if(e.type==='dir')await walk(name);else if(e.type==='file')files.push(name);}}await walk();return files;}
   };
   const outbox=[];
+  const workerCommands=[];
+  const workerDeliveries=[];
   let navigationOnly=false;
   let initializeToolInvocationFile=false;
   let comments=[],page=1;
@@ -284,7 +287,7 @@ async function main() {
     const command=comment.body.trim().toLowerCase();
     if(command.startsWith('register ')){
       const marker='<!-- agents-procedure:'+number+':worker-register:'+comment.id+' -->';
-      try{const args=comment.body.trim().split(/\s+/);if(args.length!==3)throw Error('Use register <nonce> <chatgpt|gemini>.');if(!record.geminiStarted)throw Error('Worker registration requires Gemini mode.');const b=registerWorker(record,args[1],args[2]);const available=(lastGeminiScreen(record.state).assignments||[]).find(a=>a.worker===b.type&&!a.nonce&&!(record.state.assignmentWorkers||[]).some(w=>w.assignmentId===a.id)&&!(record.state.assignmentReturns||[]).some(r=>r.assignmentId===a.id));if(available)bindAssignmentWorker(record,available,b.nonce);outbox.push({marker,body:marker+'\nWorker registered: `'+b.nonce+'`. Use nonce `'+b.nonce+'` on returns and `next '+b.nonce+'` when no expected returns are pending.'});}catch(error){outbox.push({marker,body:marker+'\n'+error.message});}
+      try{const args=comment.body.trim().split(/\s+/);if(args.length!==3)throw Error('Use register <nonce> <chatgpt|gemini>.');if(!record.geminiStarted)throw Error('Worker registration requires Gemini mode.');const delivery=registerPreparedWorker(record,args[1],args[2]);workerDeliveries.push({marker,delivery,commentId:comment.id});}catch(error){outbox.push({marker,body:marker+'\n'+error.message});}
       navigationOnly=true;record.lastCommentId=comment.id;continue;
     }
     if(command.startsWith('next ')){
@@ -301,7 +304,11 @@ async function main() {
         const current=record.geminiStarted&&!record.done?lastGeminiScreen(record.state):null;
         if(command==='back'&&(current?.assignments||current?.standingInstructions)){
           broadcastParts(current).forEach((instruction,index)=>{const partMarker=marker+':'+index;outbox.push({marker:partMarker,body:partMarker+'\n'+renderIssue(record,number,{instruction,part:index})});});
-        }else outbox.push({marker,body:marker+'\n'+renderIssue(record,number)});
+        }else {
+          const body=renderIssue(record,number);
+          if(command==='state'&&body.length>65000){const json=JSON.stringify(record.state,null,2);for(let offset=0;offset<json.length;offset+=48000){const part=offset/48000;outbox.push({marker:marker+':'+part,body:marker+':'+part+'\n## State — part '+(part+1)+'\n\n'+fence(json.slice(offset,offset+48000))+'\n\nType `back` to return to the assignment. Current expected inputs remain valid.'});}}
+          else outbox.push({marker,body:marker+'\n'+body});
+        }
       }
       record.lastCommentId=comment.id;
       continue;
@@ -310,6 +317,14 @@ async function main() {
     const errorMarker='<!-- agents-procedure:'+number+':error:'+comment.id+' -->';
     try {
       const payload=parseReturn(comment.body,record.geminiStarted===true);
+      if(record.geminiStarted&&payload.values?.commands!==undefined){
+        const envelope=payload.values;
+        if(Object.keys(envelope).sort().join(',')!=='commands,nonce')throw Error('Worker commands require exactly nonce and commands.');
+        if(!(record.state.workers||[]).some(w=>w.nonce===envelope.nonce))throw Error('Register your worker nonce first.');
+        require('./supervisor-tools.js').validateCommands(envelope.commands);
+        workerCommands.push({nonce:envelope.nonce,commands:envelope.commands,commentId:comment.id});
+        navigationOnly=true;record.lastCommentId=comment.id;continue;
+      }
       const priorRender=record.state.render;
       applyReturn(record,payload,process.env.GITHUB_WORKSPACE);
       if(!record.geminiStarted&&priorRender===3&&payload.variable==='exampleMatch'&&payload.value===false)initializeToolInvocationFile=true;
@@ -325,6 +340,15 @@ async function main() {
   if(!record.done)setExpectedInputs(record);
   await saveRecord();
   await initializeWorkspace(record,workspaceStorage);
+  for(const item of workerDeliveries){
+    const message=item.delivery.worker.type==='chatgpt'?registrationMessage(item.delivery):'Worker registered. Prepared Gemini instructions are delivered through the API.';
+    outbox.push({marker:item.marker,body:item.marker+'\n'+message});
+  }
+  for(const item of workerCommands){
+    const marker='<!-- agents-procedure:'+number+':worker-command:'+item.commentId+' -->';
+    try{const results=await executeWorkerCommands(record,item.nonce,item.commands,workspaceStorage,saveRecord,String(item.commentId));const rendered=fence(results);const bodies=[];for(let i=0;i<rendered.length;i+=50000)bodies.push(rendered.slice(i,i+50000));bodies.forEach((part,index)=>outbox.push({marker:marker+':'+index,body:marker+':'+index+'\n## Results for '+item.nonce+' (part '+(index+1)+'/'+bodies.length+')\n\n'+part}));}
+    catch(error){outbox.push({marker,body:marker+'\nWorker command failed: '+error.message});}
+  }
   await saveRecord();
   if(initializeToolInvocationFile) {
     const inputPath=toolInvocationArtifactPath(number);

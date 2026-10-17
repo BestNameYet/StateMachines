@@ -17,9 +17,10 @@ function lastGeminiScreen(state) {
 function broadcastParts(screen){
  if(!screen.assignments)return screen.standingInstructions?['## Screen A — Shared instructions\n\n'+screen.standingInstructions,'## Screen B — Instructions\n\n'+screen.instruction]:[screen.instruction];
  const parts=['## Screen A — Shared instructions\n\n'+screen.standingInstructions];
- for(let i=0;i<screen.assignments.length;i+=2){
+ const visible=screen.assignments.filter(a=>a.worker==='chatgpt');
+ for(let i=0;i<visible.length;i+=2){
   const label=i===0?'B':'C';
-  parts.push('## Screen '+label+' — Worker assignments\n\n'+screen.assignments.slice(i,i+2).map(a=>'### '+a.id+' ('+(a.nonce||('unregistered '+a.worker))+')\n\n'+a.instruction+'\n\nReturn JSON (include your registered worker nonce): `{"nonce":"your-nonce","assignmentId":"'+a.id+'","values":{...}}`.').join('\n\n---\n\n'));
+  parts.push('## Screen '+label+' — Worker assignments\n\n'+visible.slice(i,i+2).map(a=>'### '+a.id+' ('+(a.nonce||('unregistered '+a.worker))+')\n\n'+a.instruction+'\n\nReturn JSON (include your registered worker nonce): `{"nonce":"your-nonce","assignmentId":"'+a.id+'","values":{...}}`.').join('\n\n---\n\n'));
  }
  return parts;
 }

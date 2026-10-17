@@ -19,6 +19,8 @@ on:
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/validator.js'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/gemini-*.js'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/supervisor-tools*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/worker-*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/worker-instructions.md'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/gemini-request-template.json'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/render-gemini.js'
       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/render-instructions.js'
@@ -57,7 +59,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
         run: |
-          if ! git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -Eq 'AGENTS Procedure/(gemini-workflow.js|gemini-screen.js|gemini-request-template.json|render-gemini.js)$'; then
+          if ! git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -Eq 'AGENTS Procedure/(gemini-workflow.js|gemini-screen.js|gemini-request-template.json|render-gemini.js|gemini-workers.js|worker-context.js|worker-registration.js|worker-instructions.md)$'; then
             echo 'No Gemini generation source changed; no live call requested.'
             exit 0
           fi

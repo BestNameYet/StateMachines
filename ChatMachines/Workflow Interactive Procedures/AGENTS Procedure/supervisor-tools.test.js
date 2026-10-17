@@ -17,23 +17,60 @@ async function test(){
   return {control,assignments:[assignment('one','chatgpt','result'),assignment('two','gemini','result'),assignment('three','gemini','third'),assignment('four','gemini','fourth')]};
  }});
  assert.equal(record.state.renderedScreens.length,2);assert.equal(record.state.controls.length,3);
- const screen=record.state.renderedScreens.at(-1),parts=broadcastParts(screen);assert.equal(parts.length,3);assert(parts[0].includes('Verify your result'));assert(parts[1].includes('one'));assert(!parts[1].includes('third'));assert(parts[2].includes('third'));
+ const screen=record.state.renderedScreens.at(-1),parts=broadcastParts(screen);assert.equal(parts.length,2);assert(parts[0].includes('Verify your result'));assert(parts[1].includes('one'));assert(!parts[1].includes('third'));assert(!parts.join('\n').includes('third'));assert.equal(broadcastParts({...screen,assignments:screen.assignments.filter(a=>a.worker==='gemini')}).length,1);
  let posts=[],saves=0;
  await assert.rejects(()=>publishCurrent(record,99,async text=>{if(posts.length===1)throw Error('Post failed');posts.push(text);},async()=>{saves++;}),/Post failed/);
  assert.equal(posts.length,1);assert(!record.state.renderedRequests.includes(1));
- await publishCurrent(record,99,async text=>posts.push(text),async()=>{saves++;});assert.equal(posts.length,3);assert(record.state.renderedRequests.includes(1));
+ await publishCurrent(record,99,async text=>posts.push(text),async()=>{saves++;});assert.equal(posts.length,2);assert(record.state.renderedRequests.includes(1));
  const {runGeminiWorkers}=require('./gemini-workers.js');
  // Three Gemini calls run concurrently; workflow applies and validates returns serially.
+ const {executeWorkerCommands,registerPreparedWorker,registrationMessage}=require('./worker-registration.js');
+ const registrationRun=structuredClone(record);
+ const taskBefore=JSON.stringify({request:registrationRun.request,render:registrationRun.state.render,variables:registrationRun.state.variables,controls:registrationRun.state.controls,screens:registrationRun.state.renderedScreens});
+ const delivered=registerPreparedWorker(registrationRun,'early-worker','chatgpt');
+ assert(registrationMessage(delivered).includes('read_files'));assert(registrationMessage(delivered).includes('write_files'));
+ assert.equal(delivered.assignment.id,'one');assert(registrationMessage(delivered).includes('Return the result'));
+ assert.equal(registrationRun.state.workers.length,1);
+ assert.equal(JSON.stringify({request:registrationRun.request,render:registrationRun.state.render,variables:registrationRun.state.variables,controls:registrationRun.state.controls,screens:registrationRun.state.renderedScreens}),taskBefore);
+ assert.equal(registerPreparedWorker(registrationRun,'early-worker','chatgpt').assignment.id,'one');
+ const {buildWorkerPackage,rememberWorkerPackage}=require('./worker-context.js');
+ const baselinePackage=buildWorkerPackage(registrationRun,'early-worker');
+ rememberWorkerPackage(registrationRun,baselinePackage);
+ const changeRun=structuredClone(registrationRun);changeRun.state.variables.push({name:'changed',value:42});changeRun.state.standingInstructions='Updated rules';delete changeRun.state.noProgressTurns;
+ const updatedPackage=buildWorkerPackage(changeRun,'early-worker');
+ assert.equal(updatedPackage.reconstructionQueue.length,2);
+ const replay=structuredClone(updatedPackage.reconstructionQueue[0].state);
+ for(const change of updatedPackage.reconstructionQueue[1].changes){
+  const keys=change.path.slice(1).split('/').map(k=>k.replaceAll('~1','/').replaceAll('~0','~'));let target=replay;
+  for(const k of keys.slice(0,-1))target=target[k];const key=keys.at(-1);
+  if(change.operation==='delete')delete target[key];else if(change.operation==='append')target[key].push(...change.values);else target[key]=change.value;
+ }
+ assert.deepEqual(replay,updatedPackage.state);assert.equal(updatedPackage.verbatimUserPrompt,record.state.verbatimUserPrompt);
+ const taskSnapshot=JSON.stringify({request:registrationRun.request,render:registrationRun.state.render,variables:registrationRun.state.variables,controls:registrationRun.state.controls,screens:registrationRun.state.renderedScreens});
+ const workerResults=await executeWorkerCommands(registrationRun,'early-worker',[{name:'write_files',files:[{path:'worker-file.txt',description:'Worker-owned output',content:'Updated via workflow'}]},{name:'read_files',paths:['worker-file.txt']}],storage,async()=>{},'worker-command-1');
+ assert.equal(workerResults.at(-1).result.files[0].content,'Updated via workflow');
+ assert.equal(workerResults[0].actor.nonce,'early-worker');
+ assert.equal(JSON.stringify({request:registrationRun.request,render:registrationRun.state.render,variables:registrationRun.state.variables,controls:registrationRun.state.controls,screens:registrationRun.state.renderedScreens}),taskSnapshot);
+ await assert.rejects(()=>executeWorkerCommands(registrationRun,'unregistered',[{name:'view_inventory'}],storage,async()=>{},'bad'),/Register/);
+
  const workerRun=structuredClone(record);workerRun.publishedParts={};
- let active=0,peak=0;
+ let active=0,peak=0,thirdRegistered=false,startedBeforeAllRegistered=false;
+ let releaseRegistration;const registrationGate=new Promise(resolve=>{releaseRegistration=resolve;});
  await runGeminiWorkers(workerRun,storage,async()=>{}, {generate:async request=>{
+  if(request.registration){
+    if(request.registration.assignmentId==='three'){await registrationGate;thirdRegistered=true;}
+    return {nonce:'nonce-'+request.registration.assignmentId};
+  }
+  if(request.assignment.id==='two'){startedBeforeAllRegistered=!thirdRegistered;releaseRegistration();}
+  assert(request.instructions.workerGuide.includes('JavaScript formatting'));assert(request.instructions.workerGuide.includes('Markdown formatting'));assert(request.instructions.workerGuide.includes('JSON formatting'));assert(Array.isArray(request.reconstructionQueue));
+  assert.equal(request.workerIdentity.nonce,'nonce-'+request.assignment.id);
   active++;peak=Math.max(peak,active);await new Promise(resolve=>setTimeout(resolve,5));active--;
   assert(request.instructions.standingInstructions.includes('Verify your result'));
   assert(request.workspaceFiles.some(f=>f.path==='nested/rules.js'));
   const input=request.assignment.expectedInputs[0].name;
   return {nonce:'nonce-'+request.assignment.id,values:{[input]:2},files:[{path:request.assignment.id+'.txt',description:'Worker output',content:'Done'}]};
  }});
- assert.equal(peak,3);assert.equal(workerRun.state.assignmentReturns.length,3);assert(!workerRun.geminiPending);
+ assert(startedBeforeAllRegistered);assert.equal(peak,3);assert.equal(workerRun.state.assignmentReturns.length,3);assert(!workerRun.geminiPending);
  let repeats=0;await runGeminiWorkers(workerRun,storage,async()=>{}, {generate:async()=>{repeats++;}});assert.equal(repeats,0);
  acceptGeminiValues(workerRun,{nonce:'nonce-one',assignmentId:'one',values:{result:1}},root);assert(workerRun.geminiPending);
  const idleRun=structuredClone(record);
@@ -75,6 +112,6 @@ async function test(){
  assert(recovery.pendingSupervisorResponse);assert(recovery.geminiPending);
  await generateGeminiScreen(recovery,async()=>{},{storage});
  assert(!recovery.pendingSupervisorResponse);assert.equal(recovery.state.renderedScreens.at(-1).expectedInputs[0].name,'recovered');
- fs.rmSync(root,{recursive:true,force:true});console.log('Supervisor command replay, workspace files/descriptions, path isolation, unchanged screens, independent returns, and resumable three-screen publication passed.');
+ fs.rmSync(root,{recursive:true,force:true});console.log('Supervisor command replay, workspace files/descriptions, path isolation, unchanged screens, independent returns, resumable comment publication, immediate registration delivery, workflow-owned file operations, and reconstructable worker history passed.');
 }
 test().catch(e=>{console.error(e);process.exitCode=1;});
