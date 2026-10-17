@@ -1,6 +1,6 @@
 {
   "state": {
-    "render": 12,
+    "render": 13,
     "verbatimUserPrompt": "What you're gonna do, we're gonna enter procedure right now. You're gonna start. You're gonna issue the trigger, or the trigger, trigger a do issue, and the user verbatim prompt will be to grab the tool list and extract each member of the array. That's one thing. And then you're gonna organize them by root. So if it's function or container, right, those are gonna be organized by root. And then you're gonna basically sort them by root. And then every root has, like, whatever the next attribute is, whatever the next token is, and whatever the next token is, right? And that way we'll be able to easily sort them.",
     "userIntent": "Extract every invocation from the top-level arrays in persisted procedure run records, preserving each full record and its source issue/index. Organize and sort the records by tool-name root and successive identifier tokens. Cross-check separate report files without duplicating matching records.",
     "exampleMatch": false,
@@ -43,44 +43,195 @@
       8
     ],
     "expectedInputs": {
-      "request": 8,
-      "render": 12,
+      "request": 9,
+      "render": 13,
       "inputs": [
         {
-          "name": "requirements",
+          "name": "toolInvocations",
           "schema": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
+                "cwd": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "command_line_verbatim": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "tool": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "invocation_verbatim": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "final_output_after_completion_of_tool_call": {},
+                "unavailable_reason": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "new": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "filename": {
-                  "type": "string",
-                  "format": "file-reference"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "frombyte": {
-                  "type": "integer"
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "tobyte": {
-                  "type": "integer"
+                  "anyOf": [
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "description": {
-                  "type": "string"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "intent": {
-                  "type": "string"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "operator": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "outcome": {
+                  "anyOf": [
+                    {
+                      "const": "succeeded"
+                    },
+                    {
+                      "const": "failed"
+                    },
+                    {
+                      "const": "blocked"
+                    },
+                    {
+                      "const": "unfinished"
+                    },
+                    {
+                      "const": "unknown"
+                    }
+                  ]
+                },
+                "specifiedOperatorByUser": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "chosenOperator": {
+                  "type": "string"
+                },
+                "http_method": {
+                  "type": "string"
+                },
+                "url": {
                   "type": "string"
                 }
               },
               "required": [
+                "cwd",
+                "command_line_verbatim",
+                "tool",
+                "invocation_verbatim",
+                "final_output_after_completion_of_tool_call",
+                "unavailable_reason",
+                "new",
                 "filename",
                 "frombyte",
                 "tobyte",
                 "description",
                 "intent",
-                "operator"
-              ]
+                "operator",
+                "specifiedOperatorByUser",
+                "chosenOperator",
+                "outcome"
+              ],
+              "toolInvocation": true
             }
           }
         }
@@ -88,8 +239,8 @@
     }
   },
   "done": false,
-  "request": 8,
-  "lastCommentId": 6230391877,
+  "request": 9,
+  "lastCommentId": 6230396643,
   "newFiles": [
     "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocations-by-root.json"
   ],
@@ -516,6 +667,111 @@
                   "example",
                   "promptText"
                 ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": 8,
+      "render": 12,
+      "loopNumber": null,
+      "values": {
+        "$requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocations-by-root.json",
+            "frombyte": 0,
+            "tobyte": 500000,
+            "description": "Create a JSON catalog by extracting every member of each numeric issue-run top-level toolInvocations array, preserving the full invocation object and source issue/index. Organize records under a sorted hierarchy derived from tool identifiers: split on `.` and `__`, retain other characters within tokens, and sort each level lexically. Include the accepted separate report only as a source cross-check when its array duplicates the numeric record, so records are not double-counted; record list totals and source file references.",
+            "intent": "Enable browsing and sorting every recorded invocation by its tool root and successive identifier tokens while retaining the original array member and provenance.",
+            "operator": "create"
+          }
+        ]
+      },
+      "state": {
+        "render": 13,
+        "verbatimUserPrompt": "What you're gonna do, we're gonna enter procedure right now. You're gonna start. You're gonna issue the trigger, or the trigger, trigger a do issue, and the user verbatim prompt will be to grab the tool list and extract each member of the array. That's one thing. And then you're gonna organize them by root. So if it's function or container, right, those are gonna be organized by root. And then you're gonna basically sort them by root. And then every root has, like, whatever the next attribute is, whatever the next token is, and whatever the next token is, right? And that way we'll be able to easily sort them.",
+        "userIntent": "Extract every invocation from the top-level arrays in persisted procedure run records, preserving each full record and its source issue/index. Organize and sort the records by tool-name root and successive identifier tokens. Cross-check separate report files without duplicating matching records.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocations-by-root.json",
+            "newFile": true
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocations-by-root.json",
+            "frombyte": 0,
+            "tobyte": 500000,
+            "description": "Create a JSON catalog by extracting every member of each numeric issue-run top-level toolInvocations array, preserving the full invocation object and source issue/index. Organize records under a sorted hierarchy derived from tool identifiers: split on `.` and `__`, retain other characters within tokens, and sort each level lexically. Include the accepted separate report only as a source cross-check when its array duplicates the numeric record, so records are not double-counted; record list totals and source file references.",
+            "intent": "Enable browsing and sorting every recorded invocation by its tool root and successive identifier tokens while retaining the original array member and provenance.",
+            "operator": "create"
+          }
+        ],
+        "matchedExample": {
+          "example": 4,
+          "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+        },
+        "mode": "fidelity",
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null,
+        "renderedRequests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "expectedInputs": {
+          "request": 8,
+          "render": 12,
+          "inputs": [
+            {
+              "name": "requirements",
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "filename": {
+                      "type": "string",
+                      "format": "file-reference"
+                    },
+                    "frombyte": {
+                      "type": "integer"
+                    },
+                    "tobyte": {
+                      "type": "integer"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "intent": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "filename",
+                    "frombyte",
+                    "tobyte",
+                    "description",
+                    "intent",
+                    "operator"
+                  ]
+                }
               }
             }
           ]
