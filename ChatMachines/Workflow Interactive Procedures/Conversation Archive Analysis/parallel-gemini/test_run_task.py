@@ -27,11 +27,19 @@ class Tests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 runner.collect(root, 'one', 1)
 
+    def test_image_mime_uses_content_signature_not_extension(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            misnamed = root / 'camera-export.PNG'
+            misnamed.write_bytes(b'\xff\xd8\xff' + b'jpeg bytes with a misleading extension')
+            files = runner.collect(root, 'camera-export.PNG', 1000)
+            self.assertEqual(files[0]['mime_type'], 'image/jpeg')
+
     def test_image_assignment_sends_multimodal_data_and_manifest_without_bytes(self):
         with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {'GEMINI_API_KEY': 'test-key'}):
             root = Path(temp)
             image = root / 'conversation.png'
-            image.write_bytes(b'png sample bytes')
+            image.write_bytes(b'\x89PNG\r\n\x1a\n' + b'png sample bytes')
             seen = {}
 
             def model(prompt, key, model, images=None):
@@ -42,7 +50,7 @@ class Tests(unittest.TestCase):
             result = runner.run(root, 'conversation.png', 'Extract messages and authors', out, request_fn=model)
             self.assertEqual(result['status'], 'completed')
             self.assertIn('image/png', seen['prompt'])
-            self.assertEqual(base64.b64decode(seen['images'][0]['inline_data']), b'png sample bytes')
+            self.assertEqual(base64.b64decode(seen['images'][0]['inline_data']), b'\x89PNG\r\n\x1a\n' + b'png sample bytes')
             manifest = (out / 'source-manifest.json').read_text()
             self.assertIn('sha256', manifest)
             self.assertNotIn('inline_data', manifest)
@@ -50,7 +58,7 @@ class Tests(unittest.TestCase):
     def test_rejects_malformed_image_extraction_json(self):
         with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {'GEMINI_API_KEY': 'test-key'}):
             root = Path(temp)
-            (root / 'conversation.jpg').write_bytes(b'jpg sample bytes')
+            (root / 'conversation.jpg').write_bytes(b'\xff\xd8\xff' + b'jpg sample bytes')
             def model(*args, **kwargs):
                 return 'not json', {'finishReason': 'STOP'}
             with self.assertRaisesRegex(RuntimeError, 'not valid JSON'):
