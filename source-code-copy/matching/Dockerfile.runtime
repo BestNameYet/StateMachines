@@ -1,0 +1,20 @@
+ARG PYTHON_VERSION=3.10.22
+FROM python:${PYTHON_VERSION}-slim-bookworm
+WORKDIR /workspace
+COPY matching/requirements.txt /tmp/requirements.txt
+COPY matching/wheels/ /tmp/wheels/
+RUN python -m pip install --no-index --find-links=/tmp/wheels -r /tmp/requirements.txt \
+    && python -c "import onnxruntime, numpy, PIL; print('Runtime ready')" \
+    && rm -rf /tmp/wheels
+COPY matching/models/ /workspace/matching/models/
+RUN python - <<'PY'
+from pathlib import Path
+import onnxruntime as ort
+for name in ('spatial_detector', 'feature_encoder'):
+    p = Path('/workspace/matching/models') / (name + '.onnx')
+    if p.stat().st_size < 10000:
+        raise RuntimeError(f'Unresolved Git LFS pointer: {p}')
+    ort.InferenceSession(str(p), providers=['CPUExecutionProvider'])
+    print('Validated', name, p.stat().st_size)
+PY
+ENV PYTHONUNBUFFERED=1
