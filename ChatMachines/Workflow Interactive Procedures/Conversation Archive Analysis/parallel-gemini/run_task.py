@@ -107,8 +107,9 @@ def validate_image_answer(answer, assigned):
         raise RuntimeError('Gemini image answer is not valid JSON') from None
     if not isinstance(result, dict) or result.get('image') != assigned:
         raise RuntimeError('Gemini image answer has an invalid image path')
-    if not isinstance(result.get('messages'), list) or not isinstance(result.get('unreadable_regions'), list):
-        raise RuntimeError('Gemini image answer is missing messages or unreadable_regions arrays')
+    if not isinstance(result.get('messages'), list):
+        raise RuntimeError('Gemini image answer is missing a messages array')
+    messages = []
     for item in result['messages']:
         if not isinstance(item, dict):
             raise RuntimeError('Gemini image answer contains a malformed message')
@@ -116,15 +117,8 @@ def validate_image_answer(answer, assigned):
             raise RuntimeError('Gemini image message author must be text or null')
         if not isinstance(item.get('text'), str):
             raise RuntimeError('Gemini image message text is missing')
-        if not (item.get('timestamp') is None or isinstance(item.get('timestamp'), str)):
-            raise RuntimeError('Gemini image message timestamp must be text or null')
-        confidence = item.get('confidence')
-        if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
-            raise RuntimeError('Gemini image message confidence must be from 0 to 1')
-    if any(not isinstance(region, str) for region in result['unreadable_regions']):
-        raise RuntimeError('Gemini unreadable_regions must contain text descriptions')
-    return result
-
+        messages.append({'author': item.get('author'), 'text': item['text']})
+    return {'image': assigned, 'messages': messages}
 
 def run(root, assigned, instruction, output, max_bytes=10_000_000, request_fn=call):
     output = Path(output)
