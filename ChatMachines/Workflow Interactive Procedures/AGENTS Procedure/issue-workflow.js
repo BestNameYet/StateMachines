@@ -34,6 +34,9 @@ function toolInvocationArtifactUrl(repository,issueNumber) {
 function toolInvocationArtifact(record,issueNumber) {
   return {procedureIssueNumber:issueNumber,toolInvocations:structuredClone(record.toolInvocations||[]),submissionAccepted:true};
 }
+function toolInvocationInputArtifact(issueNumber) {
+  return {procedureIssueNumber:issueNumber,toolInvocations:null};
+}
 function countBy(records,selector) {
   const counts=new Map();
   for(const record of records) {
@@ -218,6 +221,7 @@ async function main() {
   if(event.action==='edited')return;
   const record=stored?JSON.parse(Buffer.from(stored.content,'base64').toString('utf8')):startRun(issue);
   const outbox=[];
+  let initializeToolInvocationFile=false;
   let comments=[],page=1;
   while(true){const batch=await api('GET','/issues/'+number+'/comments?per_page=100&page='+page++);comments.push(...batch);if(batch.length<100)break;}
   restoreCommunicationState(record,comments,number);
@@ -226,8 +230,12 @@ async function main() {
     if(record.done){record.lastCommentId=comment.id;continue;}
     if(!/^\s*(?:\$\{|[\[{"\d-]|true\b|false\b|null\b|\x60{3,})/.test(comment.body)) {record.lastCommentId=comment.id;continue;}
     const errorMarker='<!-- agents-procedure:'+number+':error:'+comment.id+' -->';
-    try{applyReturn(record,parseReturn(comment.body),process.env.GITHUB_WORKSPACE);}
-    catch(error){outbox.push({marker:errorMarker,body:errorMarker+'\nReturn rejected: '+error.message+'\n\nState and current request are unchanged.'});}
+    try {
+      const payload=parseReturn(comment.body);
+      const priorRender=record.state.render;
+      applyReturn(record,payload,process.env.GITHUB_WORKSPACE);
+      if(priorRender===3&&payload.variable==='exampleMatch'&&payload.value===false)initializeToolInvocationFile=true;
+    } catch(error){outbox.push({marker:errorMarker,body:errorMarker+'\nReturn rejected: '+error.message+'\n\nState and current request are unchanged.'});}
     record.lastCommentId=comment.id;
   }
   let stateSha=stored?.sha;
@@ -238,6 +246,21 @@ async function main() {
   // Persist the accepted return and buffered tool calls before publishing or linking the report.
   if(!record.done)setExpectedInputs(record);
   await saveRecord();
+  if(initializeToolInvocationFile) {
+    const inputPath=toolInvocationArtifactPath(number);
+    const relative=path.relative(process.env.GITHUB_WORKSPACE,inputPath).split(path.sep).join('/');
+    const inputRoute='/contents/'+relative.split('/').map(encodeURIComponent).join('/');
+    const existing=await api('GET',inputRoute,undefined,true);
+    if(existing) {
+      const document=JSON.parse(Buffer.from(existing.content,'base64').toString('utf8'));
+      if(document.procedureIssueNumber!==number||!(document.toolInvocations===null||Array.isArray(document.toolInvocations))) {
+        throw Error('The existing tool-invocation file is not bound to this issue.');
+      }
+    } else {
+      const artifact=toolInvocationInputArtifact(number);
+      await api('PUT',inputRoute,{message:'Initialize AGENTS Procedure issue '+number+' tool-invocation file',content:Buffer.from(JSON.stringify(artifact,null,2)+'\n').toString('base64')});
+    }
+  }
   const reportRequested=(screens[record.state.render-1]||[]).some(([key])=>key==='toolInvocationReport');
   let reportUrl=null;
   if(reportRequested) {
@@ -266,6 +289,6 @@ async function main() {
   if(record.done&&event.issue.state==='open')await api('PATCH','/issues/'+number,{state:'closed'});
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+module.exports={startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,toolInvocationInputArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
 
 

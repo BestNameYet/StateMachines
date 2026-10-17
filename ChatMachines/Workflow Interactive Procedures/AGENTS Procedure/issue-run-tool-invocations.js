@@ -1,5 +1,6 @@
 const fs=require('node:fs');
 const path=require('node:path');
+const {isDeepStrictEqual}=require('node:util');
 const {
   acceptToolInvocationSubmission,
   appendProcedureReceipt,
@@ -22,11 +23,20 @@ function issueNumberFromChangedPath(filePath) {
 function parseToolInvocationSubmission(source,issueNumber) {
   const document=JSON.parse(source);
   if(!document||typeof document!=='object'||Array.isArray(document))throw Error('The JSON file must contain an object.');
-  const unexpected=Object.keys(document).filter(key=>!['procedureIssueNumber','toolInvocations'].includes(key));
+  const unexpected=Object.keys(document).filter(key=>!['procedureIssueNumber','toolInvocations','submissionAccepted'].includes(key));
   if(unexpected.length)throw Error('The JSON file has unexpected top-level field(s): '+unexpected.join(', ')+'.');
   if(document.procedureIssueNumber!==issueNumber)throw Error('procedureIssueNumber must equal '+issueNumber+'.');
-  if(!Array.isArray(document.toolInvocations))throw Error('toolInvocations must be an array.');
+  if(document.submissionAccepted!==undefined&&typeof document.submissionAccepted!=='boolean')throw Error('submissionAccepted must be a boolean when present.');
+  if(document.toolInvocations!==null&&!Array.isArray(document.toolInvocations))throw Error('toolInvocations must be an array or null.');
   return document.toolInvocations;
+}
+function appendedToolInvocationRecords(submitted,previous=[]) {
+  if(!Array.isArray(submitted))throw Error('toolInvocations must be an array before it can be submitted.');
+  if(!Array.isArray(previous))throw Error('Previously accepted toolInvocations must be an array.');
+  if(submitted.length<previous.length||!previous.every((record,index)=>isDeepStrictEqual(record,submitted[index]))) {
+    throw Error('toolInvocations must retain all previously accepted records in order and append new records.');
+  }
+  return submitted.slice(previous.length);
 }
 function isAcceptedReport(source) {
   try { return JSON.parse(source)?.submissionAccepted===true; }
@@ -66,15 +76,19 @@ async function main() {
     const input=await api('GET',inputRoute,undefined,true);
     if(!input)continue;
     const inputText=Buffer.from(input.content,'base64').toString('utf8');
-    // The accepted report is written back to this watched path. Ignore that
-    // workflow-authored commit so the same records are never accepted twice.
-    if(isAcceptedReport(inputText))continue;
+
     const marker='<!-- agents-procedure:'+number+':tool-invocation-file:'+input.sha+' -->';
     const rejected=error=>api('POST','/issues/'+number+'/comments',{body:marker+'\nTool-invocation JSON rejected: '+error.message+'\n\nThe current render and run state are unchanged. Correct '+inputPath+' and commit it again.'});
     let submitted;
     try {
       submitted=parseToolInvocationSubmission(inputText,number);
-      acceptToolInvocationSubmission(record,submitted,process.env.GITHUB_WORKSPACE);
+      if(submitted===null) {
+        if(record.state.render===13||record.state.render===17)throw Error('toolInvocations is null; replace it with an array of tool-invocation records.');
+        continue;
+      }
+      if(isAcceptedReport(inputText)&&isDeepStrictEqual(submitted,record.toolInvocations||[]))continue;
+      const newRecords=appendedToolInvocationRecords(submitted,record.toolInvocations||[]);
+      acceptToolInvocationSubmission(record,newRecords,process.env.GITHUB_WORKSPACE);
     } catch(error) {
       if(!comments.some(comment=>(comment.body||'').includes(marker)))await rejected(error);
       continue;
@@ -108,4 +122,4 @@ async function main() {
 }
 
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
-module.exports={issueNumberFromChangedPath,parseToolInvocationSubmission,isAcceptedReport};
+module.exports={issueNumberFromChangedPath,parseToolInvocationSubmission,appendedToolInvocationRecords,isAcceptedReport};
