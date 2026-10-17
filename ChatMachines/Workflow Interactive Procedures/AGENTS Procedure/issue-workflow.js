@@ -205,18 +205,8 @@ function renderIssue(record,issueNumber,options={}) {
   const instruction=Object.fromEntries(entries.map(([key,value])=>key==='toolInvocationReport'&&reportUrl
     ? [key,{procedureIssueNumber:issueNumber,recordCount:(record.toolInvocations||[]).length,file:reportUrl}]
     : [key,value]));
-  const workerMenu=record.geminiStarted?'\nRegistered worker nonces: '+(record.state.workers||[]).map(w=>w.nonce+' ('+w.type+')').join(', ')+'. First use `register <nonce> <chatgpt|gemini>`. Include `nonce` in assignment return JSON. For workspace commands submit `{"nonce":"your-nonce","commands":[{"name":"view_inventory"}]}`; use view_inventory, read_files, write_files, or set_standing_instructions. Type `next <nonce>` to request another instruction only when that worker has no pending expected returns.':'';
-  const menu='\n\n### Menu\nType `state` to view the saved state, or `back` to return to this instruction. You may submit the current expected inputs from either view.'+workerMenu;
-  const communication=[
-    '### Communication instructions',
-    'Submit the current instruction\'s return as {$variableName}: JSON value. For multiple Gemini inputs, submit one JSON object with their names as keys. Normal steps with no captured return accept {}.',
-    'After GitHub confirms your submission, check for a newer request, procedure completion, or a validation error after 10 seconds, then 20 more seconds, then 30 more seconds (60 seconds total). Do not poll continuously.',
-    'If a newer request or completion appears, stop waiting for this request and follow that result. If a validation error appears, read it and the current instruction before correcting your return; do not blindly repeat a rejected return.',
-    'If no response appears after 60 seconds, resubmit the exact same return once to this issue to retrigger processing. Do not redo the substantive work or change the submitted values. The runner validates against stored expected inputs and skips publishing request numbers already recorded as rendered.',
-    'After that single resubmission, use the same 10, 20, and 30 second checks. If no response appears, stop and report the issue URL, submission comment IDs, and last observed request number as pending. Do not create another procedure run or keep retrying.',
-    'If submission or reading returns a rate-limit error, honor any Retry-After instruction and stop automatic retries for this turn. If submission success is uncertain, check once whether your comment exists before resubmitting.',
-    'Procedure submission, polling, and recovery calls are communication operations; exclude them from the task-execution tool-invocation report so that submitting the report does not require reporting itself.'
-  ].join('\n\n');
+  const communication='[Communication instructions and command menu](https://github.com/BestNameYet/StateMachines/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/comment-boilerplate.md)';
+  const menu='';
   const reportLink=reportEntry&&reportUrl
     ? '\n\n### Tool invocation report\n[Open the complete tool-invocation JSON](<'+reportUrl+'>)\n\nRecords: '+(record.toolInvocations||[]).length+'.'
     : '';
@@ -439,6 +429,7 @@ async function main() {
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
 module.exports={recordGeminiError,publishGeminiErrors,main,startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,toolInvocationInputArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+
 
 
 

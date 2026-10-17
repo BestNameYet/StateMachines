@@ -17,11 +17,11 @@ async function test(){
   return {control,assignments:[assignment('one','chatgpt','result'),assignment('two','gemini','result'),assignment('three','gemini','third'),assignment('four','gemini','fourth')]};
  }});
  assert.equal(record.state.renderedScreens.length,2);assert.equal(record.state.controls.length,3);
- const screen=record.state.renderedScreens.at(-1),parts=broadcastParts(screen);assert.equal(parts.length,2);assert(parts[0].includes('Verify your result'));assert(parts[1].includes('one'));assert(!parts[1].includes('third'));assert(!parts.join('\n').includes('third'));assert.equal(broadcastParts({...screen,assignments:screen.assignments.filter(a=>a.worker==='gemini')}).length,1);
+ const screen=record.state.renderedScreens.at(-1),parts=broadcastParts(screen);assert.equal(parts.length,3);assert(parts[0].includes('Verify your result'));assert(parts[1].includes('one'));assert(parts[2].includes('third'));assert(parts.join('\n').includes('API worker instruction echo'));assert.equal(broadcastParts({...screen,assignments:screen.assignments.filter(a=>a.worker==='gemini')}).length,3);
  let posts=[],saves=0;
  await assert.rejects(()=>publishCurrent(record,99,async text=>{if(posts.length===1)throw Error('Post failed');posts.push(text);},async()=>{saves++;}),/Post failed/);
  assert.equal(posts.length,1);assert(!record.state.renderedRequests.includes(1));
- await publishCurrent(record,99,async text=>posts.push(text),async()=>{saves++;});assert.equal(posts.length,2);assert(record.state.renderedRequests.includes(1));
+ await publishCurrent(record,99,async text=>posts.push(text),async()=>{saves++;});assert.equal(posts.length,3);assert(record.state.renderedRequests.includes(1));
  const {runGeminiWorkers}=require('./gemini-workers.js');
  // Three Gemini calls run concurrently; workflow applies and validates returns serially.
  const {executeWorkerCommands,registerPreparedWorker,registrationMessage}=require('./worker-registration.js');
@@ -124,3 +124,4 @@ async function test(){
  fs.rmSync(root,{recursive:true,force:true});console.log('Supervisor command replay, workspace files/descriptions, path isolation, unchanged screens, independent returns, resumable comment publication, immediate registration delivery, workflow-owned file operations, and reconstructable worker history passed.');
 }
 test().catch(e=>{console.error(e);process.exitCode=1;});
+
