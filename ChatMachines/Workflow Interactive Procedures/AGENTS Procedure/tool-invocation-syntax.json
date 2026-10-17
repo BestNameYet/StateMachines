@@ -1,0 +1,262 @@
+{
+  "schemaVersion": "1.0.0",
+  "title": "Tool invocation syntax and data change classification",
+  "purpose": "Machine-readable rules for identifying integrations and operations in toolInvocations arrays, extracting create/mutate/delete operations, and making every such operation mandatory in the change list.",
+  "sourceSample": {
+    "repository": "BestNameYet/StateMachines",
+    "branch": "main",
+    "directory": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/",
+    "numericRunFilesRead": 44,
+    "filesWithInvocations": 14,
+    "invocationRecords": 74,
+    "distinctToolIdentifiers": 12,
+    "parseErrors": 0
+  },
+  "effectClasses": [
+    {
+      "effect": "read",
+      "dataChange": false,
+      "changeListRequired": false
+    },
+    {
+      "effect": "create",
+      "dataChange": true,
+      "changeListRequired": true
+    },
+    {
+      "effect": "mutate",
+      "dataChange": true,
+      "changeListRequired": true
+    },
+    {
+      "effect": "delete",
+      "dataChange": true,
+      "changeListRequired": true
+    },
+    {
+      "effect": "conditional",
+      "dataChange": "inspect exact arguments and command",
+      "changeListRequired": "required if the actual operation creates, mutates, or deletes data"
+    },
+    {
+      "effect": "unknown",
+      "dataChange": "unresolved",
+      "changeListRequired": "resolve before finalizing"
+    }
+  ],
+  "arrayEntrySyntax": {
+    "container": "JSON array at toolInvocations.",
+    "requiredEntryFields": [
+      "cwd",
+      "command_line_verbatim",
+      "tool",
+      "invocation_verbatim",
+      "final_output_after_completion_of_tool_call",
+      "unavailable_reason",
+      "new",
+      "filename",
+      "frombyte",
+      "tobyte",
+      "description",
+      "intent",
+      "operator",
+      "specifiedOperatorByUser",
+      "chosenOperator",
+      "outcome"
+    ],
+    "webToolAdditionalFields": [
+      "http_method",
+      "url"
+    ],
+    "interpretation": {
+      "tool": "Exact integration/command-wrapper identifier.",
+      "invocation_verbatim": "Exact arguments or command as text; parse as JSON when valid JSON, otherwise inspect as command text.",
+      "final_output_after_completion_of_tool_call": "Returned output used to distinguish attempt from verified result.",
+      "outcome": "Observed outcome: succeeded, failed, blocked, unfinished, or unknown.",
+      "target": "Resolve from invocation arguments and corroborate with returned output."
+    },
+    "preserveUnknownFields": true
+  },
+  "normalizedExtractionRecord": {
+    "required": [
+      "sourceInvocationIndex",
+      "tool",
+      "operation",
+      "effect",
+      "target",
+      "outcome",
+      "evidence",
+      "changeListRequired"
+    ],
+    "fields": {
+      "sourceInvocationIndex": "Zero-based index in the source array.",
+      "tool": "Exact original tool value.",
+      "operation": "Specific action inferred from arguments/command.",
+      "effect": "One of read/create/mutate/delete/conditional/unknown.",
+      "target": "Repository path, URL, branch/ref, Library object, or other affected target; null with a reason if unresolved.",
+      "outcome": "Original observed outcome.",
+      "evidence": "Source fields and returned output supporting the classification.",
+      "changeListRequired": "True for every create/mutate/delete invocation."
+    }
+  },
+  "extractionRules": [
+    "Iterate every array entry and retain its original index.",
+    "Match tool by exact identifier against observedToolCatalog.",
+    "Inspect invocation_verbatim and command_line_verbatim; a wrapper name alone does not determine the effect.",
+    "Classify the specific operation and target. Keep effect separate from outcome.",
+    "Every create, mutate, or delete operation must have a corresponding change-list entry. Account for each effectful invocation; if grouped, cite every sourceInvocationIndex.",
+    "Include failed create/mutate/delete attempts in the change list with the failure and whether persistence was verified, so attempted mutations are not silently omitted.",
+    "Keep read-only calls out of the data-change list.",
+    "Resolve conditional and unknown operations from their exact arguments and outputs before final reconciliation.",
+    "A successful tool response proves only what it explicitly reports; verify persistence with the system that owns the target."
+  ],
+  "changeListContract": {
+    "mandatoryEffects": [
+      "create",
+      "mutate",
+      "delete"
+    ],
+    "recordShape": {
+      "filename": "<repository-relative filename or service target>",
+      "frombyte": "<integer or null when byte ranges do not apply>",
+      "tobyte": "<integer or null when byte ranges do not apply>",
+      "description": "Include operation, effect, outcome, and source invocation index.",
+      "intent": "Associated user intent.",
+      "operator": "Operator used."
+    },
+    "failedAttempt": "Record the attempted effect and failure; state that no persisted change was verified if applicable.",
+    "noObservedDelete": "No delete-specific integration was observed in this sample. Future delete operations remain mandatory."
+  },
+  "observedToolCatalog": [
+    {
+      "tool": "mcp__codex_apps__github_create_file",
+      "count": 15,
+      "effect": "create",
+      "targetKind": "GitHub repository file and commit",
+      "changeListRequired": true,
+      "note": "Creates a new repository path through the contents API."
+    },
+    {
+      "tool": "mcp__codex_apps__github_update_file",
+      "count": 17,
+      "effect": "mutate",
+      "targetKind": "GitHub repository file",
+      "changeListRequired": true,
+      "note": "Changes file contents; inspect prior path state because contents APIs can have create-or-update semantics."
+    },
+    {
+      "tool": "mcp__codex_apps__github_update_ref",
+      "count": 1,
+      "effect": "mutate",
+      "targetKind": "Git branch/tag ref",
+      "changeListRequired": true,
+      "note": "Moves a reference to a commit."
+    },
+    {
+      "tool": "mcp__codex_apps__github_create_blob",
+      "count": 12,
+      "effect": "create",
+      "targetKind": "Git blob object",
+      "changeListRequired": true,
+      "note": "Creates a Git object; by itself it does not move a branch ref."
+    },
+    {
+      "tool": "mcp__codex_apps__github_create_tree",
+      "count": 1,
+      "effect": "create",
+      "targetKind": "Git tree object",
+      "changeListRequired": true,
+      "note": "Creates a Git object; by itself it does not move a branch ref."
+    },
+    {
+      "tool": "mcp__codex_apps__github_create_commit",
+      "count": 1,
+      "effect": "create",
+      "targetKind": "Git commit object",
+      "changeListRequired": true,
+      "note": "Creates a commit object; branch visibility also requires an appropriate ref update."
+    },
+    {
+      "tool": "mcp__codex_apps__library_create_library_file",
+      "count": 2,
+      "effect": "create",
+      "targetKind": "ChatGPT Library file",
+      "changeListRequired": true
+    },
+    {
+      "tool": "mcp__codex_apps__github_fetch",
+      "count": 2,
+      "effect": "read",
+      "targetKind": "GitHub repository resource",
+      "changeListRequired": false
+    },
+    {
+      "tool": "mcp__codex_apps__github_fetch_file",
+      "count": 14,
+      "effect": "read",
+      "targetKind": "GitHub file",
+      "changeListRequired": false
+    },
+    {
+      "tool": "exec_command",
+      "count": 6,
+      "effect": "conditional",
+      "targetKind": "Depends on command",
+      "changeListRequired": "if command creates, mutates, or deletes data"
+    },
+    {
+      "tool": "tools.exec_command",
+      "count": 2,
+      "effect": "conditional",
+      "targetKind": "Depends on command",
+      "changeListRequired": "if command creates, mutates, or deletes data"
+    },
+    {
+      "tool": "functions.exec_command",
+      "count": 1,
+      "effect": "conditional",
+      "targetKind": "Depends on command",
+      "changeListRequired": "if command creates, mutates, or deletes data"
+    }
+  ],
+  "illustrativeExamples": [
+    {
+      "illustrative": true,
+      "tool": "mcp__codex_apps__github_fetch_file",
+      "operation": "fetch",
+      "effect": "read",
+      "target": "path from invocation",
+      "changeListRequired": false
+    },
+    {
+      "illustrative": true,
+      "tool": "mcp__codex_apps__github_create_file",
+      "operation": "create_file",
+      "effect": "create",
+      "target": "path from invocation",
+      "changeListRequired": true
+    },
+    {
+      "illustrative": true,
+      "tool": "mcp__codex_apps__github_update_file",
+      "operation": "update_file",
+      "effect": "mutate",
+      "target": "path from invocation",
+      "changeListRequired": true
+    },
+    {
+      "illustrative": true,
+      "tool": "<tool or command>",
+      "operation": "verified delete operation",
+      "effect": "delete",
+      "target": "target from invocation",
+      "changeListRequired": true
+    }
+  ],
+  "limitations": [
+    "This catalog describes observed tools, not every capability each integration supports.",
+    "Invocation arguments determine the operation and target; a tool name by itself may be insufficient.",
+    "Git object creation and branch-ref mutation are distinct persistence boundaries.",
+    "No delete tool was observed in this sample; the delete class is defined for future arrays."
+  ]
+}
