@@ -20,6 +20,7 @@ function run(kind) {
     trace.push(state.render);
     let values = {};
     switch (state.render) {
+      case 24: values = { "$procedureMode": "normal" }; break;
       case 1: values = { "$verbatimUserPrompt": "test request" }; break;
       case 2: values = { "$userIntent": "test intent" }; break;
       case 3: values = { "$exampleMatch": kind === "minimal" }; break;
@@ -46,14 +47,14 @@ function run(kind) {
   return { state, trace };
 }
 const minimal = run("minimal");
-assert.deepEqual(minimal.trace, [1,2,3,4,5,6,7]);
+assert.deepEqual(minimal.trace, [24,1,2,3,4,5,6,7]);
 assert.deepEqual(minimal.state.minimalResult, { result: "answer" });
 const fidelity = run("fidelity");
-assert.deepEqual(fidelity.trace, [1,2,3,8,9,10,11,12,13,14]);
+assert.deepEqual(fidelity.trace, [24,1,2,3,8,9,10,11,12,13,14]);
 assert.equal(fidelity.state.mode, "fidelity");
 assert.deepEqual(fidelity.state.changeList, req);
 const accountability = run("accountability");
-assert.deepEqual(accountability.trace, [1,2,3,8,9,10,11,15,16,17,18,19,20,21,22,23]);
+assert.deepEqual(accountability.trace, [24,1,2,3,8,9,10,11,15,16,17,18,19,20,21,22,23]);
 assert.equal(accountability.state.mode, "accountability");
 assert.equal(accountability.state.loopNumber, 1);
 const repeat = run("repeat");
@@ -67,7 +68,7 @@ const before = structuredClone(rejected);
 assert.throws(() => transition(rejected, transitionMap, '{"$render":99}'));
 assert.deepEqual(rejected, before);
 const union = new Set([...minimal.trace, ...fidelity.trace, ...accountability.trace]);
-assert.equal(union.size, 23);
+assert.equal(union.size, 24);
 console.log(JSON.stringify({ scenarios: 4, coveredRenders: union.size, minimal: minimal.trace, fidelity: fidelity.trace, accountability: accountability.trace, repeat: repeat.trace, invalidInputLeavesStateUnchanged: true }, null, 2));
 
 const shapeState={render:null,value:null};
@@ -86,7 +87,7 @@ assert.equal(transition({render:null,flag:true},[{Boolean:"${flag}",return:{true
 console.log('State outputs, irregular arrays, array endings, and null returns, and non-null render boundaries passed.');
 
 const initialized=transition({},transitionMap);
-assert.equal(initialized.render,1);
+assert.equal(initialized.render,24);
 for(const [key,value] of Object.entries(initialized))if(key!=="render")assert.equal(value,null);
 assert.deepEqual(initialized,transitionMap.transitions[0]);
 
@@ -98,3 +99,4 @@ a.value="external input";
 assert.deepEqual(operator(a),{render:102,value:"external input"});
 assert.equal(operator({render:102,value:7}),"halt");
 console.log("Compiled operator accepts state only; JSON control flow compiled before invocation.");
+

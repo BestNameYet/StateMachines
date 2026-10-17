@@ -33,6 +33,8 @@ jobs:
       - name: Check issue adapter and triggers
         working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
         run: |
+          node transitions.test.js
+          node interface.test.js
           node issue-workflow.test.js
           node issue-run-trigger.test.js
           node issue-run-tool-invocations.test.js
@@ -109,3 +111,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node issue-workflow.js
+

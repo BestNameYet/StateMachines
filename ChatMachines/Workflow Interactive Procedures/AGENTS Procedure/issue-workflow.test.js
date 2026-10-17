@@ -19,6 +19,7 @@ assert.throws(()=>parseReturn('{"values":{}}'));
 assert.throws(()=>applyReturn(r,parseReturn('${verbatimUserPrompt}: 12'),root));
 assert.deepEqual(r,before);
 const send=text=>{applyReturn(r,parseReturn(text),root);renderIssue(r,7);};
+send('${procedureMode}: "normal"');
 send('${verbatimUserPrompt}: "What does JSON stand for?"');
 send('${userIntent}: "Expand JSON."');
 send('${exampleMatch}: true');
@@ -45,6 +46,7 @@ console.log('Issue output contains the procedure without a generated return sche
 const filesRun=startRun({});
 renderIssue(filesRun,7);
 const step=text=>{applyReturn(filesRun,parseReturn(text),root);renderIssue(filesRun,7);};
+step('${procedureMode}: "normal"');
 step('${verbatimUserPrompt}: "Create a new file and edit notes."');
 step('${userIntent}: "Create a file and edit notes."');
 step('${exampleMatch}: false');
@@ -110,8 +112,8 @@ async function checkCommunicationState() {
   const record=startRun({});
   assert.equal(record.state.expectedInputs,null);
   renderIssue(record,7);
-  assert.equal(record.state.expectedInputs.render,1);
-  assert.equal(record.state.expectedInputs.inputs[0].name,'verbatimUserPrompt');
+  assert.equal(record.state.expectedInputs.render,24);
+  assert.equal(record.state.expectedInputs.inputs[0].name,'procedureMode');
   assert.deepEqual(record.state.renderedRequests,[]);
   assert(!renderIssue(record,7).includes('expectedInputs'));
   assert(!renderIssue(record,7).includes('renderedRequests'));
@@ -129,13 +131,13 @@ async function checkCommunicationState() {
   const before=structuredClone(restored);
   assert.throws(()=>applyReturn(restored,{variable:'userIntent',value:'wrong'},root));
   assert.deepEqual(restored,before);
-  applyReturn(restored,{variable:'verbatimUserPrompt',value:'test'},root);
-  assert.equal(restored.state.expectedInputs.inputs[0].name,'verbatimUserPrompt');
+  applyReturn(restored,{variable:'procedureMode',value:'normal'},root);
+  assert.equal(restored.state.expectedInputs.inputs[0].name,'procedureMode');
   const pending=structuredClone(restored);
   assert.throws(()=>applyReturn(restored,{variable:'userIntent',value:'test'},root),/has not been rendered/);
   assert.deepEqual(restored,pending);
   renderIssue(restored,7);
-  assert.equal(restored.state.expectedInputs.inputs[0].name,'userIntent');
+  assert.equal(restored.state.expectedInputs.inputs[0].name,'verbatimUserPrompt');
   assert.deepEqual(restored.state.renderedRequests,[1]);
   await assert.rejects(()=>publishCurrent(restored,7,async()=>{throw Error('post failed');},save));
   assert.deepEqual(restored.state.renderedRequests,[1]);
@@ -161,3 +163,34 @@ async function checkCommunicationState() {
 checkCommunicationState().catch(error=>{console.error(error);process.exitCode=1;});
 
 
+
+
+for (const procedureMode of ['normal','gemini']) {
+  const selected=startRun({});
+  assert.equal(selected.state.render,24);
+  assert.equal(selected.state.procedureMode,null);
+  renderIssue(selected,123);
+  const before=structuredClone(selected);
+  for (const value of ['other','Gemini',null,true,{}]) {
+    assert.throws(()=>applyReturn(selected,{variable:'procedureMode',value},root));
+    assert.deepEqual(selected,before);
+  }
+  applyReturn(selected,{variable:'procedureMode',value:procedureMode},root);
+  assert.equal(selected.state.render,1);
+  assert.equal(selected.state.procedureMode,procedureMode);
+  const restored=JSON.parse(JSON.stringify(selected));
+  renderIssue(restored,123);
+  applyReturn(restored,{variable:'verbatimUserPrompt',value:'Preserve this prompt.'},root);
+  assert.equal(restored.state.verbatimUserPrompt,'Preserve this prompt.');
+  assert.equal(restored.state.procedureMode,procedureMode);
+  assert.equal(restored.state.render,2);
+  assert.equal(restored.history[0].values.$procedureMode,procedureMode);
+}
+// A previously saved run continues at its current screen, without reinitializing.
+const legacyMode=startRun({});
+legacyMode.state.render=1;
+delete legacyMode.state.procedureMode;
+renderIssue(legacyMode,123);
+applyReturn(legacyMode,{variable:'verbatimUserPrompt',value:'Existing run'},root);
+assert.equal(legacyMode.state.render,2);
+console.log('Both procedure modes, rejected choices, persistence, prompt capture, and existing-run compatibility passed.');

@@ -2,7 +2,7 @@
 
 ## Create a procedure run
 
-Create a new issue in BestNameYet/StateMachines using either the AGENTS Procedure issue template or a committed trigger file under issue-run-triggers/. The issue template contains the required Procedure acknowledgement; it does not collect the user prompt. The first rendered instruction captures the verbatim user prompt in the issue replies.
+Create a new issue in BestNameYet/StateMachines using either the AGENTS Procedure issue template or a committed trigger file under issue-run-triggers/. The issue template contains the required Procedure acknowledgement; it does not collect the user prompt. The first rendered instruction selects `procedureMode` (`normal` or `gemini`); the next instruction captures the verbatim user prompt in the issue replies.
 
 The workflow replaces the issue title with AGENTS Procedure — <issue creation timestamp in UTC>, including after title edits. The timestamp comes from GitHub's issue creation time and remains unchanged throughout the run. The issue number identifies the run and its separate persisted state.
 
@@ -21,7 +21,15 @@ Create a new JSON file directly in `issue-run-triggers/` named `<procedureName><
 
 The nonce must be a non-negative integer and match the numeric suffix of the filename. Commit the trigger file to `main`. The workflow validates it, creates one issue with the checked Procedure acknowledgement, runs the existing issue initializer directly by issue number in that same push workflow, and changes `startProcedure` to `false` after the issue record and first instruction are persisted. It then adds `procedureName`, `procedureIdentifier`, `procedureIssueNumber`, `procedureIssueUrl`, `procedureTitle`, and `procedureReceiptPath` to the trigger JSON. The issue body and saved run record carry the trigger identifier so the issue remains bound to the filename even after the issue runner changes its title to the canonical UTC timestamp. The issue is the persistent communication port for later returns. Each non-bot reply creates an `issue_comment` event and retriggers this GitHub Actions workflow for that issue; the runner loads its receipt and advances the conversation.
 
-The workflow reuses an issue carrying the exact trigger marker if a run is retried. Once the push job initializes the issue, `procedureSavedHere` stores the initial JSON receipt and `procedureReceipts` starts with that snapshot. `procedureReceiptPath` points to the live mutable receipt at `issue-runs/<issue-number>.json`. Later workflow updates append receipt snapshots to the trigger JSON named by its `procedureIdentifier` (`<procedureName><nonce>.json`), after verifying the issue binding; the live per-issue receipt remains canonical for current state. The first rendered instruction captures the verbatim user prompt in the issue replies.
+The workflow reuses an issue carrying the exact trigger marker if a run is retried. Once the push job initializes the issue, `procedureSavedHere` stores the initial JSON receipt and `procedureReceipts` starts with that snapshot. `procedureReceiptPath` points to the live mutable receipt at `issue-runs/<issue-number>.json`. Later workflow updates append receipt snapshots to the trigger JSON named by its `procedureIdentifier` (`<procedureName><nonce>.json`), after verifying the issue binding; the live per-issue receipt remains canonical for current state. The first rendered instruction selects `procedureMode` (`normal` or `gemini`); the next instruction captures the verbatim user prompt in the issue replies.
+
+## Procedure mode selection
+
+Every new run starts with the same mode-selection screen, regardless of how it was initiated. Reply `${procedureMode}: "normal"` or `${procedureMode}: "gemini"`. The existing declared-type validator accepts only those two values, and the selection is retained in state and history. Both choices then show the existing verbatim-prompt screen. `procedureMode` is separate from the existing `mode` field used for fidelity/accountability selection.
+
+This change establishes the selector and stored choice only. Gemini-generated rendering after prompt capture is not connected yet; both selections currently continue through the existing procedure.
+
+The new initial screen uses render address 24, followed by existing render 1, so existing screen addresses and saved runs remain valid. Active runs are not restarted or asked to choose retroactively.
 
 ## Interactive execution
 
@@ -59,7 +67,7 @@ Run the HTTP adapter and validator checks with:
 node interface.test.js
 ```
 
-The tests cover minimal, fidelity, accountability, and repeated accountability through all 23 renders. They also check rejected types, nested integer fields, nonexistent files, and the new-file exception. These are HTTP/application tests; they are not Selenium browser tests.
+The tests cover minimal, fidelity, accountability, and repeated accountability through all 24 renders. They also check rejected types, nested integer fields, nonexistent files, and the new-file exception. These are HTTP/application tests; they are not Selenium browser tests.
 
 The adapter exposes POST /api/start and POST /api/submit. A submission contains id, values (using $variableName keys), and optional newFiles. Responses contain the rendered entries, inputs, returnSchema, state, and submission history for the harness. Gemini and Selenium can consume this interface without changing the transition executor.
 
@@ -138,7 +146,7 @@ Configure the GitHub Actions repository secret `GEMINI_API_KEY`; optionally set 
 
 The workflow first runs the existing Node tests and the focused Gemini adapter tests, then starts the local interface and headless browser for the selected live scenario. It uploads the run log and screenshots as a downloadable Actions artifact. Source pushes run the test checks without calling Gemini unless the commit changes workflows/gemini-selenium/trigger.json with enabled set to true.
 
-The interface collects procedure returns; it does not edit repository files. If a live scenario reaches an instruction to execute file requirements, the harness records a screenshot and an execution-blocked result, then stops at that screen. It does not claim those changes or later completion values. The mocked adapter tests verify response parsing, declared-variable checks, validation-error recovery, terminal handling, and evidence capture; they do not prove a live Gemini run. The existing interface tests cover the procedure's 23 renders across its documented paths.
+The interface collects procedure returns; it does not edit repository files. If a live scenario reaches an instruction to execute file requirements, the harness records a screenshot and an execution-blocked result, then stops at that screen. It does not claim those changes or later completion values. The mocked adapter tests verify response parsing, declared-variable checks, validation-error recovery, terminal handling, and evidence capture; they do not prove a live Gemini run. The existing interface tests cover the procedure's 24 renders across its documented paths.
 
 ## Commit trigger for Gemini Selenium
 
@@ -147,5 +155,6 @@ The workflow trigger is workflows/gemini-selenium/trigger.json in this procedure
 ## Execution tool-invocation report
 
 When `exampleMatch` returns false, the issue runner creates `issue-runs/<issue-number>-tool-invocations.json` with the run's `procedureIssueNumber` and `toolInvocations: null`. Execution renders 13 and 17 point to that same file. At either render, append only the new invocation records to `toolInvocations`; if it is still null, replace it with an array. Preserve the issue-number header and previously accepted records. The on-screen example lists the record fields, and web-tool records also require `http_method` and `url`. Each record includes the operator selection, invocation fields, matching requirement fields, final tool output, and outcome. Use null for non-applicable nullable values. A file commit triggers validation of only the newly appended records. Invalid JSON or records leave the current render unchanged and produce a validation comment. Valid records are appended to the issue run, the workflow reports counts by tool and runtime (or working directory), and the next change-list render is posted. The workflow then writes the cumulative artifact to the same path with `submissionAccepted: true`; this marker prevents the report-writing commit from being processed as a second submission. The caller stores accepted records in its own toolInvocations array, outside the state passed to map(state), preserving earlier loop records. Renders 14 and 18 link to the cumulative JSON artifact instead of embedding the full array in the issue comment. The HTML runner holds the array in its session and renders it directly. The report is supplied by the executor and structurally validated; it is not an automatic interception of external tool calls or proof that a reported change occurred. The Gemini harness still stops where it lacks a file executor.
+
 
 

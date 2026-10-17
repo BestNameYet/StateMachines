@@ -33,7 +33,9 @@ def submit_values(driver, values, timeout=20):
         field = expected[variable]
         element = driver.find_element(By.NAME, variable)
         kind = field["schema"].get("type")
-        if kind == "boolean":
+        if field["schema"].get("anyOf") and all(isinstance(option.get("const"), str) for option in field["schema"]["anyOf"]):
+            Select(element).select_by_value(json.dumps(value))
+        elif kind == "boolean":
             if not isinstance(value, bool):
                 raise ValueError(variable + " requires a Boolean.")
             Select(element).select_by_value("true" if value else "false")
@@ -58,3 +60,4 @@ def submit_values(driver, values, timeout=20):
     if "validationError" in result:
         raise ValueError(result["validationError"])
     return result
+

@@ -8,7 +8,15 @@ async function main(){
  async function post(route,body){const r=await fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return {status:r.status,data:await r.json()};}
  const start=()=>post('/api/start',{});
  const submit=(s,values,newFiles=s.newFiles)=>post('/api/submit',{id:s.id,values,newFiles});
- let s=(await start()).data;assert.equal(s.render,1);
+ let gemini=(await start()).data;
+ assert.equal(gemini.inputs[0].name,'procedureMode');
+ gemini=(await submit(gemini,{$procedureMode:'gemini'})).data;
+ assert.equal(gemini.render,1);assert.equal(gemini.state.procedureMode,'gemini');
+ gemini=(await submit(gemini,{$verbatimUserPrompt:'Exact prompt'})).data;
+ assert.equal(gemini.state.procedureMode,'gemini');assert.equal(gemini.state.verbatimUserPrompt,'Exact prompt');
+ let s=(await start()).data;assert.equal(s.render,24);
+ assert.equal((await submit(s,{$procedureMode:"invalid"})).status,400);
+ s=(await submit(s,{$procedureMode:"normal"})).data;assert.equal(s.render,1);
  assert.equal((await submit(s,{'$verbatimUserPrompt':7})).status,400);
  s=(await submit(s,{'$verbatimUserPrompt':'What does JSON stand for?'})).data;assert.equal(s.render,2);
  s=(await submit(s,{'$userIntent':'Explain JSON.'})).data;
@@ -32,6 +40,7 @@ async function main(){
  for(const kind of ['minimal','fidelity','accountability','repeat']){
   let state=(await start()).data,trace=[],passes=0;
   while(!state.done){trace.push(state.render);assert(trace.length<80);const values={};for(const field of state.inputs)values['$'+field.name]=sample(field.schema);
+   if(state.render===24)values.$procedureMode='normal';
    if(state.render===3)values.$exampleMatch=kind==='minimal';
    if(state.render===8)values.$targetFiles=['people.json','settings.json','notes.txt','summary.json'].map(filename=>({filename,newFile:filename==='summary.json'}));
    if(state.render===9||state.render===12||state.render===16)values.$requirements=[record];
@@ -64,9 +73,10 @@ async function main(){
   traces[kind]=trace;
   if(kind==='repeat')assert.equal(state.state.loopNumber,2);
  }
- assert.deepEqual(traces.minimal,[1,2,3,4,5,6,7]);
- assert.deepEqual(traces.fidelity,[1,2,3,8,9,10,11,12,13,14]);
- assert.equal(new Set(Object.values(traces).flat()).size,23);
- console.log(JSON.stringify({passed:true,scenarios:4,coveredRenders:23,structuralRejections:true,newFileException:true,traces},null,2));
+ assert.deepEqual(traces.minimal,[24,1,2,3,4,5,6,7]);
+ assert.deepEqual(traces.fidelity,[24,1,2,3,8,9,10,11,12,13,14]);
+ assert.equal(new Set(Object.values(traces).flat()).size,24);
+ console.log(JSON.stringify({passed:true,scenarios:4,coveredRenders:24,structuralRejections:true,newFileException:true,traces},null,2));
 }
 main().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());
+

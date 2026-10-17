@@ -36,12 +36,12 @@ def main():
             driver = create_browser()
             driver.get("http://127.0.0.1:3000")
             screen = read_screen(driver)
-            assert screen["render"] == 1
+            assert screen["render"] == 24
             assert not screen["done"]
             fields = driver.find_elements(By.CSS_SELECTOR, "[data-variable]")
-            assert [field.get_attribute("name") for field in fields] == ["$verbatimUserPrompt"]
+            assert [field.get_attribute("name") for field in fields] == ["$procedureMode"]
             assert driver.find_element(By.ID, "submit").is_displayed()
-            assert "Repeat the user prompt verbatim." in driver.find_element(By.ID, "instruction").text
+            assert "Select the procedure mode:" in driver.find_element(By.ID, "instruction").text
             result = {
                 "status": "passed",
                 "seleniumVersion": selenium.__version__,
@@ -67,3 +67,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
