@@ -530,6 +530,59 @@
           "project/extracted/conversations-011/second_pass_field_validation.md"
         ],
         "assignmentId": "task_chatgpt_second_pass_validation"
+      },
+      {
+        "name": "evaluationSummary",
+        "value": "The comparative evaluation assessed three candidate passage size models—Model A (Atomic Exchange Unit: 1 user prompt + 1 assistant response), Model B (Sliding Triad Window: target exchange bounded by 1 contextBefore and 1 contextAfter exchange along the active branch), and Model C (Macro Sub-Session: 5 to 10 sequential exchanges)—against five operational criteria: Contextual Sufficiency, Topic Mixing and Contamination Risk, Citation Precision and Attribution Rigor, Branch and Boundary Stability, and Labeling Feasibility across Q1–Q5. Model A guarantees pinpoint citation precision and zero topic mixing but fails on short, elliptic follow-up prompts when isolated. Model C provides broad thematic context for project lifecycles (Q1) but suffers severe topic mixing, poor citation granularity, and high fragility across graph bifurcations. Model B (the Sliding Triad Window) achieves the optimal architectural balance: by anchoring the semantic target strictly to a single ordered exchange while supplying 1 preceding exchange for antecedent constraint/pronoun resolution and 1 succeeding exchange for outcome/correction verification, it eliminates topic contamination in labeling while providing complete contextual sufficiency. Model B is selected as the recommended archive-wide passage classification standard.",
+        "assignmentId": "task_gemini_passage_model_comparative_eval"
+      },
+      {
+        "name": "modelEvaluations",
+        "value": [
+          {
+            "modelName": "Model A: Atomic Exchange Unit (1 User Prompt + 1 Assistant Response)",
+            "contextualSufficiencyScore": 3,
+            "topicMixingRiskScore": 5,
+            "citationPrecisionScore": 5,
+            "branchStabilityScore": 5,
+            "labelingFeasibilityScore": 3,
+            "primaryStrengths": "Completely eliminates intra-passage topic mixing and cross-topic contamination; enables exact 1:1 node and message citation mapping; isolates branch points cleanly without straddling forks; highly deterministic and computationally lightweight.",
+            "primaryWeaknesses": "High vulnerability to referential ambiguity and contextual insufficiency on elliptic user prompts (e.g., 'continue', 'why?', or pronoun-heavy follow-ups); cannot evaluate outcome acceptance or directive corrections (Q2) without external context linkage."
+          },
+          {
+            "modelName": "Model B: Sliding Triad Window (Target Exchange bounded by 1 contextBefore and 1 contextAfter exchange)",
+            "contextualSufficiencyScore": 5,
+            "topicMixingRiskScore": 4,
+            "citationPrecisionScore": 5,
+            "branchStabilityScore": 4,
+            "labelingFeasibilityScore": 5,
+            "primaryStrengths": "Resolves antecedent constraints and pronouns via contextBefore; captures user reactions, corrections (Q2), and downstream adoption (Q3) via contextAfter; maintains strict citation precision by restricting label attribution exclusively to the target exchange; ideal support across all five analytical questions (Q1–Q5).",
+            "primaryWeaknesses": "Requires strict procedural enforcement to ensure human and model labelers do not inadvertently extract target labels from surrounding context turns; minor computational overhead in managing sliding window manifests and target deduplication keys."
+          },
+          {
+            "modelName": "Model C: Macro Sub-Session (5 to 10 sequential exchanges along the branch)",
+            "contextualSufficiencyScore": 4,
+            "topicMixingRiskScore": 1,
+            "citationPrecisionScore": 2,
+            "branchStabilityScore": 2,
+            "labelingFeasibilityScore": 2,
+            "primaryStrengths": "Captures overarching multi-turn arcs, extended task execution flows, and broader chronological usage patterns (Q4); preserves long-horizon context for substantive technical projects (Q1).",
+            "primaryWeaknesses": "Severe risk of topic contamination and keyword dilution across conversational pivots; citations become coarse and multi-headed; fails to isolate immediate user corrections (Q2) or four-layer interpersonal attributions (Q5); highly brittle across conversation DAG branch points."
+          }
+        ],
+        "assignmentId": "task_gemini_passage_model_comparative_eval"
+      },
+      {
+        "name": "recommendedSpecification",
+        "value": {
+          "standardName": "Context-Bounded Sliding Triad Standard (Target Exchange with Active Ancillary 1-Before / 1-After Context)",
+          "targetDefinition": "An ordered bipartite or tripartite turn exchange commencing with a user prompt node (`message.author.role == 'user'`), traversing intermediate tool executions, and terminating at the corresponding assistant response node (`message.author.role == 'assistant'`). The target exchange is the sole locus of semantic labeling and evidentiary citation.",
+          "contextBeforeRole": "Encompasses up to 1 antecedent turn exchange along the exact parent-directed branch DAG path (`node.parent`). Utilized strictly for pronoun resolution, antecedent task constraints, and problem framing. Prohibited from supplying semantic labels to the target unit.",
+          "contextAfterRole": "Encompasses up to 1 descendant turn exchange along the designated active branch. Utilized strictly for outcome verification, user acceptance evaluation, and directive correction tracking. Prohibited from back-propagating labels or new topics to the target unit.",
+          "deduplicationRule": "Every classification observation is indexed by a deterministic composite key `(conversation_id, node_id, message_id)` derived strictly from the target exchange. Appearances in `contextBefore` or `contextAfter` carry zero independent evidentiary weight, preventing repeated context turns from inflating empirical topic or perspective counts.",
+          "justification": "The Context-Bounded Sliding Triad resolves the trade-off between contextual sufficiency and citation rigor. It empowers workers to resolve elliptic requests without diluting topic boundaries, directly supports the paired quadruplets required for Q2 directive corrections, captures assistant assumption drift for Q3, tracks chronological prompt evolution for Q4, and maintains strict four-layer attribution boundaries for Q5 without conflating third-party quotes with user reports."
+        },
+        "assignmentId": "task_gemini_passage_model_comparative_eval"
       }
     ],
     "controls": [
@@ -2139,6 +2192,55 @@
             "project/extracted/conversations-011/second_pass_field_validation.md"
           ]
         }
+      },
+      {
+        "render": 3,
+        "assignmentId": "task_gemini_passage_model_comparative_eval",
+        "nonce": "gemini_passage_boundary_99b1",
+        "worker": "gemini",
+        "values": {
+          "evaluationSummary": "The comparative evaluation assessed three candidate passage size models—Model A (Atomic Exchange Unit: 1 user prompt + 1 assistant response), Model B (Sliding Triad Window: target exchange bounded by 1 contextBefore and 1 contextAfter exchange along the active branch), and Model C (Macro Sub-Session: 5 to 10 sequential exchanges)—against five operational criteria: Contextual Sufficiency, Topic Mixing and Contamination Risk, Citation Precision and Attribution Rigor, Branch and Boundary Stability, and Labeling Feasibility across Q1–Q5. Model A guarantees pinpoint citation precision and zero topic mixing but fails on short, elliptic follow-up prompts when isolated. Model C provides broad thematic context for project lifecycles (Q1) but suffers severe topic mixing, poor citation granularity, and high fragility across graph bifurcations. Model B (the Sliding Triad Window) achieves the optimal architectural balance: by anchoring the semantic target strictly to a single ordered exchange while supplying 1 preceding exchange for antecedent constraint/pronoun resolution and 1 succeeding exchange for outcome/correction verification, it eliminates topic contamination in labeling while providing complete contextual sufficiency. Model B is selected as the recommended archive-wide passage classification standard.",
+          "modelEvaluations": [
+            {
+              "modelName": "Model A: Atomic Exchange Unit (1 User Prompt + 1 Assistant Response)",
+              "contextualSufficiencyScore": 3,
+              "topicMixingRiskScore": 5,
+              "citationPrecisionScore": 5,
+              "branchStabilityScore": 5,
+              "labelingFeasibilityScore": 3,
+              "primaryStrengths": "Completely eliminates intra-passage topic mixing and cross-topic contamination; enables exact 1:1 node and message citation mapping; isolates branch points cleanly without straddling forks; highly deterministic and computationally lightweight.",
+              "primaryWeaknesses": "High vulnerability to referential ambiguity and contextual insufficiency on elliptic user prompts (e.g., 'continue', 'why?', or pronoun-heavy follow-ups); cannot evaluate outcome acceptance or directive corrections (Q2) without external context linkage."
+            },
+            {
+              "modelName": "Model B: Sliding Triad Window (Target Exchange bounded by 1 contextBefore and 1 contextAfter exchange)",
+              "contextualSufficiencyScore": 5,
+              "topicMixingRiskScore": 4,
+              "citationPrecisionScore": 5,
+              "branchStabilityScore": 4,
+              "labelingFeasibilityScore": 5,
+              "primaryStrengths": "Resolves antecedent constraints and pronouns via contextBefore; captures user reactions, corrections (Q2), and downstream adoption (Q3) via contextAfter; maintains strict citation precision by restricting label attribution exclusively to the target exchange; ideal support across all five analytical questions (Q1–Q5).",
+              "primaryWeaknesses": "Requires strict procedural enforcement to ensure human and model labelers do not inadvertently extract target labels from surrounding context turns; minor computational overhead in managing sliding window manifests and target deduplication keys."
+            },
+            {
+              "modelName": "Model C: Macro Sub-Session (5 to 10 sequential exchanges along the branch)",
+              "contextualSufficiencyScore": 4,
+              "topicMixingRiskScore": 1,
+              "citationPrecisionScore": 2,
+              "branchStabilityScore": 2,
+              "labelingFeasibilityScore": 2,
+              "primaryStrengths": "Captures overarching multi-turn arcs, extended task execution flows, and broader chronological usage patterns (Q4); preserves long-horizon context for substantive technical projects (Q1).",
+              "primaryWeaknesses": "Severe risk of topic contamination and keyword dilution across conversational pivots; citations become coarse and multi-headed; fails to isolate immediate user corrections (Q2) or four-layer interpersonal attributions (Q5); highly brittle across conversation DAG branch points."
+            }
+          ],
+          "recommendedSpecification": {
+            "standardName": "Context-Bounded Sliding Triad Standard (Target Exchange with Active Ancillary 1-Before / 1-After Context)",
+            "targetDefinition": "An ordered bipartite or tripartite turn exchange commencing with a user prompt node (`message.author.role == 'user'`), traversing intermediate tool executions, and terminating at the corresponding assistant response node (`message.author.role == 'assistant'`). The target exchange is the sole locus of semantic labeling and evidentiary citation.",
+            "contextBeforeRole": "Encompasses up to 1 antecedent turn exchange along the exact parent-directed branch DAG path (`node.parent`). Utilized strictly for pronoun resolution, antecedent task constraints, and problem framing. Prohibited from supplying semantic labels to the target unit.",
+            "contextAfterRole": "Encompasses up to 1 descendant turn exchange along the designated active branch. Utilized strictly for outcome verification, user acceptance evaluation, and directive correction tracking. Prohibited from back-propagating labels or new topics to the target unit.",
+            "deduplicationRule": "Every classification observation is indexed by a deterministic composite key `(conversation_id, node_id, message_id)` derived strictly from the target exchange. Appearances in `contextBefore` or `contextAfter` carry zero independent evidentiary weight, preventing repeated context turns from inflating empirical topic or perspective counts.",
+            "justification": "The Context-Bounded Sliding Triad resolves the trade-off between contextual sufficiency and citation rigor. It empowers workers to resolve elliptic requests without diluting topic boundaries, directly supports the paired quadruplets required for Q2 directive corrections, captures assistant assumption drift for Q3, tracks chronological prompt evolution for Q4, and maintains strict four-layer attribution boundaries for Q5 without conflating third-party quotes with user reports."
+          }
+        }
       }
     ]
   },
@@ -2751,6 +2853,54 @@
           "project/extracted/conversations-011/second_pass_field_validation.json",
           "project/extracted/conversations-011/second_pass_field_validation.md"
         ]
+      }
+    },
+    {
+      "request": 4,
+      "render": 3,
+      "assignmentId": "task_gemini_passage_model_comparative_eval",
+      "values": {
+        "evaluationSummary": "The comparative evaluation assessed three candidate passage size models—Model A (Atomic Exchange Unit: 1 user prompt + 1 assistant response), Model B (Sliding Triad Window: target exchange bounded by 1 contextBefore and 1 contextAfter exchange along the active branch), and Model C (Macro Sub-Session: 5 to 10 sequential exchanges)—against five operational criteria: Contextual Sufficiency, Topic Mixing and Contamination Risk, Citation Precision and Attribution Rigor, Branch and Boundary Stability, and Labeling Feasibility across Q1–Q5. Model A guarantees pinpoint citation precision and zero topic mixing but fails on short, elliptic follow-up prompts when isolated. Model C provides broad thematic context for project lifecycles (Q1) but suffers severe topic mixing, poor citation granularity, and high fragility across graph bifurcations. Model B (the Sliding Triad Window) achieves the optimal architectural balance: by anchoring the semantic target strictly to a single ordered exchange while supplying 1 preceding exchange for antecedent constraint/pronoun resolution and 1 succeeding exchange for outcome/correction verification, it eliminates topic contamination in labeling while providing complete contextual sufficiency. Model B is selected as the recommended archive-wide passage classification standard.",
+        "modelEvaluations": [
+          {
+            "modelName": "Model A: Atomic Exchange Unit (1 User Prompt + 1 Assistant Response)",
+            "contextualSufficiencyScore": 3,
+            "topicMixingRiskScore": 5,
+            "citationPrecisionScore": 5,
+            "branchStabilityScore": 5,
+            "labelingFeasibilityScore": 3,
+            "primaryStrengths": "Completely eliminates intra-passage topic mixing and cross-topic contamination; enables exact 1:1 node and message citation mapping; isolates branch points cleanly without straddling forks; highly deterministic and computationally lightweight.",
+            "primaryWeaknesses": "High vulnerability to referential ambiguity and contextual insufficiency on elliptic user prompts (e.g., 'continue', 'why?', or pronoun-heavy follow-ups); cannot evaluate outcome acceptance or directive corrections (Q2) without external context linkage."
+          },
+          {
+            "modelName": "Model B: Sliding Triad Window (Target Exchange bounded by 1 contextBefore and 1 contextAfter exchange)",
+            "contextualSufficiencyScore": 5,
+            "topicMixingRiskScore": 4,
+            "citationPrecisionScore": 5,
+            "branchStabilityScore": 4,
+            "labelingFeasibilityScore": 5,
+            "primaryStrengths": "Resolves antecedent constraints and pronouns via contextBefore; captures user reactions, corrections (Q2), and downstream adoption (Q3) via contextAfter; maintains strict citation precision by restricting label attribution exclusively to the target exchange; ideal support across all five analytical questions (Q1–Q5).",
+            "primaryWeaknesses": "Requires strict procedural enforcement to ensure human and model labelers do not inadvertently extract target labels from surrounding context turns; minor computational overhead in managing sliding window manifests and target deduplication keys."
+          },
+          {
+            "modelName": "Model C: Macro Sub-Session (5 to 10 sequential exchanges along the branch)",
+            "contextualSufficiencyScore": 4,
+            "topicMixingRiskScore": 1,
+            "citationPrecisionScore": 2,
+            "branchStabilityScore": 2,
+            "labelingFeasibilityScore": 2,
+            "primaryStrengths": "Captures overarching multi-turn arcs, extended task execution flows, and broader chronological usage patterns (Q4); preserves long-horizon context for substantive technical projects (Q1).",
+            "primaryWeaknesses": "Severe risk of topic contamination and keyword dilution across conversational pivots; citations become coarse and multi-headed; fails to isolate immediate user corrections (Q2) or four-layer interpersonal attributions (Q5); highly brittle across conversation DAG branch points."
+          }
+        ],
+        "recommendedSpecification": {
+          "standardName": "Context-Bounded Sliding Triad Standard (Target Exchange with Active Ancillary 1-Before / 1-After Context)",
+          "targetDefinition": "An ordered bipartite or tripartite turn exchange commencing with a user prompt node (`message.author.role == 'user'`), traversing intermediate tool executions, and terminating at the corresponding assistant response node (`message.author.role == 'assistant'`). The target exchange is the sole locus of semantic labeling and evidentiary citation.",
+          "contextBeforeRole": "Encompasses up to 1 antecedent turn exchange along the exact parent-directed branch DAG path (`node.parent`). Utilized strictly for pronoun resolution, antecedent task constraints, and problem framing. Prohibited from supplying semantic labels to the target unit.",
+          "contextAfterRole": "Encompasses up to 1 descendant turn exchange along the designated active branch. Utilized strictly for outcome verification, user acceptance evaluation, and directive correction tracking. Prohibited from back-propagating labels or new topics to the target unit.",
+          "deduplicationRule": "Every classification observation is indexed by a deterministic composite key `(conversation_id, node_id, message_id)` derived strictly from the target exchange. Appearances in `contextBefore` or `contextAfter` carry zero independent evidentiary weight, preventing repeated context turns from inflating empirical topic or perspective counts.",
+          "justification": "The Context-Bounded Sliding Triad resolves the trade-off between contextual sufficiency and citation rigor. It empowers workers to resolve elliptic requests without diluting topic boundaries, directly supports the paired quadruplets required for Q2 directive corrections, captures assistant assumption drift for Q3, tracks chronological prompt evolution for Q4, and maintains strict four-layer attribution boundaries for Q5 without conflating third-party quotes with user reports."
+        }
       }
     }
   ],
