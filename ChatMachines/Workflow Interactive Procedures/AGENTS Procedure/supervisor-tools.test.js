@@ -66,6 +66,15 @@ async function test(){
  record.geminiPending=true;let n=0;
  await assert.rejects(()=>generateGeminiScreen(record,async()=>{}, {storage,generate:async()=>{if(n++)throw Error('API unavailable');return {control,commands:[{name:'view_inventory'}]};}}),/API unavailable/);
  assert.equal(record.state.renderedScreens.length,2);assert.equal(record.state.commandResults.length,5);assert(record.geminiPending);
+ // A failed screen save after saved commands retains the recovery intent.
+ const recovery=structuredClone(record);
+ recovery.geminiPending=true;
+ recovery.pendingSupervisorResponse={control,commands:[{name:'view_inventory'}],screen:{instruction:'Return a result as {$recovered}.',expectedInputs:[{name:'recovered',schema:{type:'integer'}}]}};
+ const oldScreenCount=recovery.state.renderedScreens.length;
+ await assert.rejects(()=>generateGeminiScreen(recovery,async()=>{if(recovery.state.renderedScreens.length>oldScreenCount)throw Error('Screen save failed');},{storage}),/Screen save failed/);
+ assert(recovery.pendingSupervisorResponse);assert(recovery.geminiPending);
+ await generateGeminiScreen(recovery,async()=>{},{storage});
+ assert(!recovery.pendingSupervisorResponse);assert.equal(recovery.state.renderedScreens.at(-1).expectedInputs[0].name,'recovered');
  fs.rmSync(root,{recursive:true,force:true});console.log('Supervisor command replay, workspace files/descriptions, path isolation, unchanged screens, independent returns, and resumable three-screen publication passed.');
 }
 test().catch(e=>{console.error(e);process.exitCode=1;});

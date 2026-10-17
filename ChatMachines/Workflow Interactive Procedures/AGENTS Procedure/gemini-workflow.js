@@ -135,7 +135,7 @@ async function generateGeminiScreen(record, saveRecord, {generate=callGemini,max
     if(pending.screen){
       record.geminiPending=false;record.view='instruction';
       if(pending.screen.assignments){const screen={...pending.screen,standingInstructions:record.state.standingInstructions||'Follow the shared objective and your assignment.'};record.state={...record.state,renderedScreens:[...record.state.renderedScreens,screen],render:record.state.renderedScreens.length};await saveRecord();return screen;}
-      return saveGeminiScreen(record,pending.screen,saveRecord);
+      return await saveGeminiScreen(record,pending.screen,saveRecord);
     }
     await saveRecord();
     }catch(error){record.state=recoveredState;record.pendingSupervisorResponse=pending;record.geminiPending=true;throw error;}
