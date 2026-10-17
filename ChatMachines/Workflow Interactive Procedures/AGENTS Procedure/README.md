@@ -230,6 +230,8 @@ Instead of a single instruction/expectedInputs pair, the supervisor can return:
 }
 ```
 
+Assign ready work to each available worker immediately. Do not wait for the full worker pool to register or assemble. Registration identifies workers; it is not a scheduling barrier. Only task dependencies and required returns justify waiting.
+
 Use one to four assignments, at most one `chatgpt` and three `gemini`. IDs are unique within the broadcast. Every assignment has its own nonempty expected inputs and uses the same description-first return instructions and supported schema vocabulary. Variable names may repeat between workers; assignment IDs keep their returns separate.
 
 The workflow saves the broadcast as one serializable screen object containing assignments and the standing-instruction snapshot. Its renderer publishes up to three successive comments:
