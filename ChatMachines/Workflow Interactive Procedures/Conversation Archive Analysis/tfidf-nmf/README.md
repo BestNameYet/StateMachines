@@ -8,7 +8,7 @@ A CPU-based, unsupervised baseline. No LLM, pretrained language model, API key, 
 - `run.py`: verify source hashes/counts, prepare message documents, fit one TF-IDF vocabulary and NMF model over the whole dataset, and save results.
 - `test_pipeline.py`: source integrity, branch identity, excluded content, window boundaries and end-to-end model checks.
 - `requirements.txt`: pinned runtime dependencies.
-- Workflow: `.github/workflows/conversation-tfidf-nmf.yml`. Ordinary pushes run tests only. Use **Run workflow**, or change and commit an enabled timestamped `trigger.json`, to fit the configured dataset; it uploads results and does not commit derived analysis automatically.
+- Workflow: `.github/workflows/conversation-tfidf-nmf.yml`. Pushes to this folder run tests only. Use **Run workflow** to fit the configured dataset; it uploads results and does not commit derived analysis automatically.
 
 From repository root:
 
@@ -41,6 +41,6 @@ Relative weights are normalized NMF activations, not probabilities. Only the con
 
 See the [scikit-learn topic extraction example](https://scikit-learn.org/stable/auto_examples/applications/plot_topics_extraction_with_nmf_lda.html).
 
-## Parallel preparation
+## Four simultaneous instances
 
-`execution.preprocess_workers` is set to 4. Four spawned Python subprocesses parse and verify bins and prepare text documents concurrently. Results merge in manifest order; tests compare serial and parallel output. TF-IDF vocabulary construction and NMF fitting use one shared corpus/model, with numeric libraries limited to two threads by the workflow. This does not fit four unrelated topic catalogs. The run report records phase timings and configuration; preparation logs report the observed process count.
+The workflow runs four matrix jobs concurrently (max-parallel 4). Each greedily receives approximately one quarter of total file tokens, with intact bins and no overlap. Each instance fits its own TF-IDF vocabulary and 20-topic NMF model. Topic IDs are local to a partition and must not be treated as a single shared catalog. Results are uploaded separately, then collected with disjoint-file and total-conversation coverage checks. Current expected dataset coverage is 134 files / 1,334 conversations. Each instance uses one preprocessing process and up to two numeric-library threads. Pushes to the pipeline or its workflow now run the four-instance analysis, as do manual runs. This supersedes the earlier tests-only push behavior described above.

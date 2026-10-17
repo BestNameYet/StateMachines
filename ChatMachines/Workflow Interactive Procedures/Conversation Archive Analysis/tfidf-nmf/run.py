@@ -110,6 +110,21 @@ def load_documents(config, repo_root):
     bins = manifest["bins"]
     if len({item["output"] for item in bins}) != len(bins):
         raise ValueError("Duplicate source path")
+    partition = config.get("partition")
+    expected_conversations = manifest["conversation_count"]
+    if partition is not None:
+        count, index = partition["count"], partition["index"]
+        if count != 4 or index not in range(count):
+            raise ValueError("Expected four partitions with index 0..3")
+        groups, loads = [[] for _ in range(count)], [0] * count
+        ranked = sorted(enumerate(bins), key=lambda pair: (-pair[1].get("tokens", pair[1].get("bytes", 1)), pair[0]))
+        for position, item in ranked:
+            target = min(range(count), key=lambda i: (loads[i], i))
+            groups[target].append((position, item))
+            loads[target] += item.get("tokens", item.get("bytes", 1))
+        bins = [item for _, item in sorted(groups[index])]
+        expected_conversations = sum(item["conversation_count"] for item in bins)
+        print(json.dumps({"phase":"partition", "index":index, "partitions":count, "files":len(bins), "file_token_loads":loads}), flush=True)
     tasks = [(item, str(manifest_path.parent), str(repo_root), config["documents"]) for item in bins]
     workers = min(config.get("execution", {}).get("preprocess_workers", 1), len(tasks))
     documents, sources, counters, pids = [], [], Counter(), set()
@@ -124,7 +139,7 @@ def load_documents(config, repo_root):
             consume(pool.map(prepare_bin, tasks, chunksize=1))
     else:
         consume(map(prepare_bin, tasks))
-    if counters["conversations_seen"] != manifest["conversation_count"]:
+    if counters["conversations_seen"] != expected_conversations:
         raise ValueError("Dataset conversation coverage mismatch")
     print(json.dumps({"phase": "preparation", "files": len(sources), "worker_processes_observed": len(pids)}), flush=True)
     return documents, sources, counters
@@ -185,7 +200,7 @@ def run(config, repo_root, output):
     dump(output / "config.json", config)
     dump(output / "sources.json", sources)
     report = {"source_commit": os.environ.get("GITHUB_SHA"), "sklearn_version": sklearn.__version__,
-              "execution": config.get("execution", {}),
+              "execution": config.get("execution", {}), "partition": config.get("partition"),
               "timings_seconds": {"preparation": prepared-started, "fit": fitted-prepared},
               "coverage": dict(counters), "modeled_documents": int(nonzero.sum()),
               "empty_after_vectorization": int((~nonzero).sum()), "features": len(features),
@@ -218,8 +233,12 @@ def main():
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--partition-index", type=int)
+    parser.add_argument("--partition-count", type=int, default=4)
     args = parser.parse_args()
     config = json.loads(args.config.read_text())
+    if args.partition_index is not None:
+        config["partition"] = {"index": args.partition_index, "count": args.partition_count}
     run(config, args.repo_root.resolve(), args.output.resolve())
 
 if __name__ == "__main__":

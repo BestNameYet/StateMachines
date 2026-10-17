@@ -8,48 +8,75 @@ on:
       - '.github/workflows/conversation-tfidf-nmf.yml'
 permissions:
   contents: read
+  actions: write
 concurrency:
   group: conversation-tfidf-nmf
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
-  topic-model:
+  analyze:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        partition: [0, 1, 2, 3]
     env:
       OMP_NUM_THREADS: '2'
       OPENBLAS_NUM_THREADS: '2'
       MKL_NUM_THREADS: '2'
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Install pinned dependencies
         run: python -m pip install -r 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/requirements.txt'
-      - name: Test preparation and model fitting
+      - name: Test pipeline
         run: python -m unittest discover -s 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf' -p 'test_*.py'
-      - name: Detect explicit run request
-        id: request
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          python - <<'PY'
-          import json, os, subprocess
-          from pathlib import Path
-          trigger = 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/trigger.json'
-          changed = subprocess.check_output(['git','diff','--name-only','HEAD^','HEAD'],text=True).splitlines()
-          live = os.environ['EVENT_NAME']=='workflow_dispatch' or (trigger in changed and json.loads(Path(trigger).read_text()).get('enabled') is True)
-          with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('live='+str(live).lower()+'\n')
-          PY
-      - name: Fit configured corpus
-        if: steps.request.outputs.live == 'true'
-        run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/run.py' --config 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/config.json' --output nmf-results
+      - name: Analyze one quarter of the dataset
+        run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/run.py' --config 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/config.json' --partition-index ${{ matrix.partition }} --partition-count 4 --output nmf-results/partition-${{ matrix.partition }}
       - uses: actions/upload-artifact@v4
-        if: always() && steps.request.outputs.live == 'true'
+        if: always()
         with:
-          name: conversation-tfidf-nmf-results
+          name: conversation-tfidf-nmf-partition-${{ matrix.partition }}
           path: nmf-results/
           retention-days: 30
           if-no-files-found: warn
+  collect:
+    needs: analyze
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: conversation-tfidf-nmf-partition-*
+          path: results
+          merge-multiple: true
+      - name: Verify disjoint complete partition coverage
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          paths=set()
+          count=0
+          reports=[]
+          for index in range(4):
+              folder=Path('results')/('partition-'+str(index))
+              report=json.loads((folder/'report.json').read_text())
+              sources=json.loads((folder/'sources.json').read_text())
+              for source in sources:
+                  if source['path'] in paths: raise ValueError('Overlapping partition')
+                  paths.add(source['path'])
+                  count+=source['conversations']
+              reports.append({'partition':index,'files':len(sources),'conversations':report['coverage']['conversations_seen'],'topics':report['topics']})
+          assert len(paths)==134 and count==1334, (len(paths),count)
+          Path('results/index.json').write_text(json.dumps({'files':len(paths),'conversations':count,'partitions':reports,'note':'Four independently fitted topic models; topic IDs are local to each partition.'},indent=2))
+          print(json.dumps(reports))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conversation-tfidf-nmf-collected
+          path: results/
+          retention-days: 30
