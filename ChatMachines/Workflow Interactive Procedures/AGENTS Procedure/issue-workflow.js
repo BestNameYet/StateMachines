@@ -32,9 +32,7 @@ function toolInvocationArtifactUrl(repository,issueNumber) {
   return 'https://github.com/'+repository+'/blob/main/'+relative.split('/').map(encodeURIComponent).join('/');
 }
 function toolInvocationArtifact(record,issueNumber) {
-  const toolInvocations=structuredClone(record.toolInvocations||[]);
-  const statistics=structuredClone(record.lastToolInvocationSummary||toolInvocationSummary(toolInvocations,toolInvocations.length));
-  return {procedureIssueNumber:issueNumber,statistics,toolInvocations,submissionAccepted:true};
+  return {procedureIssueNumber:issueNumber,toolInvocations:structuredClone(record.toolInvocations||[]),submissionAccepted:true};
 }
 function toolInvocationInputArtifact(issueNumber) {
   return {procedureIssueNumber:issueNumber,toolInvocations:null};
