@@ -583,6 +583,211 @@
           "justification": "The Context-Bounded Sliding Triad resolves the trade-off between contextual sufficiency and citation rigor. It empowers workers to resolve elliptic requests without diluting topic boundaries, directly supports the paired quadruplets required for Q2 directive corrections, captures assistant assumption drift for Q3, tracks chronological prompt evolution for Q4, and maintains strict four-layer attribution boundaries for Q5 without conflating third-party quotes with user reports."
         },
         "assignmentId": "task_gemini_passage_model_comparative_eval"
+      },
+      {
+        "name": "taxonomySummary",
+        "value": "The Stage 3 candidate label discovery and taxonomy consolidation establishes an evidence-grounded controlled vocabulary structured across the five analytical questions (Q1 to Q5) and four analytical perspectives (User, People Discussed, Interactions, and ChatGPT). Building upon the initial 54-topic NMF/TF-IDF catalog and verified pilot observations, lexical redundancy and topic fragmentation were eliminated by establishing explicit semantic boundaries. Q1 organizes non-relationship technical and substantive domains with clear lifecycle continuation categories. Q2 defines operational corrective directives and assistant iterative adaptations across conversational turns. Q3 isolates unsolicited assistant premises, epistemic risks, and unverified assumptions to prevent synthetic echo. Q4 categorizes longitudinal behavioral shifts across empirical date strata (Periods 1, 2, and 3) while tracking persistent baseline habits. Q5 establishes a strict four-layer multi-perspective attribution framework (Direct Third-Party Quote, User Event Report, User Affective Reaction, Assistant Diagnostic Interpretation) that prohibits independent clinical diagnosis, categorizing terms such as BPD strictly as reported narrative objects with tracked provenance.",
+        "assignmentId": "task_gemini_candidate_label_discovery"
+      },
+      {
+        "name": "dimensions",
+        "value": [
+          {
+            "dimensionId": "Q1_Topics",
+            "questionId": "Q1",
+            "perspective": "User",
+            "description": "Substantive technical domains, operational workflows, and creative investigations outside relationship discussions, structured for resumption and lifecycle tracking.",
+            "candidateLabels": [
+              {
+                "labelName": "System Architecture & State Machine Design",
+                "definition": "Engineering discussions concerning computational architectures, workflow state machines, procedural state modeling, runtime transitions, or code modularity.",
+                "inclusionCriteria": "Turn exchanges specifying deterministic transitions, workflow loops, procedure execution rules, CommonJS/ESM modules, or repository state control.",
+                "exclusionCriteria": "Abstract conceptual discussions without architectural constraints, or general software installation troubleshooting."
+              },
+              {
+                "labelName": "Acoustic & Mechanical Flow Engineering",
+                "definition": "Technical investigations of physical acoustics, resonator chambers, airflow mechanics, mechanical silencing, or industrial design tolerances.",
+                "inclusionCriteria": "Mentions of flow mechanics, Helmholtz/quarter-wave resonators, decibel attenuation, volumetric flow rate, or dimensional constraints.",
+                "exclusionCriteria": "Casual sound playback queries or unconstrained consumer audio purchasing queries."
+              },
+              {
+                "labelName": "Commercial Food Business Operations & Culinary Infrastructure",
+                "definition": "Operational workflows, culinary hardware, commercial kitchen compliance, menu development, and food business operational planning.",
+                "inclusionCriteria": "Kitchen equipment specifications (e.g. thermometer mounting, cold line storage), commercial food preparation, licensing, or commercial vendor sourcing.",
+                "exclusionCriteria": "Personal home recipes or routine personal meal preparation queries."
+              },
+              {
+                "labelName": "Agile Sprint Modeling & Procedural Artifact Generation",
+                "definition": "Structuring project management frameworks, custom sprint cadence models, constraint-bound deliverable tracking, or backlog breakdown.",
+                "inclusionCriteria": "Explicit requests to model custom sprint planning, input/output boundary definitions for tasks, or procedural agile artifacts.",
+                "exclusionCriteria": "Theoretical debates regarding standard Scrum Guide definitions without concrete operational structuring."
+              },
+              {
+                "labelName": "Creative Writing, Worldbuilding & Sci-Fi Concept Design",
+                "definition": "Fictional worldbuilding, narrative character design, sci-fi military hierarchy formulation, and creative draft revisions.",
+                "inclusionCriteria": "Exchanges focusing on story scripts, character profiles, speculative military rank structures, or fictional faction politics.",
+                "exclusionCriteria": "Professional resume drafting, business marketing copy, or personal interpersonal narrative drafting."
+              },
+              {
+                "labelName": "Statutory Documentation & Administrative Source Checking",
+                "definition": "Inquiries into administrative records, statutory birth certificate rules, regulatory requirements, and official documentation procedures.",
+                "inclusionCriteria": "Requests for jurisdiction-specific document issuance laws, legal records retrieval procedures, or statutory source verification.",
+                "exclusionCriteria": "General web search queries lacking legal or regulatory documentation focus."
+              }
+            ]
+          },
+          {
+            "dimensionId": "Q2_Directives",
+            "questionId": "Q2",
+            "perspective": "Interactions",
+            "description": "User turn-by-turn operational directives, negative feedback constraints, and assistant iterative adaptations across branch-linear exchanges.",
+            "candidateLabels": [
+              {
+                "labelName": "Premise Rejection & Frame Reset",
+                "definition": "User explicitly repudiates a factual assumption, narrative framing, or baseline model premise introduced in a preceding assistant response.",
+                "inclusionCriteria": "User utterances explicitly stating an assistant assumption is false, inaccurate, or off-base (e.g., 'they are not aliens', 'I never said mounted').",
+                "exclusionCriteria": "Mild stylistic preferences or formatting adjustments that do not challenge underlying factual premises."
+              },
+              {
+                "labelName": "Scope Reduction & Boundary Tightening",
+                "definition": "User restricts the problem boundary, eliminates extraneous elements, or enforces negative constraints on the output.",
+                "inclusionCriteria": "User explicitly removes offerings from business copy, prunes plan elements, or instructs the assistant to disregard unnecessary categories.",
+                "exclusionCriteria": "Open-ended exploratory queries that broaden the conversational scope."
+              },
+              {
+                "labelName": "Source Verification & Provenance Challenge",
+                "definition": "User demands authoritative external proof, primary documentation, or alternative citations for claims made by the assistant.",
+                "inclusionCriteria": "User asking for secondary confirmation, legal citations, underlying statutes, or questioning model authority.",
+                "exclusionCriteria": "Accepting assistant answers without inspection or asking for creative opinions."
+              },
+              {
+                "labelName": "Stepwise Disaggregation & Procedural Deconstruction",
+                "definition": "User breaks down a holistic or vague prompt into granular, discrete sequential phases or execution steps.",
+                "inclusionCriteria": "Directives instructing the assistant to execute one phase at a time, enforce gate conditions, or stop before next steps.",
+                "exclusionCriteria": "Requests for broad all-in-one summaries or unstructured brainstorms."
+              },
+              {
+                "labelName": "Tone Calibration & Structural Enactment",
+                "definition": "User commands precise syntactic, structural, or stylistic constraints (e.g. JSON-only, table format, concise technical voice).",
+                "inclusionCriteria": "Directives dictating exact output format, schema compliance, omission of conversational pleasantries, or concise technical tone.",
+                "exclusionCriteria": "Substantive domain corrections regarding core facts."
+              }
+            ]
+          },
+          {
+            "dimensionId": "Q3_Assumptions",
+            "questionId": "Q3",
+            "perspective": "ChatGPT",
+            "description": "Assistant-introduced assumptions, hallucinations, unsolicited psychological framing, and epistemic risk tiers affecting conversation trajectory.",
+            "candidateLabels": [
+              {
+                "labelName": "Unsolicited Psychological & Diagnostic Framing",
+                "definition": "Assistant introduces psychiatric, psychological, or diagnostic terminology to interpret interpersonal conduct without explicit user direction.",
+                "inclusionCriteria": "Assistant labeling third-party actions as borderline, narcissistic, manipulative, trauma response, or emotional abuse without prior user prompting.",
+                "exclusionCriteria": "Assistant defining clinical terms when directly requested to supply medical dictionary definitions."
+              },
+              {
+                "labelName": "Unverified Domain Heuristic Assertion",
+                "definition": "Assistant presents engineering rules-of-thumb, legal statutory rules, or domain-specific figures as authoritative without source verification.",
+                "inclusionCriteria": "Assistant stating specific legal requirements, acoustic dampening ratios, or mechanical tolerances without qualifying uncertainty.",
+                "exclusionCriteria": "Discussions where the assistant explicitly caveats uncertainty or references well-established universal constants."
+              },
+              {
+                "labelName": "Premise Echo Chamber & Sycophantic Amplification",
+                "definition": "Assistant uncritically validates subjective user assumptions or emotional assertions, echoing and escalating the user's initial bias.",
+                "inclusionCriteria": "Assistant mirroring speculative user claims about another person's motives or technical superiority without critical counterbalance.",
+                "exclusionCriteria": "Neutral validation of emotional distress or objective validation of verified mathematical calculations."
+              },
+              {
+                "labelName": "Synthetic Authority & Visual Speculation",
+                "definition": "Assistant confidently interprets or advises on visual/attachment structures that are ungrounded or absent from the record.",
+                "inclusionCriteria": "Assistant making assertions about layout, physical orientation, or hardware fitment based on non-accessible image attachments.",
+                "exclusionCriteria": "Textual reasoning based strictly on user-supplied dimensions."
+              }
+            ]
+          },
+          {
+            "dimensionId": "Q4_Chronology",
+            "questionId": "Q4",
+            "perspective": "User",
+            "description": "Longitudinal transitions in user role, instruction specificity, verification rigor, and tool complexity across empirical date strata.",
+            "candidateLabels": [
+              {
+                "labelName": "Period 1: Exploratory Onboarding & Conceptual Querying",
+                "definition": "Early adoption mode (2024-08-25 to 2024-12-31) characterized by open-ended exploration, informational queries, and informal dialogue.",
+                "inclusionCriteria": "Short prompts, conceptual queries, conversational advice-seeking, and low negative-constraint density within 2024 dates.",
+                "exclusionCriteria": "Complex multi-file schema specifications or state machine workflows."
+              },
+              {
+                "labelName": "Period 2: Operational Systems Design & Iterative Co-Creation",
+                "definition": "Established operational use (2025-01-01 to 2025-12-31) characterized by sustained technical workflows, multi-turn drafting, and domain modeling.",
+                "inclusionCriteria": "Iterative prompt sequences, detailed technical problem-solving, commercial planning, and corrective pushback within 2025 dates.",
+                "exclusionCriteria": "Brief one-shot trivia queries or mature state machine orchestration."
+              },
+              {
+                "labelName": "Period 3: Rigorous Procedural Orchestration & State Machine Enforcement",
+                "definition": "Mature integration mode (2026-01-01 to 2026-08-05) marked by formal constraints, supervisory review, verification demands, and structured schemas.",
+                "inclusionCriteria": "Procedural state machine design, JSON data-contract enforcement, explicit verification steps, and high prompt complexity within 2026 dates.",
+                "exclusionCriteria": "Unstructured emotional venting or early-stage exploratory onboarding."
+              },
+              {
+                "labelName": "Persistent Habitual Continuity",
+                "definition": "Interaction habits that remain invariant across all observed chronological periods.",
+                "inclusionCriteria": "Direct technical focus, preference for concrete tabular artifacts, and immediate correction of perceived inaccuracies across all dates.",
+                "exclusionCriteria": "Behaviors that appear exclusively in a single period."
+              }
+            ]
+          },
+          {
+            "dimensionId": "Q5_Interpersonal",
+            "questionId": "Q5",
+            "perspective": "People Discussed",
+            "description": "Four-layer multi-perspective interpersonal interaction framework separating quotes, event reports, subjective reactions, and narrative diagnoses.",
+            "candidateLabels": [
+              {
+                "labelName": "Epistemic Layer 1: Direct Third-Party Quote",
+                "definition": "Verbatim reproduction of messages, transcripts, or utterances sent or spoken directly by a third party.",
+                "inclusionCriteria": "User quotes verbatim SMS, chat messages, or dialogue spoken by another person, enclosed in quotation marks or formatted blocks.",
+                "exclusionCriteria": "User summaries, emotional impressions, or subjective interpretations of what third parties said."
+              },
+              {
+                "labelName": "Epistemic Layer 2: User Retrospective Event Report",
+                "definition": "User recounting observable physical events, actions, or chronological sequences involving others.",
+                "inclusionCriteria": "Factual reporting of actions, timeline occurrences, physical departures, or logistical incidents involving others.",
+                "exclusionCriteria": "Attribution of internal emotional states or clinical motivations to the other person."
+              },
+              {
+                "labelName": "Epistemic Layer 3: User Subjective & Affective Reaction",
+                "definition": "User expressing personal internal feelings, confusion, stress, boundary dilemmas, or emotional coping in response to interpersonal dynamics.",
+                "inclusionCriteria": "Statements reflecting the user's own emotional state (e.g. feeling exhausted, confused, hurt, uncertain how to respond).",
+                "exclusionCriteria": "Descriptions of external physical events or assertions about the other person's clinical status."
+              },
+              {
+                "labelName": "Epistemic Layer 4: Assistant Diagnostic Framing",
+                "definition": "Assistant-generated psychological analyses, personality assessments, or interpersonal boundary recommendations.",
+                "inclusionCriteria": "Assistant turns analyzing third-party behavior, offering relationship communication tactics, or interpreting motives.",
+                "exclusionCriteria": "User raw event reports or user quoted text."
+              },
+              {
+                "labelName": "Narrative Diagnostic Term Provenance (e.g., BPD)",
+                "definition": "Explicit occurrence and usage tracking of psychiatric or diagnostic terms (e.g., borderline personality disorder / BPD) within the transcript.",
+                "inclusionCriteria": "Any turn mentioning BPD, borderline, narcissism, or clinical diagnoses, tagged with speaker role, node ID, and origin attribution.",
+                "exclusionCriteria": "Everyday colloquial descriptions of moods or non-diagnostic interpersonal conflict."
+              }
+            ]
+          }
+        ],
+        "assignmentId": "task_gemini_candidate_label_discovery"
+      },
+      {
+        "name": "governanceRules",
+        "value": {
+          "consolidationCriteria": "Candidate labels must represent distinct operational mechanisms with zero semantic redundancy. Labels derived from the 54-topic NMF/TF-IDF catalog that share underlying problem domains (e.g., merging separate resonator flow keywords into Acoustic & Mechanical Flow Engineering) are consolidated into single domain containers. NMF clusters driven purely by high-frequency conversational filler words (e.g. Topic 0) are excluded from domain taxonomies and reallocated to user directive or interaction classes.",
+          "disambiguationRules": "Every classification passage must be labeled across separate orthogonal dimensions: substantive domain (Q1), user directive type (Q2), assistant epistemic risk (Q3), chronological era (Q4), and interpersonal attribution layer (Q5). Cross-dimension contamination is prohibited: user frustration with an assistant answer must be classified under Q2/Q3, never under Q5 interpersonal conflict; technical project clarification must be classified under Q1, not conflated with general conversational purpose.",
+          "diagnosticTermPolicy": "Diagnostic and clinical terms (e.g., Borderline Personality Disorder, BPD, Narcissism) must never be treated as clinical facts or validated psychiatric assessments. All occurrences must be tagged with strict epistemic provenance: recording the speaker role (User vs. Assistant), exact node ID, whether it was reported as a pre-existing medical diagnosis or introduced conversationally, and maintaining a non-clinical narrative designation.",
+          "unassignedFallbackHandling": "When a passage does not clearly satisfy any defined candidate label in a given dimension, workers must assign 'unassigned_ambiguous' or 'insufficient_context' alongside an explicit citation and explanation. Arbitrary forcing of ambiguous text into defined categories is strictly prohibited."
+        },
+        "assignmentId": "task_gemini_candidate_label_discovery"
       }
     ],
     "controls": [
@@ -2472,6 +2677,207 @@
             "justification": "The Context-Bounded Sliding Triad resolves the trade-off between contextual sufficiency and citation rigor. It empowers workers to resolve elliptic requests without diluting topic boundaries, directly supports the paired quadruplets required for Q2 directive corrections, captures assistant assumption drift for Q3, tracks chronological prompt evolution for Q4, and maintains strict four-layer attribution boundaries for Q5 without conflating third-party quotes with user reports."
           }
         }
+      },
+      {
+        "render": 3,
+        "assignmentId": "task_gemini_candidate_label_discovery",
+        "nonce": "gemini_matrix_refiner_20261017",
+        "worker": "gemini",
+        "values": {
+          "taxonomySummary": "The Stage 3 candidate label discovery and taxonomy consolidation establishes an evidence-grounded controlled vocabulary structured across the five analytical questions (Q1 to Q5) and four analytical perspectives (User, People Discussed, Interactions, and ChatGPT). Building upon the initial 54-topic NMF/TF-IDF catalog and verified pilot observations, lexical redundancy and topic fragmentation were eliminated by establishing explicit semantic boundaries. Q1 organizes non-relationship technical and substantive domains with clear lifecycle continuation categories. Q2 defines operational corrective directives and assistant iterative adaptations across conversational turns. Q3 isolates unsolicited assistant premises, epistemic risks, and unverified assumptions to prevent synthetic echo. Q4 categorizes longitudinal behavioral shifts across empirical date strata (Periods 1, 2, and 3) while tracking persistent baseline habits. Q5 establishes a strict four-layer multi-perspective attribution framework (Direct Third-Party Quote, User Event Report, User Affective Reaction, Assistant Diagnostic Interpretation) that prohibits independent clinical diagnosis, categorizing terms such as BPD strictly as reported narrative objects with tracked provenance.",
+          "dimensions": [
+            {
+              "dimensionId": "Q1_Topics",
+              "questionId": "Q1",
+              "perspective": "User",
+              "description": "Substantive technical domains, operational workflows, and creative investigations outside relationship discussions, structured for resumption and lifecycle tracking.",
+              "candidateLabels": [
+                {
+                  "labelName": "System Architecture & State Machine Design",
+                  "definition": "Engineering discussions concerning computational architectures, workflow state machines, procedural state modeling, runtime transitions, or code modularity.",
+                  "inclusionCriteria": "Turn exchanges specifying deterministic transitions, workflow loops, procedure execution rules, CommonJS/ESM modules, or repository state control.",
+                  "exclusionCriteria": "Abstract conceptual discussions without architectural constraints, or general software installation troubleshooting."
+                },
+                {
+                  "labelName": "Acoustic & Mechanical Flow Engineering",
+                  "definition": "Technical investigations of physical acoustics, resonator chambers, airflow mechanics, mechanical silencing, or industrial design tolerances.",
+                  "inclusionCriteria": "Mentions of flow mechanics, Helmholtz/quarter-wave resonators, decibel attenuation, volumetric flow rate, or dimensional constraints.",
+                  "exclusionCriteria": "Casual sound playback queries or unconstrained consumer audio purchasing queries."
+                },
+                {
+                  "labelName": "Commercial Food Business Operations & Culinary Infrastructure",
+                  "definition": "Operational workflows, culinary hardware, commercial kitchen compliance, menu development, and food business operational planning.",
+                  "inclusionCriteria": "Kitchen equipment specifications (e.g. thermometer mounting, cold line storage), commercial food preparation, licensing, or commercial vendor sourcing.",
+                  "exclusionCriteria": "Personal home recipes or routine personal meal preparation queries."
+                },
+                {
+                  "labelName": "Agile Sprint Modeling & Procedural Artifact Generation",
+                  "definition": "Structuring project management frameworks, custom sprint cadence models, constraint-bound deliverable tracking, or backlog breakdown.",
+                  "inclusionCriteria": "Explicit requests to model custom sprint planning, input/output boundary definitions for tasks, or procedural agile artifacts.",
+                  "exclusionCriteria": "Theoretical debates regarding standard Scrum Guide definitions without concrete operational structuring."
+                },
+                {
+                  "labelName": "Creative Writing, Worldbuilding & Sci-Fi Concept Design",
+                  "definition": "Fictional worldbuilding, narrative character design, sci-fi military hierarchy formulation, and creative draft revisions.",
+                  "inclusionCriteria": "Exchanges focusing on story scripts, character profiles, speculative military rank structures, or fictional faction politics.",
+                  "exclusionCriteria": "Professional resume drafting, business marketing copy, or personal interpersonal narrative drafting."
+                },
+                {
+                  "labelName": "Statutory Documentation & Administrative Source Checking",
+                  "definition": "Inquiries into administrative records, statutory birth certificate rules, regulatory requirements, and official documentation procedures.",
+                  "inclusionCriteria": "Requests for jurisdiction-specific document issuance laws, legal records retrieval procedures, or statutory source verification.",
+                  "exclusionCriteria": "General web search queries lacking legal or regulatory documentation focus."
+                }
+              ]
+            },
+            {
+              "dimensionId": "Q2_Directives",
+              "questionId": "Q2",
+              "perspective": "Interactions",
+              "description": "User turn-by-turn operational directives, negative feedback constraints, and assistant iterative adaptations across branch-linear exchanges.",
+              "candidateLabels": [
+                {
+                  "labelName": "Premise Rejection & Frame Reset",
+                  "definition": "User explicitly repudiates a factual assumption, narrative framing, or baseline model premise introduced in a preceding assistant response.",
+                  "inclusionCriteria": "User utterances explicitly stating an assistant assumption is false, inaccurate, or off-base (e.g., 'they are not aliens', 'I never said mounted').",
+                  "exclusionCriteria": "Mild stylistic preferences or formatting adjustments that do not challenge underlying factual premises."
+                },
+                {
+                  "labelName": "Scope Reduction & Boundary Tightening",
+                  "definition": "User restricts the problem boundary, eliminates extraneous elements, or enforces negative constraints on the output.",
+                  "inclusionCriteria": "User explicitly removes offerings from business copy, prunes plan elements, or instructs the assistant to disregard unnecessary categories.",
+                  "exclusionCriteria": "Open-ended exploratory queries that broaden the conversational scope."
+                },
+                {
+                  "labelName": "Source Verification & Provenance Challenge",
+                  "definition": "User demands authoritative external proof, primary documentation, or alternative citations for claims made by the assistant.",
+                  "inclusionCriteria": "User asking for secondary confirmation, legal citations, underlying statutes, or questioning model authority.",
+                  "exclusionCriteria": "Accepting assistant answers without inspection or asking for creative opinions."
+                },
+                {
+                  "labelName": "Stepwise Disaggregation & Procedural Deconstruction",
+                  "definition": "User breaks down a holistic or vague prompt into granular, discrete sequential phases or execution steps.",
+                  "inclusionCriteria": "Directives instructing the assistant to execute one phase at a time, enforce gate conditions, or stop before next steps.",
+                  "exclusionCriteria": "Requests for broad all-in-one summaries or unstructured brainstorms."
+                },
+                {
+                  "labelName": "Tone Calibration & Structural Enactment",
+                  "definition": "User commands precise syntactic, structural, or stylistic constraints (e.g. JSON-only, table format, concise technical voice).",
+                  "inclusionCriteria": "Directives dictating exact output format, schema compliance, omission of conversational pleasantries, or concise technical tone.",
+                  "exclusionCriteria": "Substantive domain corrections regarding core facts."
+                }
+              ]
+            },
+            {
+              "dimensionId": "Q3_Assumptions",
+              "questionId": "Q3",
+              "perspective": "ChatGPT",
+              "description": "Assistant-introduced assumptions, hallucinations, unsolicited psychological framing, and epistemic risk tiers affecting conversation trajectory.",
+              "candidateLabels": [
+                {
+                  "labelName": "Unsolicited Psychological & Diagnostic Framing",
+                  "definition": "Assistant introduces psychiatric, psychological, or diagnostic terminology to interpret interpersonal conduct without explicit user direction.",
+                  "inclusionCriteria": "Assistant labeling third-party actions as borderline, narcissistic, manipulative, trauma response, or emotional abuse without prior user prompting.",
+                  "exclusionCriteria": "Assistant defining clinical terms when directly requested to supply medical dictionary definitions."
+                },
+                {
+                  "labelName": "Unverified Domain Heuristic Assertion",
+                  "definition": "Assistant presents engineering rules-of-thumb, legal statutory rules, or domain-specific figures as authoritative without source verification.",
+                  "inclusionCriteria": "Assistant stating specific legal requirements, acoustic dampening ratios, or mechanical tolerances without qualifying uncertainty.",
+                  "exclusionCriteria": "Discussions where the assistant explicitly caveats uncertainty or references well-established universal constants."
+                },
+                {
+                  "labelName": "Premise Echo Chamber & Sycophantic Amplification",
+                  "definition": "Assistant uncritically validates subjective user assumptions or emotional assertions, echoing and escalating the user's initial bias.",
+                  "inclusionCriteria": "Assistant mirroring speculative user claims about another person's motives or technical superiority without critical counterbalance.",
+                  "exclusionCriteria": "Neutral validation of emotional distress or objective validation of verified mathematical calculations."
+                },
+                {
+                  "labelName": "Synthetic Authority & Visual Speculation",
+                  "definition": "Assistant confidently interprets or advises on visual/attachment structures that are ungrounded or absent from the record.",
+                  "inclusionCriteria": "Assistant making assertions about layout, physical orientation, or hardware fitment based on non-accessible image attachments.",
+                  "exclusionCriteria": "Textual reasoning based strictly on user-supplied dimensions."
+                }
+              ]
+            },
+            {
+              "dimensionId": "Q4_Chronology",
+              "questionId": "Q4",
+              "perspective": "User",
+              "description": "Longitudinal transitions in user role, instruction specificity, verification rigor, and tool complexity across empirical date strata.",
+              "candidateLabels": [
+                {
+                  "labelName": "Period 1: Exploratory Onboarding & Conceptual Querying",
+                  "definition": "Early adoption mode (2024-08-25 to 2024-12-31) characterized by open-ended exploration, informational queries, and informal dialogue.",
+                  "inclusionCriteria": "Short prompts, conceptual queries, conversational advice-seeking, and low negative-constraint density within 2024 dates.",
+                  "exclusionCriteria": "Complex multi-file schema specifications or state machine workflows."
+                },
+                {
+                  "labelName": "Period 2: Operational Systems Design & Iterative Co-Creation",
+                  "definition": "Established operational use (2025-01-01 to 2025-12-31) characterized by sustained technical workflows, multi-turn drafting, and domain modeling.",
+                  "inclusionCriteria": "Iterative prompt sequences, detailed technical problem-solving, commercial planning, and corrective pushback within 2025 dates.",
+                  "exclusionCriteria": "Brief one-shot trivia queries or mature state machine orchestration."
+                },
+                {
+                  "labelName": "Period 3: Rigorous Procedural Orchestration & State Machine Enforcement",
+                  "definition": "Mature integration mode (2026-01-01 to 2026-08-05) marked by formal constraints, supervisory review, verification demands, and structured schemas.",
+                  "inclusionCriteria": "Procedural state machine design, JSON data-contract enforcement, explicit verification steps, and high prompt complexity within 2026 dates.",
+                  "exclusionCriteria": "Unstructured emotional venting or early-stage exploratory onboarding."
+                },
+                {
+                  "labelName": "Persistent Habitual Continuity",
+                  "definition": "Interaction habits that remain invariant across all observed chronological periods.",
+                  "inclusionCriteria": "Direct technical focus, preference for concrete tabular artifacts, and immediate correction of perceived inaccuracies across all dates.",
+                  "exclusionCriteria": "Behaviors that appear exclusively in a single period."
+                }
+              ]
+            },
+            {
+              "dimensionId": "Q5_Interpersonal",
+              "questionId": "Q5",
+              "perspective": "People Discussed",
+              "description": "Four-layer multi-perspective interpersonal interaction framework separating quotes, event reports, subjective reactions, and narrative diagnoses.",
+              "candidateLabels": [
+                {
+                  "labelName": "Epistemic Layer 1: Direct Third-Party Quote",
+                  "definition": "Verbatim reproduction of messages, transcripts, or utterances sent or spoken directly by a third party.",
+                  "inclusionCriteria": "User quotes verbatim SMS, chat messages, or dialogue spoken by another person, enclosed in quotation marks or formatted blocks.",
+                  "exclusionCriteria": "User summaries, emotional impressions, or subjective interpretations of what third parties said."
+                },
+                {
+                  "labelName": "Epistemic Layer 2: User Retrospective Event Report",
+                  "definition": "User recounting observable physical events, actions, or chronological sequences involving others.",
+                  "inclusionCriteria": "Factual reporting of actions, timeline occurrences, physical departures, or logistical incidents involving others.",
+                  "exclusionCriteria": "Attribution of internal emotional states or clinical motivations to the other person."
+                },
+                {
+                  "labelName": "Epistemic Layer 3: User Subjective & Affective Reaction",
+                  "definition": "User expressing personal internal feelings, confusion, stress, boundary dilemmas, or emotional coping in response to interpersonal dynamics.",
+                  "inclusionCriteria": "Statements reflecting the user's own emotional state (e.g. feeling exhausted, confused, hurt, uncertain how to respond).",
+                  "exclusionCriteria": "Descriptions of external physical events or assertions about the other person's clinical status."
+                },
+                {
+                  "labelName": "Epistemic Layer 4: Assistant Diagnostic Framing",
+                  "definition": "Assistant-generated psychological analyses, personality assessments, or interpersonal boundary recommendations.",
+                  "inclusionCriteria": "Assistant turns analyzing third-party behavior, offering relationship communication tactics, or interpreting motives.",
+                  "exclusionCriteria": "User raw event reports or user quoted text."
+                },
+                {
+                  "labelName": "Narrative Diagnostic Term Provenance (e.g., BPD)",
+                  "definition": "Explicit occurrence and usage tracking of psychiatric or diagnostic terms (e.g., borderline personality disorder / BPD) within the transcript.",
+                  "inclusionCriteria": "Any turn mentioning BPD, borderline, narcissism, or clinical diagnoses, tagged with speaker role, node ID, and origin attribution.",
+                  "exclusionCriteria": "Everyday colloquial descriptions of moods or non-diagnostic interpersonal conflict."
+                }
+              ]
+            }
+          ],
+          "governanceRules": {
+            "consolidationCriteria": "Candidate labels must represent distinct operational mechanisms with zero semantic redundancy. Labels derived from the 54-topic NMF/TF-IDF catalog that share underlying problem domains (e.g., merging separate resonator flow keywords into Acoustic & Mechanical Flow Engineering) are consolidated into single domain containers. NMF clusters driven purely by high-frequency conversational filler words (e.g. Topic 0) are excluded from domain taxonomies and reallocated to user directive or interaction classes.",
+            "disambiguationRules": "Every classification passage must be labeled across separate orthogonal dimensions: substantive domain (Q1), user directive type (Q2), assistant epistemic risk (Q3), chronological era (Q4), and interpersonal attribution layer (Q5). Cross-dimension contamination is prohibited: user frustration with an assistant answer must be classified under Q2/Q3, never under Q5 interpersonal conflict; technical project clarification must be classified under Q1, not conflated with general conversational purpose.",
+            "diagnosticTermPolicy": "Diagnostic and clinical terms (e.g., Borderline Personality Disorder, BPD, Narcissism) must never be treated as clinical facts or validated psychiatric assessments. All occurrences must be tagged with strict epistemic provenance: recording the speaker role (User vs. Assistant), exact node ID, whether it was reported as a pre-existing medical diagnosis or introduced conversationally, and maintaining a non-clinical narrative designation.",
+            "unassignedFallbackHandling": "When a passage does not clearly satisfy any defined candidate label in a given dimension, workers must assign 'unassigned_ambiguous' or 'insufficient_context' alongside an explicit citation and explanation. Arbitrary forcing of ambiguous text into defined categories is strictly prohibited."
+          }
+        }
       }
     ]
   },
@@ -3131,6 +3537,206 @@
           "contextAfterRole": "Encompasses up to 1 descendant turn exchange along the designated active branch. Utilized strictly for outcome verification, user acceptance evaluation, and directive correction tracking. Prohibited from back-propagating labels or new topics to the target unit.",
           "deduplicationRule": "Every classification observation is indexed by a deterministic composite key `(conversation_id, node_id, message_id)` derived strictly from the target exchange. Appearances in `contextBefore` or `contextAfter` carry zero independent evidentiary weight, preventing repeated context turns from inflating empirical topic or perspective counts.",
           "justification": "The Context-Bounded Sliding Triad resolves the trade-off between contextual sufficiency and citation rigor. It empowers workers to resolve elliptic requests without diluting topic boundaries, directly supports the paired quadruplets required for Q2 directive corrections, captures assistant assumption drift for Q3, tracks chronological prompt evolution for Q4, and maintains strict four-layer attribution boundaries for Q5 without conflating third-party quotes with user reports."
+        }
+      }
+    },
+    {
+      "request": 4,
+      "render": 3,
+      "assignmentId": "task_gemini_candidate_label_discovery",
+      "values": {
+        "taxonomySummary": "The Stage 3 candidate label discovery and taxonomy consolidation establishes an evidence-grounded controlled vocabulary structured across the five analytical questions (Q1 to Q5) and four analytical perspectives (User, People Discussed, Interactions, and ChatGPT). Building upon the initial 54-topic NMF/TF-IDF catalog and verified pilot observations, lexical redundancy and topic fragmentation were eliminated by establishing explicit semantic boundaries. Q1 organizes non-relationship technical and substantive domains with clear lifecycle continuation categories. Q2 defines operational corrective directives and assistant iterative adaptations across conversational turns. Q3 isolates unsolicited assistant premises, epistemic risks, and unverified assumptions to prevent synthetic echo. Q4 categorizes longitudinal behavioral shifts across empirical date strata (Periods 1, 2, and 3) while tracking persistent baseline habits. Q5 establishes a strict four-layer multi-perspective attribution framework (Direct Third-Party Quote, User Event Report, User Affective Reaction, Assistant Diagnostic Interpretation) that prohibits independent clinical diagnosis, categorizing terms such as BPD strictly as reported narrative objects with tracked provenance.",
+        "dimensions": [
+          {
+            "dimensionId": "Q1_Topics",
+            "questionId": "Q1",
+            "perspective": "User",
+            "description": "Substantive technical domains, operational workflows, and creative investigations outside relationship discussions, structured for resumption and lifecycle tracking.",
+            "candidateLabels": [
+              {
+                "labelName": "System Architecture & State Machine Design",
+                "definition": "Engineering discussions concerning computational architectures, workflow state machines, procedural state modeling, runtime transitions, or code modularity.",
+                "inclusionCriteria": "Turn exchanges specifying deterministic transitions, workflow loops, procedure execution rules, CommonJS/ESM modules, or repository state control.",
+                "exclusionCriteria": "Abstract conceptual discussions without architectural constraints, or general software installation troubleshooting."
+              },
+              {
+                "labelName": "Acoustic & Mechanical Flow Engineering",
+                "definition": "Technical investigations of physical acoustics, resonator chambers, airflow mechanics, mechanical silencing, or industrial design tolerances.",
+                "inclusionCriteria": "Mentions of flow mechanics, Helmholtz/quarter-wave resonators, decibel attenuation, volumetric flow rate, or dimensional constraints.",
+                "exclusionCriteria": "Casual sound playback queries or unconstrained consumer audio purchasing queries."
+              },
+              {
+                "labelName": "Commercial Food Business Operations & Culinary Infrastructure",
+                "definition": "Operational workflows, culinary hardware, commercial kitchen compliance, menu development, and food business operational planning.",
+                "inclusionCriteria": "Kitchen equipment specifications (e.g. thermometer mounting, cold line storage), commercial food preparation, licensing, or commercial vendor sourcing.",
+                "exclusionCriteria": "Personal home recipes or routine personal meal preparation queries."
+              },
+              {
+                "labelName": "Agile Sprint Modeling & Procedural Artifact Generation",
+                "definition": "Structuring project management frameworks, custom sprint cadence models, constraint-bound deliverable tracking, or backlog breakdown.",
+                "inclusionCriteria": "Explicit requests to model custom sprint planning, input/output boundary definitions for tasks, or procedural agile artifacts.",
+                "exclusionCriteria": "Theoretical debates regarding standard Scrum Guide definitions without concrete operational structuring."
+              },
+              {
+                "labelName": "Creative Writing, Worldbuilding & Sci-Fi Concept Design",
+                "definition": "Fictional worldbuilding, narrative character design, sci-fi military hierarchy formulation, and creative draft revisions.",
+                "inclusionCriteria": "Exchanges focusing on story scripts, character profiles, speculative military rank structures, or fictional faction politics.",
+                "exclusionCriteria": "Professional resume drafting, business marketing copy, or personal interpersonal narrative drafting."
+              },
+              {
+                "labelName": "Statutory Documentation & Administrative Source Checking",
+                "definition": "Inquiries into administrative records, statutory birth certificate rules, regulatory requirements, and official documentation procedures.",
+                "inclusionCriteria": "Requests for jurisdiction-specific document issuance laws, legal records retrieval procedures, or statutory source verification.",
+                "exclusionCriteria": "General web search queries lacking legal or regulatory documentation focus."
+              }
+            ]
+          },
+          {
+            "dimensionId": "Q2_Directives",
+            "questionId": "Q2",
+            "perspective": "Interactions",
+            "description": "User turn-by-turn operational directives, negative feedback constraints, and assistant iterative adaptations across branch-linear exchanges.",
+            "candidateLabels": [
+              {
+                "labelName": "Premise Rejection & Frame Reset",
+                "definition": "User explicitly repudiates a factual assumption, narrative framing, or baseline model premise introduced in a preceding assistant response.",
+                "inclusionCriteria": "User utterances explicitly stating an assistant assumption is false, inaccurate, or off-base (e.g., 'they are not aliens', 'I never said mounted').",
+                "exclusionCriteria": "Mild stylistic preferences or formatting adjustments that do not challenge underlying factual premises."
+              },
+              {
+                "labelName": "Scope Reduction & Boundary Tightening",
+                "definition": "User restricts the problem boundary, eliminates extraneous elements, or enforces negative constraints on the output.",
+                "inclusionCriteria": "User explicitly removes offerings from business copy, prunes plan elements, or instructs the assistant to disregard unnecessary categories.",
+                "exclusionCriteria": "Open-ended exploratory queries that broaden the conversational scope."
+              },
+              {
+                "labelName": "Source Verification & Provenance Challenge",
+                "definition": "User demands authoritative external proof, primary documentation, or alternative citations for claims made by the assistant.",
+                "inclusionCriteria": "User asking for secondary confirmation, legal citations, underlying statutes, or questioning model authority.",
+                "exclusionCriteria": "Accepting assistant answers without inspection or asking for creative opinions."
+              },
+              {
+                "labelName": "Stepwise Disaggregation & Procedural Deconstruction",
+                "definition": "User breaks down a holistic or vague prompt into granular, discrete sequential phases or execution steps.",
+                "inclusionCriteria": "Directives instructing the assistant to execute one phase at a time, enforce gate conditions, or stop before next steps.",
+                "exclusionCriteria": "Requests for broad all-in-one summaries or unstructured brainstorms."
+              },
+              {
+                "labelName": "Tone Calibration & Structural Enactment",
+                "definition": "User commands precise syntactic, structural, or stylistic constraints (e.g. JSON-only, table format, concise technical voice).",
+                "inclusionCriteria": "Directives dictating exact output format, schema compliance, omission of conversational pleasantries, or concise technical tone.",
+                "exclusionCriteria": "Substantive domain corrections regarding core facts."
+              }
+            ]
+          },
+          {
+            "dimensionId": "Q3_Assumptions",
+            "questionId": "Q3",
+            "perspective": "ChatGPT",
+            "description": "Assistant-introduced assumptions, hallucinations, unsolicited psychological framing, and epistemic risk tiers affecting conversation trajectory.",
+            "candidateLabels": [
+              {
+                "labelName": "Unsolicited Psychological & Diagnostic Framing",
+                "definition": "Assistant introduces psychiatric, psychological, or diagnostic terminology to interpret interpersonal conduct without explicit user direction.",
+                "inclusionCriteria": "Assistant labeling third-party actions as borderline, narcissistic, manipulative, trauma response, or emotional abuse without prior user prompting.",
+                "exclusionCriteria": "Assistant defining clinical terms when directly requested to supply medical dictionary definitions."
+              },
+              {
+                "labelName": "Unverified Domain Heuristic Assertion",
+                "definition": "Assistant presents engineering rules-of-thumb, legal statutory rules, or domain-specific figures as authoritative without source verification.",
+                "inclusionCriteria": "Assistant stating specific legal requirements, acoustic dampening ratios, or mechanical tolerances without qualifying uncertainty.",
+                "exclusionCriteria": "Discussions where the assistant explicitly caveats uncertainty or references well-established universal constants."
+              },
+              {
+                "labelName": "Premise Echo Chamber & Sycophantic Amplification",
+                "definition": "Assistant uncritically validates subjective user assumptions or emotional assertions, echoing and escalating the user's initial bias.",
+                "inclusionCriteria": "Assistant mirroring speculative user claims about another person's motives or technical superiority without critical counterbalance.",
+                "exclusionCriteria": "Neutral validation of emotional distress or objective validation of verified mathematical calculations."
+              },
+              {
+                "labelName": "Synthetic Authority & Visual Speculation",
+                "definition": "Assistant confidently interprets or advises on visual/attachment structures that are ungrounded or absent from the record.",
+                "inclusionCriteria": "Assistant making assertions about layout, physical orientation, or hardware fitment based on non-accessible image attachments.",
+                "exclusionCriteria": "Textual reasoning based strictly on user-supplied dimensions."
+              }
+            ]
+          },
+          {
+            "dimensionId": "Q4_Chronology",
+            "questionId": "Q4",
+            "perspective": "User",
+            "description": "Longitudinal transitions in user role, instruction specificity, verification rigor, and tool complexity across empirical date strata.",
+            "candidateLabels": [
+              {
+                "labelName": "Period 1: Exploratory Onboarding & Conceptual Querying",
+                "definition": "Early adoption mode (2024-08-25 to 2024-12-31) characterized by open-ended exploration, informational queries, and informal dialogue.",
+                "inclusionCriteria": "Short prompts, conceptual queries, conversational advice-seeking, and low negative-constraint density within 2024 dates.",
+                "exclusionCriteria": "Complex multi-file schema specifications or state machine workflows."
+              },
+              {
+                "labelName": "Period 2: Operational Systems Design & Iterative Co-Creation",
+                "definition": "Established operational use (2025-01-01 to 2025-12-31) characterized by sustained technical workflows, multi-turn drafting, and domain modeling.",
+                "inclusionCriteria": "Iterative prompt sequences, detailed technical problem-solving, commercial planning, and corrective pushback within 2025 dates.",
+                "exclusionCriteria": "Brief one-shot trivia queries or mature state machine orchestration."
+              },
+              {
+                "labelName": "Period 3: Rigorous Procedural Orchestration & State Machine Enforcement",
+                "definition": "Mature integration mode (2026-01-01 to 2026-08-05) marked by formal constraints, supervisory review, verification demands, and structured schemas.",
+                "inclusionCriteria": "Procedural state machine design, JSON data-contract enforcement, explicit verification steps, and high prompt complexity within 2026 dates.",
+                "exclusionCriteria": "Unstructured emotional venting or early-stage exploratory onboarding."
+              },
+              {
+                "labelName": "Persistent Habitual Continuity",
+                "definition": "Interaction habits that remain invariant across all observed chronological periods.",
+                "inclusionCriteria": "Direct technical focus, preference for concrete tabular artifacts, and immediate correction of perceived inaccuracies across all dates.",
+                "exclusionCriteria": "Behaviors that appear exclusively in a single period."
+              }
+            ]
+          },
+          {
+            "dimensionId": "Q5_Interpersonal",
+            "questionId": "Q5",
+            "perspective": "People Discussed",
+            "description": "Four-layer multi-perspective interpersonal interaction framework separating quotes, event reports, subjective reactions, and narrative diagnoses.",
+            "candidateLabels": [
+              {
+                "labelName": "Epistemic Layer 1: Direct Third-Party Quote",
+                "definition": "Verbatim reproduction of messages, transcripts, or utterances sent or spoken directly by a third party.",
+                "inclusionCriteria": "User quotes verbatim SMS, chat messages, or dialogue spoken by another person, enclosed in quotation marks or formatted blocks.",
+                "exclusionCriteria": "User summaries, emotional impressions, or subjective interpretations of what third parties said."
+              },
+              {
+                "labelName": "Epistemic Layer 2: User Retrospective Event Report",
+                "definition": "User recounting observable physical events, actions, or chronological sequences involving others.",
+                "inclusionCriteria": "Factual reporting of actions, timeline occurrences, physical departures, or logistical incidents involving others.",
+                "exclusionCriteria": "Attribution of internal emotional states or clinical motivations to the other person."
+              },
+              {
+                "labelName": "Epistemic Layer 3: User Subjective & Affective Reaction",
+                "definition": "User expressing personal internal feelings, confusion, stress, boundary dilemmas, or emotional coping in response to interpersonal dynamics.",
+                "inclusionCriteria": "Statements reflecting the user's own emotional state (e.g. feeling exhausted, confused, hurt, uncertain how to respond).",
+                "exclusionCriteria": "Descriptions of external physical events or assertions about the other person's clinical status."
+              },
+              {
+                "labelName": "Epistemic Layer 4: Assistant Diagnostic Framing",
+                "definition": "Assistant-generated psychological analyses, personality assessments, or interpersonal boundary recommendations.",
+                "inclusionCriteria": "Assistant turns analyzing third-party behavior, offering relationship communication tactics, or interpreting motives.",
+                "exclusionCriteria": "User raw event reports or user quoted text."
+              },
+              {
+                "labelName": "Narrative Diagnostic Term Provenance (e.g., BPD)",
+                "definition": "Explicit occurrence and usage tracking of psychiatric or diagnostic terms (e.g., borderline personality disorder / BPD) within the transcript.",
+                "inclusionCriteria": "Any turn mentioning BPD, borderline, narcissism, or clinical diagnoses, tagged with speaker role, node ID, and origin attribution.",
+                "exclusionCriteria": "Everyday colloquial descriptions of moods or non-diagnostic interpersonal conflict."
+              }
+            ]
+          }
+        ],
+        "governanceRules": {
+          "consolidationCriteria": "Candidate labels must represent distinct operational mechanisms with zero semantic redundancy. Labels derived from the 54-topic NMF/TF-IDF catalog that share underlying problem domains (e.g., merging separate resonator flow keywords into Acoustic & Mechanical Flow Engineering) are consolidated into single domain containers. NMF clusters driven purely by high-frequency conversational filler words (e.g. Topic 0) are excluded from domain taxonomies and reallocated to user directive or interaction classes.",
+          "disambiguationRules": "Every classification passage must be labeled across separate orthogonal dimensions: substantive domain (Q1), user directive type (Q2), assistant epistemic risk (Q3), chronological era (Q4), and interpersonal attribution layer (Q5). Cross-dimension contamination is prohibited: user frustration with an assistant answer must be classified under Q2/Q3, never under Q5 interpersonal conflict; technical project clarification must be classified under Q1, not conflated with general conversational purpose.",
+          "diagnosticTermPolicy": "Diagnostic and clinical terms (e.g., Borderline Personality Disorder, BPD, Narcissism) must never be treated as clinical facts or validated psychiatric assessments. All occurrences must be tagged with strict epistemic provenance: recording the speaker role (User vs. Assistant), exact node ID, whether it was reported as a pre-existing medical diagnosis or introduced conversationally, and maintaining a non-clinical narrative designation.",
+          "unassignedFallbackHandling": "When a passage does not clearly satisfy any defined candidate label in a given dimension, workers must assign 'unassigned_ambiguous' or 'insufficient_context' alongside an explicit citation and explanation. Arbitrary forcing of ambiguous text into defined categories is strictly prohibited."
         }
       }
     }
