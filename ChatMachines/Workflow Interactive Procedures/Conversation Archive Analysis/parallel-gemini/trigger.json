@@ -1,12 +1,9 @@
 {
-  "timestamp": "2026-10-17T08:11:00.000Z",
-  "enabled": false,
+  "timestamp": "2026-10-17T08:58:25.000Z",
+  "enabled": true,
   "paths": [
-    "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/photo-archive/batch-01",
-    "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/photo-archive/batch-02",
-    "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/photo-archive/batch-03",
-    "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/photo-archive/batch-04"
+    "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/key_type_inventory.json"
   ],
-  "instruction": "Extract every visible text message from the assigned screenshot. Return valid JSON only with this shape: {\"image\":\"<assigned repository path>\",\"messages\":[{\"author\":\"<displayed sender name or null>\",\"text\":\"<visible message text>\"}]}. Include only message author and message text. Preserve the visible text exactly and keep messages in visual reading order. Use null when no sender name is visibly displayed. Do not infer authors from colors, photos, or context. Do not include timestamps, confidence scores, unreadable-region descriptions, or other fields. Do not add text that is not visible.",
-  "maxParallel": 4
+  "instruction": "Analyze the assigned key_type_inventory.json as a record of the conversation archive key scan. Return valid JSON only with these fields: scope, shard_count, conversation_count, distinct_key_count, observed_json_types, dynamic_key_handling, what_the_inventory_establishes, and provenance_limits. Report only values supported by the assigned file. In provenance_limits, state clearly whether this file itself documents the script, command, or exact generation process; do not infer undocumented provenance.",
+  "maxParallel": 1
 }
