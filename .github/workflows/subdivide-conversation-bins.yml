@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Greedy subdivisions below 500000 tokens
+      - name: Greedy subdivisions below 1000000 tokens
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
@@ -36,7 +36,7 @@ jobs:
           def split(data,record,relative,part=""):
               text=json.dumps(data,ensure_ascii=False,indent=2)+"\n"
               tokens=count(text)
-              if tokens>=500000:
+              if tokens>=1000000:
                   if len(data)<2: raise RuntimeError("Single conversation exceeds limit: "+str(relative))
                   mid=len(data)//2
                   split(data[:mid],record,relative,part+"a")
@@ -55,7 +55,7 @@ jobs:
               info=counts[path.name]
               if hashlib.sha256(raw).hexdigest()!=info["sha256"]: raise RuntimeError("Source changed: "+str(path))
               originals.append(path)
-              if info["tokens"]>=500000:
+              if info["tokens"]>=1000000:
                   split(json.loads(raw),rec,relative)
               else:
                   units.append({"old":str(relative),"text":raw.decode(),"tokens":info["tokens"],"record":rec})
@@ -63,7 +63,7 @@ jobs:
           for batch in sorted({u["old"].split("/")[0] for u in units}):
               current=[]; total=0
               for u in [u for u in units if u["old"].startswith(batch+"/")]:
-                  if current and total+u["tokens"]>=500000:
+                  if current and total+u["tokens"]>=1000000:
                       groups.append({"batch":batch,"units":current,"tokens":total})
                       current=[]; total=0
                   current.append(u);total+=u["tokens"]
@@ -79,18 +79,18 @@ jobs:
                   dest=root/new;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_text(u["text"])
                   rec=dict(u["record"]);rec["output"]=str(new);rec["tokens"]=u["tokens"];outbins.append(rec)
               row={"path":str(root/folder),"file_count":len(group["units"]),"file_token_sum":group["tokens"]}
-              assert row["file_token_sum"]<500000
+              assert row["file_token_sum"]<1000000
               report.append(row);print(json.dumps(row),flush=True)
           for path in originals:path.unlink()
           manifest.update(bins=outbins,bin_count=len(outbins),subdivision_count=len(groups))
           (root/"bins-manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n")
-          result={"method":"Greedy next-fit in original file order within each batch; split oversized bins at conversation boundaries","strict_token_limit":500000,"token_basis":"Sum of exact Gemini countTokens file counts; excludes processor prompt wrappers","model":model,"source_commit":os.environ["GITHUB_SHA"],"conversation_count":sum(r["conversation_count"] for r in outbins),"file_count":len(outbins),"subdivisions":report}
+          result={"method":"Greedy next-fit in original file order within each batch; split oversized bins at conversation boundaries","strict_token_limit":1000000,"token_basis":"Sum of exact Gemini countTokens file counts; excludes processor prompt wrappers","model":model,"source_commit":os.environ["GITHUB_SHA"],"conversation_count":sum(r["conversation_count"] for r in outbins),"file_count":len(outbins),"subdivisions":report}
           (root/"subdivisions-manifest.json").write_text(json.dumps(result,indent=2)+"\n")
           print("SUMMARY",json.dumps({k:v for k,v in result.items() if k!="subdivisions"}),flush=True)
           subprocess.run(["git","config","user.name","github-actions[bot]"],check=True)
           subprocess.run(["git","config","user.email","41898282+github-actions[bot]@users.noreply.github.com"],check=True)
           subprocess.run(["git","add",str(root)],check=True)
-          subprocess.run(["git","commit","-m","Greedily subdivide conversation batches below 500000 file tokens"],check=True)
+          subprocess.run(["git","commit","-m","Greedily subdivide conversation batches below 1000000 file tokens"],check=True)
           subprocess.run(["git","push","origin","HEAD:main"],check=True)
           
           PY
