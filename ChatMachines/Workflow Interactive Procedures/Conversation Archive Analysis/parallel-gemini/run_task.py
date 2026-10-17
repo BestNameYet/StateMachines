@@ -15,7 +15,7 @@ PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 JPEG_SIGNATURE = b'\xff\xd8\xff'
 
 
-def collect(root, assigned, max_bytes):
+def collect(root, assigned):
     root = Path(root).resolve()
     relative = Path(assigned)
     if relative.is_absolute() or '..' in relative.parts or not assigned.strip():
@@ -26,7 +26,7 @@ def collect(root, assigned, max_bytes):
     if not target.exists():
         raise ValueError('Assigned path does not exist: ' + assigned)
     candidates = sorted(target.rglob('*')) if target.is_dir() else [target]
-    files, total = [], 0
+    files = []
     for item in candidates:
         rel = item.relative_to(root)
         if any(part.startswith('.') or part == '__pycache__' for part in rel.parts):
@@ -36,8 +36,6 @@ def collect(root, assigned, max_bytes):
         if not item.is_file():
             continue
         data = item.read_bytes()
-        if len(data) > max_bytes:
-            raise ValueError('File exceeds max_bytes; subdivide or preprocess it. Nothing was truncated.')
         if data.startswith(PNG_SIGNATURE):
             mime_type = 'image/png'
         elif data.startswith(JPEG_SIGNATURE):
@@ -120,7 +118,7 @@ def validate_image_answer(answer, assigned):
         messages.append({'author': item.get('author'), 'text': item['text']})
     return {'image': assigned, 'messages': messages}
 
-def run(root, assigned, instruction, output, max_bytes=10_000_000, request_fn=call):
+def run(root, assigned, instruction, output, request_fn=call):
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     key = os.environ.get('GEMINI_API_KEY')
@@ -129,7 +127,7 @@ def run(root, assigned, instruction, output, max_bytes=10_000_000, request_fn=ca
     try:
         if not key:
             raise RuntimeError('Repository secret GEMINI_API_KEY is required')
-        files = collect(root, assigned, max_bytes)
+        files = collect(root, assigned)
         manifest = [{k: v for k, v in item.items() if k not in ('text', 'inline_data')}
                     for item in files]
         images = [{'path': item['path'], 'mime_type': item['mime_type'],
@@ -193,10 +191,9 @@ if __name__ == '__main__':
     parser.add_argument('--path', required=True)
     parser.add_argument('--instruction-file', required=True)
     parser.add_argument('--output', required=True)
-    parser.add_argument('--max-bytes', type=int, default=10_000_000)
     args = parser.parse_args()
     try:
-        result = run(args.root, args.path, Path(args.instruction_file).read_text(), args.output, args.max_bytes)
+        result = run(args.root, args.path, Path(args.instruction_file).read_text(), args.output)
         print(json.dumps(result))
     except Exception:
         print('Assignment failed; inspect result.json for safe diagnostics.')

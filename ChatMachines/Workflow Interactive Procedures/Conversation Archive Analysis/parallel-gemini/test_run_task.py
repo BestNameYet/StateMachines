@@ -19,20 +19,26 @@ class Tests(unittest.TestCase):
             (root / 'one').mkdir()
             (root / 'one' / 'a.txt').write_text('original source')
             (root / 'outside.txt').write_text('not assigned')
-            files = runner.collect(root, 'one', 1000)
+            files = runner.collect(root, 'one')
             self.assertEqual([f['path'] for f in files], ['one/a.txt'])
             self.assertEqual(len(files[0]['sha256']), 64)
             with self.assertRaises(ValueError):
-                runner.collect(root, '../escape', 1000)
-            with self.assertRaises(ValueError):
-                runner.collect(root, 'one', 1)
+                runner.collect(root, '../escape')
+
+    def test_accepts_text_file_above_former_default_limit(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            large = root / 'large.txt'
+            large.write_text('x' * 10_000_001)
+            files = runner.collect(root, 'large.txt')
+            self.assertEqual(len(files[0]['text']), 10_000_001)
 
     def test_image_mime_uses_content_signature_not_extension(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             misnamed = root / 'camera-export.PNG'
             misnamed.write_bytes(b'\xff\xd8\xff' + b'jpeg bytes with a misleading extension')
-            files = runner.collect(root, 'camera-export.PNG', 1000)
+            files = runner.collect(root, 'camera-export.PNG')
             self.assertEqual(files[0]['mime_type'], 'image/jpeg')
 
     def test_image_assignment_sends_multimodal_data_and_manifest_without_bytes(self):
@@ -73,7 +79,7 @@ class Tests(unittest.TestCase):
 
             out = root / 'out'
             result = runner.run(root, 'batch', 'Extract messages and authors', out,
-                                max_bytes=20, request_fn=model)
+                                request_fn=model)
             self.assertEqual(result['status'], 'completed')
             self.assertEqual(result['completed_files'], 2)
             self.assertEqual(seen, ['batch/one.png', 'batch/two.jpg'])
@@ -152,7 +158,7 @@ class Tests(unittest.TestCase):
                 return ('answer a' if 'source a' in prompt else 'answer b'), {'finishReason': 'STOP'}
 
             with ThreadPoolExecutor(max_workers=2) as pool:
-                futures = [pool.submit(runner.run, root, name, 'Analyze', root / ('out-' + name), 1000, model)
+                futures = [pool.submit(runner.run, root, name, 'Analyze', root / ('out-' + name), request_fn=model)
                            for name in ['a.txt', 'b.txt']]
                 self.assertTrue(all(f.result()['status'] == 'completed' for f in futures))
             self.assertEqual((root / 'out-a.txt' / 'response.txt').read_text(), 'answer a')
