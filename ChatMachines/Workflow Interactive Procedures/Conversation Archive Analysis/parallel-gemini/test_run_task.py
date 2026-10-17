@@ -55,6 +55,32 @@ class Tests(unittest.TestCase):
             self.assertIn('sha256', manifest)
             self.assertNotIn('inline_data', manifest)
 
+    def test_directory_batch_handles_images_individually_with_per_file_limit(self):
+        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {'GEMINI_API_KEY': 'test-key'}):
+            root = Path(temp)
+            batch = root / 'batch'
+            batch.mkdir()
+            (batch / 'one.png').write_bytes(b'\x89PNG\r\n\x1a\n' + b'one')
+            (batch / 'two.jpg').write_bytes(b'\xff\xd8\xff' + b'two')
+            seen = []
+
+            def model(prompt, key, model, images=None):
+                payload = json.loads(prompt[prompt.index('{'):])
+                image_path = payload['assigned_path']
+                self.assertEqual(len(images), 1)
+                seen.append(image_path)
+                return json.dumps({'image': image_path, 'messages': [],
+                                   'unreadable_regions': []}), {'finishReason': 'STOP'}
+
+            out = root / 'out'
+            result = runner.run(root, 'batch', 'Extract messages and authors', out,
+                                max_bytes=20, request_fn=model)
+            self.assertEqual(result['status'], 'completed')
+            self.assertEqual(result['completed_files'], 2)
+            self.assertEqual(seen, ['batch/one.png', 'batch/two.jpg'])
+            responses = json.loads((out / 'response.json').read_text())
+            self.assertEqual([item['image'] for item in responses], seen)
+
     def test_rejects_malformed_image_extraction_json(self):
         with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {'GEMINI_API_KEY': 'test-key'}):
             root = Path(temp)
