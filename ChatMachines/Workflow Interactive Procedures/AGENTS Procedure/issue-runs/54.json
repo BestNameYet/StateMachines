@@ -788,6 +788,44 @@
           "unassignedFallbackHandling": "When a passage does not clearly satisfy any defined candidate label in a given dimension, workers must assign 'unassigned_ambiguous' or 'insufficient_context' alongside an explicit citation and explanation. Arbitrary forcing of ambiguous text into defined categories is strictly prohibited."
         },
         "assignmentId": "task_gemini_candidate_label_discovery"
+      },
+      {
+        "name": "extractionSummary",
+        "value": "Processed 34 conversations across batches 00–03 into 39 independent root-to-leaf branch paths. Candidate counts: Atomic Exchange Unit: 114, Sliding Triad Window: 114, Macro Sub-Session (5-turn, exchange-preserving): 80. Full textual segments are stored once in the node table; passage references distinguish target and context. Shared-prefix targets must be deduplicated across branches. Model C follows the assignment’s five-turn boundary with whole-exchange preservation; oversized exchanges are retained intact and flagged.",
+        "assignmentId": "task_chatgpt_extract_sample_passages"
+      },
+      {
+        "name": "modelMetrics",
+        "value": [
+          {
+            "modelName": "Atomic Exchange Unit",
+            "extractedCount": 114,
+            "averageTurnCount": "2.640",
+            "branchCoverage": 39
+          },
+          {
+            "modelName": "Sliding Triad Window",
+            "extractedCount": 114,
+            "averageTurnCount": "6.211",
+            "branchCoverage": 39
+          },
+          {
+            "modelName": "Macro Sub-Session (5-turn, exchange-preserving)",
+            "extractedCount": 80,
+            "averageTurnCount": "3.763",
+            "branchCoverage": 39
+          }
+        ],
+        "assignmentId": "task_chatgpt_extract_sample_passages"
+      },
+      {
+        "name": "stagedFiles",
+        "value": [
+          "project/stage3-pilot/extracted-pilot-passages.json",
+          "project/stage3-pilot/extract-pilot-passages.py",
+          "project/stage3-pilot/sources.json"
+        ],
+        "assignmentId": "task_chatgpt_extract_sample_passages"
       }
     ],
     "controls": [
@@ -1752,6 +1790,10 @@
       {
         "assignmentId": "task_gemini_candidate_label_discovery",
         "nonce": "gemini_matrix_refiner_20261017"
+      },
+      {
+        "assignmentId": "task_chatgpt_extract_sample_passages",
+        "nonce": "chatgpt54_20261017_a7c9"
       }
     ],
     "workerResponses": {
@@ -2878,12 +2920,46 @@
             "unassignedFallbackHandling": "When a passage does not clearly satisfy any defined candidate label in a given dimension, workers must assign 'unassigned_ambiguous' or 'insufficient_context' alongside an explicit citation and explanation. Arbitrary forcing of ambiguous text into defined categories is strictly prohibited."
           }
         }
+      },
+      {
+        "render": 3,
+        "assignmentId": "task_chatgpt_extract_sample_passages",
+        "nonce": "chatgpt54_20261017_a7c9",
+        "worker": "chatgpt",
+        "values": {
+          "extractionSummary": "Processed 34 conversations across batches 00–03 into 39 independent root-to-leaf branch paths. Candidate counts: Atomic Exchange Unit: 114, Sliding Triad Window: 114, Macro Sub-Session (5-turn, exchange-preserving): 80. Full textual segments are stored once in the node table; passage references distinguish target and context. Shared-prefix targets must be deduplicated across branches. Model C follows the assignment’s five-turn boundary with whole-exchange preservation; oversized exchanges are retained intact and flagged.",
+          "modelMetrics": [
+            {
+              "modelName": "Atomic Exchange Unit",
+              "extractedCount": 114,
+              "averageTurnCount": "2.640",
+              "branchCoverage": 39
+            },
+            {
+              "modelName": "Sliding Triad Window",
+              "extractedCount": 114,
+              "averageTurnCount": "6.211",
+              "branchCoverage": 39
+            },
+            {
+              "modelName": "Macro Sub-Session (5-turn, exchange-preserving)",
+              "extractedCount": 80,
+              "averageTurnCount": "3.763",
+              "branchCoverage": 39
+            }
+          ],
+          "stagedFiles": [
+            "project/stage3-pilot/extracted-pilot-passages.json",
+            "project/stage3-pilot/extract-pilot-passages.py",
+            "project/stage3-pilot/sources.json"
+          ]
+        }
       }
     ]
   },
   "done": false,
-  "request": 4,
-  "lastCommentId": 6238922706,
+  "request": 5,
+  "lastCommentId": 6239603604,
   "newFiles": [],
   "history": [
     {
@@ -3739,6 +3815,39 @@
           "unassignedFallbackHandling": "When a passage does not clearly satisfy any defined candidate label in a given dimension, workers must assign 'unassigned_ambiguous' or 'insufficient_context' alongside an explicit citation and explanation. Arbitrary forcing of ambiguous text into defined categories is strictly prohibited."
         }
       }
+    },
+    {
+      "request": 4,
+      "render": 3,
+      "assignmentId": "task_chatgpt_extract_sample_passages",
+      "values": {
+        "extractionSummary": "Processed 34 conversations across batches 00–03 into 39 independent root-to-leaf branch paths. Candidate counts: Atomic Exchange Unit: 114, Sliding Triad Window: 114, Macro Sub-Session (5-turn, exchange-preserving): 80. Full textual segments are stored once in the node table; passage references distinguish target and context. Shared-prefix targets must be deduplicated across branches. Model C follows the assignment’s five-turn boundary with whole-exchange preservation; oversized exchanges are retained intact and flagged.",
+        "modelMetrics": [
+          {
+            "modelName": "Atomic Exchange Unit",
+            "extractedCount": 114,
+            "averageTurnCount": "2.640",
+            "branchCoverage": 39
+          },
+          {
+            "modelName": "Sliding Triad Window",
+            "extractedCount": 114,
+            "averageTurnCount": "6.211",
+            "branchCoverage": 39
+          },
+          {
+            "modelName": "Macro Sub-Session (5-turn, exchange-preserving)",
+            "extractedCount": 80,
+            "averageTurnCount": "3.763",
+            "branchCoverage": 39
+          }
+        ],
+        "stagedFiles": [
+          "project/stage3-pilot/extracted-pilot-passages.json",
+          "project/stage3-pilot/extract-pilot-passages.py",
+          "project/stage3-pilot/sources.json"
+        ]
+      }
     }
   ],
   "toolInvocations": [],
@@ -3755,7 +3864,7 @@
   },
   "view": "instruction",
   "geminiStarted": true,
-  "geminiPending": false,
+  "geminiPending": true,
   "geminiAssessmentRequest": 4,
   "workerContextLedger": {
     "gemini_passage_boundary_99b1": {
