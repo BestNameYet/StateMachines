@@ -27,6 +27,30 @@ Only the region between the index markers below is generated; other README conte
 
 <!-- repository-readmes:start -->
 
-The workflow will populate this index on its first run.
+| README |
+| --- |
+| [ChatMachines/AudioClipSelector/README.md](./ChatMachines/AudioClipSelector/README.md) |
+| [ChatMachines/AudioEmotionAnalysis/README.md](./ChatMachines/AudioEmotionAnalysis/README.md) |
+| [ChatMachines/GeminiEvaluation/README.md](./ChatMachines/GeminiEvaluation/README.md) |
+| [ChatMachines/GeminiSupervisor/README.md](./ChatMachines/GeminiSupervisor/README.md) |
+| [ChatMachines/GeminiSupervisor/stable-readers/README.reader.json](./ChatMachines/GeminiSupervisor/stable-readers/README.reader.json) |
+| [ChatMachines/GeminiTokenCountCalibration/README.md](./ChatMachines/GeminiTokenCountCalibration/README.md) |
+| [ChatMachines/Main Instructions/AGENTS Design/README.md](./ChatMachines/Main%20Instructions/AGENTS%20Design/README.md) |
+| [ChatMachines/SeleniumServer/README.md](./ChatMachines/SeleniumServer/README.md) |
+| [ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/README.md) |
+| [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/README.md) |
+| [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/bertopic/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/bertopic/README.md) |
+| [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/conversation-classifier-12/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/conversation-classifier-12/README.md) |
+| [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/key-extraction/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/key-extraction/README.md) |
+| [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/tfidf-nmf/README.md) |
+| [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-clustering/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/topic-clustering/README.md) |
+| [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-distribution/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/topic-distribution/README.md) |
+| [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-merge/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/topic-merge/README.md) |
+| [SBE/README.md](./SBE/README.md) |
+| [matching/README.md](./matching/README.md) |
+| [matching/README_BUILD.md](./matching/README_BUILD.md) |
+| [metaprocedures/procedures/AchiveExtraction/README.md](./metaprocedures/procedures/AchiveExtraction/README.md) |
+| [untrusted AI/README.md](./untrusted%20AI/README.md) |
+| [untrusted AI/meta-procedure/AIChannel/README.md](./untrusted%20AI/meta-procedure/AIChannel/README.md) |
 
 <!-- repository-readmes:end -->
