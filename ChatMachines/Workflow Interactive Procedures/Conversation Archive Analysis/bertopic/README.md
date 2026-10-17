@@ -21,6 +21,23 @@ python -m unittest discover -s "ChatMachines/Workflow Interactive Procedures/Con
 
 The pinned BERTopic release is 0.17.4. The default embedding backend uses Sentence Transformers and downloads `sentence-transformers/all-MiniLM-L6-v2` the first time it runs.
 
+## Extract branch dialogues
+
+Run [Extract branch dialogues](../../../../../.github/workflows/extract-conversation-dialogues.yml) manually from Actions and supply a repository-relative batch JSON path. The workflow runs `extract-dialogues.mjs` on Node 22 and uploads one `.txt` file for each non-empty root-to-leaf branch.
+
+The transcript file body contains only `user:` and `assistant:` turns. It follows parent links, repeats shared context in each alternative branch, omits null nodes and other roles, and keeps the order of messages on each path. It does not force alternation when the source contains consecutive messages from the same role. Conversation IDs and branch numbers appear only in filenames.
+
+Run the formatter locally:
+
+```bash
+node "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/bertopic/extract-dialogues.mjs" --test
+node "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/bertopic/extract-dialogues.mjs" \
+  --input "path/to/batch.json" \
+  --output path/to/new-or-empty-dialogues-directory
+```
+
+The output directory must be new or empty. Dialogue text is not committed by the workflow; it is available as the `conversation-dialogues` Actions artifact for 30 days.
+
 ## Fit a model
 
 Prepare a JSONL file with at least two documents and run:
