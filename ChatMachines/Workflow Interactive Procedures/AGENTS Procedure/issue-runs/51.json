@@ -1,6 +1,6 @@
 {
   "state": {
-    "render": 13,
+    "render": 14,
     "verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data.",
     "userIntent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax. Define a machine-readable way to extract integrations whose operations create, mutate, or delete data; distinguish these from reads and conditional commands. The extracted create, mutate, and delete operations must be mandatory entries in the change list, with their targets and evidence recorded.",
     "exampleMatch": false,
@@ -44,195 +44,44 @@
       9
     ],
     "expectedInputs": {
-      "request": 9,
-      "render": 13,
+      "request": 10,
+      "render": 14,
       "inputs": [
         {
-          "name": "toolInvocations",
+          "name": "changeList",
           "schema": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "cwd": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "command_line_verbatim": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "tool": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "invocation_verbatim": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "final_output_after_completion_of_tool_call": {},
-                "unavailable_reason": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "new": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
                 "filename": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "string",
+                  "format": "file-reference"
                 },
                 "frombyte": {
-                  "anyOf": [
-                    {
-                      "type": "integer"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "integer"
                 },
                 "tobyte": {
-                  "anyOf": [
-                    {
-                      "type": "integer"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "integer"
                 },
                 "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "string"
                 },
                 "intent": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "string"
                 },
                 "operator": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "outcome": {
-                  "anyOf": [
-                    {
-                      "const": "succeeded"
-                    },
-                    {
-                      "const": "failed"
-                    },
-                    {
-                      "const": "blocked"
-                    },
-                    {
-                      "const": "unfinished"
-                    },
-                    {
-                      "const": "unknown"
-                    }
-                  ]
-                },
-                "specifiedOperatorByUser": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "chosenOperator": {
-                  "type": "string"
-                },
-                "http_method": {
-                  "type": "string"
-                },
-                "url": {
                   "type": "string"
                 }
               },
               "required": [
-                "cwd",
-                "command_line_verbatim",
-                "tool",
-                "invocation_verbatim",
-                "final_output_after_completion_of_tool_call",
-                "unavailable_reason",
-                "new",
                 "filename",
                 "frombyte",
                 "tobyte",
                 "description",
                 "intent",
-                "operator",
-                "specifiedOperatorByUser",
-                "chosenOperator",
-                "outcome"
-              ],
-              "toolInvocation": true
+                "operator"
+              ]
             }
           }
         }
@@ -240,7 +89,7 @@
     }
   },
   "done": false,
-  "request": 9,
+  "request": 10,
   "lastCommentId": 6228998577,
   "newFiles": [
     "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json"
@@ -778,8 +627,342 @@
           ]
         }
       }
+    },
+    {
+      "request": 9,
+      "render": 13,
+      "loopNumber": null,
+      "values": {
+        "$toolInvocations": [
+          {
+            "cwd": "/workspace/scratch/da1d0dca8a28",
+            "command_line_verbatim": null,
+            "tool": "functions.exec",
+            "invocation_verbatim": "const repo=\"BestNameYet/StateMachines\";\nconst listing=await tools.mcp__codex_apps__github_fetch({url:\"https://api.github.com/repos/BestNameYet/StateMachines/contents/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/issue-runs?ref=main\"});\nconst files=JSON.parse(listing.structuredContent.content).filter(x=>/^\\d+\\.json$/.test(x.name));\nconst fetched=await Promise.all(files.map(f=>tools.mcp__codex_apps__github_fetch_file({repository_full_name:repo,path:f.path,ref:\"main\"})));\nconst counts={}, issueCounts={}, errors=[]; let total=0;\nfor(let i=0;i<fetched.length;i++){try{const j=JSON.parse(fetched[i].structuredContent.content);const a=Array.isArray(j.toolInvocations)?j.toolInvocations:[];if(a.length)issueCounts[files[i].name]=a.length;for(const x of a){total++;const t=x.tool||\"(missing tool)\";counts[t]=(counts[t]||0)+1;}}catch(e){errors.push({file:files[i].name,error:String(e)});}}\ntext(JSON.stringify({fileCount:files.length,fetchCount:fetched.length,parseErrors:errors,total,issuesWithInvocations:issueCounts,toolCounts:counts}));",
+            "final_output_after_completion_of_tool_call": "{\"fileCount\":44,\"fetchCount\":44,\"parseErrors\":[],\"total\":74,\"issuesWithInvocations\":{\"13.json\":8,\"14.json\":3,\"18.json\":17,\"20.json\":6,\"21.json\":6,\"22.json\":1,\"24.json\":1,\"31.json\":8,\"32.json\":1,\"37.json\":8,\"42.json\":2,\"43.json\":2,\"45.json\":6,\"46.json\":5},\"toolCounts\":{\"mcp__codex_apps__github_create_file\":15,\"mcp__codex_apps__github_update_file\":17,\"tools.exec_command\":2,\"exec_command\":6,\"mcp__codex_apps__github_create_blob\":12,\"mcp__codex_apps__github_create_tree\":1,\"mcp__codex_apps__github_create_commit\":1,\"mcp__codex_apps__github_update_ref\":1,\"mcp__codex_apps__github_fetch\":2,\"mcp__codex_apps__github_fetch_file\":14,\"mcp__codex_apps__library_create_library_file\":2,\"functions.exec_command\":1}}",
+            "unavailable_reason": null,
+            "new": false,
+            "filename": null,
+            "frombyte": null,
+            "tobyte": null,
+            "description": "Read 44 numeric issue-run JSON files on main, parse toolInvocations arrays, and aggregate invocation totals by issue and tool identifier; no repository data was changed.",
+            "intent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax, then distinguish data creation, mutation, and deletion from reads or conditional commands.",
+            "operator": "inspect",
+            "specifiedOperatorByUser": null,
+            "chosenOperator": "inspect",
+            "outcome": "succeeded"
+          },
+          {
+            "cwd": "/workspace/scratch/da1d0dca8a28",
+            "command_line_verbatim": null,
+            "tool": "mcp__codex_apps__github_create_file",
+            "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json\",\"branch\":\"main\",\"message\":\"Add tool invocation syntax and mutation classification\",\"content\":\"{\\n  \\\"schemaVersion\\\": \\\"1.0.0\\\",\\n  \\\"title\\\": \\\"Tool invocation syntax and data change classification\\\",\\n  \\\"purpose\\\": \\\"Machine-readable rules for identifying integrations and operations in toolInvocations arrays, extracting create/mutate/delete operations, and making every such operation mandatory in the change list.\\\",\\n  \\\"sourceSample\\\": {\\n    \\\"repository\\\": \\\"BestNameYet/StateMachines\\\",\\n    \\\"branch\\\": \\\"main\\\",\\n    \\\"directory\\\": \\\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/\\\",\\n    \\\"numericRunFilesRead\\\": 44,\\n    \\\"filesWithInvocations\\\": 14,\\n    \\\"invocationRecords\\\": 74,\\n    \\\"distinctToolIdentifiers\\\": 12,\\n    \\\"parseErrors\\\": 0\\n  },\\n  \\\"effectClasses\\\": [\\n    {\\n      \\\"effect\\\": \\\"read\\\",\\n      \\\"dataChange\\\": false,\\n      \\\"changeListRequired\\\": false\\n    },\\n    {\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"dataChange\\\": true,\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"effect\\\": \\\"mutate\\\",\\n      \\\"dataChange\\\": true,\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"effect\\\": \\\"delete\\\",\\n      \\\"dataChange\\\": true,\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"effect\\\": \\\"conditional\\\",\\n      \\\"dataChange\\\": \\\"inspect exact arguments and command\\\",\\n      \\\"changeListRequired\\\": \\\"required if the actual operation creates, mutates, or deletes data\\\"\\n    },\\n    {\\n      \\\"effect\\\": \\\"unknown\\\",\\n      \\\"dataChange\\\": \\\"unresolved\\\",\\n      \\\"changeListRequired\\\": \\\"resolve before finalizing\\\"\\n    }\\n  ],\\n  \\\"arrayEntrySyntax\\\": {\\n    \\\"container\\\": \\\"JSON array at toolInvocations.\\\",\\n    \\\"requiredEntryFields\\\": [\\n      \\\"cwd\\\",\\n      \\\"command_line_verbatim\\\",\\n      \\\"tool\\\",\\n      \\\"invocation_verbatim\\\",\\n      \\\"final_output_after_completion_of_tool_call\\\",\\n      \\\"unavailable_reason\\\",\\n      \\\"new\\\",\\n      \\\"filename\\\",\\n      \\\"frombyte\\\",\\n      \\\"tobyte\\\",\\n      \\\"description\\\",\\n      \\\"intent\\\",\\n      \\\"operator\\\",\\n      \\\"specifiedOperatorByUser\\\",\\n      \\\"chosenOperator\\\",\\n      \\\"outcome\\\"\\n    ],\\n    \\\"webToolAdditionalFields\\\": [\\n      \\\"http_method\\\",\\n      \\\"url\\\"\\n    ],\\n    \\\"interpretation\\\": {\\n      \\\"tool\\\": \\\"Exact integration/command-wrapper identifier.\\\",\\n      \\\"invocation_verbatim\\\": \\\"Exact arguments or command as text; parse as JSON when valid JSON, otherwise inspect as command text.\\\",\\n      \\\"final_output_after_completion_of_tool_call\\\": \\\"Returned output used to distinguish attempt from verified result.\\\",\\n      \\\"outcome\\\": \\\"Observed outcome: succeeded, failed, blocked, unfinished, or unknown.\\\",\\n      \\\"target\\\": \\\"Resolve from invocation arguments and corroborate with returned output.\\\"\\n    },\\n    \\\"preserveUnknownFields\\\": true\\n  },\\n  \\\"normalizedExtractionRecord\\\": {\\n    \\\"required\\\": [\\n      \\\"sourceInvocationIndex\\\",\\n      \\\"tool\\\",\\n      \\\"operation\\\",\\n      \\\"effect\\\",\\n      \\\"target\\\",\\n      \\\"outcome\\\",\\n      \\\"evidence\\\",\\n      \\\"changeListRequired\\\"\\n    ],\\n    \\\"fields\\\": {\\n      \\\"sourceInvocationIndex\\\": \\\"Zero-based index in the source array.\\\",\\n      \\\"tool\\\": \\\"Exact original tool value.\\\",\\n      \\\"operation\\\": \\\"Specific action inferred from arguments/command.\\\",\\n      \\\"effect\\\": \\\"One of read/create/mutate/delete/conditional/unknown.\\\",\\n      \\\"target\\\": \\\"Repository path, URL, branch/ref, Library object, or other affected target; null with a reason if unresolved.\\\",\\n      \\\"outcome\\\": \\\"Original observed outcome.\\\",\\n      \\\"evidence\\\": \\\"Source fields and returned output supporting the classification.\\\",\\n      \\\"changeListRequired\\\": \\\"True for every create/mutate/delete invocation.\\\"\\n    }\\n  },\\n  \\\"extractionRules\\\": [\\n    \\\"Iterate every array entry and retain its original index.\\\",\\n    \\\"Match tool by exact identifier against observedToolCatalog.\\\",\\n    \\\"Inspect invocation_verbatim and command_line_verbatim; a wrapper name alone does not determine the effect.\\\",\\n    \\\"Classify the specific operation and target. Keep effect separate from outcome.\\\",\\n    \\\"Every create, mutate, or delete operation must have a corresponding change-list entry. Account for each effectful invocation; if grouped, cite every sourceInvocationIndex.\\\",\\n    \\\"Include failed create/mutate/delete attempts in the change list with the failure and whether persistence was verified, so attempted mutations are not silently omitted.\\\",\\n    \\\"Keep read-only calls out of the data-change list.\\\",\\n    \\\"Resolve conditional and unknown operations from their exact arguments and outputs before final reconciliation.\\\",\\n    \\\"A successful tool response proves only what it explicitly reports; verify persistence with the system that owns the target.\\\"\\n  ],\\n  \\\"changeListContract\\\": {\\n    \\\"mandatoryEffects\\\": [\\n      \\\"create\\\",\\n      \\\"mutate\\\",\\n      \\\"delete\\\"\\n    ],\\n    \\\"recordShape\\\": {\\n      \\\"filename\\\": \\\"<repository-relative filename or service target>\\\",\\n      \\\"frombyte\\\": \\\"<integer or null when byte ranges do not apply>\\\",\\n      \\\"tobyte\\\": \\\"<integer or null when byte ranges do not apply>\\\",\\n      \\\"description\\\": \\\"Include operation, effect, outcome, and source invocation index.\\\",\\n      \\\"intent\\\": \\\"Associated user intent.\\\",\\n      \\\"operator\\\": \\\"Operator used.\\\"\\n    },\\n    \\\"failedAttempt\\\": \\\"Record the attempted effect and failure; state that no persisted change was verified if applicable.\\\",\\n    \\\"noObservedDelete\\\": \\\"No delete-specific integration was observed in this sample. Future delete operations remain mandatory.\\\"\\n  },\\n  \\\"observedToolCatalog\\\": [\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_create_file\\\",\\n      \\\"count\\\": 15,\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"targetKind\\\": \\\"GitHub repository file and commit\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Creates a new repository path through the contents API.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_update_file\\\",\\n      \\\"count\\\": 17,\\n      \\\"effect\\\": \\\"mutate\\\",\\n      \\\"targetKind\\\": \\\"GitHub repository file\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Changes file contents; inspect prior path state because contents APIs can have create-or-update semantics.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_update_ref\\\",\\n      \\\"count\\\": 1,\\n      \\\"effect\\\": \\\"mutate\\\",\\n      \\\"targetKind\\\": \\\"Git branch/tag ref\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Moves a reference to a commit.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_create_blob\\\",\\n      \\\"count\\\": 12,\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"targetKind\\\": \\\"Git blob object\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Creates a Git object; by itself it does not move a branch ref.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_create_tree\\\",\\n      \\\"count\\\": 1,\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"targetKind\\\": \\\"Git tree object\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Creates a Git object; by itself it does not move a branch ref.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_create_commit\\\",\\n      \\\"count\\\": 1,\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"targetKind\\\": \\\"Git commit object\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Creates a commit object; branch visibility also requires an appropriate ref update.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__library_create_library_file\\\",\\n      \\\"count\\\": 2,\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"targetKind\\\": \\\"ChatGPT Library file\\\",\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_fetch\\\",\\n      \\\"count\\\": 2,\\n      \\\"effect\\\": \\\"read\\\",\\n      \\\"targetKind\\\": \\\"GitHub repository resource\\\",\\n      \\\"changeListRequired\\\": false\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_fetch_file\\\",\\n      \\\"count\\\": 14,\\n      \\\"effect\\\": \\\"read\\\",\\n      \\\"targetKind\\\": \\\"GitHub file\\\",\\n      \\\"changeListRequired\\\": false\\n    },\\n    {\\n      \\\"tool\\\": \\\"exec_command\\\",\\n      \\\"count\\\": 6,\\n      \\\"effect\\\": \\\"conditional\\\",\\n      \\\"targetKind\\\": \\\"Depends on command\\\",\\n      \\\"changeListRequired\\\": \\\"if command creates, mutates, or deletes data\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"tools.exec_command\\\",\\n      \\\"count\\\": 2,\\n      \\\"effect\\\": \\\"conditional\\\",\\n      \\\"targetKind\\\": \\\"Depends on command\\\",\\n      \\\"changeListRequired\\\": \\\"if command creates, mutates, or deletes data\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"functions.exec_command\\\",\\n      \\\"count\\\": 1,\\n      \\\"effect\\\": \\\"conditional\\\",\\n      \\\"targetKind\\\": \\\"Depends on command\\\",\\n      \\\"changeListRequired\\\": \\\"if command creates, mutates, or deletes data\\\"\\n    }\\n  ],\\n  \\\"illustrativeExamples\\\": [\\n    {\\n      \\\"illustrative\\\": true,\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_fetch_file\\\",\\n      \\\"operation\\\": \\\"fetch\\\",\\n      \\\"effect\\\": \\\"read\\\",\\n      \\\"target\\\": \\\"path from invocation\\\",\\n      \\\"changeListRequired\\\": false\\n    },\\n    {\\n      \\\"illustrative\\\": true,\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_create_file\\\",\\n      \\\"operation\\\": \\\"create_file\\\",\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"target\\\": \\\"path from invocation\\\",\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"illustrative\\\": true,\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_update_file\\\",\\n      \\\"operation\\\": \\\"update_file\\\",\\n      \\\"effect\\\": \\\"mutate\\\",\\n      \\\"target\\\": \\\"path from invocation\\\",\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"illustrative\\\": true,\\n      \\\"tool\\\": \\\"<tool or command>\\\",\\n      \\\"operation\\\": \\\"verified delete operation\\\",\\n      \\\"effect\\\": \\\"delete\\\",\\n      \\\"target\\\": \\\"target from invocation\\\",\\n      \\\"changeListRequired\\\": true\\n    }\\n  ],\\n  \\\"limitations\\\": [\\n    \\\"This catalog describes observed tools, not every capability each integration supports.\\\",\\n    \\\"Invocation arguments determine the operation and target; a tool name by itself may be insufficient.\\\",\\n    \\\"Git object creation and branch-ref mutation are distinct persistence boundaries.\\\",\\n    \\\"No delete tool was observed in this sample; the delete class is defined for future arrays.\\\"\\n  ]\\n}\\n\"}",
+            "final_output_after_completion_of_tool_call": "{\"result\":\"Action completed.\",\"commit\":\"d9e8a7f171634f9372edcd35442549cf38bea0fc\",\"error\":false}",
+            "unavailable_reason": null,
+            "new": true,
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+            "frombyte": 0,
+            "tobyte": 9342,
+            "description": "Created the tool invocation syntax and data change classification JSON on main; commit d9e8a7f171634f9372edcd35442549cf38bea0fc.",
+            "intent": "Create a machine-readable syntax and classification guide for toolInvocations arrays, including extraction of create, mutate, and delete operations and making each mandatory in the change list.",
+            "operator": "create",
+            "specifiedOperatorByUser": null,
+            "chosenOperator": "create",
+            "outcome": "succeeded"
+          }
+        ]
+      },
+      "state": {
+        "render": 14,
+        "verbatimUserPrompt": "All right, that's fine. Here's what I want to do. So you're going to create something for the syntax, right? So basically what I want to do is be able to say this is the syntax of a particular tool invocation, right? So we can say something about it. So we can say this is a read, this applies this tool, this applies this tool, this applies this tool, right? We can say something about it, right? That's what we want to get. So basically we need what someone would do to basically know what the syntax of something else is, right? That's what we're going to do. And we're going to essentially look at the— we're going to extract the tool invocation arrays, right? And we're going to basically break them down so we can find out what tools are being used. And then we're specifically looking for tools that either create or mutate some type of data, right? And what essentially we want to do, we want to find all the tools that we're using, just use that as a sample, and then say what tools do we want to claim that mutate data.",
+        "userIntent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax. Define a machine-readable way to extract integrations whose operations create, mutate, or delete data; distinguish these from reads and conditional commands. The extracted create, mutate, and delete operations must be mandatory entries in the change list, with their targets and evidence recorded.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+            "newFile": true
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+            "frombyte": 0,
+            "tobyte": 12000,
+            "description": "Create a machine-readable JSON format and observed-tool catalog for parsing toolInvocations arrays. It must identify each integration and operation, classify effects as read/create/mutate/delete/conditional/unknown, retain target and evidence, and define extraction rules that make every create, mutate, or delete operation a mandatory change-list entry.",
+            "intent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax. Define a machine-readable way to extract integrations whose operations create, mutate, or delete data; distinguish these from reads and conditional commands. The extracted create, mutate, and delete operations must be mandatory entries in the change list, with their targets and evidence recorded.",
+            "operator": "create"
+          }
+        ],
+        "matchedExample": {
+          "example": 4,
+          "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+        },
+        "mode": "fidelity",
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null,
+        "renderedRequests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "expectedInputs": {
+          "request": 9,
+          "render": 13,
+          "inputs": [
+            {
+              "name": "toolInvocations",
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "cwd": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "command_line_verbatim": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tool": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "invocation_verbatim": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "final_output_after_completion_of_tool_call": {},
+                    "unavailable_reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "new": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "filename": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "frombyte": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tobyte": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "intent": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "operator": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "const": "succeeded"
+                        },
+                        {
+                          "const": "failed"
+                        },
+                        {
+                          "const": "blocked"
+                        },
+                        {
+                          "const": "unfinished"
+                        },
+                        {
+                          "const": "unknown"
+                        }
+                      ]
+                    },
+                    "specifiedOperatorByUser": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "chosenOperator": {
+                      "type": "string"
+                    },
+                    "http_method": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cwd",
+                    "command_line_verbatim",
+                    "tool",
+                    "invocation_verbatim",
+                    "final_output_after_completion_of_tool_call",
+                    "unavailable_reason",
+                    "new",
+                    "filename",
+                    "frombyte",
+                    "tobyte",
+                    "description",
+                    "intent",
+                    "operator",
+                    "specifiedOperatorByUser",
+                    "chosenOperator",
+                    "outcome"
+                  ],
+                  "toolInvocation": true
+                }
+              }
+            }
+          ]
+        }
+      }
     }
   ],
-  "toolInvocations": [],
-  "triggerIdentifier": "toolInvocationSyntax202610162013"
+  "toolInvocations": [
+    {
+      "cwd": "/workspace/scratch/da1d0dca8a28",
+      "command_line_verbatim": null,
+      "tool": "functions.exec",
+      "invocation_verbatim": "const repo=\"BestNameYet/StateMachines\";\nconst listing=await tools.mcp__codex_apps__github_fetch({url:\"https://api.github.com/repos/BestNameYet/StateMachines/contents/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/issue-runs?ref=main\"});\nconst files=JSON.parse(listing.structuredContent.content).filter(x=>/^\\d+\\.json$/.test(x.name));\nconst fetched=await Promise.all(files.map(f=>tools.mcp__codex_apps__github_fetch_file({repository_full_name:repo,path:f.path,ref:\"main\"})));\nconst counts={}, issueCounts={}, errors=[]; let total=0;\nfor(let i=0;i<fetched.length;i++){try{const j=JSON.parse(fetched[i].structuredContent.content);const a=Array.isArray(j.toolInvocations)?j.toolInvocations:[];if(a.length)issueCounts[files[i].name]=a.length;for(const x of a){total++;const t=x.tool||\"(missing tool)\";counts[t]=(counts[t]||0)+1;}}catch(e){errors.push({file:files[i].name,error:String(e)});}}\ntext(JSON.stringify({fileCount:files.length,fetchCount:fetched.length,parseErrors:errors,total,issuesWithInvocations:issueCounts,toolCounts:counts}));",
+      "final_output_after_completion_of_tool_call": "{\"fileCount\":44,\"fetchCount\":44,\"parseErrors\":[],\"total\":74,\"issuesWithInvocations\":{\"13.json\":8,\"14.json\":3,\"18.json\":17,\"20.json\":6,\"21.json\":6,\"22.json\":1,\"24.json\":1,\"31.json\":8,\"32.json\":1,\"37.json\":8,\"42.json\":2,\"43.json\":2,\"45.json\":6,\"46.json\":5},\"toolCounts\":{\"mcp__codex_apps__github_create_file\":15,\"mcp__codex_apps__github_update_file\":17,\"tools.exec_command\":2,\"exec_command\":6,\"mcp__codex_apps__github_create_blob\":12,\"mcp__codex_apps__github_create_tree\":1,\"mcp__codex_apps__github_create_commit\":1,\"mcp__codex_apps__github_update_ref\":1,\"mcp__codex_apps__github_fetch\":2,\"mcp__codex_apps__github_fetch_file\":14,\"mcp__codex_apps__library_create_library_file\":2,\"functions.exec_command\":1}}",
+      "unavailable_reason": null,
+      "new": false,
+      "filename": null,
+      "frombyte": null,
+      "tobyte": null,
+      "description": "Read 44 numeric issue-run JSON files on main, parse toolInvocations arrays, and aggregate invocation totals by issue and tool identifier; no repository data was changed.",
+      "intent": "Analyze existing AGENTS Procedure issue-run records and toolInvocations arrays to identify observed tools and invocation syntax, then distinguish data creation, mutation, and deletion from reads or conditional commands.",
+      "operator": "inspect",
+      "specifiedOperatorByUser": null,
+      "chosenOperator": "inspect",
+      "outcome": "succeeded"
+    },
+    {
+      "cwd": "/workspace/scratch/da1d0dca8a28",
+      "command_line_verbatim": null,
+      "tool": "mcp__codex_apps__github_create_file",
+      "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json\",\"branch\":\"main\",\"message\":\"Add tool invocation syntax and mutation classification\",\"content\":\"{\\n  \\\"schemaVersion\\\": \\\"1.0.0\\\",\\n  \\\"title\\\": \\\"Tool invocation syntax and data change classification\\\",\\n  \\\"purpose\\\": \\\"Machine-readable rules for identifying integrations and operations in toolInvocations arrays, extracting create/mutate/delete operations, and making every such operation mandatory in the change list.\\\",\\n  \\\"sourceSample\\\": {\\n    \\\"repository\\\": \\\"BestNameYet/StateMachines\\\",\\n    \\\"branch\\\": \\\"main\\\",\\n    \\\"directory\\\": \\\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/\\\",\\n    \\\"numericRunFilesRead\\\": 44,\\n    \\\"filesWithInvocations\\\": 14,\\n    \\\"invocationRecords\\\": 74,\\n    \\\"distinctToolIdentifiers\\\": 12,\\n    \\\"parseErrors\\\": 0\\n  },\\n  \\\"effectClasses\\\": [\\n    {\\n      \\\"effect\\\": \\\"read\\\",\\n      \\\"dataChange\\\": false,\\n      \\\"changeListRequired\\\": false\\n    },\\n    {\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"dataChange\\\": true,\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"effect\\\": \\\"mutate\\\",\\n      \\\"dataChange\\\": true,\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"effect\\\": \\\"delete\\\",\\n      \\\"dataChange\\\": true,\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"effect\\\": \\\"conditional\\\",\\n      \\\"dataChange\\\": \\\"inspect exact arguments and command\\\",\\n      \\\"changeListRequired\\\": \\\"required if the actual operation creates, mutates, or deletes data\\\"\\n    },\\n    {\\n      \\\"effect\\\": \\\"unknown\\\",\\n      \\\"dataChange\\\": \\\"unresolved\\\",\\n      \\\"changeListRequired\\\": \\\"resolve before finalizing\\\"\\n    }\\n  ],\\n  \\\"arrayEntrySyntax\\\": {\\n    \\\"container\\\": \\\"JSON array at toolInvocations.\\\",\\n    \\\"requiredEntryFields\\\": [\\n      \\\"cwd\\\",\\n      \\\"command_line_verbatim\\\",\\n      \\\"tool\\\",\\n      \\\"invocation_verbatim\\\",\\n      \\\"final_output_after_completion_of_tool_call\\\",\\n      \\\"unavailable_reason\\\",\\n      \\\"new\\\",\\n      \\\"filename\\\",\\n      \\\"frombyte\\\",\\n      \\\"tobyte\\\",\\n      \\\"description\\\",\\n      \\\"intent\\\",\\n      \\\"operator\\\",\\n      \\\"specifiedOperatorByUser\\\",\\n      \\\"chosenOperator\\\",\\n      \\\"outcome\\\"\\n    ],\\n    \\\"webToolAdditionalFields\\\": [\\n      \\\"http_method\\\",\\n      \\\"url\\\"\\n    ],\\n    \\\"interpretation\\\": {\\n      \\\"tool\\\": \\\"Exact integration/command-wrapper identifier.\\\",\\n      \\\"invocation_verbatim\\\": \\\"Exact arguments or command as text; parse as JSON when valid JSON, otherwise inspect as command text.\\\",\\n      \\\"final_output_after_completion_of_tool_call\\\": \\\"Returned output used to distinguish attempt from verified result.\\\",\\n      \\\"outcome\\\": \\\"Observed outcome: succeeded, failed, blocked, unfinished, or unknown.\\\",\\n      \\\"target\\\": \\\"Resolve from invocation arguments and corroborate with returned output.\\\"\\n    },\\n    \\\"preserveUnknownFields\\\": true\\n  },\\n  \\\"normalizedExtractionRecord\\\": {\\n    \\\"required\\\": [\\n      \\\"sourceInvocationIndex\\\",\\n      \\\"tool\\\",\\n      \\\"operation\\\",\\n      \\\"effect\\\",\\n      \\\"target\\\",\\n      \\\"outcome\\\",\\n      \\\"evidence\\\",\\n      \\\"changeListRequired\\\"\\n    ],\\n    \\\"fields\\\": {\\n      \\\"sourceInvocationIndex\\\": \\\"Zero-based index in the source array.\\\",\\n      \\\"tool\\\": \\\"Exact original tool value.\\\",\\n      \\\"operation\\\": \\\"Specific action inferred from arguments/command.\\\",\\n      \\\"effect\\\": \\\"One of read/create/mutate/delete/conditional/unknown.\\\",\\n      \\\"target\\\": \\\"Repository path, URL, branch/ref, Library object, or other affected target; null with a reason if unresolved.\\\",\\n      \\\"outcome\\\": \\\"Original observed outcome.\\\",\\n      \\\"evidence\\\": \\\"Source fields and returned output supporting the classification.\\\",\\n      \\\"changeListRequired\\\": \\\"True for every create/mutate/delete invocation.\\\"\\n    }\\n  },\\n  \\\"extractionRules\\\": [\\n    \\\"Iterate every array entry and retain its original index.\\\",\\n    \\\"Match tool by exact identifier against observedToolCatalog.\\\",\\n    \\\"Inspect invocation_verbatim and command_line_verbatim; a wrapper name alone does not determine the effect.\\\",\\n    \\\"Classify the specific operation and target. Keep effect separate from outcome.\\\",\\n    \\\"Every create, mutate, or delete operation must have a corresponding change-list entry. Account for each effectful invocation; if grouped, cite every sourceInvocationIndex.\\\",\\n    \\\"Include failed create/mutate/delete attempts in the change list with the failure and whether persistence was verified, so attempted mutations are not silently omitted.\\\",\\n    \\\"Keep read-only calls out of the data-change list.\\\",\\n    \\\"Resolve conditional and unknown operations from their exact arguments and outputs before final reconciliation.\\\",\\n    \\\"A successful tool response proves only what it explicitly reports; verify persistence with the system that owns the target.\\\"\\n  ],\\n  \\\"changeListContract\\\": {\\n    \\\"mandatoryEffects\\\": [\\n      \\\"create\\\",\\n      \\\"mutate\\\",\\n      \\\"delete\\\"\\n    ],\\n    \\\"recordShape\\\": {\\n      \\\"filename\\\": \\\"<repository-relative filename or service target>\\\",\\n      \\\"frombyte\\\": \\\"<integer or null when byte ranges do not apply>\\\",\\n      \\\"tobyte\\\": \\\"<integer or null when byte ranges do not apply>\\\",\\n      \\\"description\\\": \\\"Include operation, effect, outcome, and source invocation index.\\\",\\n      \\\"intent\\\": \\\"Associated user intent.\\\",\\n      \\\"operator\\\": \\\"Operator used.\\\"\\n    },\\n    \\\"failedAttempt\\\": \\\"Record the attempted effect and failure; state that no persisted change was verified if applicable.\\\",\\n    \\\"noObservedDelete\\\": \\\"No delete-specific integration was observed in this sample. Future delete operations remain mandatory.\\\"\\n  },\\n  \\\"observedToolCatalog\\\": [\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_create_file\\\",\\n      \\\"count\\\": 15,\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"targetKind\\\": \\\"GitHub repository file and commit\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Creates a new repository path through the contents API.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_update_file\\\",\\n      \\\"count\\\": 17,\\n      \\\"effect\\\": \\\"mutate\\\",\\n      \\\"targetKind\\\": \\\"GitHub repository file\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Changes file contents; inspect prior path state because contents APIs can have create-or-update semantics.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_update_ref\\\",\\n      \\\"count\\\": 1,\\n      \\\"effect\\\": \\\"mutate\\\",\\n      \\\"targetKind\\\": \\\"Git branch/tag ref\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Moves a reference to a commit.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_create_blob\\\",\\n      \\\"count\\\": 12,\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"targetKind\\\": \\\"Git blob object\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Creates a Git object; by itself it does not move a branch ref.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_create_tree\\\",\\n      \\\"count\\\": 1,\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"targetKind\\\": \\\"Git tree object\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Creates a Git object; by itself it does not move a branch ref.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_create_commit\\\",\\n      \\\"count\\\": 1,\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"targetKind\\\": \\\"Git commit object\\\",\\n      \\\"changeListRequired\\\": true,\\n      \\\"note\\\": \\\"Creates a commit object; branch visibility also requires an appropriate ref update.\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__library_create_library_file\\\",\\n      \\\"count\\\": 2,\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"targetKind\\\": \\\"ChatGPT Library file\\\",\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_fetch\\\",\\n      \\\"count\\\": 2,\\n      \\\"effect\\\": \\\"read\\\",\\n      \\\"targetKind\\\": \\\"GitHub repository resource\\\",\\n      \\\"changeListRequired\\\": false\\n    },\\n    {\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_fetch_file\\\",\\n      \\\"count\\\": 14,\\n      \\\"effect\\\": \\\"read\\\",\\n      \\\"targetKind\\\": \\\"GitHub file\\\",\\n      \\\"changeListRequired\\\": false\\n    },\\n    {\\n      \\\"tool\\\": \\\"exec_command\\\",\\n      \\\"count\\\": 6,\\n      \\\"effect\\\": \\\"conditional\\\",\\n      \\\"targetKind\\\": \\\"Depends on command\\\",\\n      \\\"changeListRequired\\\": \\\"if command creates, mutates, or deletes data\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"tools.exec_command\\\",\\n      \\\"count\\\": 2,\\n      \\\"effect\\\": \\\"conditional\\\",\\n      \\\"targetKind\\\": \\\"Depends on command\\\",\\n      \\\"changeListRequired\\\": \\\"if command creates, mutates, or deletes data\\\"\\n    },\\n    {\\n      \\\"tool\\\": \\\"functions.exec_command\\\",\\n      \\\"count\\\": 1,\\n      \\\"effect\\\": \\\"conditional\\\",\\n      \\\"targetKind\\\": \\\"Depends on command\\\",\\n      \\\"changeListRequired\\\": \\\"if command creates, mutates, or deletes data\\\"\\n    }\\n  ],\\n  \\\"illustrativeExamples\\\": [\\n    {\\n      \\\"illustrative\\\": true,\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_fetch_file\\\",\\n      \\\"operation\\\": \\\"fetch\\\",\\n      \\\"effect\\\": \\\"read\\\",\\n      \\\"target\\\": \\\"path from invocation\\\",\\n      \\\"changeListRequired\\\": false\\n    },\\n    {\\n      \\\"illustrative\\\": true,\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_create_file\\\",\\n      \\\"operation\\\": \\\"create_file\\\",\\n      \\\"effect\\\": \\\"create\\\",\\n      \\\"target\\\": \\\"path from invocation\\\",\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"illustrative\\\": true,\\n      \\\"tool\\\": \\\"mcp__codex_apps__github_update_file\\\",\\n      \\\"operation\\\": \\\"update_file\\\",\\n      \\\"effect\\\": \\\"mutate\\\",\\n      \\\"target\\\": \\\"path from invocation\\\",\\n      \\\"changeListRequired\\\": true\\n    },\\n    {\\n      \\\"illustrative\\\": true,\\n      \\\"tool\\\": \\\"<tool or command>\\\",\\n      \\\"operation\\\": \\\"verified delete operation\\\",\\n      \\\"effect\\\": \\\"delete\\\",\\n      \\\"target\\\": \\\"target from invocation\\\",\\n      \\\"changeListRequired\\\": true\\n    }\\n  ],\\n  \\\"limitations\\\": [\\n    \\\"This catalog describes observed tools, not every capability each integration supports.\\\",\\n    \\\"Invocation arguments determine the operation and target; a tool name by itself may be insufficient.\\\",\\n    \\\"Git object creation and branch-ref mutation are distinct persistence boundaries.\\\",\\n    \\\"No delete tool was observed in this sample; the delete class is defined for future arrays.\\\"\\n  ]\\n}\\n\"}",
+      "final_output_after_completion_of_tool_call": "{\"result\":\"Action completed.\",\"commit\":\"d9e8a7f171634f9372edcd35442549cf38bea0fc\",\"error\":false}",
+      "unavailable_reason": null,
+      "new": true,
+      "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/tool-invocation-syntax.json",
+      "frombyte": 0,
+      "tobyte": 9342,
+      "description": "Created the tool invocation syntax and data change classification JSON on main; commit d9e8a7f171634f9372edcd35442549cf38bea0fc.",
+      "intent": "Create a machine-readable syntax and classification guide for toolInvocations arrays, including extraction of create, mutate, and delete operations and making each mandatory in the change list.",
+      "operator": "create",
+      "specifiedOperatorByUser": null,
+      "chosenOperator": "create",
+      "outcome": "succeeded"
+    }
+  ],
+  "triggerIdentifier": "toolInvocationSyntax202610162013",
+  "lastToolInvocationSummary": {
+    "submittedRecords": 2,
+    "totalRecords": 2,
+    "byTool": {
+      "functions.exec": 1,
+      "mcp__codex_apps__github_create_file": 1
+    },
+    "byRuntime": {
+      "/workspace/scratch/da1d0dca8a28": 2
+    },
+    "commandLineRecords": 0
+  }
 }
