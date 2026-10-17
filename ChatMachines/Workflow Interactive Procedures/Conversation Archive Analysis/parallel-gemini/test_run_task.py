@@ -75,6 +75,7 @@ class Tests(unittest.TestCase):
         def opener(request, timeout):
             self.assertEqual(request.get_header('X-goog-api-key'), 'test-key')
             payload = json.loads(request.data)
+            self.assertEqual(payload['generationConfig']['responseMimeType'], 'application/json')
             image = payload['contents'][0]['parts'][1]['inline_data']
             self.assertEqual(image['mime_type'], 'image/png')
             self.assertEqual(base64.b64decode(image['data']), image_bytes)
