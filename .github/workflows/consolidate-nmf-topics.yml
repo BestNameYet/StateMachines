@@ -1,0 +1,49 @@
+name: Consolidate NMF topic catalogs
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-merge/**'
+      - .github/workflows/consolidate-nmf-topics.yml
+permissions:
+  contents: read
+  actions: read
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/tfidf-nmf/requirements.txt'
+      - name: Read source configuration
+        id: source
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          config=json.loads(Path('ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-merge/config.json').read_text())
+          with open(os.environ['GITHUB_OUTPUT'],'a') as out:
+              out.write('run='+str(config['source_run_id'])+'\n')
+              out.write('artifact='+config['source_artifact']+'\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.source.outputs.run }}
+          name: ${{ steps.source.outputs.artifact }}
+          path: source-results
+      - name: Test consolidation
+        run: python -m unittest discover -s 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-merge' -p 'test_*.py'
+      - name: Merge existing models and assignments
+        run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-merge/merge.py' --config 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-merge/config.json' --input source-results --output merged-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consolidated-topic-catalog
+          path: merged-results/
+          retention-days: 30
+          if-no-files-found: warn
