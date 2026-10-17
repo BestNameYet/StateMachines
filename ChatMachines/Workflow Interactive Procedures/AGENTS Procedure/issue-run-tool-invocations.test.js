@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {issueNumberFromChangedPath,changedPathsFromEvent,parseToolInvocationSubmission,appendedToolInvocationRecords,isAcceptedReport}=require('./issue-run-tool-invocations.js');
+const {issueNumberFromChangedPath,changedPathsFromEvent,parseToolInvocationSubmission,appendedToolInvocationRecords,isAcceptedReport,appendProcedureReceipt}=require('./issue-run-tool-invocations.js');
 
 const path='ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/45-tool-invocations.json';
 assert.equal(issueNumberFromChangedPath(path),45);
@@ -15,6 +15,7 @@ assert.throws(()=>parseToolInvocationSubmission(JSON.stringify({procedureIssueNu
 assert.equal(parseToolInvocationSubmission(JSON.stringify({procedureIssueNumber:45,toolInvocations:null}),45),null);
 assert.deepEqual(appendedToolInvocationRecords([{id:1},{id:2}],[{id:1}]),[{id:2}]);
 assert.throws(()=>appendedToolInvocationRecords([{id:2}],[{id:1}]),/retain all previously accepted records/);
+assert.equal(typeof appendProcedureReceipt,'function');
 assert.equal(isAcceptedReport(JSON.stringify({procedureIssueNumber:45,toolInvocations:[],submissionAccepted:true})),true);
 assert.equal(isAcceptedReport(JSON.stringify({procedureIssueNumber:45,toolInvocations:[]})),false);
 console.log('Run-specific tool-invocation paths and JSON envelopes validate.');
