@@ -1,0 +1,101 @@
+name: Package Matching Build Bootstrap
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'matching/README_BUILD.md'
+      - 'partially_completed_not_fully_realized_container_image_creation_test_under_construction.py'
+      - 'matching_branch_cleanup.py'
+      - 'matching/build_context.py'
+      - 'matching/container_python_wheel_download.py'
+      - 'matching/published_artifact_retrieval.py'
+      - 'matching/operation_config.json'
+      - 'matching/build_context_manifest.json'
+      - 'matching/Dockerfile.runtime'
+      - '.github/workflows/matching_component_tests.yml'
+      - 'matching/component_test_config.json'
+      - '.github/workflows/package_matching_build_bootstrap.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: matching-build-bootstrap-package
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          lfs: false
+          fetch-depth: 0
+
+      - name: Create and verify bootstrap ZIP
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import zipfile
+
+          entries = [("matching/README_BUILD.md", "README_BUILD.md")]
+          entries.extend((path, path) for path in ["partially_completed_not_fully_realized_container_image_creation_test_under_construction.py","matching_branch_cleanup.py","matching/build_context.py","matching/container_python_wheel_download.py","matching/published_artifact_retrieval.py","matching/operation_config.json","matching/build_context_manifest.json","matching/Dockerfile.runtime",".github/workflows/matching_component_tests.yml","matching/component_test_config.json"])
+          output = Path("matching/Matching_Build_Bootstrap.zip")
+          for source, name in entries:
+              if not Path(source).is_file():
+                  raise SystemExit("Required bootstrap file missing: " + source)
+          with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+              for source, name in entries:
+                  info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+                  info.compress_type = zipfile.ZIP_DEFLATED
+                  info.create_system = 3
+                  info.external_attr = 0o100644 << 16
+                  archive.writestr(info, Path(source).read_bytes(), compresslevel=9)
+          with zipfile.ZipFile(output) as archive:
+              if archive.testzip() is not None:
+                  raise SystemExit("ZIP integrity verification failed")
+              if archive.namelist() != [name for source, name in entries]:
+                  raise SystemExit("ZIP inventory verification failed")
+              for source, name in entries:
+                  if archive.read(name) != Path(source).read_bytes():
+                      raise SystemExit("ZIP content differs from source: " + source)
+          print("Verified", len(entries), "archive entries")
+          print("ZIP SHA256:", hashlib.sha256(output.read_bytes()).hexdigest())
+          PY
+
+      - name: Commit ZIP to matching
+        run: |
+          git add -- matching/Matching_Build_Bootstrap.zip
+          if git diff --cached --quiet; then
+            echo "Bootstrap ZIP already matches source; no commit required."
+          else
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "Refresh matching build bootstrap ZIP"
+            git push origin HEAD:main
+          fi
+          python - <<'PY'
+          import hashlib
+          import subprocess
+          from pathlib import Path
+          path = "matching/Matching_Build_Bootstrap.zip"
+          committed = subprocess.check_output(["git", "show", "HEAD:" + path])
+          if committed != Path(path).read_bytes():
+              raise SystemExit("Committed ZIP differs from verified ZIP")
+          local = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          remote = subprocess.check_output(["git", "ls-remote", "origin", "refs/heads/main"], text=True).split()[0]
+          if local != remote:
+              raise SystemExit("Remote main does not match ZIP commit")
+          print("Stored ZIP verified on main:", local)
+          print("Committed ZIP SHA256:", hashlib.sha256(committed).hexdigest())
+          PY
+
+      - name: Upload bootstrap ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Matching_Build_Bootstrap
+          path: matching/Matching_Build_Bootstrap.zip
+          if-no-files-found: error

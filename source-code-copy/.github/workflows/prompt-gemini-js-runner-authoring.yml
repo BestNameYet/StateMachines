@@ -1,0 +1,46 @@
+name: PromptGemini JS Runner authoring
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'untrusted AI/meta-procedure/Procedures/JS Runner/trigger.json'
+
+permissions:
+  contents: write
+
+jobs:
+  prompt-gemini-js-runner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Execute PromptGemini procedure
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: |
+          node 'untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/gemini-message-executor.js' 'untrusted AI/meta-procedure/Procedures/JS Runner/config.json'
+
+      - name: Materialize returned runner
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const output = JSON.parse(fs.readFileSync('untrusted AI/meta-procedure/Procedures/JS Runner/latest-output.json', 'utf8'));
+          fs.writeFileSync('untrusted AI/meta-procedure/Procedures/JS Runner/js-runner.js', output.script, 'utf8');
+          NODE
+
+      - name: Commit runner
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'untrusted AI/meta-procedure/Procedures/JS Runner/js-runner.js'
+          git commit -m "Add MetaProcedure JS Runner"
+          git push origin HEAD:main

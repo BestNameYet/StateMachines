@@ -1,0 +1,46 @@
+name: Reserve SBE Report Metadata Region
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification/reserve-metadata-region.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sbe-reserve-metadata-region-main
+  cancel-in-progress: false
+
+jobs:
+  reserve-metadata-region:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Reserve fixed metadata regions
+        run: node "ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification/reserve-metadata-region.js"
+
+      - name: Commit migrated text documents
+        shell: bash
+        env:
+          REPORT_ROOT: ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- "$REPORT_ROOT"; then
+            echo 'Metadata regions already reserved.'
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$REPORT_ROOT"
+          git commit -m 'Reserve fixed metadata regions in SBE report documents'
+          git push origin HEAD:main

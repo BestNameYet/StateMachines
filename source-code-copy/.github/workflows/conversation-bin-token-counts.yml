@@ -1,0 +1,65 @@
+name: Conversation bin token counts
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/conversation-bin-token-counts.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  count:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Count each bin with Gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: |
+          python - <<'PY'
+          import os, json, pathlib, urllib.request, urllib.error, time, hashlib
+          root = pathlib.Path("ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/key-extraction")
+          model = os.environ.get("GEMINI_MODEL") or "gemini-3.8-flash"
+          key = os.environ["GEMINI_API_KEY"]
+          rows = []
+          try:
+              for path in sorted(root.glob("batch-0[0-3]/**/conversation-file-*.json")):
+                  raw = path.read_bytes()
+                  payload = json.dumps({"contents":[{"role":"user","parts":[{"text":raw.decode("utf-8")}]}]}).encode()
+                  url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":countTokens"
+                  for attempt in range(6):
+                      req = urllib.request.Request(url, data=payload, headers={"Content-Type":"application/json","x-goog-api-key":key})
+                      try:
+                          with urllib.request.urlopen(req, timeout=180) as response:
+                              result = json.load(response)
+                          break
+                      except urllib.error.HTTPError as exc:
+                          if exc.code not in (429,500,502,503,504) or attempt == 5:
+                              raise RuntimeError("countTokens HTTP " + str(exc.code)) from None
+                          time.sleep(15 * (attempt+1))
+                  row = {"path":str(path),"bytes":len(raw),"sha256":hashlib.sha256(raw).hexdigest(),"tokens":result["totalTokens"]}
+                  rows.append(row)
+                  print(json.dumps(row), flush=True)
+                  time.sleep(1)
+          finally:
+              totals = {}
+              for row in rows:
+                  batch = row["path"].split("/key-extraction/")[1].split("/")[0]
+                  totals[batch] = totals.get(batch,0) + row["tokens"]
+              report = {"sourceCommit":os.environ["GITHUB_SHA"],"model":model,"method":"Gemini countTokens, exact file text; excludes shared prompt and file wrappers","files":rows,"batchFileTokenSums":totals,"filesCounted":len(rows)}
+              pathlib.Path("token-counts.json").write_text(json.dumps(report,indent=2))
+              with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as out:
+                  out.write("| File | Tokens |\n|---|---:|\n")
+                  for row in rows:
+                      out.write("|"+row["path"].split("/key-extraction/")[1]+"|"+str(row["tokens"])+"|\n")
+                  out.write("\nBatch sums: "+json.dumps(totals))
+              print("BATCH TOTALS",json.dumps(totals),flush=True)
+          if len(rows) != 134:
+              raise RuntimeError("Expected 134 counted bin files")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conversation-bin-token-counts
+          path: token-counts.json

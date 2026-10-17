@@ -1,0 +1,148 @@
+name: AGENTS Procedure issues
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/agents-procedure-issues.yml'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-tool-invocations*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/*.json'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/*-tool-invocations.json'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-render.json'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/validator.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/gemini-*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/supervisor-tools*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/worker-*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/root-workspace*.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/worker-instructions.md'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/gemini-request-template.json'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/render-gemini.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/render-instructions.js'
+      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface*'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    timeout-minutes: 10
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check issue adapter and triggers
+        working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+        run: |
+          node transitions.test.js
+          node interface.test.js
+          node gemini-screen.test.js
+          node gemini-workflow.test.js
+          node supervisor-tools.test.js
+          node root-workspace.test.js
+          node issue-workflow.test.js
+          node issue-run-trigger.test.js
+          node issue-run-tool-invocations.test.js
+
+      - name: Verify live Gemini screen generation when its sources change
+        working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: |
+          if ! git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -Eq 'AGENTS Procedure/(gemini-workflow.js|gemini-screen.js|gemini-request-template.json|render-gemini.js|gemini-workers.js|worker-context.js|worker-registration.js|worker-instructions.md)$'; then
+            echo 'No Gemini generation source changed; no live call requested.'
+            exit 0
+          fi
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo 'Live Gemini check not performed: GEMINI_API_KEY is missing.'
+            exit 0
+          fi
+          node gemini-live-check.js
+
+  create-from-trigger:
+    if: github.event_name == 'push'
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: agents-procedure-issue-run-triggers
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Create and bind issues for pending trigger files
+        working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node issue-run-trigger.js
+
+  consume-tool-invocation-file:
+    if: github.event_name == 'push'
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: agents-procedure-tool-invocation-file-submissions
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate committed tool-invocation JSON and advance its issue
+        working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node issue-run-tool-invocations.js
+
+  render-issue:
+    if: >-
+      (github.event_name == 'issues' && !github.event.issue.pull_request) ||
+      (github.event_name == 'issue_comment' && !github.event.issue.pull_request && github.event.comment.user.type != 'Bot')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: agents-procedure-issue-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Advance issue state and render instruction
+        working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: node issue-workflow.js
+

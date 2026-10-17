@@ -1,0 +1,271 @@
+name: SBE Delete Processing Branch
+
+on:
+  workflow_run:
+    workflows: ['SBE Seal Submission']
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  delete-and-evaluate:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve originating pull request
+        id: pr
+        env:
+          EVENT_PATH: ${{ github.event_path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PR_NUMBER=$(jq -r '.workflow_run.pull_requests[0].number // empty' "$EVENT_PATH")
+          HEAD_REF=$(jq -r '.workflow_run.pull_requests[0].head.ref // empty' "$EVENT_PATH")
+          if [ -z "$PR_NUMBER" ] || [ -z "$HEAD_REF" ]; then
+            echo 'Successful SBE sealing run has no associated pull request.' >&2
+            exit 1
+          fi
+          [[ "$HEAD_REF" =~ ^processing/[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
+          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Verify delete marker and sealed artifact
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_REF: ${{ steps.pr.outputs.head_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          MARKER="$RUNNER_TEMP/sbe-delete-marker.json"
+          gh api --method GET "repos/${GITHUB_REPOSITORY}/contents/.delete-processing-branch" \
+            -f "ref=${HEAD_REF}" --jq '.content' | tr -d '\n' | base64 --decode > "$MARKER"
+
+          mapfile -t VALUES < <(node - "$MARKER" <<'NODE'
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (m.sbe_version !== 1 || m.delete_branch !== true) throw new Error('Invalid SBE delete marker.');
+          for (const key of ['request_id','source_head_sha','source_file','sealed_path']) {
+            if (typeof m[key] !== 'string' || !m[key]) throw new Error(`Marker missing ${key}.`);
+          }
+          if (!Number.isInteger(m.pr_number)) throw new Error('Marker missing pr_number.');
+          console.log(m.request_id);
+          console.log(m.pr_number);
+          console.log(m.source_head_sha);
+          console.log(m.source_file);
+          console.log(m.sealed_path);
+          NODE
+          )
+
+          REQUEST_ID="${VALUES[0]}"
+          MARKER_PR="${VALUES[1]}"
+          SOURCE_SHA="${VALUES[2]}"
+          SOURCE_FILE="${VALUES[3]}"
+          SEALED_PATH="${VALUES[4]}"
+
+          [ "$MARKER_PR" = "$PR_NUMBER" ]
+          [ "$HEAD_REF" = "processing/${REQUEST_ID}" ]
+          [[ "$REQUEST_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
+          [[ "$SOURCE_SHA" =~ ^[0-9a-fA-F]{40}$ ]]
+          [[ "$SOURCE_FILE" =~ ^[A-Za-z0-9._/-]+\.gz$ ]]
+          [[ "$SOURCE_FILE" != *'..'* ]]
+          [ "$SEALED_PATH" = "SBE/sealed/${REQUEST_ID}/${SOURCE_SHA}" ]
+
+          CURRENT_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${HEAD_REF}" --jq '.object.sha')
+          PARENT_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${CURRENT_SHA}" --jq '.parents[0].sha')
+          [ "$PARENT_SHA" = "$SOURCE_SHA" ] || {
+            echo 'Processing branch changed after the sealed submission; refusing deletion.' >&2
+            exit 1
+          }
+
+          mapfile -t CHANGES < <(gh api "repos/${GITHUB_REPOSITORY}/commits/${CURRENT_SHA}" --jq '.files[] | [.status,.filename] | @tsv')
+          [ "${#CHANGES[@]}" -eq 2 ]
+          printf '%s\n' "${CHANGES[@]}" | grep -Fx $'added\t.delete-processing-branch' >/dev/null
+          printf '%s\n' "${CHANGES[@]}" | grep -Fx $'removed\t'"${SOURCE_FILE}" >/dev/null
+
+          gh api --method GET "repos/${GITHUB_REPOSITORY}/contents/${SEALED_PATH}/submission.7z" -f ref=main >/dev/null
+
+          MANIFEST="$RUNNER_TEMP/sbe-manifest.json"
+          gh api --method GET "repos/${GITHUB_REPOSITORY}/contents/${SEALED_PATH}/manifest.json" \
+            -f ref=main --jq '.content' | tr -d '\n' | base64 --decode > "$MANIFEST"
+          REQUEST_ID="$REQUEST_ID" PR_NUMBER="$PR_NUMBER" SOURCE_SHA="$SOURCE_SHA" SOURCE_FILE="$SOURCE_FILE" SEALED_PATH="$SEALED_PATH" node - "$MANIFEST" <<'NODE'
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (m.sbe_version !== 1) throw new Error('Manifest version mismatch.');
+          if (m.request_id !== process.env.REQUEST_ID) throw new Error('Manifest request mismatch.');
+          if (String(m.pr_number) !== process.env.PR_NUMBER) throw new Error('Manifest PR mismatch.');
+          if (m.source_head_sha !== process.env.SOURCE_SHA) throw new Error('Manifest SHA mismatch.');
+          if (m.source_file !== process.env.SOURCE_FILE) throw new Error('Manifest source-file mismatch.');
+          if (m.sealed_archive !== `${process.env.SEALED_PATH}/submission.7z`) throw new Error('Manifest archive path mismatch.');
+          if (m.evaluation_status !== 'PENDING') throw new Error('Manifest is not pending post-seal evaluation.');
+          NODE
+
+          echo "request_id=$REQUEST_ID" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "source_file=$SOURCE_FILE" >> "$GITHUB_OUTPUT"
+          echo "sealed_path=$SEALED_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Close pull request and delete processing branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_REF: ${{ steps.pr.outputs.head_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" -f state=closed >/dev/null
+          gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${HEAD_REF}"
+
+      - name: Create evaluation nonce
+        id: nonce
+        shell: bash
+        run: |
+          set -euo pipefail
+          NONCE=$(openssl rand -hex 32)
+          [[ "$NONCE" =~ ^[0-9a-f]{64}$ ]]
+          echo "value=$NONCE" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout trusted main after branch deletion
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: trusted
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Run evaluator and mechanically validate encrypted return
+        id: evaluate
+        env:
+          GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          SBE_REQUEST_ID: ${{ steps.verify.outputs.request_id }}
+          SBE_EVAL_NONCE: ${{ steps.nonce.outputs.value }}
+          SBE_EVAL_MAX_SCHEMA_ATTEMPTS: '3'
+          SEALED_PATH: ${{ steps.verify.outputs.sealed_path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          INPUT_ARCHIVE="trusted/${SEALED_PATH}/submission.7z"
+          ANSWER_ARCHIVE="$RUNNER_TEMP/sbe-evaluator-return.7z"
+          NEXT_ARCHIVE="$RUNNER_TEMP/sbe-evaluator-next-return.7z"
+          VALIDATION="$RUNNER_TEMP/sbe-evaluator-validation.json"
+          ANSWER_DIR="$RUNNER_TEMP/sbe-evaluator-answer"
+          MAX_ATTEMPTS="${SBE_EVAL_MAX_SCHEMA_ATTEMPTS}"
+
+          if command -v 7z >/dev/null 2>&1; then
+            SEVEN=7z
+          elif command -v 7zz >/dev/null 2>&1; then
+            SEVEN=7zz
+          else
+            echo 'No 7z-compatible executable is available.' >&2
+            exit 1
+          fi
+
+          node trusted/ChatMachines/SBE/sbe-evaluate.js initial \
+            "$INPUT_ARCHIVE" \
+            "$ANSWER_ARCHIVE"
+
+          for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+            rm -rf "$ANSWER_DIR"
+            mkdir -p "$ANSWER_DIR"
+            "$SEVEN" x "-p${GZ_PASSWORD}" "-o${ANSWER_DIR}" -y "$ANSWER_ARCHIVE" >/dev/null
+
+            mapfile -t ANSWER_FILES < <(find "$ANSWER_DIR" -type f -print)
+            if [ "${#ANSWER_FILES[@]}" -ne 1 ] || [ "$(basename "${ANSWER_FILES[0]:-}")" != 'answer.json' ]; then
+              printf '%s\n' '{"validation_status":"INVALID","validation_check_failure":"Encrypted evaluator return must contain exactly one file named answer.json.","exact_return_schema_example":{"result":"PASS","nonce":"'"$SBE_EVAL_NONCE"'"}}' > "$VALIDATION"
+              CODE=3
+            else
+              set +e
+              node trusted/ChatMachines/SBE/sbe-validate-evaluator-return.js \
+                "${ANSWER_FILES[0]}" \
+                "$SBE_EVAL_NONCE" \
+                "$VALIDATION"
+              CODE=$?
+              set -e
+            fi
+
+            if [ "$CODE" -eq 0 ]; then
+              echo 'result=PASS' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            if [ "$CODE" -eq 2 ]; then
+              echo 'result=FAIL' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            if [ "$CODE" -ne 3 ]; then
+              exit "$CODE"
+            fi
+
+            if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
+              echo "Evaluator return failed deterministic validation after ${MAX_ATTEMPTS} attempts." >&2
+              exit 1
+            fi
+
+            node trusted/ChatMachines/SBE/sbe-evaluate.js repair \
+              "$INPUT_ARCHIVE" \
+              "$ANSWER_ARCHIVE" \
+              "$VALIDATION" \
+              "$NEXT_ARCHIVE"
+            mv "$NEXT_ARCHIVE" "$ANSWER_ARCHIVE"
+          done
+
+          echo 'Unreachable evaluator validation state.' >&2
+          exit 1
+
+      - name: Persist evaluator-produced encrypted answer archive
+        env:
+          REQUEST_ID: ${{ steps.verify.outputs.request_id }}
+          SOURCE_SHA: ${{ steps.verify.outputs.source_sha }}
+          SEALED_PATH: ${{ steps.verify.outputs.sealed_path }}
+          EVAL_RESULT: ${{ steps.evaluate.outputs.result }}
+          EVAL_NONCE: ${{ steps.nonce.outputs.value }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cp "$RUNNER_TEMP/sbe-evaluator-return.7z" "trusted/${SEALED_PATH}/evaluation.7z"
+
+          REQUEST_ID="$REQUEST_ID" SOURCE_SHA="$SOURCE_SHA" EVAL_RESULT="$EVAL_RESULT" EVAL_NONCE="$EVAL_NONCE" SEALED_PATH="$SEALED_PATH" \
+          node - "trusted/${SEALED_PATH}/manifest.json" <<'NODE'
+          const fs = require('fs');
+          const manifestPath = process.argv[2];
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          if (manifest.request_id !== process.env.REQUEST_ID) throw new Error('Manifest request mismatch.');
+          if (manifest.source_head_sha !== process.env.SOURCE_SHA) throw new Error('Manifest source SHA mismatch.');
+          manifest.evaluation_status = process.env.EVAL_RESULT;
+          manifest.evaluation_nonce = process.env.EVAL_NONCE;
+          manifest.evaluation_archive = `${process.env.SEALED_PATH}/evaluation.7z`;
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+          NODE
+
+          cd trusted
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$SEALED_PATH/manifest.json" "$SEALED_PATH/evaluation.7z"
+          git commit -m "Record SBE evaluation ${REQUEST_ID} ${SOURCE_SHA}"
+
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo 'Unable to persist SBE evaluation after three attempts.' >&2
+              exit 1
+            fi
+            git fetch origin main
+            git rebase origin/main
+          done
+
+          if [ "$EVAL_RESULT" != 'PASS' ]; then
+            echo 'SBE completion evaluation returned FAIL after the branch was sealed and deleted.' >&2
+            exit 2
+          fi

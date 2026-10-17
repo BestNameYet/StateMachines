@@ -1,0 +1,42 @@
+name: Patch PNG Whitespace Preservation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiSupervisor/live-ground-truth/patch-png-whitespace-trigger.json
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Preserve repeated spaces in SVG text
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          paths = [
+              Path('ChatMachines/GeminiSupervisor/scripts/live-ground-truth-reading-room.js'),
+              Path('ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js'),
+          ]
+          for p in paths:
+              s = p.read_text()
+              old = '<g fill="black" font-family="DejaVu Sans Mono, monospace"'
+              new = '<g xml:space="preserve" fill="black" font-family="DejaVu Sans Mono, monospace"'
+              if old not in s:
+                  raise SystemExit(f'expected SVG group not found in {p}')
+              p.write_text(s.replace(old, new))
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ChatMachines/GeminiSupervisor/scripts/live-ground-truth-reading-room.js ChatMachines/GeminiSupervisor/scripts/solve-png-locator.js
+          git commit -m 'Preserve whitespace in PNG locator rendering'
+          git push origin HEAD:main

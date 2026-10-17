@@ -1,0 +1,27 @@
+name: PromptGemini hidden-page authoring
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/trigger.json'
+permissions:
+  contents: read
+jobs:
+  prompt-gemini:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute PromptGemini procedure
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: node 'untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/gemini-message-executor.js' 'untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/config.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prompt-gemini-hidden-page-output
+          path: |
+            untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/runs
+            untrusted AI/meta-procedure/Procedures/PromptGemini/rebuild-hidden-shared-page/latest-output.json

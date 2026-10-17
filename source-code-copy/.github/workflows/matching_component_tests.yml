@@ -1,0 +1,85 @@
+name: Matching Component Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - matching/component_test_config.json
+      - matching/operation_config.json
+      - matching/build_context_manifest.json
+      - matching/build_context.py
+      - matching/container_python_wheel_download.py
+      - matching/published_artifact_retrieval.py
+      - matching/Dockerfile.runtime
+      - matching_branch_cleanup.py
+      - partially_completed_not_fully_realized_container_image_creation_test_under_construction.py
+      - .github/workflows/matching_component_tests.yml
+
+jobs:
+  component_test:
+    permissions:
+      contents: write
+    concurrency:
+      group: matching-container-creation-test
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read manifest Python version
+        id: python
+        run: |
+          python - <<'PYTHON'
+          import os
+          from matching.container_python_wheel_download import python_version_from_manifest
+          version = python_version_from_manifest("matching/build_context_manifest.json")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("version=" + version + "\n")
+          PYTHON
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ steps.python.outputs.version }}
+      - name: Run configured component
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          config_path = Path("matching/component_test_config.json")
+          if not config_path.is_file():
+              print("No script available: configuration file does not exist.")
+              sys.exit(0)
+
+          try:
+              config = json.loads(config_path.read_text())
+          except (ValueError, OSError) as exc:
+              print(f"No script available: configuration unreadable: {exc}")
+              sys.exit(0)
+
+          script = config.get("script") if isinstance(config, dict) else None
+          if not isinstance(script, str) or not script.strip():
+              print("No script available: script path not configured.")
+              sys.exit(0)
+
+          path = Path(script)
+          if path.is_absolute() or ".." in path.parts or path.suffix != ".py" or not path.is_file():
+              print(f"No script available: script path does not resolve to a Python file: {script}")
+              sys.exit(0)
+
+          print(f"Running configured component: {script}", flush=True)
+          subprocess.run([sys.executable, str(path)], check=True)
+          PY
+
+      - name: Upload container creation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matching-container-image-creation-result
+          path: |
+            matching/container-image-creation-result.json
+            matching_test/container-image-creation-result.json
+          if-no-files-found: ignore

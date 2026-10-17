@@ -1,0 +1,54 @@
+name: Test Comprehension Task Agent
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiSupervisor/live-ground-truth/agent-test-trigger.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: test-comprehension-task-agent
+  cancel-in-progress: false
+
+jobs:
+  test-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Execute instantiated comprehension task with Gemini
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.8-flash
+          COMPREHENSION_BATCH_SIZE: '24'
+          COMPREHENSION_TIMEOUT_MS: '300000'
+        run: node ChatMachines/GeminiSupervisor/scripts/agent-png-reader-test.js
+
+      - name: Commit model-produced task result and batch archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='ChatMachines/GeminiSupervisor/live-ground-truth/reading-room'
+          mapfile -t ACTIVE < <(find "$ROOT" -maxdepth 1 -type f -name 'task_semantic_define_each_array_item-*.json' ! -name '*-PASS.json' ! -name '*-FAILED.json' | sort)
+          if [ "${#ACTIVE[@]}" -ne 1 ]; then
+            echo "Expected exactly one active comprehension task; found ${#ACTIVE[@]}." >&2
+            exit 1
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "${ACTIVE[0]}"
+          git add -A "$ROOT/comprehension-task-batches"
+          git diff --cached --quiet && { echo 'Agent produced no comprehension-task changes.' >&2; exit 1; }
+          git commit -m 'Submit Gemini comprehension task result'
+          git push origin HEAD:main

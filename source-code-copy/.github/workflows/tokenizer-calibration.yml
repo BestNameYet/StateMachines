@@ -1,0 +1,52 @@
+name: Tokenizer calibration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/TokenizerCalibration/trigger.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Count representative GeminiSupervisor tokens
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: node ChatMachines/TokenizerCalibration/run.js
+
+      - name: Count and divide Stage-1 corpus
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: node ChatMachines/TokenizerCalibration/stage1-divide.js
+
+      - name: Commit tokenizer results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ChatMachines/TokenizerCalibration/agents-by-header.json
+          git add ChatMachines/TokenizerCalibration/agents-by-header-roundtrip.json
+          git add ChatMachines/TokenizerCalibration/tokenizer-results.json
+          git add ChatMachines/TokenizerCalibration/stage1-corpus-analysis.json
+          git add ChatMachines/TokenizerCalibration/stage1-batches/
+          if git diff --cached --quiet; then
+            echo "No tokenizer result change."
+            exit 0
+          fi
+          git commit -m "Update tokenizer calibration results"
+          git push origin HEAD:main

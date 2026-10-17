@@ -1,0 +1,170 @@
+name: GeminiSupervisor historical audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiEvaluation/historical-audit-nextmessage/nextmessage.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gemini-supervisor-historical-audit
+  cancel-in-progress: false
+
+jobs:
+  historical-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build described historical evidence archive
+        id: archive
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SOURCE_MAP='ChatMachines/GeminiSupervisor/historical-audit-data.json'
+          TRIGGER='ChatMachines/GeminiEvaluation/historical-audit-nextmessage/nextmessage.json'
+          RUN_NONCE=$(node -p "require('./$TRIGGER').run_nonce")
+          if [[ ! "$RUN_NONCE" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+            echo "Invalid run_nonce: $RUN_NONCE" >&2
+            exit 1
+          fi
+
+          PACKET_DIR="$RUNNER_TEMP/historical-audit-packet"
+          VERIFY_DIR="$RUNNER_TEMP/historical-audit-verify"
+          RUN_DIR="ChatMachines/GeminiEvaluation/evaluations/$RUN_NONCE"
+          EVIDENCE_DIR="$RUN_DIR/evidence"
+
+          rm -rf "$PACKET_DIR" "$VERIFY_DIR"
+          mkdir -p "$EVIDENCE_DIR" "$VERIFY_DIR"
+
+          node ChatMachines/GeminiEvaluation/historical-audit-archive-builder.js \
+            "$SOURCE_MAP" "$TRIGGER" "$PACKET_DIR"
+
+          cp "$PACKET_DIR/archive-manifest.json" "$EVIDENCE_DIR/archive-manifest.json"
+          tar -C "$PACKET_DIR" -czf "$EVIDENCE_DIR/historical-audit-evidence.tar.gz" .
+          tar -C "$VERIFY_DIR" -xzf "$EVIDENCE_DIR/historical-audit-evidence.tar.gz"
+          cmp "$PACKET_DIR/archive-manifest.json" "$VERIFY_DIR/archive-manifest.json"
+
+          ARCHIVE_SHA=$(sha256sum "$EVIDENCE_DIR/historical-audit-evidence.tar.gz" | awk '{print $1}')
+          printf '%s  historical-audit-evidence.tar.gz\n' "$ARCHIVE_SHA" > "$EVIDENCE_DIR/archive.sha256"
+
+          echo "run_nonce=$RUN_NONCE" >> "$GITHUB_OUTPUT"
+          echo "run_dir=$RUN_DIR" >> "$GITHUB_OUTPUT"
+          echo "packet_dir=$PACKET_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Segment historical evidence deterministically
+        id: segment
+        shell: bash
+        run: |
+          set -euo pipefail
+          POLICY='ChatMachines/GeminiEvaluation/historical-audit-segmentation-policy.json'
+          PACKET_DIR='${{ steps.archive.outputs.packet_dir }}'
+          RUN_DIR='${{ steps.archive.outputs.run_dir }}'
+
+          node ChatMachines/GeminiEvaluation/historical-audit-segmenter.js \
+            "$PACKET_DIR" "$POLICY"
+
+          cp "$PACKET_DIR/segment-manifest.json" "$RUN_DIR/evidence/segment-manifest.json"
+          cp "$POLICY" "$RUN_DIR/evidence/segmentation-policy.json"
+          echo "segment_manifest=$PACKET_DIR/segment-manifest.json" >> "$GITHUB_OUTPUT"
+
+      - name: Supervise isolated flat-batch audit
+        id: evaluator
+        shell: bash
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          HISTORICAL_AUDIT_PACKET_ROOT: ${{ steps.archive.outputs.packet_dir }}
+          HISTORICAL_AUDIT_SEGMENT_MANIFEST: ${{ steps.segment.outputs.segment_manifest }}
+          HISTORICAL_AUDIT_SEGMENTATION_POLICY: ${{ github.workspace }}/ChatMachines/GeminiEvaluation/historical-audit-segmentation-policy.json
+          HISTORICAL_AUDIT_TRIGGER: ${{ github.workspace }}/ChatMachines/GeminiEvaluation/historical-audit-nextmessage/nextmessage.json
+        run: |
+          set -uo pipefail
+
+          RUN_NONCE='${{ steps.archive.outputs.run_nonce }}'
+          RUN_DIR='${{ steps.archive.outputs.run_dir }}'
+          LOG_FILE="$RUN_DIR/process.log"
+
+          mkdir -p "$RUN_DIR"
+          : > "$LOG_FILE"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          publish_state() {
+            git add \
+              "$RUN_DIR/evidence" \
+              "$RUN_DIR/live-view" \
+              "$RUN_DIR/batch-plan.json" \
+              "$RUN_DIR/batch-plan-validation.json" \
+              "$RUN_DIR/batch-results" \
+              "$RUN_DIR/synthesis" \
+              "$RUN_DIR/synthesis-tree.json" \
+              "$RUN_DIR/evaluation.json" \
+              "$RUN_DIR/run-metadata.json" \
+              "$RUN_DIR/process.log" 2>/dev/null || true
+            if git diff --cached --quiet; then
+              return 0
+            fi
+            git commit -m "Historical audit supervised state: $RUN_NONCE"
+            if ! git push origin HEAD:main; then
+              echo "State push could not advance main; continuing evaluator locally." >&2
+            fi
+          }
+
+          publish_state
+
+          set +e
+          node ChatMachines/GeminiEvaluation/historical-audit-flat-evaluator.js > >(tee -a "$LOG_FILE") 2>&1 &
+          EVALUATOR_PID=$!
+          set -e
+
+          while kill -0 "$EVALUATOR_PID" 2>/dev/null; do
+            sleep 15
+            publish_state || true
+          done
+
+          set +e
+          wait "$EVALUATOR_PID"
+          EVALUATOR_STATUS=$?
+          set -e
+
+          publish_state || true
+          exit "$EVALUATOR_STATUS"
+
+      - name: Persist exact audit state
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_NONCE='${{ steps.archive.outputs.run_nonce }}'
+          RUN_DIR='${{ steps.archive.outputs.run_dir }}'
+
+          if [[ -z "$RUN_NONCE" || ! -d "$RUN_DIR" ]]; then
+            echo 'No historical-audit run directory to persist.'
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RUN_DIR"
+
+          if git diff --cached --quiet; then
+            echo 'No additional historical-audit state to persist.'
+            exit 0
+          fi
+
+          git commit -m "Gemini Supervisor historical audit state: $RUN_NONCE"
+          git push origin HEAD:main

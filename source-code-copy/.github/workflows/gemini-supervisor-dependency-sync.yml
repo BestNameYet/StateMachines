@@ -1,0 +1,279 @@
+name: GeminiSupervisor dependency sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiSupervisor/Agents.md
+      - ChatMachines/GeminiSupervisor/send-to-gemini.js
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gemini-supervisor-dependency-sync
+  cancel-in-progress: false
+
+jobs:
+  align-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Resolve changed base and sentinel
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          MAP='ChatMachines/GeminiSupervisor/dependency-map.json'
+          SENTINEL=$(node -p "require('./$MAP').sentinel_file")
+          ENABLED=$(node -p "String(require('./' + process.argv[1]).enabled === true)" "$SENTINEL")
+
+          echo "sentinel=$SENTINEL" >> "$GITHUB_OUTPUT"
+          echo "enabled=$ENABLED" >> "$GITHUB_OUTPUT"
+
+          if [ "$ENABLED" != 'true' ]; then
+            echo 'Dependency sync sentinel is false; this run is intentionally suppressed.'
+            echo 'skip=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BEFORE='${{ github.event.before }}'
+          SHA='${{ github.sha }}'
+          if [ "$BEFORE" = '0000000000000000000000000000000000000000' ]; then
+            CHANGED=$(git diff-tree --no-commit-id --name-only -r "$SHA" -- \
+              ChatMachines/GeminiSupervisor/Agents.md \
+              ChatMachines/GeminiSupervisor/send-to-gemini.js)
+          else
+            CHANGED=$(git diff --name-only "$BEFORE" "$SHA" -- \
+              ChatMachines/GeminiSupervisor/Agents.md \
+              ChatMachines/GeminiSupervisor/send-to-gemini.js)
+          fi
+
+          COUNT=$(printf '%s\n' "$CHANGED" | sed '/^$/d' | sort -u | wc -l | tr -d ' ')
+          if [ "$COUNT" -eq 0 ]; then
+            echo 'No mapped trigger file changed.'
+            echo 'skip=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$COUNT" -ne 1 ]; then
+            echo 'Exactly one mapped trigger file must change in a dependency-sync push.' >&2
+            printf '%s\n' "$CHANGED" >&2
+            exit 1
+          fi
+
+          BASE=$(printf '%s\n' "$CHANGED" | sed '/^$/d' | sort -u)
+          node - <<'NODE' "$MAP" "$BASE"
+          const fs = require('node:fs');
+          const [mapPath, base] = process.argv.slice(2);
+          const map = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
+          if (!map.mappings || !map.mappings[base]) {
+            throw new Error(`No dependency-map entry for ${base}`);
+          }
+          NODE
+
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo 'skip=false' >> "$GITHUB_OUTPUT"
+
+      - name: Configure evaluator for dependency alignment
+        if: steps.resolve.outputs.skip != 'true'
+        id: configure
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          EVAL_ROOT='ChatMachines/GeminiEvaluation'
+          MAP='ChatMachines/GeminiSupervisor/dependency-map.json'
+          BASE='${{ steps.resolve.outputs.base }}'
+          RUN_NONCE="dependency_sync_${GITHUB_SHA:0:12}_${GITHUB_RUN_ID}"
+
+          cp "$EVAL_ROOT/config.json" "$RUNNER_TEMP/gemini-evaluator-config.original.json"
+          cp "$EVAL_ROOT/evaluator-nextmessage/nextmessage.json" "$RUNNER_TEMP/gemini-evaluator-nextmessage.original.json"
+
+          node - <<'NODE' "$EVAL_ROOT/config.json" "$MAP" "$BASE" "$RUN_NONCE"
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const [configPath, mapPath, base, runNonce] = process.argv.slice(2);
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          const map = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
+          const route = map.mappings?.[base];
+          if (!route) throw new Error(`Missing dependency map route for ${base}`);
+          const dependents = Array.isArray(route.dependents) ? route.dependents : [];
+          const contextFiles = Array.isArray(route.context_files) ? route.context_files : [];
+          if (dependents.length === 0) throw new Error(`No dependents configured for ${base}`);
+
+          const toEvalRelative = repoPath => path.relative('ChatMachines/GeminiEvaluation', repoPath).replace(/\\/g, '/');
+          config.evaluation_mode = 'generic';
+          config.generic_reuse_message_history = false;
+          config.write_latest_compatibility_outputs = false;
+          config.generic_inputs = [
+            { key: 'dependency_map', type: 'file', path: toEvalRelative(mapPath) },
+            { key: 'authoritative_base', type: 'file', path: toEvalRelative(base) },
+            ...dependents.map((p, i) => ({ key: `dependent_${i + 1}`, type: 'file', path: toEvalRelative(p) })),
+            ...contextFiles.map((p, i) => ({ key: `context_${i + 1}`, type: 'file', path: toEvalRelative(p) }))
+          ];
+          config.evaluation_heuristic = [
+            'Perform dependency alignment for the supplied file-to-file dependency map.',
+            `The authoritative base file for this run is exactly: ${base}.`,
+            'Treat the committed authoritative base as immutable. Do not rewrite, reinterpret, roll back, or propose replacement content for it.',
+            `The only files that may be revised are these mapped dependents: ${JSON.stringify(dependents)}.`,
+            `Read-only context files are: ${JSON.stringify(contextFiles)}. They may inform alignment but must never be returned as updates.`,
+            'For each mapped dependent, determine whether its complete contents must change to remain semantically and operationally aligned with the authoritative base.',
+            'Preserve unrelated behavior. Make only changes required for cross-file consistency, shared contracts, paths, schemas, configuration semantics, and runtime/specification agreement caused by the authoritative base change.',
+            'Return every mapped dependent exactly once. Use NO_CHANGE when already aligned. Use REPLACE only when a change is necessary, and then return the complete non-truncated replacement file content.',
+            'Never include the authoritative base, dependency map, sentinel, or read-only context files in updates.',
+            'Do not use patches, ellipses, partial snippets, or placeholders.'
+          ].join(' ');
+          config.evaluation_output_schema = {
+            response_type: 'dependency_alignment',
+            base_file: base,
+            alignment_result: 'ALIGNED | CHANGES_REQUIRED | INDETERMINATE',
+            updates: dependents.map(p => ({
+              path: p,
+              action: 'NO_CHANGE | REPLACE',
+              complete_content: 'string | null',
+              rationale: 'string'
+            })),
+            unresolved_requirements: ['string']
+          };
+          fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+          NODE
+
+          node - <<'NODE' "$EVAL_ROOT/evaluator-nextmessage/nextmessage.json" "$RUN_NONCE"
+          const fs = require('node:fs');
+          const [p, nonce] = process.argv.slice(2);
+          fs.writeFileSync(p, JSON.stringify({
+            nextmessage: {
+              role: 'user',
+              parts: [{ text: 'Execute the configured dependency alignment exactly as defined by config.evaluation_heuristic and return the configured dependency_alignment JSON.' }]
+            },
+            run_nonce: nonce
+          }, null, 2) + '\n');
+          NODE
+
+          echo "run_nonce=$RUN_NONCE" >> "$GITHUB_OUTPUT"
+
+      - name: Run dependency evaluator
+        if: steps.resolve.outputs.skip != 'true'
+        working-directory: ChatMachines/GeminiEvaluation
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: node evaluate-supervisor.js
+
+      - name: Apply mapped dependent replacements
+        if: steps.resolve.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          MAP='ChatMachines/GeminiSupervisor/dependency-map.json'
+          BASE='${{ steps.resolve.outputs.base }}'
+          RUN_NONCE='${{ steps.configure.outputs.run_nonce }}'
+          RESULT="ChatMachines/GeminiEvaluation/evaluations/$RUN_NONCE/evaluation.json"
+
+          node - <<'NODE' "$MAP" "$BASE" "$RESULT"
+          const fs = require('node:fs');
+          const [mapPath, base, resultPath] = process.argv.slice(2);
+          const map = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
+          const result = JSON.parse(fs.readFileSync(resultPath, 'utf8'));
+          const expected = map.mappings?.[base]?.dependents || [];
+
+          if (result.response_type !== 'dependency_alignment') throw new Error(`Unexpected response_type: ${result.response_type}`);
+          if (result.base_file !== base) throw new Error(`Evaluator base_file ${result.base_file} does not match ${base}`);
+          if (!Array.isArray(result.updates)) throw new Error('dependency_alignment.updates must be an array');
+          if (Array.isArray(result.unresolved_requirements) && result.unresolved_requirements.length) {
+            throw new Error(`Unresolved dependency requirements: ${JSON.stringify(result.unresolved_requirements)}`);
+          }
+
+          const expectedSet = new Set(expected);
+          const seen = new Set();
+          for (const update of result.updates) {
+            if (!update || typeof update.path !== 'string') throw new Error('Every update requires path');
+            if (update.path === base) throw new Error('Evaluator attempted to rewrite authoritative base');
+            if (!expectedSet.has(update.path)) throw new Error(`Evaluator returned unmapped update ${update.path}`);
+            if (seen.has(update.path)) throw new Error(`Duplicate update for ${update.path}`);
+            seen.add(update.path);
+            if (update.action === 'NO_CHANGE') continue;
+            if (update.action !== 'REPLACE') throw new Error(`Invalid action ${update.action} for ${update.path}`);
+            if (typeof update.complete_content !== 'string') throw new Error(`REPLACE requires complete_content for ${update.path}`);
+            fs.writeFileSync(update.path, update.complete_content.endsWith('\n') ? update.complete_content : update.complete_content + '\n');
+          }
+          const missing = expected.filter(p => !seen.has(p));
+          if (missing.length) throw new Error(`Evaluator omitted mapped dependents: ${missing.join(', ')}`);
+          NODE
+
+      - name: Restore evaluator config and trigger
+        if: always() && steps.resolve.outputs.skip != 'true'
+        shell: bash
+        run: |
+          cp "$RUNNER_TEMP/gemini-evaluator-config.original.json" ChatMachines/GeminiEvaluation/config.json
+          cp "$RUNNER_TEMP/gemini-evaluator-nextmessage.original.json" ChatMachines/GeminiEvaluation/evaluator-nextmessage/nextmessage.json
+
+      - name: Commit aligned dependents with sentinel false
+        if: steps.resolve.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SENTINEL='${{ steps.resolve.outputs.sentinel }}'
+          RUN_NONCE='${{ steps.configure.outputs.run_nonce }}'
+          BASE='${{ steps.resolve.outputs.base }}'
+          MAP='ChatMachines/GeminiSupervisor/dependency-map.json'
+
+          node - <<'NODE' "$SENTINEL"
+          const fs = require('node:fs');
+          const p = process.argv[2];
+          const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+          s.enabled = false;
+          fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
+          NODE
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add "$SENTINEL" "ChatMachines/GeminiEvaluation/evaluations/$RUN_NONCE"
+          while IFS= read -r FILE; do
+            [ -n "$FILE" ] && git add "$FILE"
+          done < <(node - <<'NODE' "$MAP" "$BASE"
+          const fs = require('node:fs');
+          const [m, b] = process.argv.slice(2);
+          const map = JSON.parse(fs.readFileSync(m, 'utf8'));
+          for (const p of map.mappings[b].dependents) console.log(p);
+          NODE
+          )
+
+          if git diff --cached --quiet -- "$SENTINEL"; then
+            echo 'Sentinel false transition was not staged.' >&2
+            exit 1
+          fi
+
+          git commit -m "Align GeminiSupervisor dependencies to $BASE"
+          git push origin HEAD:main
+
+      - name: Restore sentinel true
+        if: steps.resolve.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SENTINEL='${{ steps.resolve.outputs.sentinel }}'
+
+          node - <<'NODE' "$SENTINEL"
+          const fs = require('node:fs');
+          const p = process.argv[2];
+          const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+          s.enabled = true;
+          fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
+          NODE
+
+          git add "$SENTINEL"
+          git commit -m 'Restore GeminiSupervisor dependency sync sentinel'
+          git push origin HEAD:main

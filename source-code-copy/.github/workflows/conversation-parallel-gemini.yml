@@ -1,0 +1,131 @@
+name: Conversation Parallel Gemini
+
+on:
+  workflow_dispatch:
+    inputs:
+      paths:
+        description: 'JSON array of repository file or directory paths'
+        required: true
+        type: string
+      instruction:
+        description: Shared analysis instruction for each independent path
+        required: true
+        type: string
+      maxParallel:
+        description: Maximum simultaneous Gemini jobs (1 to 16)
+        default: '4'
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/**'
+      - '.github/workflows/conversation-parallel-gemini.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      live: ${{ steps.plan.outputs.live }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      parallel: ${{ steps.plan.outputs.parallel }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test assignment worker
+        run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/test_run_task.py'
+      - name: Build assignments
+        id: plan
+        run: python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/plan.py'
+      - uses: actions/upload-artifact@v4
+        if: steps.plan.outputs.live == 'true'
+        with:
+          name: parallel-gemini-plan
+          path: parallel-plan/
+          retention-days: 30
+
+  analyze:
+    needs: plan
+    if: needs.plan.outputs.live == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(needs.plan.outputs.parallel) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: parallel-gemini-plan
+          path: parallel-plan
+      - name: Analyze assigned path
+        env:
+          ASSIGNED_PATH: ${{ matrix.path }}
+          ASSIGNMENT_INDEX: ${{ matrix.index }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: >-
+          python 'ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/parallel-gemini/run_task.py'
+          --path "$ASSIGNED_PATH"
+          --instruction-file parallel-plan/instruction.txt
+          --output "parallel-results/task-$ASSIGNMENT_INDEX"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parallel-gemini-task-${{ matrix.index }}
+          path: parallel-results/
+          if-no-files-found: warn
+          retention-days: 30
+
+  collect:
+    needs: [plan, analyze]
+    if: always() && needs.plan.outputs.live == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: parallel-gemini-plan
+          path: parallel-plan
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: parallel-gemini-task-*
+          path: collected
+          merge-multiple: true
+      - name: Index all assignment outcomes
+        run: |
+          python <<'PY'
+          import json, os
+          from pathlib import Path
+          assignments=json.loads(Path('parallel-plan/assignments.json').read_text())
+          results=[]
+          for task in assignments:
+              result=Path('collected')/('task-'+str(task['index']))/'result.json'
+              record=json.loads(result.read_text()) if result.exists() else {'status':'missing','error':'Worker produced no result artifact'}
+              results.append({**task, **record})
+          Path('collected').mkdir(exist_ok=True)
+          Path('collected/index.json').write_text(json.dumps(results,indent=2)+'\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('# Parallel Gemini results\n\n')
+              for r in results:
+                  f.write('- Assignment '+str(r['index'])+': '+r['path']+' — '+r['status']+'\n')
+          if any(r['status']!='completed' for r in results):
+              raise SystemExit('One or more assignments failed or are missing; inspect the result index.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parallel-gemini-collected
+          path: collected/
+          retention-days: 30

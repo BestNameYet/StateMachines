@@ -1,0 +1,86 @@
+name: GeminiSupervisor truth-reader dependency sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiSupervisor/config.json
+      - ChatMachines/GeminiSupervisor/README.md
+      - ChatMachines/GeminiSupervisor/MANIFEST.md
+      - ChatMachines/GeminiSupervisor/tests/step-3-evaluation.json
+      - ChatMachines/GeminiSupervisor/dependency-map.json
+      - ChatMachines/GeminiSupervisor/scripts/sync-stable-readers.js
+      - ChatMachines/GeminiSupervisor/stable-readers/**
+  workflow_run:
+    workflows:
+      - GeminiSupervisor dependency sync
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gemini-supervisor-truth-reader-sync
+  cancel-in-progress: false
+
+jobs:
+  sync-stable-readers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Avoid racing the existing dependency alignment workflow
+        id: guard
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BEFORE='${{ github.event.before }}'
+          SHA='${{ github.sha }}'
+
+          if [ "$BEFORE" = '0000000000000000000000000000000000000000' ]; then
+            CHANGED=$(git diff-tree --no-commit-id --name-only -r "$SHA")
+          else
+            CHANGED=$(git diff --name-only "$BEFORE" "$SHA")
+          fi
+
+          if printf '%s\n' "$CHANGED" | grep -Eq '^ChatMachines/GeminiSupervisor/(Agents\.md|send-to-gemini\.js)$'; then
+            echo 'Mapped dependency base changed in this push; reader sync will run after GeminiSupervisor dependency sync completes.'
+            echo 'skip=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'skip=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sync stable readers and per-document provenance
+        if: github.event_name == 'workflow_run' || steps.guard.outputs.skip != 'true'
+        run: node ChatMachines/GeminiSupervisor/scripts/sync-stable-readers.js
+
+      - name: Commit stable reader/provenance changes
+        if: github.event_name == 'workflow_run' || steps.guard.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add ChatMachines/GeminiSupervisor/dependency-map.json
+          git add -A ChatMachines/GeminiSupervisor/stable-readers
+
+          if git diff --cached --quiet; then
+            echo 'Stable readers and provenance already match canon.'
+            exit 0
+          fi
+
+          git commit -m 'Sync GeminiSupervisor truth readers and provenance'
+          git push origin HEAD:main

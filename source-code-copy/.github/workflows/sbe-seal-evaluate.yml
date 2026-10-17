@@ -1,0 +1,116 @@
+name: SBE Seal Submission
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sbe-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  seal-submission:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'processing/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve request id
+        id: request
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          REQUEST_ID="${HEAD_REF#processing/}"
+          [[ "$REQUEST_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
+          echo "id=$REQUEST_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout trusted main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: trusted
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Checkout submission as data
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: submission
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Validate submission
+        id: submission
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REQUEST_ID: ${{ steps.request.outputs.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "trusted/SBE/requests/${REQUEST_ID}.json"
+          test ! -e submission/.delete-processing-branch
+          cd submission
+
+          mapfile -t ALL_CHANGED < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          [ "${#ALL_CHANGED[@]}" -eq 1 ] || {
+            echo "SBE requires exactly one changed submission file; found ${#ALL_CHANGED[@]}." >&2
+            exit 1
+          }
+
+          mapfile -t FILES < <(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" -- '*.gz')
+          [ "${#FILES[@]}" -eq 1 ] || {
+            echo 'The single SBE submission must be an added or modified .gz file.' >&2
+            exit 1
+          }
+
+          FILE="${FILES[0]}"
+          [ "$FILE" = "${ALL_CHANGED[0]}" ]
+          [[ "$FILE" =~ ^[A-Za-z0-9._/-]+\.gz$ ]]
+          [[ "$FILE" != /* ]]
+          [[ "$FILE" != *'..'* ]]
+          test -f "$FILE"
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Seal submission and authoritative request
+        env:
+          GZ_PASSWORD: ${{ secrets.GZ_PASSWORD }}
+          REQUEST_ID: ${{ steps.request.outputs.id }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SUBMISSION_FILE: ${{ steps.submission.outputs.file }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node trusted/ChatMachines/SBE/sbe-pack.js \
+            "submission/${SUBMISSION_FILE}" \
+            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z" \
+            "trusted/SBE/requests/${REQUEST_ID}.json"
+
+      - name: Persist sealed artifact and mark branch for deletion
+        env:
+          REQUEST_ID: ${{ steps.request.outputs.id }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SUBMISSION_FILE: ${{ steps.submission.outputs.file }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node trusted/ChatMachines/SBE/sbe-finalize.js \
+            trusted \
+            submission \
+            "$REQUEST_ID" \
+            "$PR_NUMBER" \
+            "$HEAD_REF" \
+            "$HEAD_SHA" \
+            "$SUBMISSION_FILE" \
+            "$RUNNER_TEMP/${REQUEST_ID}-${HEAD_SHA}.7z"

@@ -1,0 +1,172 @@
+name: Matching Image Comparison
+
+on:
+  issues:
+    types: [opened]
+  push:
+    paths:
+      - 'matching/runtime_config.json'
+
+permissions:
+  contents: write
+  packages: write
+  issues: write
+
+concurrency:
+  group: matching-runtime-build-and-compare
+  cancel-in-progress: false
+
+jobs:
+  persistence_test:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Read configuration
+        id: config
+        run: |
+          python - <<'PY'
+          import json,os
+          config=json.load(open('matching/runtime_config.json'))
+          mode=config['mode']
+          if mode not in ('normal','test'): raise SystemExit('Invalid mode')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f: f.write('mode='+mode+'\n')
+          PY
+      - name: Test remote Git LFS persistence
+        if: steps.config.outputs.mode == 'test'
+        run: python matching/test_persistence.py
+
+  compare:
+    if: github.event.issue.title == 'matching-trigger'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current image sets and comparison program
+        uses: actions/checkout@v4
+        env:
+          GIT_LFS_SKIP_SMUDGE: '1'
+        with:
+          lfs: false
+
+      - name: Resolve source models and offline wheels
+        shell: bash
+        run: |
+          set -euo pipefail
+          git lfs pull --include='matching/models/*,matching/wheels/*'
+          test "$(find matching/wheels -maxdepth 1 -name '*.whl' | wc -l)" -ge 10
+          for model in spatial_detector feature_encoder; do
+            test "$(stat -c %s "matching/models/${model}.onnx")" -gt 1000000
+          done
+
+      - name: Authenticate to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check image against repository build inputs; rebuild if absent or stale
+        id: runtime
+        shell: bash
+        env:
+          IMAGE: ghcr.io/bestnameyet/statemachines-matching-runtime:py310
+        run: |
+          set -euo pipefail
+          fingerprint="$(
+            find matching/models matching/wheels -type f ! -name '.gitkeep' -print0 |
+              sort -z | xargs -0 sha256sum
+            sha256sum matching/Dockerfile.runtime matching/requirements.txt
+          )"
+          fingerprint="$(printf '%s' "$fingerprint" | sha256sum | cut -d' ' -f1)"
+          needs_build=true
+          if docker pull "$IMAGE"; then
+            published="$(docker image inspect "$IMAGE" --format '{{ index .Config.Labels "org.statemachines.matching.build-input-sha256" }}' 2>/dev/null || true)"
+            if [ "$published" = "$fingerprint" ]; then
+              needs_build=false
+            fi
+          fi
+          if [ "$needs_build" = true ]; then
+            echo "Container missing or build inputs changed: building from checked-out repository."
+            docker build \
+              --file matching/Dockerfile.runtime \
+              --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+              --label "org.opencontainers.image.revision=${{ github.sha }}" \
+              --label "org.statemachines.matching.build-input-sha256=$fingerprint" \
+              --tag "$IMAGE" .
+            docker push "$IMAGE"
+          else
+            echo "Published container matches the repository build inputs; reusing it."
+          fi
+          digest="$(docker image inspect "$IMAGE" --format '{{index .RepoDigests 0}}')"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Runtime provenance"
+            echo "- Image: \`$IMAGE\`"
+            echo "- Resolved image: \`$digest\`"
+            echo "- Build-input SHA256: \`$fingerprint\`"
+            echo "- Rebuilt: \`$needs_build\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Compare current anchor against telemetry batch using prebuilt runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --mount "type=bind,src=${{ github.workspace }},dst=/repo" \
+            --workdir /repo \
+            --env GITHUB_STEP_SUMMARY=/repo/matching/metrics.md \
+            --entrypoint /bin/sh \
+            ${{ steps.runtime.outputs.digest }} \
+            -ec '
+              cp /workspace/matching/models/spatial_detector.onnx matching/models/spatial_detector.onnx
+              cp /workspace/matching/models/feature_encoder.onnx matching/models/feature_encoder.onnx
+              python matching/state_machine.py
+            '
+
+      - name: Publish comparison report in GitHub Actions summary
+        if: always()
+        shell: bash
+        run: |
+          if test -s matching/metrics.md; then
+            cat matching/metrics.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No comparison report produced. Check execution logs (including missing anchor images)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload comparison report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matching-comparison-report
+          path: matching/metrics.md
+          if-no-files-found: ignore
+
+
+      - name: Post result and close trigger issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "Matching image comparison: **${JOB_STATUS}**"
+            echo
+            echo "Workflow run: ${RUN_URL}"
+            if test -s matching/metrics.md; then
+              echo
+              cat matching/metrics.md
+            else
+              echo
+              echo "No comparison report was generated. Inspect workflow logs."
+            fi
+          } > /tmp/matching-issue-comment.md
+          gh issue comment "${ISSUE_NUMBER}" --repo "${GH_REPO}" --body-file /tmp/matching-issue-comment.md
+          gh issue close "${ISSUE_NUMBER}" --repo "${GH_REPO}" --reason completed

@@ -1,0 +1,65 @@
+name: Gemini Supervisor evaluator
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ChatMachines/GeminiEvaluation/evaluator-nextmessage/**
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gemini-supervisor-evaluator
+  cancel-in-progress: false
+
+jobs:
+  evaluate-supervisor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Evaluate or revise Gemini Supervisor against Agents.md
+        working-directory: ChatMachines/GeminiEvaluation
+        env:
+          GEMINI_API_KEY: ${{ vars.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: node evaluate-supervisor.js
+
+      - name: Commit evaluator response
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          EVALUATION_ROOT="ChatMachines/GeminiEvaluation"
+          EVALUATIONS_ROOT=$(node -p "require('./ChatMachines/GeminiEvaluation/config.json').evaluations_root || 'evaluations'")
+          REVISION_OUTPUT_PATH=$(node -p "require('./ChatMachines/GeminiEvaluation/config.json').revision_deliverables_output_path || ''")
+
+          if [ -d "$EVALUATION_ROOT/$EVALUATIONS_ROOT" ]; then
+            git add "$EVALUATION_ROOT/$EVALUATIONS_ROOT"
+          fi
+
+          for FILE in evaluator-messages.json generic-evaluator-messages.json program-evaluation.json; do
+            if [ -f "$EVALUATION_ROOT/$FILE" ]; then
+              git add "$EVALUATION_ROOT/$FILE"
+            fi
+          done
+
+          if [ -n "$REVISION_OUTPUT_PATH" ] && [ -d "$EVALUATION_ROOT/$REVISION_OUTPUT_PATH" ]; then
+            git add "$EVALUATION_ROOT/$REVISION_OUTPUT_PATH"
+          fi
+
+          if git diff --cached --quiet; then
+            echo "No evaluator output change."
+            exit 0
+          fi
+
+          git commit -m "Update Gemini Supervisor evaluator output"
+          git push origin HEAD:main

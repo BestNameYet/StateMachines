@@ -1,0 +1,50 @@
+name: Flatten MetaProcedure JSON
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/flatten-meta-procedure.yml'
+      - 'untrusted AI/meta-procedure/flatten-json.js'
+      - 'untrusted AI/meta-procedure/731942_ai_nlep_meta_procedure.json'
+
+permissions:
+  contents: write
+
+jobs:
+  flatten:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Execute flatten-json.js on the MetaProcedure
+        shell: bash
+        run: |
+          set -euo pipefail
+          source='untrusted AI/meta-procedure/731942_ai_nlep_meta_procedure.json'
+          script='untrusted AI/meta-procedure/flatten-json.js'
+          output='untrusted AI/meta-procedure/731942_ai_nlep_meta_procedure.flattened.json'
+          temp="$(mktemp)"
+          trap 'rm -f "$temp"' EXIT
+          node "$script" "$source" > "$temp"
+          node -e '
+            const fs = require("node:fs");
+            const atoms = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            if (!Array.isArray(atoms) || !atoms.length) process.exit(1);
+            console.log("Generated", atoms.length, "atomic elements");
+          ' "$temp"
+          mv "$temp" "$output"
+          git add -- "$output"
+
+          if git diff --cached --quiet -- "$output"; then
+            echo 'Flattened MetaProcedure is unchanged.'
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Regenerate flattened MetaProcedure JSON'
+          git push

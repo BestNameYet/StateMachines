@@ -1,0 +1,54 @@
+name: Project Folders Maker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Project Overview Project/triggers/projectfoldersmaker.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: project-folders-maker-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  create-project-folders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check trigger setting
+        id: trigger
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const config = JSON.parse(fs.readFileSync('Project Overview Project/triggers/projectfoldersmaker.json', 'utf8'));
+          if (typeof config.trigger_on !== 'boolean') {
+            throw new Error('trigger_on must be a JSON boolean');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `enabled=${config.trigger_on}\n`);
+          console.log(`Project folders trigger enabled: ${config.trigger_on}`);
+          NODE
+
+      - name: Create directories from projectnames.json
+        if: steps.trigger.outputs.enabled == 'true'
+        run: node 'Project Overview Project/projectfoldermaker.js'
+
+      - name: Commit generated directories
+        if: steps.trigger.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- 'Project Overview Project/Projects'
+          if git diff --cached --quiet; then
+            echo 'No new project directories to commit.'
+          else
+            git commit -m 'Generate project overview directories'
+            git push
+          fi

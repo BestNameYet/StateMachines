@@ -1,0 +1,87 @@
+name: SBE Report Configurable Updates
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification/configurable-updates-trigger.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sbe-report-configurable-updates-main
+  cancel-in-progress: false
+
+jobs:
+  apply-configured-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Read trigger
+        id: trigger
+        shell: bash
+        env:
+          TRIGGER_PATH: ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification/configurable-updates-trigger.json
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = process.env.TRIGGER_PATH;
+          const trigger = JSON.parse(fs.readFileSync(path, 'utf8'));
+          if (typeof trigger.run !== 'boolean') {
+            throw new Error('configurable-updates-trigger.json must contain boolean key run.');
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `run=${trigger.run}\n`);
+          NODE
+
+      - name: Set up Node
+        if: steps.trigger.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install YAML parser
+        if: steps.trigger.outputs.run == 'true'
+        run: npm install --no-save --package-lock=false yaml@2
+
+      - name: Execute configured lists
+        if: steps.trigger.outputs.run == 'true'
+        run: >-
+          node
+          "ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification/run-configurable-updates.js"
+          "ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification/configurable-updates.yml"
+
+      - name: Reset trigger and commit report-root changes
+        if: steps.trigger.outputs.run == 'true'
+        shell: bash
+        env:
+          REPORT_ROOT: ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification
+          TRIGGER_PATH: ChatMachines/Special Reports/SBE End-to-End Protocol and State Machine Specification/configurable-updates-trigger.json
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = process.env.TRIGGER_PATH;
+          const trigger = JSON.parse(fs.readFileSync(path, 'utf8'));
+          trigger.run = false;
+          fs.writeFileSync(path, `${JSON.stringify(trigger, null, 2)}\n`, 'utf8');
+          NODE
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$REPORT_ROOT"
+
+          if git diff --cached --quiet; then
+            echo 'No staged report-root changes.'
+            exit 0
+          fi
+
+          git commit -m 'Apply configured SBE report updates and reset trigger'
+          git push origin HEAD:main
