@@ -1,9 +1,12 @@
 {
-  "timestamp": "2026-10-17T09:00:30.000Z",
-  "enabled": false,
+  "timestamp": "2026-10-17T09:28:12.473Z",
+  "enabled": true,
   "paths": [
-    "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/extracted/conversations-011/key_type_inventory.json"
+    "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/key-extraction/batch-00",
+    "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/key-extraction/batch-01",
+    "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/key-extraction/batch-02",
+    "ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/key-extraction/batch-03"
   ],
-  "instruction": "Analyze the assigned key_type_inventory.json as a record of the conversation archive key scan. Return valid JSON only with these fields: scope, shard_count, conversation_count, distinct_key_count, observed_json_types, dynamic_key_handling, what_the_inventory_establishes, and provenance_limits. Report only values supported by the assigned file. In provenance_limits, state clearly whether this file itself documents the script, command, or exact generation process; do not infer undocumented provenance.",
+  "instruction": "For every conversation record in the assigned JSON files, inventory every key by its exact name and JSON value type. Include keys at all nesting depths. Return valid JSON only with: source_files (array of assigned source paths), conversation_count, keys (array of objects with key and observed_types), and notes for any ambiguity or parsing limits. Use only these JSON types: object, array, string, number, boolean, null. Do not include or reproduce field values, infer semantics, or omit keys because they are uncommon. Deduplicate key names in the output and list all observed types for each key.",
   "maxParallel": 4
 }
