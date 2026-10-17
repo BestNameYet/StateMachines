@@ -8,6 +8,7 @@ assert.deepEqual(changedPathsFromEvent({commits:[]},[{filename:path},path]),[pat
 assert.equal(issueNumberFromChangedPath(path.replace('45-','0-')),null);
 assert.equal(issueNumberFromChangedPath(path.replace('45-','45x-')),null);
 assert.deepEqual(parseToolInvocationSubmission(JSON.stringify({procedureIssueNumber:45,toolInvocations:[]}),45),[]);
+assert.deepEqual(parseToolInvocationSubmission(JSON.stringify({procedureIssueNumber:45,statistics:{totalRecords:0},toolInvocations:[]}),45),[]);
 assert.throws(()=>parseToolInvocationSubmission('{bad json',45),/JSON/);
 assert.throws(()=>parseToolInvocationSubmission(JSON.stringify({procedureIssueNumber:46,toolInvocations:[]}),45),/must equal 45/);
 assert.throws(()=>parseToolInvocationSubmission(JSON.stringify({procedureIssueNumber:45,toolInvocations:[],extra:true}),45),/unexpected top-level/);
