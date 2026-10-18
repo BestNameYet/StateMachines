@@ -8,7 +8,7 @@ Use [GitHub command console — issue #59](https://github.com/BestNameYet/StateM
 {"version":1,"command":"repos/get","parameters":{}}
 ```
 
-Choose a command and its arguments from [the command catalog](./command-catalog.json); use [the JSON schema](./user-issue-command.schema.json) for the envelope. Read the workflow's reply for status and its Actions run link for the full response artifact. The catalog contains 1,174 non-issue REST commands; credential permissions determine which can execute. To issue another command, post a new comment rather than editing the previous one.
+To retrieve the command reference directly in the issue, submit this short built-in command:\n\n```json\n{"version":1,"command":"help"}\n```\n\nThe console replies with links to the complete command catalog, JSON schema, and README. This `help` command is local to the console, needs no API credential beyond its owner check, and does not execute a GitHub REST request. Read the workflow's reply for status and its Actions run link for the full response artifact. The catalog contains 1,174 non-issue REST commands; credential permissions determine which can execute. To issue another command, post a new comment rather than editing the previous one.
 
 An owner-created issue containing `<!-- github-command-surface:v1 -->` is a persistent general command surface. Add that marker to the issue body. The repository owner submits one JSON command per new comment, either plain or inside one JSON fence. Other commenters, bots, pull requests and edited-comment events are ignored. This surface is independent of AGENTS Procedure runs, screens and workspace limits. Existing procedure commands continue unchanged.
 
