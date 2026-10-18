@@ -1,0 +1,42 @@
+--- a/.github/workflows/agents-procedure-issues.yml
++++ b/.github/workflows/agents-procedure-issues.yml
+@@ -21,6 +21,10 @@
+       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/supervisor-tools*.js'
+       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/worker-*.js'
+       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/root-workspace*.js'
++      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/run-package*.js'
++      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/package-*.js'
++      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/runtime/**'
++      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/procedures/*/records/tool-invocations.json'
+       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/file-commands*.js'
+       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/worker-instructions.md'
+       - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/gemini-request-template.json'
+@@ -46,16 +50,18 @@
+       - name: Check issue adapter and triggers
+         working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
+         run: |
+-          node transitions.test.js
+-          node interface.test.js
+-          node gemini-screen.test.js
+-          node gemini-workflow.test.js
+-          node supervisor-tools.test.js
+-          node root-workspace.test.js
+-          node file-commands.test.js
+-          node issue-workflow.test.js
+-          node issue-run-trigger.test.js
+-          node issue-run-tool-invocations.test.js
++          AGENTS_PACKAGE_LAYOUT=legacy node transitions.test.js
++          AGENTS_PACKAGE_LAYOUT=legacy node interface.test.js
++          AGENTS_PACKAGE_LAYOUT=legacy node gemini-screen.test.js
++          AGENTS_PACKAGE_LAYOUT=legacy node gemini-workflow.test.js
++          AGENTS_PACKAGE_LAYOUT=legacy node supervisor-tools.test.js
++          AGENTS_PACKAGE_LAYOUT=legacy node root-workspace.test.js
++          AGENTS_PACKAGE_LAYOUT=legacy node file-commands.test.js
++          AGENTS_PACKAGE_LAYOUT=legacy node issue-workflow.test.js
++          AGENTS_PACKAGE_LAYOUT=legacy node issue-run-trigger.test.js
++          AGENTS_PACKAGE_LAYOUT=legacy node issue-run-tool-invocations.test.js
++          node run-package.test.js
++          node runtime/runner.test.js
+ 
+       - name: Verify live Gemini screen generation when its sources change
+         working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
