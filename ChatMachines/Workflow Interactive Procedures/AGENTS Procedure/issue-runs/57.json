@@ -426,9 +426,15 @@
           "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/run-package.js",
           "value": "const path=require('node:path');\nconst WIP='ChatMachines/Workflow Interactive Procedures';\nconst BASE=WIP+'/AGENTS Procedure';\nconst unified=()=>process.env.AGENTS_PACKAGE_LAYOUT!=='legacy';\nfunction issueNumber(n){if(!Number.isSafeInteger(n)||n<1)throw Error('Invalid issue number.');return n;}\nfunction packagePath(n){return BASE+'/procedures/'+issueNumber(n);}\nfunction statePath(n){return unified()?packagePath(n)+'/records/state.json':BASE+'/issue-runs/'+issueNumber(n)+'.json';}\nfunction reportPath(n){return unified()?packagePath(n)+'/records/tool-invocations.json':BASE+'/issue-runs/'+issueNumber(n)+'-tool-invocations.json';}\nfunction filesPath(n){return unified()?packagePath(n)+'/files':BASE+'/issue-workspaces/'+issueNumber(n);}\nfunction triggerPath(n,identifier){return unified()?packagePath(n)+'/trigger.json':BASE+'/issue-run-triggers/'+identifier+'.json';}\nfunction scopedPath(value){\n if(typeof value!=='string'||value.includes('\\\\')||value.split('/').some(v=>!v||v==='.'||v==='..'||v==='.git')||!value.startsWith(WIP+'/'))throw Error('Path must stay inside WIP.');return value;\n}\nfunction workspaceFilePath(n,value,write=false){\n if(typeof value!=='string'||!value||value.includes('\\\\')||path.posix.isAbsolute(value)||value.split('/').some(v=>!v||v==='.'||v==='..'||v==='.git'))throw Error('Invalid package file path.');\n if(unified()&&(value==='records'||value.startsWith('records/'))){if(write)throw Error('Records are workflow-managed; use submit_report for reports.');return packagePath(n)+'/'+value;}\n if(unified()&&value.startsWith('runtime/results/')&&write)throw Error('Runtime results are workflow-managed.');\n if(unified()&&(value==='runtime'||value.startsWith('runtime/')))return packagePath(n)+'/'+value;\n return filesPath(n)+'/'+value;\n}\nconst route=p=>'/contents/'+scopedPath(p).split('/').map(encodeURIComponent).join('/');\nasync function readJson(api,p){const f=await api('GET',route(p),undefined,true);if(!f)return null;let blob=f;if(!f.content||f.encoding==='none')blob=await api('GET','/git/blobs/'+f.sha);return {file:f,value:JSON.parse(Buffer.from(blob.content,'base64').toString('utf8'))};}\nmodule.exports={WIP,BASE,unified,issueNumber,packagePath,statePath,reportPath,filesPath,triggerPath,workspaceFilePath,scopedPath,route,readJson};\n"
         },
-        "status": "pending",
+        "status": "succeeded",
         "before": null,
-        "prepared": true
+        "prepared": true,
+        "result": {
+          "beforeSha": null,
+          "commit": "43d2e0f522e265c838e6b46f5ce237332a7fa4e4",
+          "afterSha": "2304c23303229f1ec4f05187758465310cef59b0",
+          "status": "changed"
+        }
       }
     ]
   },
