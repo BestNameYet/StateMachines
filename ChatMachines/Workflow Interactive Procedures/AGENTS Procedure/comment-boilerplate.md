@@ -18,6 +18,8 @@ Procedure submission, polling, and recovery calls are communication operations; 
 
 ## Navigation and worker operations
 
+Only the repository owner (the owner login in `GITHUB_REPOSITORY`) may control the procedure through issue comments. Other users and bots are ignored, including file operations, worker commands, registration, navigation, and task returns that could trigger writes. Pending file operations are reauthorized against their original owner-authored comment before execution. This restriction applies to comment inputs; workflow-owned Gemini API operations retain their existing execution path.
+
 Type `state` to view saved state, `back` to return to the current instruction, or `retry` to resume a failed generation. Navigation does not advance the procedure; current expected inputs can be submitted from either view.
 
 Register with `register <nonce> <chatgpt|gemini>`. Choose a nonce once and retain it. Assignment returns use `{"nonce":"your-nonce","assignmentId":"assignment-id","values":{}}`, with the requested values inside `values`. Type `next <nonce>` only when that worker has no pending expected returns.
