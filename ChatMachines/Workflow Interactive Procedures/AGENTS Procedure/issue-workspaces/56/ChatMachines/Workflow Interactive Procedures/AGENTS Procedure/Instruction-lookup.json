@@ -1,0 +1,499 @@
+{
+  "1": [
+    [
+      "instructionnumber",
+      1
+    ],
+    [
+      "instruction",
+      "Repeat the user prompt verbatim. <string>: ${verbatimUserPrompt}"
+    ],
+    [
+      "return",
+      "${verbatimUserPrompt}"
+    ]
+  ],
+  "2": [
+    [
+      "instructionnumber",
+      2
+    ],
+    [
+      "instruction",
+      "Decide the implicit and explicit user intent expressed in the user prompt in the context of this chat. State it in fewer than 100 words. <string> (less than 100 words): ${userIntent}"
+    ],
+    [
+      "return",
+      "${userIntent}"
+    ]
+  ],
+  "3": [
+    [
+      "instructionnumber",
+      3
+    ],
+    [
+      "instruction",
+      "Decide if the intent expressed in ${userIntent} resembles the intent of one of these examples or could be rewritten to resemble it without changing its meaning. If a match is found, set ${exampleMatch} = true. If no match is found, set ${exampleMatch} = false. <boolean>: ${exampleMatch}"
+    ],
+    [
+      "examples",
+      [
+        {
+          "example": 1,
+          "promptText": "Explain the difference between a JSON object and a JSON array."
+        },
+        {
+          "example": 2,
+          "promptText": "Which of these two names sounds more appropriate for a software project?"
+        },
+        {
+          "example": 3,
+          "promptText": "What does JSON stand for?"
+        },
+        {
+          "example": 4,
+          "promptText": "What is 3/4 inch in millimeters?"
+        },
+        {
+          "example": 5,
+          "promptText": "Why are Python wheel files called wheels?"
+        }
+      ]
+    ],
+    [
+      "return",
+      "${exampleMatch}"
+    ]
+  ],
+  "4": [
+    [
+      "instructionnumber",
+      4
+    ],
+    [
+      "instruction",
+      "If ${exampleMatch} = true, follow the procedure in this object. If ${exampleMatch} = false, skip the procedure and proceed to the next instruction."
+    ],
+    [
+      "procedure",
+      [
+        {
+          "stepnumber": 1,
+          "steptext": "Restate ${userIntent}, preserving essential requirements and constraints. <string>: ${userIntent}"
+        },
+        {
+          "stepnumber": 2,
+          "steptext": "Execute ${userIntent} directly."
+        },
+        {
+          "stepnumber": 3,
+          "steptext": "Return the requested answer, output, or deliverable and stop. <{\"result\": <any>}>: ${minimalResult}"
+        }
+      ]
+    ],
+    [
+      "return",
+      "${minimalResult}"
+    ],
+    [
+      "stop",
+      "Stop."
+    ]
+  ],
+  "5": [
+    [
+      "stepnumber",
+      1
+    ],
+    [
+      "steptext",
+      "Restate ${userIntent}, preserving essential requirements and constraints. <string>: ${userIntent}"
+    ]
+  ],
+  "6": [
+    [
+      "stepnumber",
+      2
+    ],
+    [
+      "steptext",
+      "Execute ${userIntent} directly."
+    ]
+  ],
+  "7": [
+    [
+      "stepnumber",
+      3
+    ],
+    [
+      "steptext",
+      "Return the requested answer, output, or deliverable and stop. <{\"result\": <any>}>: ${minimalResult}"
+    ]
+  ],
+  "8": [
+    [
+      "instructionnumber",
+      5
+    ],
+    [
+      "instruction",
+      "A user intent always includes a desire to change data. Examine ${userIntent}. List each target filename and whether it must be created. Set newFile to true for a file to be created and false for an existing file to be changed. Use paths relative to the file workspace. <Array<{\"filename\": <filename>, \"newFile\": <boolean>}>>: ${targetFiles}"
+    ],
+    [
+      "return",
+      "${targetFiles}"
+    ]
+  ],
+  "9": [
+    [
+      "instructionnumber",
+      6
+    ],
+    [
+      "instruction",
+      "List the locations of the data that will be changed in ${targetFiles}. Include a brief description of the planned change and the specific intent from ${userIntent} requiring it for each location. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirements}"
+    ],
+    [
+      "return",
+      "${requirements}"
+    ]
+  ],
+  "10": [
+    [
+      "instructionnumber",
+      7
+    ],
+    [
+      "instruction",
+      "Restate the user intent. <string> (less than 100 words): ${userIntent}"
+    ],
+    [
+      "return",
+      "${userIntent}"
+    ]
+  ],
+  "11": [
+    [
+      "instructionnumber",
+      8
+    ],
+    [
+      "instruction",
+      "Here are nine examples. Iterate over the examples array and decide what the intent was for each promptText, then match to the example where the intent most resembles ${userIntent} or could be rewritten to resemble it without changing its meaning. Return the selected example object. <{\"example\": <integer>, \"promptText\": <string>}>: ${matchedExample}"
+    ],
+    [
+      "examples",
+      [
+        {
+          "example": 1,
+          "promptText": "Create a spreadsheet calculating monthly revenue, expenses, profit, and annual totals. Give me the finished file."
+        },
+        {
+          "example": 2,
+          "promptText": "Your previous attempt failed. Correct the implementation and compare what you actually did against what you said you would do."
+        },
+        {
+          "example": 3,
+          "promptText": "Follow these instructions exactly. Do not replace existing files, create additional files, or omit any operation. Report which operations succeeded."
+        },
+        {
+          "example": 4,
+          "promptText": "Find the files in the specified folder, extract the requested information, and assemble a complete JSON inventory."
+        },
+        {
+          "example": 5,
+          "promptText": "You changed sections I did not authorize. Restore those sections, make only the requested correction, and verify the saved document."
+        },
+        {
+          "example": 6,
+          "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+        },
+        {
+          "example": 7,
+          "promptText": "Verify each requested file edit against the saved files, identify any missing or incorrect changes, and correct them."
+        },
+        {
+          "example": 8,
+          "promptText": "You said you committed the file, but I cannot find it. Check the actual repository state and tell me exactly what happened."
+        },
+        {
+          "example": 9,
+          "promptText": "Extract the records from the archive, combine them into a JSON array, and save the completed file."
+        }
+      ]
+    ],
+    [
+      "return",
+      "${matchedExample}"
+    ]
+  ],
+  "12": [
+    [
+      "mode",
+      "Fidelity mode is selected."
+    ],
+    [
+      "stepnumber",
+      1
+    ],
+    [
+      "steptext",
+      "Restate ${requirements}. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirements}"
+    ]
+  ],
+  "13": [
+    [
+      "stepnumber",
+      2
+    ],
+    [
+      "steptext",
+      "Append new tool-invocation records to the toolInvocations array in the existing JSON file at toolInvocationFile.path. Preserve the top-level procedureIssueNumber and every previously recorded invocation; if toolInvocations is null, replace null with an array containing the new record or records. Add http_method and url to web-tool records as shown in toolInvocationFile.webToolFields. Do not duplicate earlier records. Commit the updated file to main. The workflow validates the appended records: if invalid, it leaves this render active and posts the validation error; if valid, it records them, reports summary statistics, and automatically advances to the change-list instruction. <Array<any>>: ${toolInvocations}"
+    ],
+    [
+      "operator",
+      [
+        {
+          "instruction": "Determine whether the user specified an operator or method. If so, record it verbatim; otherwise return null. <string | null>: ${specifiedOperatorByUser}",
+          "return": "${specifiedOperatorByUser}"
+        },
+        {
+          "instruction": "Choose operator. If ${specifiedOperatorByUser} is null, choose an operator for performing the task; otherwise use the operator specified by the user. <string>: ${chosenOperator}",
+          "return": "${chosenOperator}"
+        }
+      ]
+    ],
+    [
+      "return",
+      {
+        "required": [
+          "${cwd}",
+          "${command_line_verbatim}",
+          "${tool}",
+          "${invocation_verbatim}",
+          "${final_output_after_completion_of_tool_call}",
+          "${unavailable_reason}",
+          "${new}",
+          "${filename}",
+          "${frombyte}",
+          "${tobyte}",
+          "${description}",
+          "${intent}",
+          "${operator}"
+        ],
+        "For web tools": {
+          "return": {
+            "input": {
+              "$ref": "#/return/required"
+            },
+            "append": [
+              "${http_method}",
+              "${url}"
+            ]
+          }
+        },
+        "descriptor": "Select one value from Outcome for ${outcome} that matches the observed result of the tool call. Report only what the final output establishes.",
+        "Outcome": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "blocked",
+            "unfinished",
+            "unknown"
+          ]
+        },
+        "return": "${outcome}"
+      }
+    ],
+    [
+      "toolInvocationFile",
+      null
+    ]
+  ],
+  "14": [
+    [
+      "stepnumber",
+      3
+    ],
+    [
+      "toolInvocationReport",
+      "${toolInvocations}"
+    ],
+    [
+      "steptext",
+      "Construct ${changeList}: 1. Read the JSON artifact at toolInvocationReport.file and use its complete toolInvocations array without truncation. 2. Using that report and other available information, list the actual data changes. 3. Initialize ${changeList} as an empty array. 4. Iterate over the actual data changes. For each change, create a record with this shape: {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}. Record the location, a brief description of the actual change, its associated intent, and its operator. 5. Append each record to ${changeList}. 6. Return the completed array. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${changeList}"
+    ]
+  ],
+  "15": [
+    [
+      "mode",
+      "Accountability mode is selected."
+    ],
+    [
+      "stepnumber",
+      1
+    ],
+    [
+      "steptext",
+      "Initialize ${requirementsCompleted} as an empty array on first entry to this procedure. Preserve it across subsequent iterations. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirementsCompleted}"
+    ]
+  ],
+  "16": [
+    [
+      "stepnumber",
+      2
+    ],
+    [
+      "steptext",
+      "Restate ${requirements}. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirements}"
+    ]
+  ],
+  "17": [
+    [
+      "stepnumber",
+      3
+    ],
+    [
+      "steptext",
+      "Append new tool-invocation records to the toolInvocations array in the existing JSON file at toolInvocationFile.path. Preserve the top-level procedureIssueNumber and every previously recorded invocation; if toolInvocations is null, replace null with an array containing the new record or records. Add http_method and url to web-tool records as shown in toolInvocationFile.webToolFields. Do not duplicate earlier records. Commit the updated file to main. The workflow validates the appended records: if invalid, it leaves this render active and posts the validation error; if valid, it records them, reports summary statistics, and automatically advances to the change-list instruction. <Array<any>>: ${toolInvocations}"
+    ],
+    [
+      "operator",
+      [
+        {
+          "instruction": "Determine whether the user specified an operator or method. If so, record it verbatim; otherwise return null. <string | null>: ${specifiedOperatorByUser}",
+          "return": "${specifiedOperatorByUser}"
+        },
+        {
+          "instruction": "Choose operator. If ${specifiedOperatorByUser} is null, choose an operator for performing the task; otherwise use the operator specified by the user. <string>: ${chosenOperator}",
+          "return": "${chosenOperator}"
+        }
+      ]
+    ],
+    [
+      "return",
+      {
+        "required": [
+          "${cwd}",
+          "${command_line_verbatim}",
+          "${tool}",
+          "${invocation_verbatim}",
+          "${final_output_after_completion_of_tool_call}",
+          "${unavailable_reason}",
+          "${new}",
+          "${filename}",
+          "${frombyte}",
+          "${tobyte}",
+          "${description}",
+          "${intent}",
+          "${operator}"
+        ],
+        "For web tools": {
+          "return": {
+            "input": {
+              "$ref": "#/return/required"
+            },
+            "append": [
+              "${http_method}",
+              "${url}"
+            ]
+          }
+        },
+        "descriptor": "Select one value from Outcome for ${outcome} that matches the observed result of the tool call. Report only what the final output establishes.",
+        "Outcome": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "blocked",
+            "unfinished",
+            "unknown"
+          ]
+        },
+        "return": "${outcome}"
+      }
+    ],
+    [
+      "toolInvocationFile",
+      null
+    ]
+  ],
+  "18": [
+    [
+      "stepnumber",
+      4
+    ],
+    [
+      "toolInvocationReport",
+      "${toolInvocations}"
+    ],
+    [
+      "steptext",
+      "Construct ${changeList}: 1. Read the JSON artifact at toolInvocationReport.file and use its complete toolInvocations array without truncation. 2. Using that report and other available information, list the actual data changes. 3. Initialize ${changeList} as an empty array. 4. Iterate over the actual data changes. For each change, create a record with this shape: {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}. Record the location, a brief description of the actual change, its associated intent, and its operator. 5. Append each record to ${changeList}. 6. Return the completed array. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${changeList}"
+    ]
+  ],
+  "19": [
+    [
+      "stepnumber",
+      5
+    ],
+    [
+      "steptext",
+      "Reconcile ${changeList} to ${requirements}: 1. For each requirement with corresponding actual changes, create a reconciliation object containing requirement, the original object from ${requirements}, and changeList, the sublist of original objects from ${changeList} corresponding to that requirement. Append this object to the reconciliation array. 2. Collect requirements with no corresponding changes into missedRequirements, a sublist of ${requirements}. 3. Collect changes with no corresponding requirements into unapprovedChanges, a sublist of ${changeList}. 4. Return the reconciliation array and both sublists. <{\"reconciliation\": <Array<{\"requirement\": {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}, \"changeList\": <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>}>>, \"missedRequirements\": <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>, \"unapprovedChanges\": <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>}>: ${changeAssessment}"
+    ]
+  ],
+  "20": [
+    [
+      "stepnumber",
+      6
+    ],
+    [
+      "steptext",
+      "For each object in ${changeAssessment}.reconciliation, compare requirement with its changeList: 1. Identify every part of the requirement. 2. For each change, first compare its filename and operator with those of the requirement. A non-matching filename or non-matching operator is an error and does not count toward completion of any part. Flag each mismatch in errors, recording the field, expected value, actual value, and description. For changes passing both checks, describe which part each completes and how. 3. Show whether every part is complete. Return Complete only when all parts are complete; otherwise return Incomplete. 4. For an Incomplete requirement, construct a requirements array covering its unfinished parts, using the existing requirements record shape. Collect these arrays into remainderRequirements. <{\"requirementAssessments\": <Array<{\"requirement\": {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}, \"errors\": <Array<{\"change\": {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}, \"field\": <\"filename\" | \"operator\">, \"expected\": <string>, \"actual\": <string>, \"description\": <string>}>>, \"changeContributions\": <Array<{\"change\": {\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}, \"requirementPart\": <string>, \"description\": <string>}>>, \"parts\": <Array<{\"part\": <string>, \"description\": <string>, \"status\": <\"Complete\" | \"Incomplete\">}>>, \"status\": <\"Complete\" | \"Incomplete\">, \"remainderRequirements\": <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>}>>, \"remainderRequirements\": <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>}>: ${completionAssessment}"
+    ]
+  ],
+  "21": [
+    [
+      "stepnumber",
+      7
+    ],
+    [
+      "steptext",
+      "Iterate over ${completionAssessment}.requirementAssessments. For each assessment whose status is Complete, append its original requirement object to ${requirementsCompleted}. Preserve previously appended requirements. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirementsCompleted}"
+    ]
+  ],
+  "22": [
+    [
+      "stepnumber",
+      8
+    ],
+    [
+      "steptext",
+      "Iterate over ${changeAssessment}.unapprovedChanges. For each unapproved change, create a requirement to rescind that change and restore the data affected by it. Record the location, a brief description of the required rescission, the intent to rescind the unapproved change, and the operator. Append each record to rescissionRequirements. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${rescissionRequirements}"
+    ]
+  ],
+  "23": [
+    [
+      "stepnumber",
+      9
+    ],
+    [
+      "steptext",
+      "Combine ${completionAssessment}.remainderRequirements, ${changeAssessment}.missedRequirements, and ${rescissionRequirements} into one new requirements array. Preserve the records from all three lists. <Array<{\"filename\": <filename>, \"frombyte\": <integer>, \"tobyte\": <integer>, \"description\": <string>, \"intent\": <string>, \"operator\": <string>}>>: ${requirements}"
+    ]
+  ],
+  "24": [
+    [
+      "instructionnumber",
+      0
+    ],
+    [
+      "instruction",
+      "Select the procedure mode: normal, Gemini, or mirror. <\"normal\" | \"gemini\" | \"mirror\">: ${procedureMode}"
+    ],
+    [
+      "return",
+      "${procedureMode}"
+    ]
+  ]
+}
