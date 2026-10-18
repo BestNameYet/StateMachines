@@ -1,4 +1,3 @@
-
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const MARKER='<!-- github-command-surface:v1 -->';
@@ -66,21 +65,21 @@ async function run(env=process.env){
   return {help:true};
  }
  const receipt=await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nExecuting `'+command.command+'`.'});
- let result;
+ let result, responseText='';
  try{
   // Execute the requested GitHub operation, not a simulated request.
   const r=await call(apiToken,request.url,request);
+  responseText=await r.text();
   result={command:command.command,status:r.status,ok:r.ok};
-  if(!r.ok){
-   const errorText=(await r.text()).slice(0,1500);
-   result.error=errorText||r.statusText||'GitHub API request failed';
-  }else{
-   // Drain the response without publishing or retaining it.
-   if(r.body)await r.body.cancel();
-  }
+  if(!r.ok)result.error=responseText||r.statusText||'GitHub API request failed';
  }catch(error){result={command:command.command,ok:false,outcome:'unknown',error:error.message};}
  const summary=result.ok?'Executed `'+command.command+'` (HTTP '+result.status+').':'Failed `'+command.command+'`'+(result.status?' (HTTP '+result.status+')':'')+': '+(result.error||'Unknown outcome');
  await control(controlToken,repo,'/issues/comments/'+receipt.id,'PATCH',{body:receiptMarker+'\n'+summary});
+ // Return the API response to the same issue; split large responses instead of discarding them.
+ for(let offset=0,part=1;offset<responseText.length;offset+=30000,part++){
+  const chunk=responseText.slice(offset,offset+30000);
+  await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nResponse part '+part+'\n\n```text\n'+chunk+'\n```'});
+ }
  if(!result.ok)process.exitCode=1;return result;
 }
 if(require.main===module)run().catch(e=>{console.error(e.message);process.exitCode=1;});
