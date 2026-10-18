@@ -1,5 +1,15 @@
 # General GitHub command issue
 
+## Open the command surface
+
+Use [GitHub command console — issue #59](https://github.com/BestNameYet/StateMachines/issues/59). As the repository owner, add one new comment containing:
+
+```json
+{"version":1,"command":"repos/get","parameters":{}}
+```
+
+Choose a command and its arguments from [the command catalog](./command-catalog.json); use [the JSON schema](./user-issue-command.schema.json) for the envelope. Read the workflow's reply for status and its Actions run link for the full response artifact. The catalog contains 1,174 non-issue REST commands; credential permissions determine which can execute. To issue another command, post a new comment rather than editing the previous one.
+
 An owner-created issue containing `<!-- github-command-surface:v1 -->` is a persistent general command surface. Add that marker to the issue body. The repository owner submits one JSON command per new comment, either plain or inside one JSON fence. Other commenters, bots, pull requests and edited-comment events are ignored. This surface is independent of AGENTS Procedure runs, screens and workspace limits. Existing procedure commands continue unchanged.
 
 ## User-issue command JSON
