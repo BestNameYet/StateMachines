@@ -1,8 +1,14 @@
 const assert=require('node:assert/strict');
 const crypto=require('node:crypto');
-const {validateFileOperation,parseFileOperation,githubFileOperations,executeFileOperation}=require('./file-commands.js');
+const {isOwnerComment,validateFileOperation,parseFileOperation,githubFileOperations,executeFileOperation}=require('./file-commands.js');
 const hash=text=>crypto.createHash('sha1').update('blob '+Buffer.byteLength(text)+'\0'+text).digest('hex');
 async function test(){
+ const comment=(login,type='User')=>({user:{login,type}});
+ assert.equal(isOwnerComment(comment('BestNameYet'),'BestNameYet/StateMachines'),true);
+ assert.equal(isOwnerComment(comment('bestnameyet'),'BestNameYet/StateMachines'),true);
+ for(const candidate of [comment('outsider'),comment('BestNameYet','Bot'),comment('BestNameYet','Organization'),{},null])assert.equal(isOwnerComment(candidate,'BestNameYet/StateMachines'),false);
+ for(const repository of [undefined,'','BestNameYet','/StateMachines','BestNameYet/StateMachines/extra'])assert.equal(isOwnerComment(comment('BestNameYet'),repository),false);
+ console.log('Owner-only comment authorization: owner accepted; other users, bots, missing identity and invalid repository rejected.');
  const files=new Map();let calls=0,commits=0;
  const api=async(method,route,body)=>{
   calls++;const current=files.get(route);
