@@ -1,6 +1,6 @@
 {
   "state": {
-    "render": 11,
+    "render": 12,
     "verbatimUserPrompt": "Now, create a new procedure with file access limited to WIP...I want two things, combine exisiting trigger/run/workspace into a unified package, and then change the procedure to unify these events under the same procedure-wise directories...then looking at things that still aren't under the control of the command system...we need a test suite or runtime env folder to allow the necessary scripts to be run.",
     "userIntent": "Prepare WIP-scoped changes that colocate existing trigger/run/workspace data and future events in per-issue packages with records, files and runtime directories. Preserve legacy data and issue bindings. Add owner-gated commands for migration, report submission and registered-script execution with durable results; enforce WIP-only paths and keep credentials and records out of script containers. Stage the implementation and workflow wiring patch for review, test migration and event handling, and do not enable repository-root access.",
     "exampleMatch": false,
@@ -189,8 +189,11 @@
         "operator": "create"
       }
     ],
-    "matchedExample": null,
-    "mode": null,
+    "matchedExample": {
+      "example": 6,
+      "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+    },
+    "mode": "fidelity",
     "changeList": null,
     "requirementsCompleted": null,
     "changeAssessment": null,
@@ -210,25 +213,45 @@
       8
     ],
     "expectedInputs": {
-      "request": 8,
-      "render": 11,
+      "request": 9,
+      "render": 12,
       "inputs": [
         {
-          "name": "matchedExample",
+          "name": "requirements",
           "schema": {
-            "type": "object",
-            "properties": {
-              "example": {
-                "type": "integer"
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "filename": {
+                  "type": "string",
+                  "format": "file-reference"
+                },
+                "frombyte": {
+                  "type": "integer"
+                },
+                "tobyte": {
+                  "type": "integer"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "intent": {
+                  "type": "string"
+                },
+                "operator": {
+                  "type": "string"
+                }
               },
-              "promptText": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "example",
-              "promptText"
-            ]
+              "required": [
+                "filename",
+                "frombyte",
+                "tobyte",
+                "description",
+                "intent",
+                "operator"
+              ]
+            }
           }
         }
       ]
@@ -239,8 +262,8 @@
     }
   },
   "done": false,
-  "request": 8,
-  "lastCommentId": 6253780746,
+  "request": 9,
+  "lastCommentId": 6253794947,
   "newFiles": [
     "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/run-package.js",
     "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/package-migration.js",
@@ -1254,6 +1277,259 @@
               "name": "userIntent",
               "schema": {
                 "type": "string"
+              }
+            }
+          ]
+        },
+        "workspace": {
+          "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/57",
+          "manifest": "manifest.json"
+        }
+      }
+    },
+    {
+      "request": 8,
+      "render": 11,
+      "loopNumber": null,
+      "values": {
+        "$matchedExample": {
+          "example": 6,
+          "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+        }
+      },
+      "state": {
+        "render": 12,
+        "verbatimUserPrompt": "Now, create a new procedure with file access limited to WIP...I want two things, combine exisiting trigger/run/workspace into a unified package, and then change the procedure to unify these events under the same procedure-wise directories...then looking at things that still aren't under the control of the command system...we need a test suite or runtime env folder to allow the necessary scripts to be run.",
+        "userIntent": "Prepare WIP-scoped changes that colocate existing trigger/run/workspace data and future events in per-issue packages with records, files and runtime directories. Preserve legacy data and issue bindings. Add owner-gated commands for migration, report submission and registered-script execution with durable results; enforce WIP-only paths and keep credentials and records out of script containers. Stage the implementation and workflow wiring patch for review, test migration and event handling, and do not enable repository-root access.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/run-package.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/package-migration.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/package-commands.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/runtime/runner.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/runtime/tasks.example.json",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/runtime/README.md",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/run-package.test.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/runtime/runner.test.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-tool-invocations.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/supervisor-tools.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/workflow-update.patch",
+            "newFile": true
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/run-package.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Centralize WIP-only package paths and legacy compatibility.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/package-migration.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Plan and execute byte-preserving colocation with idempotency and conflict checks.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/package-commands.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Add owner-gated migrate_packages, submit_report and run_script operations with receipts.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/runtime/runner.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Execute registered Node/Python scripts in credential-free Docker containers with bounded resources.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/runtime/tasks.example.json",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Provide task-registration examples.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/runtime/README.md",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Document runtime setup and constraints.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/run-package.test.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Test package paths, migration, legacy loading and command dispatch.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/runtime/runner.test.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Test runtime registration, isolation settings and failure receipts.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Route issue events, records, workspace operations and command execution through package paths.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Initialize and bind triggers within unified packages while retaining legacy intake compatibility.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-tool-invocations.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Consume packaged reports and preserve the existing report validator.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/supervisor-tools.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Expose package/runtime command documentation and preserve workspace behavior.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Document package layout, migration, WIP scope and remaining external controls.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Document report, migration and runtime command envelopes.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/workflow-update.patch",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Provide a reviewed patch for workflow discovery/tests; no direct edits outside WIP.",
+            "intent": "Unify WIP procedure packages and bring necessary script/report execution under the command interface; stage for review without repository-root access.",
+            "operator": "create"
+          }
+        ],
+        "matchedExample": {
+          "example": 6,
+          "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+        },
+        "mode": "fidelity",
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null,
+        "procedureMode": "normal",
+        "workers": [],
+        "renderedRequests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "expectedInputs": {
+          "request": 8,
+          "render": 11,
+          "inputs": [
+            {
+              "name": "matchedExample",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "example": {
+                    "type": "integer"
+                  },
+                  "promptText": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "example",
+                  "promptText"
+                ]
               }
             }
           ]
