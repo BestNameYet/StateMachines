@@ -73,7 +73,7 @@ async function test() {
   const issue={number:700,title:'AGENTS Procedure',created_at:'2026-10-17T00:00:00Z',state:'open',body:'### Procedure acknowledgement\n- [x] I agree'};
   const comments=[], requests=[], documents=new Map();
   let nextId=1, geminiCalls=0, failGemini=false, badFirst=true, completeNext=false;
-  const reply=body=>{comments.push({id:nextId++,user:{type:'User'},body});};
+  const reply=(body,login='test')=>{comments.push({id:nextId++,user:{type:'User',login},body});};
   const response=(body,status=200)=>({ok:status>=200&&status<300,status,json:async()=>body});
   global.fetch=async(url,options={})=>{
     const body=options.body?JSON.parse(options.body):null;
@@ -118,6 +118,13 @@ async function test() {
     await run();
     assert(comments.at(-1).body.includes('procedureMode'));
     assert(!comments.at(-1).body.includes('Captured values'));
+    const ownerBaseline=structuredClone(saved());
+    reply(JSON.stringify({operation:'create',path:'unauthorized.js',value:'blocked'}),'outsider');await run();
+    assert.equal(saved().request,ownerBaseline.request);
+    assert.equal(saved().state.fileOperations?.length||0,0);
+    assert(![...documents.keys()].some(key=>key.endsWith('/unauthorized.js')));
+    reply('${procedureMode}: "gemini"','outsider');await run();
+    assert.equal(saved().state.procedureMode,ownerBaseline.state.procedureMode);
     const commandPath='/contents/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/issue-workspaces/700/command-test.js';
     reply(JSON.stringify({operation:'create',path:'command-test.js',value:'module.exports = 1;'}));await run();
     assert(documents.has(commandPath));assert.equal(saved().request,1);assert.equal(geminiCalls,0);
