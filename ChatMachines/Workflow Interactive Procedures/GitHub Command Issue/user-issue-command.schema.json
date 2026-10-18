@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "User issue GitHub API command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "command"],
+  "properties": {
+    "version": {"const": 1},
+    "command": {"type": "string", "description": "Exact non-issue REST operationId from command-catalog.json"},
+    "parameters": {"type": "object", "description": "Path and query arguments. owner/repo default to this repository where applicable."},
+    "body": {"description": "JSON request value, or raw text."},
+    "body_base64": {"type": "string", "description": "Binary HTTP body, base64 encoded; mutually exclusive with body."},
+    "headers": {"type": "object", "additionalProperties": {"type": "string"}, "description": "API media/version and endpoint headers; authorization, cookies, host and transport headers cannot be overridden."}
+  },
+  "not": {"required": ["body", "body_base64"]}
+}
