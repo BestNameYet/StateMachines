@@ -1,5 +1,9 @@
 const crypto=require('node:crypto');
 const {relativePath}=require('./supervisor-tools.js');
+function isOwnerComment(comment,repository){
+ const owner=typeof repository==='string'&&/^[^/]+\/[^/]+$/.test(repository)?repository.split('/')[0]:null;
+ return Boolean(owner&&comment?.user?.type==='User'&&typeof comment.user.login==='string'&&comment.user.login.toLowerCase()===owner.toLowerCase());
+}
 function validateFileOperation(value){
  if(!value||typeof value!=='object'||Array.isArray(value)||!['create','mutate','delete'].includes(value.operation))throw Error('Use create, mutate, or delete.');
  const keys=value.operation==='delete'?['operation','path']:['operation','path','value'];
@@ -60,4 +64,4 @@ async function executeFileOperation(record,item,storage,save){
  // If saving fails, the persisted pending receipt is replayed against current blob state.
  await save();return receipt;
 }
-module.exports={validateFileOperation,parseFileOperation,githubFileOperations,executeFileOperation};
+module.exports={isOwnerComment,validateFileOperation,parseFileOperation,githubFileOperations,executeFileOperation};
