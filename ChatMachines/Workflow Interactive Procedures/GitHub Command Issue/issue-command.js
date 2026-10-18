@@ -58,8 +58,13 @@ async function run(env=process.env){
   if(comments.length<100)break;
  }
  let command,request;
- try{command=parse(comment.body);request=requestFor(command,JSON.parse(fs.readFileSync(path.join(__dirname,'command-catalog.json'),'utf8')),repo);}
+ try{command=parse(comment.body);if(command.command==='help'){if(Object.keys(command).some(k=>!['version','command'].includes(k)))throw Error('help takes no arguments');}else request=requestFor(command,JSON.parse(fs.readFileSync(path.join(__dirname,'command-catalog.json'),'utf8')),repo);}
  catch(error){await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nRejected: '+error.message});return {rejected:true};}
+ if(command.command==='help'){
+  const docs='https://github.com/'+repo+'/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/GitHub%20Command%20Issue/';
+  await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nCommand reference (no API request executed):\n\n- [Command catalog]('+docs+'command-catalog.json)\n- [Command JSON schema]('+docs+'user-issue-command.schema.json)\n- [README and usage]('+docs+'README.md)\n\nUse `{\"version\":1,\"command\":\"repos/get\",\"parameters\":{}}` as a normal command example.'});
+  return {help:true};
+ }
  const runURL='https://github.com/'+repo+'/actions/runs/'+env.GITHUB_RUN_ID;
  const receipt=await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nAccepted `'+command.command+'`. Execution started. [Run]('+runURL+'). Do not resubmit until its result is known.'});
  const output=env.COMMAND_OUTPUT_DIR||path.join(env.RUNNER_TEMP||'/tmp','github-command-result');fs.mkdirSync(output,{recursive:true});
