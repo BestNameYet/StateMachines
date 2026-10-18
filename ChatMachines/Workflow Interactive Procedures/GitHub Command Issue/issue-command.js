@@ -50,6 +50,7 @@ async function run(env=process.env){
  const issue=await control(controlToken,repo,'/issues/'+event.issue.number);
  const comment=await control(controlToken,repo,'/issues/comments/'+event.comment.id);
  if(comment.body!==event.comment.body||comment.user?.type!=='User'||comment.user.login.toLowerCase()!==owner.toLowerCase())throw Error('Comment changed or owner authorization changed; submit a new comment');
+ if(!/^<!-- command-scope -->\s*\n/.test(comment.body))return {ignored:true};
  const receiptMarker='<!-- github-command-receipt:'+comment.id+':'+crypto.createHash('sha256').update(comment.body).digest('hex')+' -->';
  for(let page=1;;page++){
   const comments=await control(controlToken,repo,'/issues/'+issue.number+'/comments?per_page=100&page='+page);
@@ -57,7 +58,7 @@ async function run(env=process.env){
   if(comments.length<100)break;
  }
  let command,request;
- try{command=parse(comment.body);if(command.command==='help'){if(Object.keys(command).some(k=>!['version','command'].includes(k)))throw Error('help takes no arguments');}else request=requestFor(command,JSON.parse(fs.readFileSync(path.join(__dirname,'command-catalog.json'),'utf8')),repo);}
+ try{command=parse(comment.body.replace(/^<!-- command-scope -->\s*\n/,''));if(command.command==='help'){if(Object.keys(command).some(k=>!['version','command'].includes(k)))throw Error('help takes no arguments');}else request=requestFor(command,JSON.parse(fs.readFileSync(path.join(__dirname,'command-catalog.json'),'utf8')),repo);}
  catch(error){await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nRejected: '+error.message});return {rejected:true};}
  if(command.command==='help'){
   const docs='https://github.com/'+repo+'/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/GitHub%20Command%20Issue/';
