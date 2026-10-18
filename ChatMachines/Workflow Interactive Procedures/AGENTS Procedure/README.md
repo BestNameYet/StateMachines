@@ -280,6 +280,8 @@ The supervisor API payload includes file contents only from `read_files` results
 
 ## File commands through issue comments
 
+Only the repository owner (the owner login in `GITHUB_REPOSITORY`) may control the procedure through issue comments. Other users and bots are ignored, including file operations, worker commands, registration, navigation, and task returns that could trigger writes. Pending file operations are reauthorized against their original owner-authored comment before execution. This restriction applies to comment inputs; workflow-owned Gemini API operations retain their existing execution path.
+
 For an active procedure issue, submit one JSON operation per comment (plain JSON or a fenced JSON block). These commands work in normal and Gemini modes, without selecting a new mode or submitting a task return.
 
 ```json
