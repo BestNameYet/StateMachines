@@ -50,6 +50,7 @@ Only the region between the index markers below is generated; other README conte
 | [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-clustering/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/topic-clustering/README.md) |
 | [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-distribution/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/topic-distribution/README.md) |
 | [ChatMachines/Workflow Interactive Procedures/Conversation Archive Analysis/topic-merge/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/Conversation%20Archive%20Analysis/topic-merge/README.md) |
+| [ChatMachines/Workflow Interactive Procedures/GitHub Command Issue/README.md](./ChatMachines/Workflow%20Interactive%20Procedures/GitHub%20Command%20Issue/README.md) |
 | [SBE/README.md](./SBE/README.md) |
 | [matching/README.md](./matching/README.md) |
 | [matching/README_BUILD.md](./matching/README_BUILD.md) |
