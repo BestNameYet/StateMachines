@@ -2,6 +2,16 @@
 
 Repository for state machines, agent workflows, runtimes, and supporting projects.
 
+## GitHub command surface
+
+Use [GitHub command console — issue #59](https://github.com/BestNameYet/StateMachines/issues/59) to submit general GitHub API commands. Only the repository owner can execute commands. Submit one JSON object per new comment:
+
+```json
+{"version":1,"command":"repos/get","parameters":{}}
+```
+
+The [command guide](./ChatMachines/Workflow%20Interactive%20Procedures/GitHub%20Command%20Issue/README.md) links the JSON schema and catalog of 1,174 non-issue REST commands. Issue-management APIs are excluded. Each execution posts a receipt and links its workflow run; full responses are saved as Actions artifacts. API access depends on the workflow credential.
+
 ## Repository manifest
 
 [manifest.json](./manifest.json) inventories every Git-tracked file and its parent directories, recursively, including hidden directories. Untracked/ignored files and Git internals are excluded. Submodule paths are listed without traversing external repositories.
