@@ -65,19 +65,22 @@ async function run(env=process.env){
   await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nCommand reference (no API request executed):\n\n- [Command catalog]('+docs+'command-catalog.json)\n- [Command JSON schema]('+docs+'user-issue-command.schema.json)\n- [README and usage]('+docs+'README.md)\n\nUse `{\"version\":1,\"command\":\"repos/get\",\"parameters\":{}}` as a normal command example.'});
   return {help:true};
  }
- const runURL='https://github.com/'+repo+'/actions/runs/'+env.GITHUB_RUN_ID;
- const receipt=await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nAccepted `'+command.command+'`. Execution started. [Run]('+runURL+'). Do not resubmit until its result is known.'});
- const output=env.COMMAND_OUTPUT_DIR||path.join(env.RUNNER_TEMP||'/tmp','github-command-result');fs.mkdirSync(output,{recursive:true});
+ const receipt=await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nExecuting `'+command.command+'`.'});
  let result;
  try{
-  // Exactly one HTTP request: no automatic retries, pagination, or credential-bearing redirects.
-  const r=await call(apiToken,request.url,request),bytes=Buffer.from(await r.arrayBuffer());
-  fs.writeFileSync(path.join(output,'response.bin'),bytes);
-  result={command:command.command,comment_id:comment.id,status:r.status,ok:r.ok,request_id:r.headers.get('x-github-request-id'),headers:Object.fromEntries(r.headers),response_bytes:bytes.length,run:runURL};
-  if(command.command==='graphql'&&r.ok){try{const data=JSON.parse(bytes.toString());if(data.errors?.length){result.ok=false;result.graphql_errors=data.errors;}}catch{result.ok=false;}}
- }catch(error){result={command:command.command,comment_id:comment.id,ok:false,outcome:'unknown',error:error.message,run:runURL};}
- fs.writeFileSync(path.join(output,'result.json'),JSON.stringify(result,null,2)+'\n');
- await control(controlToken,repo,'/issues/comments/'+receipt.id,'PATCH',{body:receiptMarker+'\n```json\n'+JSON.stringify(result,null,2).slice(0,50000)+'\n```\nFull response: `github-command-'+comment.id+'` artifact in [workflow run]('+runURL+'). An unknown outcome requires checking the target before issuing another command.'});
+  // Execute the requested GitHub operation, not a simulated request.
+  const r=await call(apiToken,request.url,request);
+  result={command:command.command,status:r.status,ok:r.ok};
+  if(!r.ok){
+   const errorText=(await r.text()).slice(0,1500);
+   result.error=errorText||r.statusText||'GitHub API request failed';
+  }else{
+   // Drain the response without publishing or retaining it.
+   if(r.body)await r.body.cancel();
+  }
+ }catch(error){result={command:command.command,ok:false,outcome:'unknown',error:error.message};}
+ const summary=result.ok?'Executed `'+command.command+'` (HTTP '+result.status+').':'Failed `'+command.command+'`'+(result.status?' (HTTP '+result.status+')':'')+': '+(result.error||'Unknown outcome');
+ await control(controlToken,repo,'/issues/comments/'+receipt.id,'PATCH',{body:receiptMarker+'\n'+summary});
  if(!result.ok)process.exitCode=1;return result;
 }
 if(require.main===module)run().catch(e=>{console.error(e.message);process.exitCode=1;});
