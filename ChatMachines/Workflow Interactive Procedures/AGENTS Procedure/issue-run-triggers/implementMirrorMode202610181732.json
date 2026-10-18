@@ -4280,6 +4280,1602 @@
         "9:0": true
       },
       "view": "instruction"
+    },
+    {
+      "state": {
+        "render": 13,
+        "verbatimUserPrompt": "Great.  Now start a procedure. The user goal will be implement mirror mode.",
+        "userIntent": "Implement Mirror Mode in the existing AGENTS Procedure workflow: the agent submits instructions through comments, and the workflow validates, renders and tracks state and returns. Preserve normal/Gemini modes and owner-only command authorization. Prepare tested file changes in issue 56’s isolated directory, retaining repository-relative paths. Leave actual source files unchanged; the staged changes will be copied to their actual locations after review.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+            "newFile": true
+          },
+          {
+            "filename": ".github/workflows/agents-procedure-issues.yml",
+            "newFile": true
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Add Mirror Mode screen/return validation and state handling using existing schemas.",
+            "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Test Mirror Mode lifecycle, rejected inputs, completion, and owner-only issue routing.",
+            "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Route Mirror Mode issue comments through validation, persistence and publication without Gemini calls.",
+            "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Expose Mirror Mode through the existing local HTTP adapter.",
+            "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Provide a JSON Mirror Mode instruction input in the existing UI.",
+            "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Add mirror to the mode-selection instruction and allowed choices.",
+            "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Document Mirror Mode envelopes, lifecycle and review-only staging.",
+            "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Document owner-authored Mirror Mode comment syntax.",
+            "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+            "operator": "create"
+          },
+          {
+            "filename": ".github/workflows/agents-procedure-issues.yml",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Run Mirror Mode regression tests and trigger checks when mirror sources change.",
+            "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+            "operator": "create"
+          }
+        ],
+        "matchedExample": {
+          "example": 6,
+          "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+        },
+        "mode": "fidelity",
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null,
+        "procedureMode": "normal",
+        "workers": [],
+        "renderedRequests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "expectedInputs": {
+          "request": 10,
+          "render": 13,
+          "inputs": [
+            {
+              "name": "toolInvocations",
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "cwd": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "command_line_verbatim": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tool": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "invocation_verbatim": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "final_output_after_completion_of_tool_call": {},
+                    "unavailable_reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "new": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "filename": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "frombyte": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tobyte": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "intent": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "operator": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "const": "succeeded"
+                        },
+                        {
+                          "const": "failed"
+                        },
+                        {
+                          "const": "blocked"
+                        },
+                        {
+                          "const": "unfinished"
+                        },
+                        {
+                          "const": "unknown"
+                        }
+                      ]
+                    },
+                    "specifiedOperatorByUser": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "chosenOperator": {
+                      "type": "string"
+                    },
+                    "http_method": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cwd",
+                    "command_line_verbatim",
+                    "tool",
+                    "invocation_verbatim",
+                    "final_output_after_completion_of_tool_call",
+                    "unavailable_reason",
+                    "new",
+                    "filename",
+                    "frombyte",
+                    "tobyte",
+                    "description",
+                    "intent",
+                    "operator",
+                    "specifiedOperatorByUser",
+                    "chosenOperator",
+                    "outcome"
+                  ],
+                  "toolInvocation": true
+                }
+              }
+            }
+          ]
+        },
+        "workspace": {
+          "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/56",
+          "manifest": "manifest.json"
+        }
+      },
+      "done": false,
+      "request": 10,
+      "lastCommentId": 6253092612,
+      "newFiles": [
+        "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+        "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+        "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+        "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+        "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+        "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+        "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+        "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+        ".github/workflows/agents-procedure-issues.yml"
+      ],
+      "history": [
+        {
+          "request": 1,
+          "render": 24,
+          "loopNumber": null,
+          "values": {
+            "$procedureMode": "normal"
+          },
+          "state": {
+            "render": 1,
+            "verbatimUserPrompt": null,
+            "userIntent": null,
+            "exampleMatch": null,
+            "minimalResult": null,
+            "targetFiles": null,
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "procedureMode": "normal",
+            "workers": [],
+            "renderedRequests": [
+              1
+            ],
+            "expectedInputs": {
+              "request": 1,
+              "render": 24,
+              "inputs": [
+                {
+                  "name": "procedureMode",
+                  "schema": {
+                    "anyOf": [
+                      {
+                        "const": "normal"
+                      },
+                      {
+                        "const": "gemini"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "workspace": {
+              "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/56",
+              "manifest": "manifest.json"
+            }
+          }
+        },
+        {
+          "request": 2,
+          "render": 1,
+          "loopNumber": null,
+          "values": {
+            "$verbatimUserPrompt": "Great.  Now start a procedure. The user goal will be implement mirror mode."
+          },
+          "state": {
+            "render": 2,
+            "verbatimUserPrompt": "Great.  Now start a procedure. The user goal will be implement mirror mode.",
+            "userIntent": null,
+            "exampleMatch": null,
+            "minimalResult": null,
+            "targetFiles": null,
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "procedureMode": "normal",
+            "workers": [],
+            "renderedRequests": [
+              1,
+              2
+            ],
+            "expectedInputs": {
+              "request": 2,
+              "render": 1,
+              "inputs": [
+                {
+                  "name": "verbatimUserPrompt",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "workspace": {
+              "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/56",
+              "manifest": "manifest.json"
+            }
+          }
+        },
+        {
+          "request": 3,
+          "render": 2,
+          "loopNumber": null,
+          "values": {
+            "$userIntent": "Implement Mirror Mode in the existing AGENTS Procedure workflow in BestNameYet/StateMachines. In Mirror Mode, the agent submits instructions through issue comments, and the existing workflow formats and validates them while managing state changes. Preserve the existing command interface and owner-only authorization. Follow the existing procedure to determine requirements and carry out the implementation."
+          },
+          "state": {
+            "render": 3,
+            "verbatimUserPrompt": "Great.  Now start a procedure. The user goal will be implement mirror mode.",
+            "userIntent": "Implement Mirror Mode in the existing AGENTS Procedure workflow in BestNameYet/StateMachines. In Mirror Mode, the agent submits instructions through issue comments, and the existing workflow formats and validates them while managing state changes. Preserve the existing command interface and owner-only authorization. Follow the existing procedure to determine requirements and carry out the implementation.",
+            "exampleMatch": null,
+            "minimalResult": null,
+            "targetFiles": null,
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "procedureMode": "normal",
+            "workers": [],
+            "renderedRequests": [
+              1,
+              2,
+              3
+            ],
+            "expectedInputs": {
+              "request": 3,
+              "render": 2,
+              "inputs": [
+                {
+                  "name": "userIntent",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "workspace": {
+              "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/56",
+              "manifest": "manifest.json"
+            }
+          }
+        },
+        {
+          "request": 4,
+          "render": 3,
+          "loopNumber": null,
+          "values": {
+            "$exampleMatch": false
+          },
+          "state": {
+            "render": 8,
+            "verbatimUserPrompt": "Great.  Now start a procedure. The user goal will be implement mirror mode.",
+            "userIntent": "Implement Mirror Mode in the existing AGENTS Procedure workflow in BestNameYet/StateMachines. In Mirror Mode, the agent submits instructions through issue comments, and the existing workflow formats and validates them while managing state changes. Preserve the existing command interface and owner-only authorization. Follow the existing procedure to determine requirements and carry out the implementation.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": null,
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "procedureMode": "normal",
+            "workers": [],
+            "renderedRequests": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "expectedInputs": {
+              "request": 4,
+              "render": 3,
+              "inputs": [
+                {
+                  "name": "exampleMatch",
+                  "schema": {
+                    "type": "boolean"
+                  }
+                }
+              ]
+            },
+            "workspace": {
+              "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/56",
+              "manifest": "manifest.json"
+            }
+          }
+        },
+        {
+          "request": 5,
+          "render": 8,
+          "loopNumber": null,
+          "values": {
+            "$targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "newFile": true
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "newFile": true
+              }
+            ]
+          },
+          "state": {
+            "render": 9,
+            "verbatimUserPrompt": "Great.  Now start a procedure. The user goal will be implement mirror mode.",
+            "userIntent": "Implement Mirror Mode in the existing AGENTS Procedure workflow in BestNameYet/StateMachines. In Mirror Mode, the agent submits instructions through issue comments, and the existing workflow formats and validates them while managing state changes. Preserve the existing command interface and owner-only authorization. Follow the existing procedure to determine requirements and carry out the implementation.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "newFile": true
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "newFile": true
+              }
+            ],
+            "requirements": null,
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "procedureMode": "normal",
+            "workers": [],
+            "renderedRequests": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "expectedInputs": {
+              "request": 5,
+              "render": 8,
+              "inputs": [
+                {
+                  "name": "targetFiles",
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "filename": {
+                          "type": "string",
+                          "format": "file-reference"
+                        },
+                        "newFile": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "filename",
+                        "newFile"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "workspace": {
+              "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/56",
+              "manifest": "manifest.json"
+            }
+          }
+        },
+        {
+          "request": 6,
+          "render": 9,
+          "loopNumber": null,
+          "values": {
+            "$requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add Mirror Mode screen/return validation and state handling using existing schemas.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Test Mirror Mode lifecycle, rejected inputs, completion, and owner-only issue routing.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Route Mirror Mode issue comments through validation, persistence and publication without Gemini calls.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Expose Mirror Mode through the existing local HTTP adapter.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Provide a JSON Mirror Mode instruction input in the existing UI.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add mirror to the mode-selection instruction and allowed choices.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document Mirror Mode envelopes, lifecycle and review-only staging.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document owner-authored Mirror Mode comment syntax.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Run Mirror Mode regression tests and trigger checks when mirror sources change.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              }
+            ]
+          },
+          "state": {
+            "render": 10,
+            "verbatimUserPrompt": "Great.  Now start a procedure. The user goal will be implement mirror mode.",
+            "userIntent": "Implement Mirror Mode in the existing AGENTS Procedure workflow in BestNameYet/StateMachines. In Mirror Mode, the agent submits instructions through issue comments, and the existing workflow formats and validates them while managing state changes. Preserve the existing command interface and owner-only authorization. Follow the existing procedure to determine requirements and carry out the implementation.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "newFile": true
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "newFile": true
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add Mirror Mode screen/return validation and state handling using existing schemas.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Test Mirror Mode lifecycle, rejected inputs, completion, and owner-only issue routing.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Route Mirror Mode issue comments through validation, persistence and publication without Gemini calls.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Expose Mirror Mode through the existing local HTTP adapter.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Provide a JSON Mirror Mode instruction input in the existing UI.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add mirror to the mode-selection instruction and allowed choices.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document Mirror Mode envelopes, lifecycle and review-only staging.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document owner-authored Mirror Mode comment syntax.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Run Mirror Mode regression tests and trigger checks when mirror sources change.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              }
+            ],
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "procedureMode": "normal",
+            "workers": [],
+            "renderedRequests": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "expectedInputs": {
+              "request": 6,
+              "render": 9,
+              "inputs": [
+                {
+                  "name": "requirements",
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "filename": {
+                          "type": "string",
+                          "format": "file-reference"
+                        },
+                        "frombyte": {
+                          "type": "integer"
+                        },
+                        "tobyte": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "intent": {
+                          "type": "string"
+                        },
+                        "operator": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "filename",
+                        "frombyte",
+                        "tobyte",
+                        "description",
+                        "intent",
+                        "operator"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "workspace": {
+              "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/56",
+              "manifest": "manifest.json"
+            }
+          }
+        },
+        {
+          "request": 7,
+          "render": 10,
+          "loopNumber": null,
+          "values": {
+            "$userIntent": "Implement Mirror Mode in the existing AGENTS Procedure workflow: the agent submits instructions through comments, and the workflow validates, renders and tracks state and returns. Preserve normal/Gemini modes and owner-only command authorization. Prepare tested file changes in issue 56’s isolated directory, retaining repository-relative paths. Leave actual source files unchanged; the staged changes will be copied to their actual locations after review."
+          },
+          "state": {
+            "render": 11,
+            "verbatimUserPrompt": "Great.  Now start a procedure. The user goal will be implement mirror mode.",
+            "userIntent": "Implement Mirror Mode in the existing AGENTS Procedure workflow: the agent submits instructions through comments, and the workflow validates, renders and tracks state and returns. Preserve normal/Gemini modes and owner-only command authorization. Prepare tested file changes in issue 56’s isolated directory, retaining repository-relative paths. Leave actual source files unchanged; the staged changes will be copied to their actual locations after review.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "newFile": true
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "newFile": true
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add Mirror Mode screen/return validation and state handling using existing schemas.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Test Mirror Mode lifecycle, rejected inputs, completion, and owner-only issue routing.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Route Mirror Mode issue comments through validation, persistence and publication without Gemini calls.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Expose Mirror Mode through the existing local HTTP adapter.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Provide a JSON Mirror Mode instruction input in the existing UI.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add mirror to the mode-selection instruction and allowed choices.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document Mirror Mode envelopes, lifecycle and review-only staging.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document owner-authored Mirror Mode comment syntax.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Run Mirror Mode regression tests and trigger checks when mirror sources change.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              }
+            ],
+            "matchedExample": null,
+            "mode": null,
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "procedureMode": "normal",
+            "workers": [],
+            "renderedRequests": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "expectedInputs": {
+              "request": 7,
+              "render": 10,
+              "inputs": [
+                {
+                  "name": "userIntent",
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "workspace": {
+              "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/56",
+              "manifest": "manifest.json"
+            }
+          }
+        },
+        {
+          "request": 8,
+          "render": 11,
+          "loopNumber": null,
+          "values": {
+            "$matchedExample": {
+              "example": 6,
+              "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+            }
+          },
+          "state": {
+            "render": 12,
+            "verbatimUserPrompt": "Great.  Now start a procedure. The user goal will be implement mirror mode.",
+            "userIntent": "Implement Mirror Mode in the existing AGENTS Procedure workflow: the agent submits instructions through comments, and the workflow validates, renders and tracks state and returns. Preserve normal/Gemini modes and owner-only command authorization. Prepare tested file changes in issue 56’s isolated directory, retaining repository-relative paths. Leave actual source files unchanged; the staged changes will be copied to their actual locations after review.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "newFile": true
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "newFile": true
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add Mirror Mode screen/return validation and state handling using existing schemas.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Test Mirror Mode lifecycle, rejected inputs, completion, and owner-only issue routing.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Route Mirror Mode issue comments through validation, persistence and publication without Gemini calls.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Expose Mirror Mode through the existing local HTTP adapter.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Provide a JSON Mirror Mode instruction input in the existing UI.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add mirror to the mode-selection instruction and allowed choices.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document Mirror Mode envelopes, lifecycle and review-only staging.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document owner-authored Mirror Mode comment syntax.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Run Mirror Mode regression tests and trigger checks when mirror sources change.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              }
+            ],
+            "matchedExample": {
+              "example": 6,
+              "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+            },
+            "mode": "fidelity",
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "procedureMode": "normal",
+            "workers": [],
+            "renderedRequests": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "expectedInputs": {
+              "request": 8,
+              "render": 11,
+              "inputs": [
+                {
+                  "name": "matchedExample",
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "example": {
+                        "type": "integer"
+                      },
+                      "promptText": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "example",
+                      "promptText"
+                    ]
+                  }
+                }
+              ]
+            },
+            "workspace": {
+              "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/56",
+              "manifest": "manifest.json"
+            }
+          }
+        },
+        {
+          "request": 9,
+          "render": 12,
+          "loopNumber": null,
+          "values": {
+            "$requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add Mirror Mode screen/return validation and state handling using existing schemas.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Test Mirror Mode lifecycle, rejected inputs, completion, and owner-only issue routing.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Route Mirror Mode issue comments through validation, persistence and publication without Gemini calls.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Expose Mirror Mode through the existing local HTTP adapter.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Provide a JSON Mirror Mode instruction input in the existing UI.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add mirror to the mode-selection instruction and allowed choices.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document Mirror Mode envelopes, lifecycle and review-only staging.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document owner-authored Mirror Mode comment syntax.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Run Mirror Mode regression tests and trigger checks when mirror sources change.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              }
+            ]
+          },
+          "state": {
+            "render": 13,
+            "verbatimUserPrompt": "Great.  Now start a procedure. The user goal will be implement mirror mode.",
+            "userIntent": "Implement Mirror Mode in the existing AGENTS Procedure workflow: the agent submits instructions through comments, and the workflow validates, renders and tracks state and returns. Preserve normal/Gemini modes and owner-only command authorization. Prepare tested file changes in issue 56’s isolated directory, retaining repository-relative paths. Leave actual source files unchanged; the staged changes will be copied to their actual locations after review.",
+            "exampleMatch": false,
+            "minimalResult": null,
+            "targetFiles": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "newFile": true
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "newFile": true
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "newFile": true
+              }
+            ],
+            "requirements": [
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add Mirror Mode screen/return validation and state handling using existing schemas.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/mirror-workflow.test.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Test Mirror Mode lifecycle, rejected inputs, completion, and owner-only issue routing.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Route Mirror Mode issue comments through validation, persistence and publication without Gemini calls.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface-server.js",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Expose Mirror Mode through the existing local HTTP adapter.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface.html",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Provide a JSON Mirror Mode instruction input in the existing UI.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Add mirror to the mode-selection instruction and allowed choices.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/README.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document Mirror Mode envelopes, lifecycle and review-only staging.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/comment-boilerplate.md",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Document owner-authored Mirror Mode comment syntax.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              },
+              {
+                "filename": ".github/workflows/agents-procedure-issues.yml",
+                "frombyte": 0,
+                "tobyte": 0,
+                "description": "Run Mirror Mode regression tests and trigger checks when mirror sources change.",
+                "intent": "Implement Mirror Mode as staged review copies; preserve existing modes, commands and owner-only authorization.",
+                "operator": "create"
+              }
+            ],
+            "matchedExample": {
+              "example": 6,
+              "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+            },
+            "mode": "fidelity",
+            "changeList": null,
+            "requirementsCompleted": null,
+            "changeAssessment": null,
+            "completionAssessment": null,
+            "rescissionRequirements": null,
+            "loopNumber": null,
+            "procedureMode": "normal",
+            "workers": [],
+            "renderedRequests": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "expectedInputs": {
+              "request": 9,
+              "render": 12,
+              "inputs": [
+                {
+                  "name": "requirements",
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "filename": {
+                          "type": "string",
+                          "format": "file-reference"
+                        },
+                        "frombyte": {
+                          "type": "integer"
+                        },
+                        "tobyte": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "intent": {
+                          "type": "string"
+                        },
+                        "operator": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "filename",
+                        "frombyte",
+                        "tobyte",
+                        "description",
+                        "intent",
+                        "operator"
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            "workspace": {
+              "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/56",
+              "manifest": "manifest.json"
+            }
+          }
+        }
+      ],
+      "toolInvocations": [],
+      "triggerIdentifier": "implementMirrorMode202610181732",
+      "issueNumber": 56,
+      "pendingFileCommands": [],
+      "publishedParts": {
+        "1:0": true,
+        "2:0": true,
+        "3:0": true,
+        "4:0": true,
+        "5:0": true,
+        "6:0": true,
+        "7:0": true,
+        "8:0": true,
+        "9:0": true,
+        "10:0": true
+      },
+      "view": "instruction"
     }
   ]
 }
