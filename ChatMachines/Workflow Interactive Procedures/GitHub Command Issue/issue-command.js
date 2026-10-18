@@ -1,5 +1,6 @@
+
 'use strict';
-const fs=require('node:fs'),path=require('node:path');
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const MARKER='<!-- github-command-surface:v1 -->';
 function parse(body){
  const text=body.trim(),match=text.match(/^```(?:json)?\s*\n([\s\S]*?)\n```$/i);
@@ -44,14 +45,13 @@ async function control(token,repo,route,method='GET',body){
 }
 async function run(env=process.env){
  const event=JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH,'utf8')),repo=env.GITHUB_REPOSITORY,owner=repo.split('/')[0];
- if(event.action!=='created'||event.comment?.user?.type!=='User'||event.comment.user.login.toLowerCase()!==owner.toLowerCase()||event.issue?.pull_request)return {ignored:true};
+ if(!['created','edited'].includes(event.action)||event.comment?.user?.type!=='User'||event.comment.user.login.toLowerCase()!==owner.toLowerCase()||event.issue?.pull_request)return {ignored:true};
  const controlToken=env.GITHUB_TOKEN,apiToken=env.COMMAND_API_TOKEN||controlToken;
  // Fetch current issue/comment so edited or deleted content never silently substitutes an event.
  const issue=await control(controlToken,repo,'/issues/'+event.issue.number);
- if(issue.user?.login?.toLowerCase()!==owner.toLowerCase()||!issue.body?.includes(MARKER))return {ignored:true};
  const comment=await control(controlToken,repo,'/issues/comments/'+event.comment.id);
  if(comment.body!==event.comment.body||comment.user?.type!=='User'||comment.user.login.toLowerCase()!==owner.toLowerCase())throw Error('Comment changed or owner authorization changed; submit a new comment');
- const receiptMarker='<!-- github-command-receipt:'+comment.id+' -->';
+ const receiptMarker='<!-- github-command-receipt:'+comment.id+':'+crypto.createHash('sha256').update(comment.body).digest('hex')+' -->';
  for(let page=1;;page++){
   const comments=await control(controlToken,repo,'/issues/'+issue.number+'/comments?per_page=100&page='+page);
   if(comments.some(c=>c.user?.type==='Bot'&&c.body?.includes(receiptMarker)))return {duplicate:true};
