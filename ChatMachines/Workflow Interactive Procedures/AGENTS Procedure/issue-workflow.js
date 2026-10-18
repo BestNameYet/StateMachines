@@ -1,3 +1,4 @@
+const {parseFileOperation,githubFileOperations,executeFileOperation}=require('./file-commands.js');
 const fs = require('node:fs');
 const path = require('node:path');
 const {compileTransitionMap,applyValidatedValues} = require('./transitions.js');
@@ -299,6 +300,8 @@ async function main() {
   if(rootWorkspaceRequested(issue)){workspaceStorage=rootStorage(api,number);record.state.workspace={path:'.',access:'repository-root',manifest:workspaceStorage.manifestPath};}
   const outbox=[];
   const workerCommands=[];
+  record.pendingFileCommands??=[];
+  const operationStorage=githubFileOperations(api,p=>rootWorkspaceRequested(issue)?'/contents/'+p.split('/').map(encodeURIComponent).join('/'):fileRoute(p));
   const workerDeliveries=[];
   let navigationOnly=false;
   let initializeToolInvocationFile=false;
@@ -308,6 +311,18 @@ async function main() {
   for(const comment of comments){
     if(comment.id<=record.lastCommentId||comment.user.type==='Bot')continue;
     if(record.done){record.lastCommentId=comment.id;continue;}
+    try {
+      const operation=parseFileOperation(comment.body);
+      if(operation){
+        const id=number+':'+comment.id;
+        if(!record.pendingFileCommands.some(item=>item.id===id))record.pendingFileCommands.push({id,command:operation,actor:{type:'operator',login:comment.user.login,commentId:comment.id}});
+        navigationOnly=true;record.lastCommentId=comment.id;continue;
+      }
+    }catch(error){
+      const marker='<!-- agents-procedure:'+number+':operation-rejected:'+comment.id+' -->';
+      outbox.push({marker,body:marker+'\nOperation rejected: '+error.message});
+      navigationOnly=true;record.lastCommentId=comment.id;continue;
+    }
     const command=comment.body.trim().toLowerCase();
     if(command.startsWith('register ')){
       const marker='<!-- agents-procedure:'+number+':worker-register:'+comment.id+' -->';
@@ -364,6 +379,15 @@ async function main() {
   if(!record.done)setExpectedInputs(record);
   await saveRecord();
   await initializeWorkspace(record,workspaceStorage);
+  for(const item of [...record.pendingFileCommands]){
+    const receipt=await executeFileOperation(record,item,operationStorage,saveRecord);
+    const marker='<!-- agents-procedure:'+number+':operation:'+item.id+' -->';
+    const visible={id:receipt.id,actor:receipt.actor,operation:receipt.request.operation,path:receipt.request.path,status:receipt.status,...(receipt.result?{result:receipt.result}:{}),...(receipt.error?{error:receipt.error}:{})};
+    if(!comments.some(c=>c.body.includes(marker)))await api('POST','/issues/'+number+'/comments',{body:marker+'\n## File operation result\n\n'+fence(visible)});
+    record.pendingFileCommands=record.pendingFileCommands.filter(p=>p.id!==item.id);
+    await saveRecord();
+  }
+
   for(const item of workerDeliveries){
     const message=item.delivery.worker.type==='chatgpt'?registrationMessage(item.delivery):'Worker registered. Prepared Gemini instructions are delivered through the API.';
     outbox.push({marker:item.marker,body:item.marker+'\n'+message});
@@ -440,6 +464,7 @@ async function main() {
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
 module.exports={readRunRecord,recordGeminiError,publishGeminiErrors,main,startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,toolInvocationInputArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+
 
 
 

@@ -27,3 +27,8 @@ For workspace operations submit `{"nonce":"your-nonce","commands":[{"name":"view
 Gemini assignments echoed in comments are visibility copies. The workflow delivers their instructions through the API and validates their API returns; other workers must not submit those returns on their behalf. Task-specific standing instructions still accompany each broadcast.
 
 Shared worker behavior and formatting examples are in [worker instructions](worker-instructions.md). Supervisor API meta-instructions are not broadcast in issue comments.
+
+
+## File change interface
+
+During an active procedure, route changes through JSON issue comments: `{"operation":"create","path":"src/example.js","value":"Complete contents"}`, `{"operation":"mutate","path":"src/example.js","value":"Complete replacement"}`, or `{"operation":"delete","path":"src/example.js"}`. Use paths relative to the configured workspace. Inspect the posted operation result; a successful submission alone does not establish a successful file change. These commands do not submit the instruction’s expected return.

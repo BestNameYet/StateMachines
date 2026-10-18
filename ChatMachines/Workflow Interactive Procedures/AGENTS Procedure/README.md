@@ -276,3 +276,18 @@ An issue with `### Workspace access` followed by `repository-root` uses the repo
 
 The supervisor API payload includes file contents only from `read_files` results explicitly attributed to the supervisor. Worker reads, file-write request bodies, and cached worker response files carry metadata with `contentOmitted: true` instead. Paths, descriptions, operation results, and accepted task returns remain visible. Persisted state remains complete; filtering applies only when building the supervisor API request. Final worker file writes are attributed to the worker nonce.
 
+
+
+## File commands through issue comments
+
+For an active procedure issue, submit one JSON operation per comment (plain JSON or a fenced JSON block). These commands work in normal and Gemini modes, without selecting a new mode or submitting a task return.
+
+```json
+{"operation":"create","path":"src/example.js","value":"module.exports = 60;\n"}
+```
+
+`create` requires the file to be absent. `mutate` uses the same fields and requires an existing file; `value` is its complete replacement UTF-8 contents. Delete with `{"operation":"delete","path":"src/example.js"}`. Paths use the issue workspace by default; issues explicitly configured for repository-root access use repository-relative paths.
+
+Route agent repository changes through these comments rather than direct writes during a procedure. The workflow validates the request, saves an operation intent, executes GitHub Contents operations, and stores attributed results in `state.fileOperations`, including before/after blob IDs and the commit receipt when available. It posts a result without advancing the current instruction or satisfying expected returns. Failures are recorded as failures. Reprocessing a comment reuses its receipt; after interruption, an already-achieved target state is recorded as recovered with no invented commit. Concurrent target changes are rejected. A new comment is a new operation.
+
+Requests cannot traverse outside the configured workspace or directly replace its managed manifest. These operations save source; they do not execute it. The supervisor API receives operation metadata without replacement file bodies.

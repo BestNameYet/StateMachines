@@ -95,7 +95,8 @@ async function test() {
     }
     const route=url.split('/repos/test/repo')[1];
     if(route.startsWith('/contents/')) {
-      if(options.method==='PUT') {documents.set(route,{content:body.content,sha:'sha-'+nextId});return response({content:{sha:'sha-'+nextId}});}
+      if(options.method==='PUT') {documents.set(route,{type:'file',encoding:'base64',content:body.content,sha:'sha-'+nextId});return response({content:{sha:'sha-'+nextId},commit:{sha:'commit-'+nextId}});}
+      if(options.method==='DELETE'){documents.delete(route);return response({commit:{sha:'delete-'+nextId}});}
       return documents.has(route)?response(documents.get(route)):response({},404);
     }
     if(route.startsWith('/issues/700/comments')) {
@@ -117,6 +118,19 @@ async function test() {
     await run();
     assert(comments.at(-1).body.includes('procedureMode'));
     assert(!comments.at(-1).body.includes('Captured values'));
+    const commandPath='/contents/ChatMachines/Workflow%20Interactive%20Procedures/AGENTS%20Procedure/issue-workspaces/700/command-test.js';
+    reply(JSON.stringify({operation:'create',path:'command-test.js',value:'module.exports = 1;'}));await run();
+    assert(documents.has(commandPath));assert.equal(saved().request,1);assert.equal(geminiCalls,0);
+    assert(comments.at(-1).body.includes('File operation result'));
+    assert.equal(saved().state.fileOperations.at(-1).status,'succeeded');
+    const submittedId=saved().state.fileOperations.at(-1).id;
+    await run();assert.equal(saved().state.fileOperations.filter(r=>r.id===submittedId).length,1);
+    reply(JSON.stringify({operation:'mutate',path:'command-test.js',value:'module.exports = 2;'}));await run();
+    assert.equal(Buffer.from(documents.get(commandPath).content,'base64').toString(),'module.exports = 2;');
+    reply(JSON.stringify({operation:'delete',path:'command-test.js'}));await run();
+    assert(!documents.has(commandPath));assert.equal(saved().request,1);assert.equal(geminiCalls,0);
+    reply(JSON.stringify({operation:'create',path:'../escape.js',value:'no'}));await run();
+    assert(comments.at(-1).body.includes('Operation rejected'));
     reply('state');await run();
     assert.equal(saved().state.render,24);assert.equal(saved().request,1);
     reply('back');await run();
@@ -242,5 +256,6 @@ async function test() {
   }
 }
 test().catch(e=>{console.error(e);process.exitCode=1;});
+
 
 

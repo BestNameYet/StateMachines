@@ -99,6 +99,8 @@ function buildGeminiRequest(state) {
   const request = JSON.parse(fs.readFileSync(path.join(__dirname,'gemini-request-template.json'),'utf8'));
   // Send the complete workflow-owned state, without substituting into old screens.
   request.state = structuredClone(state);
+  for(const operation of request.state.fileOperations||[])if(operation.request&&Object.hasOwn(operation.request,'value')){delete operation.request.value;operation.request.contentOmitted=true;}
+
   // File bodies reach the supervisor only through its own explicit reads.
   const omitContents = files => {
     for (const file of files || []) if (Object.hasOwn(file, 'content')) {
@@ -301,3 +303,4 @@ function requestWorkerInstruction(record,nonce){
 }
 
 module.exports = {bindAssignmentWorker,registerWorker,requestWorkerInstruction,validateControl,validateGeminiResponse,validateInputSchema,validateGeminiScreen,buildGeminiRequest,callGemini,generateGeminiScreen,acceptGeminiValues};
+
