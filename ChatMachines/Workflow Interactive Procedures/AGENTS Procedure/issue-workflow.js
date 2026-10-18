@@ -1,4 +1,4 @@
-const {parseFileOperation,githubFileOperations,executeFileOperation}=require('./file-commands.js');
+const {isOwnerComment,parseFileOperation,githubFileOperations,executeFileOperation}=require('./file-commands.js');
 const fs = require('node:fs');
 const path = require('node:path');
 const {compileTransitionMap,applyValidatedValues} = require('./transitions.js');
@@ -268,7 +268,7 @@ async function main() {
   const repository=process.env.GITHUB_REPOSITORY;
   const number=issueNumberForEvent(event,process.env.AGENTS_PROCEDURE_ISSUE_NUMBER);
   if(!number||event.issue?.pull_request)return;
-  if(event.comment?.user?.type==='Bot')return;
+  if(event.comment&&!isOwnerComment(event.comment,repository))return;
   const apiBase='https://api.github.com/repos/'+repository;
   async function api(method,route,body,allowMissing=false) {
     const response=await fetch(apiBase+route,{method,headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,Accept:'application/vnd.github+json','Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
@@ -310,6 +310,7 @@ async function main() {
   restoreCommunicationState(record,comments,number);
   for(const comment of comments){
     if(comment.id<=record.lastCommentId||comment.user.type==='Bot')continue;
+    if(!isOwnerComment(comment,repository)){record.lastCommentId=comment.id;continue;}
     if(record.done){record.lastCommentId=comment.id;continue;}
     try {
       const operation=parseFileOperation(comment.body);
@@ -380,7 +381,15 @@ async function main() {
   await saveRecord();
   await initializeWorkspace(record,workspaceStorage);
   for(const item of [...record.pendingFileCommands]){
-    const receipt=await executeFileOperation(record,item,operationStorage,saveRecord);
+    const sourceComment=comments.find(comment=>String(comment.id)===String(item.actor?.commentId));
+    let receipt;
+    if(isOwnerComment(sourceComment,repository))receipt=await executeFileOperation(record,item,operationStorage,saveRecord);
+    else {
+      receipt={id:item.id,actor:item.actor,request:item.command,status:'failed',error:'Only the repository owner may submit command operations.'};
+      record.state.fileOperations??=[];
+      if(!record.state.fileOperations.some(operation=>operation.id===item.id))record.state.fileOperations.push(receipt);
+      await saveRecord();
+    }
     const marker='<!-- agents-procedure:'+number+':operation:'+item.id+' -->';
     const visible={id:receipt.id,actor:receipt.actor,operation:receipt.request.operation,path:receipt.request.path,status:receipt.status,...(receipt.result?{result:receipt.result}:{}),...(receipt.error?{error:receipt.error}:{})};
     if(!comments.some(c=>c.body.includes(marker)))await api('POST','/issues/'+number+'/comments',{body:marker+'\n## File operation result\n\n'+fence(visible)});
