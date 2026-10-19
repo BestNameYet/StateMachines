@@ -1,0 +1,43 @@
+name: Generate native operation map
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ChatMachines/Workflow Interactive Procedures/GitHub Command Issue/map-native-operations.js'
+      - 'ChatMachines/Workflow Interactive Procedures/GitHub Command Issue/command-catalog.json'
+      - '.github/workflows/generate-native-operation-map.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  map:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Map every API operation
+        run: node 'ChatMachines/Workflow Interactive Procedures/GitHub Command Issue/map-native-operations.js'
+      - name: Verify catalog coverage and commit map
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const root='ChatMachines/Workflow Interactive Procedures/GitHub Command Issue/';
+          const catalog=JSON.parse(fs.readFileSync(root+'command-catalog.json'));
+          const map=JSON.parse(fs.readFileSync(root+'native-operation-map.json'));
+          const source=Object.keys(catalog.commands).sort();
+          const target=Object.keys(map.operations).sort();
+          if(JSON.stringify(source)!==JSON.stringify(target)||map.counts.total!==source.length)throw Error('Incomplete operation map');
+          console.log('All '+source.length+' operations mapped');
+          NODE
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'ChatMachines/Workflow Interactive Procedures/GitHub Command Issue/native-operation-map.json'
+          if ! git diff --cached --quiet; then
+            git commit -m 'Generate complete native JavaScript operation map'
+            git push
+          fi
