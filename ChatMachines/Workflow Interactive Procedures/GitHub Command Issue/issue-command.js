@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const MARKER='<!-- github-command-surface:v1 -->';
+const {renderCommandResult}=require('./render-command.js');
 function parse(body){
  const text=body.trim(),match=text.match(/^```(?:json)?\s*\n([\s\S]*?)\n```$/i);
  const c=JSON.parse(match?match[1]:text);
@@ -64,7 +65,11 @@ async function call(token,url,options={}){
 async function control(token,repo,route,method='GET',body){
  const r=await call(token,'https://api.github.com/repos/'+repo+route,{method,...(body===undefined?{}:{body:JSON.stringify(body),headers:{'Content-Type':'application/json'}})});
  if(!r.ok)throw Error('Control API failed: '+r.status+' '+method+' '+route);
- return r.status===204?null:r.json();
+ const data=r.status===204?null:await r.json();
+ if((method==='POST'||method==='PATCH')&&/\/issues(?:\/\d+\/comments|\/comments\/\d+)$/.test(route)){
+  console.log('issue-comment-published',JSON.stringify({route,method,status:r.status,commentId:data?.id??null,url:data?.html_url??null,requestId:r.headers.get('x-github-request-id')}));
+ }
+ return data;
 }
 async function run(env=process.env){
  const event=JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH,'utf8')),repo=env.GITHUB_REPOSITORY,owner=repo.split('/')[0];
@@ -97,10 +102,10 @@ async function run(env=process.env){
  }catch(error){result={command:command.command,ok:false,outcome:'unknown',error:error.message};}
  const summary=result.ok?'Executed `'+command.command+'` (HTTP '+result.status+').':'Failed `'+command.command+'`'+(result.status?' (HTTP '+result.status+')':'')+': '+(result.error||'Unknown outcome');
  await control(controlToken,repo,'/issues/comments/'+receipt.id,'PATCH',{body:receiptMarker+'\n'+summary});
- // Return the API response to the same issue; split large responses instead of discarding them.
- for(let offset=0,part=1;offset<responseText.length;offset+=30000,part++){
-  const chunk=responseText.slice(offset,offset+30000);
-  await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nResponse part '+part+'\n\n```text\n'+chunk+'\n```'});
+ // Render command output using the adapted AGENTS issue renderer, targeting the event issue.
+ const renderedParts=renderCommandResult({issueNumber:issue.number,commentId:comment.id,marker:receiptMarker,command,result,responseText});
+ for(const body of renderedParts){
+  await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body});
  }
  if(!result.ok)process.exitCode=1;return result;
 }
