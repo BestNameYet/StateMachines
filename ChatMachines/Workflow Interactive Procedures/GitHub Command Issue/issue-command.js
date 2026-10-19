@@ -10,6 +10,16 @@ function parse(body){
  if(c.headers!==undefined&&(!c.headers||typeof c.headers!=='object'||Array.isArray(c.headers)))throw Error('headers must be an object');
  return c;
 }
+function localStat(root,relative){
+ if(typeof relative!=='string'||!relative||path.isAbsolute(relative)||relative.split(/[\\/]/).some(p=>!p||p==='.'||p==='..'))throw Error('Invalid local path');
+ const base=fs.realpathSync(root),target=path.resolve(base,relative);
+ if(!target.startsWith(base+path.sep))throw Error('Outside checked-out workspace');
+ const real=fs.realpathSync(target);
+ if(!real.startsWith(base+path.sep))throw Error('Path resolves outside workspace');
+ const stat=fs.lstatSync(target);
+ if(stat.isSymbolicLink())throw Error('Symbolic links are not allowed');
+ return {path:relative,type:stat.isFile()?'file':stat.isDirectory()?'directory':'other',size:stat.size};
+}
 function requestFor(c,catalog,repository){
  if(c.command.startsWith('issues/')||c.command==='graphql')throw Error('Issue API operations are excluded');
  const op=catalog.commands[c.command];if(!op)throw Error('Unknown command; see command-catalog.json');
@@ -58,7 +68,7 @@ async function run(env=process.env){
   if(comments.length<100)break;
  }
  let command,request;
- try{command=parse(comment.body.replace(/^<!-- command-scope -->\s*\n/,''));if(command.command==='help'){if(Object.keys(command).some(k=>!['version','command'].includes(k)))throw Error('help takes no arguments');}else request=requestFor(command,JSON.parse(fs.readFileSync(path.join(__dirname,'command-catalog.json'),'utf8')),repo);}
+ try{command=parse(comment.body.replace(/^<!-- command-scope -->\s*\n/,''));if(command.command==='help'){if(Object.keys(command).some(k=>!['version','command'].includes(k)))throw Error('help takes no arguments');}else if(command.command==='local/stat'){if(!command.parameters||Object.keys(command.parameters).some(k=>k!=='path')||command.body!==undefined||command.body_base64!==undefined||command.headers!==undefined)throw Error('local/stat accepts only parameters.path');localStat(env.GITHUB_WORKSPACE||process.cwd(),command.parameters.path);}else request=requestFor(command,JSON.parse(fs.readFileSync(path.join(__dirname,'command-catalog.json'),'utf8')),repo);}
  catch(error){await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nRejected: '+error.message});return {rejected:true};}
  if(command.command==='help'){
   const docs='https://github.com/'+repo+'/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/GitHub%20Command%20Issue/';
@@ -69,10 +79,7 @@ async function run(env=process.env){
  let result, responseText='';
  try{
   // Execute the requested GitHub operation, not a simulated request.
-  const r=await call(apiToken,request.url,request);
-  responseText=await r.text();
-  result={command:command.command,status:r.status,ok:r.ok};
-  if(!r.ok)result.error=responseText||r.statusText||'GitHub API request failed';
+  if(command.command==='local/stat'){responseText=JSON.stringify(localStat(env.GITHUB_WORKSPACE||process.cwd(),command.parameters.path));result={command:command.command,status:200,ok:true,execution:'local'};}else{const r=await call(apiToken,request.url,request);responseText=await r.text();result={command:command.command,status:r.status,ok:r.ok};if(!r.ok)result.error=responseText||r.statusText||'GitHub API request failed';}
  }catch(error){result={command:command.command,ok:false,outcome:'unknown',error:error.message};}
  const summary=result.ok?'Executed `'+command.command+'` (HTTP '+result.status+').':'Failed `'+command.command+'`'+(result.status?' (HTTP '+result.status+')':'')+': '+(result.error||'Unknown outcome');
  await control(controlToken,repo,'/issues/comments/'+receipt.id,'PATCH',{body:receiptMarker+'\n'+summary});
@@ -84,4 +91,4 @@ async function run(env=process.env){
  if(!result.ok)process.exitCode=1;return result;
 }
 if(require.main===module)run().catch(e=>{console.error(e.message);process.exitCode=1;});
-module.exports={MARKER,parse,requestFor,run};
+module.exports={MARKER,parse,requestFor,localStat,run};
