@@ -4,13 +4,14 @@ Repository for state machines, agent workflows, runtimes, and supporting project
 
 ## GitHub command surface
 
-Use [GitHub command console — issue #59](https://github.com/BestNameYet/StateMachines/issues/59) to submit general GitHub API commands. Only the repository owner can execute commands. Submit one JSON object per new comment:
+The command surface is available in any repository issue. The repository owner submits one command per issue comment, using the explicit scope marker. Responses are posted to the same issue that originated the command:
 
-```json
+```text
+<!-- command-scope -->
 {"version":1,"command":"repos/get","parameters":{}}
 ```
 
-The [command guide](./ChatMachines/Workflow%20Interactive%20Procedures/GitHub%20Command%20Issue/README.md) links the JSON schema and catalog of 1,174 non-issue REST commands. Issue-management APIs are excluded. Each execution posts a receipt and links its workflow run; full responses are saved as Actions artifacts. API access depends on the workflow credential.
+The [command guide](./ChatMachines/Workflow%20Interactive%20Procedures/GitHub%20Command%20Issue/README.md) links the JSON schema and catalog of 1,174 non-issue REST commands. Issue-management APIs are excluded. Execution receipts and AGENTS-style rendered results are posted in the originating issue. The result renderer decodes compatible file content and displays structured API responses. API access depends on the workflow credential.
 
 ## Repository manifest
 
