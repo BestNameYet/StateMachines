@@ -1,0 +1,65 @@
+name: Promote AGENTS workspace manifests
+
+on:
+  workflow_dispatch:
+    inputs:
+      workspace:
+        description: 'Manifest selection'
+        required: true
+        type: choice
+        options:
+          - '56'
+          - '57'
+          - 'both'
+      commit:
+        description: 'Commit mapped changes (unchecked = validate/dry run)'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: agents-workspace-manifest-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate manifests and optionally commit mappings
+        env:
+          WORKSPACE_SELECTION: ${{ inputs.workspace }}
+          DO_COMMIT: ${{ inputs.commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces'
+          script="$base/57/ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/commit-manifest.js"
+          args=()
+          case "$WORKSPACE_SELECTION" in
+            56) args+=(--manifest "$base/56/target-manifest.json") ;;
+            57) args+=(--manifest "$base/57/target-manifest.json") ;;
+            both)
+              args+=(--manifest "$base/56/target-manifest.json")
+              args+=(--manifest "$base/57/target-manifest.json")
+              ;;
+            *) echo 'Unsupported manifest selection' >&2; exit 1 ;;
+          esac
+          if [[ "$DO_COMMIT" == 'true' ]]; then
+            args+=(--commit)
+          else
+            args+=(--dry-run)
+          fi
+          node "$script" "${args[@]}"
