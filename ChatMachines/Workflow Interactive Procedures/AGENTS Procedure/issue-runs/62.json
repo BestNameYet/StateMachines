@@ -40,16 +40,9 @@
       20
     ],
     "expectedInputs": {
-      "request": 20,
+      "request": 21,
       "render": 8,
-      "inputs": [
-        {
-          "name": "nativeReadEvidence",
-          "schema": {
-            "type": "string"
-          }
-        }
-      ]
+      "inputs": []
     },
     "workspace": {
       "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/62",
@@ -196,6 +189,10 @@
       {
         "name": "nativeMappingEvidence",
         "value": "Verified through Issue #59: map-native-operations.js exists (command 6266598727, HTTP 200 response 6266604759, blob 8ce9104a010939ff7491cde1b3ff0c7509e2cf5f). Source reads command-catalog.json, enumerates every command, emits conditional-local bindings for a conservative set of Contents, Git objects/refs, repository metadata and remote-required for unmatched operations, then writes native-operation-map.json locally. However a check for committed native-operation-map.json (command 6266610522) returned HTTP 404 in receipt 6266616595. Therefore the claimed 1,174 classified output entries and their counts are not verified as persisted in GitHub; the generator itself is not evidence of execution. Existing native runtime operation local/stat and local/test-stat with 4/4 tests verified. Next concrete implementation target: native local/read or local/list under checked-out workspace, preserving path authorization, verification, and issue-comment response. Must generate and check operation map output before asserting full catalog coverage."
+      },
+      {
+        "name": "nativeReadEvidence",
+        "value": "Received and executed Render 8 / Request 20. Using authorized Issue #59 console, committed local-read.test.js (request comment 6270409766, HTTP 201 receipt 6270419234; file SHA 67bc1534d6bbecfc2722538ba9b463bb3a97b802) and updated existing issue-command.js with native local/read plus local/test-read (request 6270434169, HTTP 200 receipt 6270442583; file SHA 8d21d3a1406c686a0b8ee4972fe7a12768bf6eb9). Implementation uses node:fs to validate bounded workspace-relative paths, reject traversal, absolute paths, symlinks and directories, enforce a 64KiB default size limit, and report UTF-8 content/metadata through existing issue-comment receipt flow. Added six Node test cases. Submitted local/test-read via Issue #59 command comment 6270447638; no execution receipt had appeared after repeated polling, so test outcome and end-to-end execution remain UNVERIFIED. No claim of completed tests or full native operation mapping. Await command result or next workflow instruction."
       }
     ],
     "controls": [
@@ -427,8 +424,8 @@
     ]
   },
   "done": false,
-  "request": 20,
-  "lastCommentId": 6266804516,
+  "request": 21,
+  "lastCommentId": 6270505533,
   "newFiles": [],
   "history": [
     {
@@ -944,6 +941,13 @@
           }
         ]
       }
+    },
+    {
+      "request": 20,
+      "render": 8,
+      "values": {
+        "nativeReadEvidence": "Received and executed Render 8 / Request 20. Using authorized Issue #59 console, committed local-read.test.js (request comment 6270409766, HTTP 201 receipt 6270419234; file SHA 67bc1534d6bbecfc2722538ba9b463bb3a97b802) and updated existing issue-command.js with native local/read plus local/test-read (request 6270434169, HTTP 200 receipt 6270442583; file SHA 8d21d3a1406c686a0b8ee4972fe7a12768bf6eb9). Implementation uses node:fs to validate bounded workspace-relative paths, reject traversal, absolute paths, symlinks and directories, enforce a 64KiB default size limit, and report UTF-8 content/metadata through existing issue-comment receipt flow. Added six Node test cases. Submitted local/test-read via Issue #59 command comment 6270447638; no execution receipt had appeared after repeated polling, so test outcome and end-to-end execution remain UNVERIFIED. No claim of completed tests or full native operation mapping. Await command result or next workflow instruction."
+      }
     }
   ],
   "toolInvocations": [],
@@ -973,5 +977,5 @@
   },
   "view": "instruction",
   "mirrorStarted": true,
-  "mirrorWaiting": false
+  "mirrorWaiting": true
 }
