@@ -4,14 +4,14 @@ Repository for state machines, agent workflows, runtimes, and supporting project
 
 ## GitHub command surface
 
-The command surface is available in any repository issue. The repository owner submits one command per issue comment, using the explicit scope marker. Responses are posted to the same issue that originated the command:
+Any existing non-pull-request issue in this repository can accept commands from the repository owner. There is no designated command issue. Submit a comment beginning with the explicit command-scope marker followed by one JSON command:
 
-```text
+```
 <!-- command-scope -->
 {"version":1,"command":"repos/get","parameters":{}}
 ```
 
-The [command guide](./ChatMachines/Workflow%20Interactive%20Procedures/GitHub%20Command%20Issue/README.md) links the JSON schema and catalog of 1,174 non-issue REST commands. Issue-management APIs are excluded. Execution receipts and AGENTS-style rendered results are posted in the originating issue. The result renderer decodes compatible file content and displays structured API responses. API access depends on the workflow credential.
+The [command guide](./ChatMachines/Workflow%20Interactive%20Procedures/GitHub%20Command%20Issue/README.md) describes the JSON schema and catalog of non-issue REST commands. Issue-management APIs are reserved for receiving commands and publishing results. The GitHub Actions command runner formats execution results using its issue-result renderer and posts them back to **the issue where the command originated**, with no hardcoded issue number. API access depends on the workflow credential.
 
 ## Repository manifest
 
