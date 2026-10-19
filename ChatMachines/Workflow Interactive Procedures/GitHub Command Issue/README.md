@@ -2,15 +2,23 @@
 
 ## Open the command surface
 
-Use [GitHub command console — issue #59](https://github.com/BestNameYet/StateMachines/issues/59). As the repository owner, add one new comment containing:
+Submit a command in **any repository issue**, as the repository owner. The command returns its rendered results to the **same originating issue**. Prefix each new command comment with the explicit command-scope marker:
 
-```json
+```text
+<!-- command-scope -->
 {"version":1,"command":"repos/get","parameters":{}}
 ```
 
-To retrieve the command reference directly in the issue, submit this short built-in command:\n\n```json\n{"version":1,"command":"help"}\n```\n\nThe console replies with links to the complete command catalog, JSON schema, and README. This `help` command is local to the console, needs no API credential beyond its owner check, and does not execute a GitHub REST request. Read the workflow's reply for status and its Actions run link for the full response artifact. The catalog contains 1,174 non-issue REST commands; credential permissions determine which can execute. To issue another command, post a new comment rather than editing the previous one.
+To retrieve command documentation, post a new comment in that issue:
 
-An owner-created issue containing `<!-- github-command-surface:v1 -->` is a persistent general command surface. Add that marker to the issue body. The repository owner submits one JSON command per new comment, either plain or inside one JSON fence. Other commenters, bots, pull requests and edited-comment events are ignored. This surface is independent of AGENTS Procedure runs, screens and workspace limits. Existing procedure commands continue unchanged.
+```text
+<!-- command-scope -->
+{"version":1,"command":"help"}
+```
+
+The local `help` command returns documentation links without executing a requested GitHub REST operation. Commands supported by the catalog remain subject to credential permissions. Each command uses its own comment ID and response receipt.
+
+The source issue comes from the GitHub `issue_comment` event (`event.issue.number`). No particular issue number, special issue title, or issue-body marker is needed. An authorized comment must start with `<!-- command-scope -->` followed by one JSON command (plain or JSON-fenced). The current workflow listens to owner-created or owner-edited issue comments and excludes bots, other users and pull requests. Commands are separate from AGENTS Procedure run state; established procedure returns are unaffected.
 
 ## User-issue command JSON
 
@@ -26,11 +34,15 @@ An owner-created issue containing `<!-- github-command-surface:v1 -->` is a pers
 
 GitHub Contents `body.content` must itself be base64 as required by that API. Updating requires `body.sha`. These commands address the API directly; they do not inherit an AGENTS workspace restriction. `owner` and `repo` default to this repository for corresponding path arguments, but can be explicitly supplied. Other path and query arguments belong in `parameters`; JSON fields belong in `body`. Optional `headers` select API media types/version or endpoint-specific headers. For raw binary uploads use `body_base64` and the appropriate Content-Type; `body` and `body_base64` are mutually exclusive. String `body` sends raw text.
 
-## Execution and receipts
+## Execution, rendering, and receipts
 
-`.github/workflows/github-command-issue.yml` runs on new issue comments. It checks owner identity, fetches the current issue/comment, validates catalog arguments, posts a started receipt, performs one API request, then updates that receipt with HTTP status/request ID and an Actions run link. The full response bytes and metadata are uploaded as a seven-day Actions artifact. Responses are not dumped into issue comments or logs. Redirects are returned without forwarding credentials; pagination requires additional explicit commands. GitHub validates endpoint-specific body schemas and permissions and its error response is retained.
+The workflow `.github/workflows/github-command-issue.yml` runs `issue-command.js` for an authorized `issue_comment` event. The runner validates the comment and operation, publishes a started receipt, executes the requested GitHub API or supported local operation, and then updates its receipt. The origin is always the event's issue; the result is returned to that same issue.
 
-The receipt marker binds execution to the comment ID. A rerun skips a comment with an existing bot receipt, including a started receipt with uncertain outcome. There are no automatic API retries. After a network interruption or lost receipt update, inspect the artifact, run and target state before submitting a new comment. Deleted receipts or new comment IDs can permit repetition; this is not a transactional exactly-once guarantee. Jobs serialize per issue; keep all commands for one ordered sequence in that same issue.
+The result renderer `render-command.js` follows the AGENTS Procedure's issue-rendering pattern: a pure function formats a structured command result as Markdown without posting it. The runner publishes each rendered part using the GitHub Issue Comments API. GitHub Contents file responses are decoded from Base64 into readable UTF-8 text when applicable; other API JSON responses are formatted as JSON. Large response text is split into bounded issue comments. An HTTP or local-operation failure is marked as a failure rather than successful execution.
+
+Each command receipt is tied to its originating comment ID and a digest of the comment body. A repeated event with an existing bot receipt is skipped. If a GitHub API POST succeeds but receipt publication or update is interrupted, verify its existing result before retrying. The runner logs the HTTP status and returned comment metadata for issue-comment create/update calls, without logging authorization tokens.
+
+The command runner does not modify an AGENTS Procedure's instruction-rendering behavior. It reuses that **render-before-publish** pattern for command outputs only.
 
 ## Authentication and API availability
 
