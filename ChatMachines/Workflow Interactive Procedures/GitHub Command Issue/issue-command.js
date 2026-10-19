@@ -103,7 +103,7 @@ async function run(env=process.env){
  const summary=result.ok?'Executed `'+command.command+'` (HTTP '+result.status+').':'Failed `'+command.command+'`'+(result.status?' (HTTP '+result.status+')':'')+': '+(result.error||'Unknown outcome');
  await control(controlToken,repo,'/issues/comments/'+receipt.id,'PATCH',{body:receiptMarker+'\n'+summary});
  // Render command output using the adapted AGENTS issue renderer, targeting the event issue.
- const renderedParts=renderCommandResult({issueNumber:issue.number,commentId:comment.id,marker:receiptMarker,command,result,responseText});
+ const renderedParts=renderCommandResult({issueNumber:issue.number,commentId:comment.id,marker:receiptMarker,command,result,responseText:responseText||result.error||''});
  for(const body of renderedParts){
   await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body});
  }
