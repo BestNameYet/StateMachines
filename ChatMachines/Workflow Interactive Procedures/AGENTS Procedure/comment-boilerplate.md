@@ -34,3 +34,8 @@ Shared worker behavior and formatting examples are in [worker instructions](work
 ## File change interface
 
 During an active procedure, route changes through JSON issue comments: `{"operation":"create","path":"src/example.js","value":"Complete contents"}`, `{"operation":"mutate","path":"src/example.js","value":"Complete replacement"}`, or `{"operation":"delete","path":"src/example.js"}`. Use paths relative to the configured workspace. Inspect the posted operation result; a successful submission alone does not establish a successful file change. These commands do not submit the instruction’s expected return.
+
+
+## Mirror Mode instructions
+
+Select `mirror` at mode selection, then submit the prompt. The repository owner supplies the next screen as `{"mirror":{"control":{...},"instruction":"Return the count as {$count}.","expectedInputs":[{"name":"count","schema":{"type":"integer"}}]}}`. Use the existing control schema documented in README.md. Supply the requested returns before submitting another screen. A completion message contains only `mirror.control`, mode `completion`, and empty outcome/process gap arrays. The workflow validates, stores and publishes these owner-authored screens without calling Gemini. Navigation and file-operation commands retain their existing interfaces and owner restriction.

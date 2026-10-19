@@ -2,7 +2,7 @@
 
 ## Create a procedure run
 
-Create a new issue in BestNameYet/StateMachines using either the AGENTS Procedure issue template or a committed trigger file under issue-run-triggers/. The issue template contains the required Procedure acknowledgement; it does not collect the user prompt. The first rendered instruction selects `procedureMode` (`normal` or `gemini`); the next instruction captures the verbatim user prompt in the issue replies.
+Create a new issue in BestNameYet/StateMachines using either the AGENTS Procedure issue template or a committed trigger file under issue-run-triggers/. The issue template contains the required Procedure acknowledgement; it does not collect the user prompt. The first rendered instruction selects `procedureMode` (`normal`, `gemini`, or `mirror`); the next instruction captures the verbatim user prompt in the issue replies.
 
 The workflow replaces the issue title with AGENTS Procedure — <issue creation timestamp in UTC>, including after title edits. The timestamp comes from GitHub's issue creation time and remains unchanged throughout the run. The issue number identifies the run and its separate persisted state.
 
@@ -21,11 +21,11 @@ Create a new JSON file directly in `issue-run-triggers/` named `<procedureName><
 
 The nonce must be a non-negative integer and match the numeric suffix of the filename. Commit the trigger file to `main`. The workflow validates it, creates one issue with the checked Procedure acknowledgement, runs the existing issue initializer directly by issue number in that same push workflow, and changes `startProcedure` to `false` after the issue record and first instruction are persisted. It then adds `procedureName`, `procedureIdentifier`, `procedureIssueNumber`, `procedureIssueUrl`, `procedureTitle`, and `procedureReceiptPath` to the trigger JSON. The issue body and saved run record carry the trigger identifier so the issue remains bound to the filename even after the issue runner changes its title to the canonical UTC timestamp. The issue is the persistent communication port for later returns. Each non-bot reply creates an `issue_comment` event and retriggers this GitHub Actions workflow for that issue; the runner loads its receipt and advances the conversation.
 
-The workflow reuses an issue carrying the exact trigger marker if a run is retried. Once the push job initializes the issue, `procedureSavedHere` stores the initial JSON receipt and `procedureReceipts` starts with that snapshot. `procedureReceiptPath` points to the live mutable receipt at `issue-runs/<issue-number>.json`. Later workflow updates append receipt snapshots to the trigger JSON named by its `procedureIdentifier` (`<procedureName><nonce>.json`), after verifying the issue binding; the live per-issue receipt remains canonical for current state. The first rendered instruction selects `procedureMode` (`normal` or `gemini`); the next instruction captures the verbatim user prompt in the issue replies.
+The workflow reuses an issue carrying the exact trigger marker if a run is retried. Once the push job initializes the issue, `procedureSavedHere` stores the initial JSON receipt and `procedureReceipts` starts with that snapshot. `procedureReceiptPath` points to the live mutable receipt at `issue-runs/<issue-number>.json`. Later workflow updates append receipt snapshots to the trigger JSON named by its `procedureIdentifier` (`<procedureName><nonce>.json`), after verifying the issue binding; the live per-issue receipt remains canonical for current state. The first rendered instruction selects `procedureMode` (`normal`, `gemini`, or `mirror`); the next instruction captures the verbatim user prompt in the issue replies.
 
 ## Procedure mode selection
 
-Every new run starts with the same mode-selection screen, regardless of how it was initiated. Reply `${procedureMode}: "normal"` or `${procedureMode}: "gemini"`. The existing declared-type validator accepts only those two values, and the selection is retained in state and history. Both choices then show the existing verbatim-prompt screen. `procedureMode` is separate from the existing `mode` field used for fidelity/accountability selection.
+Every new run starts with the same mode-selection screen, regardless of how it was initiated. Reply `${procedureMode}: "normal"`, `${procedureMode}: "gemini"`, or `${procedureMode}: "mirror"`. The existing declared-type validator accepts those three values, and the selection is retained in state and history. All choices then show the existing verbatim-prompt screen. `procedureMode` is separate from the existing `mode` field used for fidelity/accountability selection.
 
 Normal mode follows the predefined transition map. Gemini mode captures the verbatim prompt, then calls the Gemini API to generate each subsequent screen. The workflow owns all state, validation, persistence, publication, and navigation; each API request contains the full saved state. Gemini does not retain the state between calls. Configure the existing `GEMINI_API_KEY` repository secret; `GEMINI_MODEL` is optional and defaults to the model used by the existing Gemini integration.
 
@@ -293,3 +293,34 @@ For an active procedure issue, submit one JSON operation per comment (plain JSON
 Route agent repository changes through these comments rather than direct writes during a procedure. The workflow validates the request, saves an operation intent, executes GitHub Contents operations, and stores attributed results in `state.fileOperations`, including before/after blob IDs and the commit receipt when available. It posts a result without advancing the current instruction or satisfying expected returns. Failures are recorded as failures. Reprocessing a comment reuses its receipt; after interruption, an already-achieved target state is recorded as recovered with no invented commit. Concurrent target changes are rejected. A new comment is a new operation.
 
 Requests cannot traverse outside the configured workspace or directly replace its managed manifest. These operations save source; they do not execute it. The supervisor API receives operation metadata without replacement file bodies.
+
+
+## Mirror Mode
+
+Select `${procedureMode}: "mirror"` on the existing initial mode-selection screen, then submit the verbatim prompt. Normal and Gemini modes and existing runs keep their existing paths. Mirror Mode uses no Gemini API: the owner-authored agent supplies each instruction; the workflow owns validation, persistence, publication and return tracking.
+
+Submit one JSON comment containing a `mirror` object. Its contents use the existing supervisor `control` schema with either an instruction/expectedInputs pair for continue or control alone for completion. Commands remain separate through the existing file-change interface. Worker assignments and commands are not accepted inside a mirror message.
+
+```json
+{
+  "mirror": {
+    "control": {
+      "target": {"outcome":"Product recorded","process":"Calculate and return the product"},
+      "current": {"outcome":"Awaiting product","process":"Instruction ready"},
+      "gap": {"outcome":["Product missing"],"process":[]},
+      "progress": {"reduced":true,"description":"Prepared the required instruction"},
+      "mode":"continue"
+    },
+    "instruction":"Calculate twelve times five. Return the product as {$total}.",
+    "expectedInputs":[{"name":"total","schema":{"type":"integer"}}]
+  }
+}
+```
+
+The workflow validates supported schemas and return placeholders, appends the screen to `state.renderedScreens`, stores the active expected inputs and publishes the instruction. Submit `{$total}: 60` or `{"total":60}`. Returns are accepted only after publication and must match exactly the requested keys/types. Invalid messages leave task state unchanged. Accepted values append to `state.variables`; the workflow then waits for the next owner-authored mirror message. A new screen or completion cannot replace an instruction with outstanding returns. `mirror` is reserved as an envelope key and cannot be an expected-input name.
+
+To finish, submit `{"mirror":{"control":...}}` with a complete control object whose mode is `completion` and whose outcome/process gaps are both empty. The workflow records this producer assessment and closes the run; schema checks do not independently prove that substantive work was done. Prior values, screens and controls remain saved. Mirror Mode does not invoke Gemini's stall counter or worker dispatcher. `state` and `back` preserve the current request. `retry` republishes an unpublished instruction without generating a screen.
+
+The local HTML interface provides the same mode, return controls, navigation, and a Mirror instruction JSON form. `/api/submit` accepts `{id,mirror:<message contents>}` for producer messages and the existing `{id,values}` envelope for task returns. Local sessions remain in memory; issue runs use the existing persistent receipt/publication path. Owner-only issue-comment authorization remains enforced.
+
+Run `node mirror-workflow.test.js` for lifecycle, persistence, schema/type rejection, pending-return protection, no-API behavior, HTTP adapter and mocked issue owner authorization. These tests do not prove a live deployed Mirror Mode run.

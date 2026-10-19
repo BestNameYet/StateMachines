@@ -1,3 +1,4 @@
+const {beginMirror,mirrorInstruction,applyMirrorReturn}=require('./mirror-workflow.js');
 const {isOwnerComment,parseFileOperation,githubFileOperations,executeFileOperation}=require('./file-commands.js');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -77,7 +78,7 @@ function startRun(issue) {
   return record;
 }
 function setExpectedInputs(record) {
-  if(record.geminiStarted)return;
+  if(record.geminiStarted||record.mirrorStarted)return;
   record.state.expectedInputs={request:record.request,render:record.state.render,inputs:record.done?[]:inputsFor(screens[record.state.render-1])};
 }
 function restoreCommunicationState(record,comments,issueNumber) {
@@ -110,6 +111,7 @@ async function publishCurrent(record,issueNumber,post,save,body) {
 }
 function applyReturn(record,payload,fileRoot) {
   if(record.done)throw Error('This run has finished.');
+  if(record.mirrorStarted)return applyMirrorReturn(record,payload,fileRoot);
   if(record.geminiStarted){
     if(!record.geminiPending&&!record.state.renderedRequests.includes(record.request))throw Error('Current Gemini screen has not been published.');
     const values=payload.values || (payload.variable?{[payload.variable]:payload.value}:payload);
@@ -133,8 +135,9 @@ function applyReturn(record,payload,fileRoot) {
   const appliedValues={...values};
   delete appliedValues.$toolInvocations;
   applyValidatedValues(draft,JSON.stringify(appliedValues));
+  const startingMirror=record.state.procedureMode==='mirror'&&record.state.render===1;
   const startingGemini=record.state.procedureMode==='gemini'&&record.state.render===1;
-  const result=startingGemini?draft:map(draft);
+  const result=(startingGemini||startingMirror)?draft:map(draft);
   if(Object.hasOwn(values,'$toolInvocations'))record.toolInvocations=[...(record.toolInvocations || []),...structuredClone(values.$toolInvocations)];
   record.history.push({request:record.request,render:record.state.render,loopNumber:record.state.loopNumber,values:structuredClone(values),state:structuredClone(draft)});
   record.state=result==='halt'?draft:result;
@@ -147,6 +150,7 @@ function applyReturn(record,payload,fileRoot) {
     record.state.noProgressTurns=0;
     record.state.renderedScreens=[{instruction:Object.fromEntries(screens[23]).instruction,expectedInputs:inputsFor(screens[23])}];
   }
+  if(startingMirror)beginMirror(record);
   if(startingGemini){
     record.state.variables.push({name:'verbatimUserPrompt',value:payload.value});
     record.geminiStarted=true;
@@ -189,7 +193,7 @@ function renderIssue(record,issueNumber,options={}) {
   if(record.done)return record.state.stopReason==='stalled'
     ? marker+'\n## Procedure stopped — stalled\n\nThree consecutive turns did not reduce the remaining gap. The objective is incomplete. All submitted values, remaining gaps, and control assessments are preserved in the run record.'
     : marker+'\n## Procedure complete\n\nAll submitted values and state snapshots are preserved in the run record.';
-  const entries=record.geminiStarted?[]:entriesForState(record.state,screens,record.toolInvocations || []);
+  const entries=(record.geminiStarted||record.mirrorStarted)?[]:entriesForState(record.state,screens,record.toolInvocations || []);
   for(const entry of entries)if(entry[0]==='toolInvocationFile')entry[1]={
     procedureIssueNumber:issueNumber,
     path:'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/'+issueNumber+'-tool-invocations.json',
@@ -216,6 +220,8 @@ function renderIssue(record,issueNumber,options={}) {
     : '';
   const content=record.view==='state'
     ? '## State\n\n'+fence(record.state)
+    : record.mirrorStarted
+      ? mirrorInstruction(record)
     : record.geminiStarted
       ? (options.instruction??renderGeminiScreen(lastGeminiScreen(record.state)))
       : fence(instruction);
@@ -356,7 +362,7 @@ async function main() {
     if(!/^\s*(?:\$\{|[\[{"\d-]|true\b|false\b|null\b|\x60{3,})/.test(comment.body)) {record.lastCommentId=comment.id;continue;}
     const errorMarker='<!-- agents-procedure:'+number+':error:'+comment.id+' -->';
     try {
-      const payload=parseReturn(comment.body,record.geminiStarted===true);
+      const payload=parseReturn(comment.body,record.geminiStarted===true||record.mirrorStarted===true);
       if(record.geminiStarted&&payload.values?.commands!==undefined){
         const envelope=payload.values;
         if(Object.keys(envelope).sort().join(',')!=='commands,nonce')throw Error('Worker commands require exactly nonce and commands.');
@@ -473,6 +479,7 @@ async function main() {
 }
 if(require.main===module)main().catch(error=>{console.error(error.message);process.exitCode=1;});
 module.exports={readRunRecord,recordGeminiError,publishGeminiErrors,main,startRun,applyReturn,acceptToolInvocationSubmission,parseReturn,renderIssue,renderToolInvocationSummary,toolInvocationSummary,canonicalTitle,triggerIdentifier,triggerPathForRecord,toolInvocationArtifactPath,toolInvocationArtifactUrl,toolInvocationArtifact,toolInvocationInputArtifact,issueNumberForEvent,setExpectedInputs,restoreCommunicationState,publishCurrent};
+
 
 
 
