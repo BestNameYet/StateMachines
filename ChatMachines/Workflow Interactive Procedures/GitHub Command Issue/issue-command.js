@@ -20,6 +20,20 @@ function localStat(root,relative){
  if(stat.isSymbolicLink())throw Error('Symbolic links are not allowed');
  return {path:relative,type:stat.isFile()?'file':stat.isDirectory()?'directory':'other',size:stat.size};
 }
+function localRead(root,relative,maxBytes=65536){
+ if(typeof relative!=='string'||!relative||path.isAbsolute(relative)||/^[A-Za-z]:/.test(relative)||relative.split(/[\\/]/).some(p=>!p||p==='.'||p==='..'))throw Error('Invalid local path');
+ const base=fs.realpathSync(root),parts=relative.split(/[\\/]),target=path.resolve(base,...parts);
+ if(!target.startsWith(base+path.sep))throw Error('Outside checked-out workspace');
+ let cursor=base;
+ for(const part of parts){cursor=path.join(cursor,part);if(fs.lstatSync(cursor).isSymbolicLink())throw Error('Symbolic links are not allowed');}
+ const stat=fs.lstatSync(target);
+ if(!stat.isFile())throw Error('Expected regular file');
+ if(stat.size>maxBytes)throw Error('File exceeds text size limit');
+ const fd=fs.openSync(target,fs.constants.O_RDONLY|(fs.constants.O_NOFOLLOW||0));
+ try{const actual=fs.fstatSync(fd);if(!actual.isFile()||actual.size>maxBytes)throw Error('File exceeds text size limit or is not regular file');
+ const content=fs.readFileSync(fd,{encoding:'utf8'});if(Buffer.byteLength(content,'utf8')>maxBytes)throw Error('File exceeds text size limit');
+ return {path:relative,size:actual.size,encoding:'utf8',content};}finally{fs.closeSync(fd);}
+}
 function requestFor(c,catalog,repository){
  if(c.command.startsWith('issues/')||c.command==='graphql')throw Error('Issue API operations are excluded');
  const op=catalog.commands[c.command];if(!op)throw Error('Unknown command; see command-catalog.json');
@@ -68,7 +82,7 @@ async function run(env=process.env){
   if(comments.length<100)break;
  }
  let command,request;
- try{command=parse(comment.body.replace(/^<!-- command-scope -->\s*\n/,''));if(command.command==='help'){if(Object.keys(command).some(k=>!['version','command'].includes(k)))throw Error('help takes no arguments');}else if(command.command==='local/test-stat'){if(command.body!==undefined||command.body_base64!==undefined||command.headers!==undefined||Object.keys(command.parameters||{}).length)throw Error('local/test-stat takes no arguments');}else if(command.command==='local/stat'){if(!command.parameters||Object.keys(command.parameters).some(k=>k!=='path')||command.body!==undefined||command.body_base64!==undefined||command.headers!==undefined)throw Error('local/stat accepts only parameters.path');localStat(env.GITHUB_WORKSPACE||process.cwd(),command.parameters.path);}else request=requestFor(command,JSON.parse(fs.readFileSync(path.join(__dirname,'command-catalog.json'),'utf8')),repo);}
+ try{command=parse(comment.body.replace(/^<!-- command-scope -->\s*\n/,''));if(command.command==='help'){if(Object.keys(command).some(k=>!['version','command'].includes(k)))throw Error('help takes no arguments');}else if(command.command==='local/test-stat'){if(command.body!==undefined||command.body_base64!==undefined||command.headers!==undefined||Object.keys(command.parameters||{}).length)throw Error('local/test-stat takes no arguments');}else if(command.command==='local/test-read'){if(command.body!==undefined||command.body_base64!==undefined||command.headers!==undefined||Object.keys(command.parameters||{}).length)throw Error('local/test-read takes no arguments');}else if(command.command==='local/read'){if(!command.parameters||Object.keys(command.parameters).some(k=>k!=='path')||command.body!==undefined||command.body_base64!==undefined||command.headers!==undefined)throw Error('local/read accepts only parameters.path');localRead(env.GITHUB_WORKSPACE||process.cwd(),command.parameters.path);}else if(command.command==='local/stat'){if(!command.parameters||Object.keys(command.parameters).some(k=>k!=='path')||command.body!==undefined||command.body_base64!==undefined||command.headers!==undefined)throw Error('local/stat accepts only parameters.path');localStat(env.GITHUB_WORKSPACE||process.cwd(),command.parameters.path);}else request=requestFor(command,JSON.parse(fs.readFileSync(path.join(__dirname,'command-catalog.json'),'utf8')),repo);}
  catch(error){await control(controlToken,repo,'/issues/'+issue.number+'/comments','POST',{body:receiptMarker+'\nRejected: '+error.message});return {rejected:true};}
  if(command.command==='help'){
   const docs='https://github.com/'+repo+'/blob/main/ChatMachines/Workflow%20Interactive%20Procedures/GitHub%20Command%20Issue/';
@@ -79,7 +93,7 @@ async function run(env=process.env){
  let result, responseText='';
  try{
   // Execute the requested GitHub operation, not a simulated request.
-  if(command.command==='local/test-stat'){const stream=require('node:test').run({files:[path.join(__dirname,'local-stat.test.js')]});let passed=0,failed=0;const failures=[];for await(const event of stream){if(event.type==='test:pass')passed++;if(event.type==='test:fail'){failed++;failures.push(String(event.data?.details?.error?.message||event.data?.name||'test failed'));}}responseText=JSON.stringify({passed,failed,failures});result={command:command.command,status:failed?500:200,ok:failed===0,execution:'local'};}else if(command.command==='local/stat'){responseText=JSON.stringify(localStat(env.GITHUB_WORKSPACE||process.cwd(),command.parameters.path));result={command:command.command,status:200,ok:true,execution:'local'};}else{const r=await call(apiToken,request.url,request);responseText=await r.text();result={command:command.command,status:r.status,ok:r.ok};if(!r.ok)result.error=responseText||r.statusText||'GitHub API request failed';}
+  if(command.command==='local/test-stat'){const stream=require('node:test').run({files:[path.join(__dirname,'local-stat.test.js')]});let passed=0,failed=0;const failures=[];for await(const event of stream){if(event.type==='test:pass')passed++;if(event.type==='test:fail'){failed++;failures.push(String(event.data?.details?.error?.message||event.data?.name||'test failed'));}}responseText=JSON.stringify({passed,failed,failures});result={command:command.command,status:failed?500:200,ok:failed===0,execution:'local'};}else if(command.command==='local/test-read'){const stream=require('node:test').run({files:[path.join(__dirname,'local-read.test.js')]});let passed=0,failed=0;const failures=[];for await(const event of stream){if(event.type==='test:pass')passed++;if(event.type==='test:fail'){failed++;failures.push(String(event.data?.details?.error?.message||event.data?.name||'test failed'));}}responseText=JSON.stringify({passed,failed,failures});result={command:command.command,status:failed?500:200,ok:failed===0,execution:'local'};}else if(command.command==='local/read'){responseText=JSON.stringify(localRead(env.GITHUB_WORKSPACE||process.cwd(),command.parameters.path));result={command:command.command,status:200,ok:true,execution:'local'};}else if(command.command==='local/stat'){responseText=JSON.stringify(localStat(env.GITHUB_WORKSPACE||process.cwd(),command.parameters.path));result={command:command.command,status:200,ok:true,execution:'local'};}else{const r=await call(apiToken,request.url,request);responseText=await r.text();result={command:command.command,status:r.status,ok:r.ok};if(!r.ok)result.error=responseText||r.statusText||'GitHub API request failed';}
  }catch(error){result={command:command.command,ok:false,outcome:'unknown',error:error.message};}
  const summary=result.ok?'Executed `'+command.command+'` (HTTP '+result.status+').':'Failed `'+command.command+'`'+(result.status?' (HTTP '+result.status+')':'')+': '+(result.error||'Unknown outcome');
  await control(controlToken,repo,'/issues/comments/'+receipt.id,'PATCH',{body:receiptMarker+'\n'+summary});
@@ -91,4 +105,4 @@ async function run(env=process.env){
  if(!result.ok)process.exitCode=1;return result;
 }
 if(require.main===module)run().catch(e=>{console.error(e.message);process.exitCode=1;});
-module.exports={MARKER,parse,requestFor,localStat,run};
+module.exports={MARKER,parse,requestFor,localStat,localRead,run};
