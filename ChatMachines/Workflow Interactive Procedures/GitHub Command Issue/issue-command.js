@@ -23,7 +23,7 @@ function localStat(root,relative){
 }
 function localRead(root,relative,maxBytes=65536){
  if(typeof relative!=='string'||!relative||path.isAbsolute(relative)||/^[A-Za-z]:/.test(relative)||relative.split(/[\\/]/).some(p=>!p||p==='.'||p==='..'))throw Error('Invalid local path');
- const base=fs.realpathSync(root),parts=relative.split(/[\\/]),target=path.resolve(base,...parts);
+ const base=fs.realpathSync(root),parts=relative.split(/[\\/]/),target=path.resolve(base,...parts);
  if(!target.startsWith(base+path.sep))throw Error('Outside checked-out workspace');
  let cursor=base;
  for(const part of parts){cursor=path.join(cursor,part);if(fs.lstatSync(cursor).isSymbolicLink())throw Error('Symbolic links are not allowed');}
