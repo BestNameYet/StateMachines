@@ -1,6 +1,6 @@
 {
   "state": {
-    "render": 1,
+    "render": 0,
     "verbatimUserPrompt": "Implement the AGENTS Superpowers invocation policy: before each new skill or command, reproduce the full twelve-row activity-to-skill mapping exactly as previously defined, then identify, load and apply the relevant skill. Preserve existing authorization and verification requirements.",
     "userIntent": null,
     "exampleMatch": null,
@@ -23,15 +23,34 @@
       3
     ],
     "expectedInputs": {
-      "request": 3,
-      "render": 1,
-      "inputs": []
+      "request": 4,
+      "render": 0,
+      "inputs": [
+        {
+          "name": "implementationStatus",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
     },
     "workspace": {
       "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/62",
       "manifest": "manifest.json"
     },
-    "renderedScreens": [],
+    "renderedScreens": [
+      {
+        "instruction": "Implement the Superpowers invocation policy in the AGENTS repository workflow. Before each new Superpowers skill or command invocation, reproduce the previously agreed twelve-row activity-to-skill mapping verbatim, identify the applicable skill, load its instructions, and apply them. Read applicable AGENTS.md and README first; respect workspace permissions. Return the implementation status as {$implementationStatus}.",
+        "expectedInputs": [
+          {
+            "name": "implementationStatus",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    ],
     "variables": [
       {
         "name": "procedureMode",
@@ -42,11 +61,35 @@
         "value": "Implement the AGENTS Superpowers invocation policy: before each new skill or command, reproduce the full twelve-row activity-to-skill mapping exactly as previously defined, then identify, load and apply the relevant skill. Preserve existing authorization and verification requirements."
       }
     ],
-    "controls": []
+    "controls": [
+      {
+        "target": {
+          "outcome": "Superpowers invocation policy implemented",
+          "process": "Apply the twelve-row activity map at each new skill or command invocation"
+        },
+        "current": {
+          "outcome": "Policy requested; implementation not yet verified",
+          "process": "Mirror instruction published for repository implementation"
+        },
+        "gap": {
+          "outcome": [
+            "Repository implementation and verification outstanding"
+          ],
+          "process": [
+            "Inspect applicable AGENTS.md and README; implement through authorized workspace"
+          ]
+        },
+        "progress": {
+          "reduced": true,
+          "description": "Established the next actionable implementation instruction"
+        },
+        "mode": "continue"
+      }
+    ]
   },
   "done": false,
-  "request": 3,
-  "lastCommentId": 6261046928,
+  "request": 4,
+  "lastCommentId": 6261070329,
   "newFiles": [],
   "history": [
     {
@@ -155,6 +198,43 @@
           "manifest": "manifest.json"
         }
       }
+    },
+    {
+      "request": 3,
+      "mirrorMessage": {
+        "control": {
+          "target": {
+            "outcome": "Superpowers invocation policy implemented",
+            "process": "Apply the twelve-row activity map at each new skill or command invocation"
+          },
+          "current": {
+            "outcome": "Policy requested; implementation not yet verified",
+            "process": "Mirror instruction published for repository implementation"
+          },
+          "gap": {
+            "outcome": [
+              "Repository implementation and verification outstanding"
+            ],
+            "process": [
+              "Inspect applicable AGENTS.md and README; implement through authorized workspace"
+            ]
+          },
+          "progress": {
+            "reduced": true,
+            "description": "Established the next actionable implementation instruction"
+          },
+          "mode": "continue"
+        },
+        "instruction": "Implement the Superpowers invocation policy in the AGENTS repository workflow. Before each new Superpowers skill or command invocation, reproduce the previously agreed twelve-row activity-to-skill mapping verbatim, identify the applicable skill, load its instructions, and apply them. Read applicable AGENTS.md and README first; respect workspace permissions. Return the implementation status as {$implementationStatus}.",
+        "expectedInputs": [
+          {
+            "name": "implementationStatus",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
     }
   ],
   "toolInvocations": [],
@@ -167,5 +247,5 @@
   },
   "view": "instruction",
   "mirrorStarted": true,
-  "mirrorWaiting": true
+  "mirrorWaiting": false
 }
