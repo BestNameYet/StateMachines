@@ -1,32 +1,9 @@
 name: AGENTS Procedure issues
 
+# Temporarily suspended: no automatic issue, comment, or push triggers.
+# Existing jobs and runtime implementation are preserved for later reactivation.
 on:
-  issues:
-    types: [opened, edited]
-  issue_comment:
-    types: [created]
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/agents-procedure-issues.yml'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workflow*.js'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-tool-invocations*.js'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-trigger*.js'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-run-triggers/*.json'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/*-tool-invocations.json'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-lookup.json'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/Instruction-render.json'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/validator.js'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/gemini-*.js'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/supervisor-tools*.js'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/worker-*.js'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/root-workspace*.js'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/file-commands*.js'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/worker-instructions.md'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/gemini-request-template.json'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/render-gemini.js'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/render-instructions.js'
-      - 'ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/interface*'
+  workflow_dispatch:
 
 permissions:
   contents: read
