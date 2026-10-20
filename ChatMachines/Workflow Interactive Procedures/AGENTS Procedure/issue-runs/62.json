@@ -1,6 +1,6 @@
 {
   "state": {
-    "render": 10,
+    "render": 11,
     "verbatimUserPrompt": "Implement the AGENTS Superpowers invocation policy: before each new skill or command, reproduce the full twelve-row activity-to-skill mapping exactly as previously defined, then identify, load and apply the relevant skill. Preserve existing authorization and verification requirements.",
     "userIntent": null,
     "exampleMatch": null,
@@ -45,9 +45,16 @@
       25
     ],
     "expectedInputs": {
-      "request": 25,
-      "render": 10,
-      "inputs": []
+      "request": 26,
+      "render": 11,
+      "inputs": [
+        {
+          "name": "verificationTriage",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
     },
     "workspace": {
       "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/62",
@@ -169,6 +176,17 @@
         "expectedInputs": [
           {
             "name": "testDispatchDiagnosis",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      {
+        "instruction": "Verification recovery — TRIAGE ONLY (next action; no file mutations).\n\nRead the applicable AGENTS.md and current AGENTS Procedure + GitHub Command Issue READMEs before operations, along with the current command catalog and relevant test source via authorized issue-local commands. Facts already observed: on issues #60, #62 and #63, independent repos/get and/or local/read commands returned HTTP 200 plus the full response in the same originating issue. Record these as PASS for cross-issue read/receipt routing, not as proof of writes, deletions or test-suite success. Issue #62 local/read command 6279336364 has receipt 6279344434 and rendered result 6279344840. An older local/test-read command 6270447638 has no established matching test receipt; do not blindly replay it.\n\nOn THIS active issue #62, inspect the live command help/catalog and existing local-read test file and workflow routing. Determine whether local/test-read is currently registered or whether the Node tests require a different documented command/workflow trigger. Seek an existing Actions/test result and its exact counts before scheduling any new run. Reconcile the available evidence into a small matrix: cross-issue read/receipt PASS, automated local-read tests PASS/FAIL/UNVERIFIED, create/update/delete PASS/FAIL/UNVERIFIED, issue-local write/delete response PASS/FAIL/UNVERIFIED. If you cannot observe a test result, keep it UNVERIFIED and specify the exact safe next test, isolated fixture path, command and expected evidence. Do not perform mutations in this triage instruction. Preserve command comment ID, output/receipt ID, issue number, SHA where applicable. Do not conflate posting with execution. Do not ask for a new end-user turn. The next Mirror instruction will authorize the bounded test execution after this return is accepted.\n\nReturn only factual observations, current blocker(s), and the next bounded verification instruction as {$verificationTriage}. Preserve the cross-agent handoff note and task-local issue scope in narrative reporting without altering machine JSON.",
+        "expectedInputs": [
+          {
+            "name": "verificationTriage",
             "schema": {
               "type": "string"
             }
@@ -508,12 +526,39 @@
           "description": "Verification blocker unresolved"
         },
         "mode": "continue"
+      },
+      {
+        "target": {
+          "outcome": "Proven issue-local GitHub command handling and fully verified native command tests, including read and isolated create/update/delete behavior",
+          "process": "Preserve active Mirror Mode author/render/execute/return/validate cycle; use only the originating issue command surface, correlate each receipt, verify target state, and avoid duplicate mutations"
+        },
+        "current": {
+          "outcome": "Verified live repos/get and local/read output and per-issue receipts in several independent issues; earlier local/test-read lacks verified test results; mutation test matrix incomplete",
+          "process": "Issue #62 awaits next Mirror Mode instruction; last successful #62 local/read yielded HTTP 200 with output returned to #62"
+        },
+        "gap": {
+          "outcome": [
+            "Obtain defensible automated local-read test result or documented failure",
+            "Verify isolated create/read/update/delete operations and their issue-local receipts",
+            "Record pass/fail evidence and any defects before closing"
+          ],
+          "process": [
+            "Determine the current registered test command and available runner without replaying uncertain commands",
+            "Run one bounded evidence-gathering step at a time, advancing only on accepted Mirror returns",
+            "Do not claim acceptance or completion before the workflow posts it"
+          ]
+        },
+        "progress": {
+          "reduced": true,
+          "description": "Live cross-issue read and result-rendering verification now observed; previous command dispatch uncertainty narrowed"
+        },
+        "mode": "continue"
       }
     ]
   },
   "done": false,
-  "request": 25,
-  "lastCommentId": 6304309198,
+  "request": 26,
+  "lastCommentId": 6304321493,
   "newFiles": [],
   "history": [
     {
@@ -1131,6 +1176,47 @@
       "values": {
         "testDispatchDiagnosis": "Render 10 diagnosis: The existing local/test-read command comment 6270447638 has no matching receipt in the retrieved Issue 59 comments, so its execution and test counts remain unverified. A diagnostic actions/list-workflow-runs command was submitted to Issue 59 as comment 6272406089, but no execution receipt or response followed during checks. Render 10 was acknowledged at issue 62 comment 6272399617. The console dispatch pathway is currently not producing observable receipts for these commands; whether workflow triggering, filtering, queuing, or runner execution is responsible cannot be determined from the available evidence. Command registration and native-read test results remain unverified. No duplicate test submitted and no completion claim."
       }
+    },
+    {
+      "request": 25,
+      "mirrorMessage": {
+        "instruction": "Verification recovery — TRIAGE ONLY (next action; no file mutations).\n\nRead the applicable AGENTS.md and current AGENTS Procedure + GitHub Command Issue READMEs before operations, along with the current command catalog and relevant test source via authorized issue-local commands. Facts already observed: on issues #60, #62 and #63, independent repos/get and/or local/read commands returned HTTP 200 plus the full response in the same originating issue. Record these as PASS for cross-issue read/receipt routing, not as proof of writes, deletions or test-suite success. Issue #62 local/read command 6279336364 has receipt 6279344434 and rendered result 6279344840. An older local/test-read command 6270447638 has no established matching test receipt; do not blindly replay it.\n\nOn THIS active issue #62, inspect the live command help/catalog and existing local-read test file and workflow routing. Determine whether local/test-read is currently registered or whether the Node tests require a different documented command/workflow trigger. Seek an existing Actions/test result and its exact counts before scheduling any new run. Reconcile the available evidence into a small matrix: cross-issue read/receipt PASS, automated local-read tests PASS/FAIL/UNVERIFIED, create/update/delete PASS/FAIL/UNVERIFIED, issue-local write/delete response PASS/FAIL/UNVERIFIED. If you cannot observe a test result, keep it UNVERIFIED and specify the exact safe next test, isolated fixture path, command and expected evidence. Do not perform mutations in this triage instruction. Preserve command comment ID, output/receipt ID, issue number, SHA where applicable. Do not conflate posting with execution. Do not ask for a new end-user turn. The next Mirror instruction will authorize the bounded test execution after this return is accepted.\n\nReturn only factual observations, current blocker(s), and the next bounded verification instruction as {$verificationTriage}. Preserve the cross-agent handoff note and task-local issue scope in narrative reporting without altering machine JSON.",
+        "expectedInputs": [
+          {
+            "name": "verificationTriage",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "control": {
+          "target": {
+            "outcome": "Proven issue-local GitHub command handling and fully verified native command tests, including read and isolated create/update/delete behavior",
+            "process": "Preserve active Mirror Mode author/render/execute/return/validate cycle; use only the originating issue command surface, correlate each receipt, verify target state, and avoid duplicate mutations"
+          },
+          "current": {
+            "outcome": "Verified live repos/get and local/read output and per-issue receipts in several independent issues; earlier local/test-read lacks verified test results; mutation test matrix incomplete",
+            "process": "Issue #62 awaits next Mirror Mode instruction; last successful #62 local/read yielded HTTP 200 with output returned to #62"
+          },
+          "gap": {
+            "outcome": [
+              "Obtain defensible automated local-read test result or documented failure",
+              "Verify isolated create/read/update/delete operations and their issue-local receipts",
+              "Record pass/fail evidence and any defects before closing"
+            ],
+            "process": [
+              "Determine the current registered test command and available runner without replaying uncertain commands",
+              "Run one bounded evidence-gathering step at a time, advancing only on accepted Mirror returns",
+              "Do not claim acceptance or completion before the workflow posts it"
+            ]
+          },
+          "progress": {
+            "reduced": true,
+            "description": "Live cross-issue read and result-rendering verification now observed; previous command dispatch uncertainty narrowed"
+          },
+          "mode": "continue"
+        }
+      }
     }
   ],
   "toolInvocations": [],
@@ -1165,5 +1251,5 @@
   },
   "view": "instruction",
   "mirrorStarted": true,
-  "mirrorWaiting": true
+  "mirrorWaiting": false
 }
