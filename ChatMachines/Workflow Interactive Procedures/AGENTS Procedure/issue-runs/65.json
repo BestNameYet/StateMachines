@@ -1,9 +1,9 @@
 {
   "state": {
-    "render": 3,
+    "render": 8,
     "verbatimUserPrompt": "Upgrade ChatMachines/SeleniumServer from a test-oriented Selenium runner into a reusable browser-control program for activating existing ChatGPT conversations, submitting instructions, and returning DOM/text and screenshot observations. Preserve the existing Selenium actions and workflow contracts. Add persistent Chromium user-profile restore/save across GitHub Actions runs, command request correlation, and issue-local execution receipts. Read applicable AGENTS.md and current README.md first; use the repository's documented command console for non-Issue operations. Verify workflow activation, code changes, tests, and execution receipts before reporting completion.",
     "userIntent": "The user wants the existing SeleniumServer code upgraded into a reusable, authenticated Chromium browser-control program that can open dormant ChatGPT conversations, submit instructions, and capture DOM/text and screenshot observations. Preserve current runner capabilities, restore and save browser profiles between GitHub Actions jobs, correlate commands and receipts with their originating GitHub issue, and verify workflow execution, tests, and actual file changes. Execute the work through the repository's documented AGENTS Procedure in normal mode, following applicable repository instructions and issue-local command routing.",
-    "exampleMatch": null,
+    "exampleMatch": false,
     "minimalResult": null,
     "targetFiles": null,
     "requirements": null,
@@ -24,13 +24,29 @@
       4
     ],
     "expectedInputs": {
-      "request": 4,
-      "render": 3,
+      "request": 5,
+      "render": 8,
       "inputs": [
         {
-          "name": "exampleMatch",
+          "name": "targetFiles",
           "schema": {
-            "type": "boolean"
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "filename": {
+                  "type": "string",
+                  "format": "file-reference"
+                },
+                "newFile": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "filename",
+                "newFile"
+              ]
+            }
           }
         }
       ]
@@ -41,8 +57,8 @@
     }
   },
   "done": false,
-  "request": 4,
-  "lastCommentId": 6310340155,
+  "request": 5,
+  "lastCommentId": 6310368474,
   "newFiles": [],
   "history": [
     {
@@ -190,6 +206,55 @@
               "name": "userIntent",
               "schema": {
                 "type": "string"
+              }
+            }
+          ]
+        },
+        "workspace": {
+          "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/65",
+          "manifest": "manifest.json"
+        }
+      }
+    },
+    {
+      "request": 4,
+      "render": 3,
+      "loopNumber": null,
+      "values": {
+        "$exampleMatch": false
+      },
+      "state": {
+        "render": 8,
+        "verbatimUserPrompt": "Upgrade ChatMachines/SeleniumServer from a test-oriented Selenium runner into a reusable browser-control program for activating existing ChatGPT conversations, submitting instructions, and returning DOM/text and screenshot observations. Preserve the existing Selenium actions and workflow contracts. Add persistent Chromium user-profile restore/save across GitHub Actions runs, command request correlation, and issue-local execution receipts. Read applicable AGENTS.md and current README.md first; use the repository's documented command console for non-Issue operations. Verify workflow activation, code changes, tests, and execution receipts before reporting completion.",
+        "userIntent": "The user wants the existing SeleniumServer code upgraded into a reusable, authenticated Chromium browser-control program that can open dormant ChatGPT conversations, submit instructions, and capture DOM/text and screenshot observations. Preserve current runner capabilities, restore and save browser profiles between GitHub Actions jobs, correlate commands and receipts with their originating GitHub issue, and verify workflow execution, tests, and actual file changes. Execute the work through the repository's documented AGENTS Procedure in normal mode, following applicable repository instructions and issue-local command routing.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": null,
+        "requirements": null,
+        "matchedExample": null,
+        "mode": null,
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null,
+        "procedureMode": "normal",
+        "workers": [],
+        "renderedRequests": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "expectedInputs": {
+          "request": 4,
+          "render": 3,
+          "inputs": [
+            {
+              "name": "exampleMatch",
+              "schema": {
+                "type": "boolean"
               }
             }
           ]
