@@ -74,7 +74,8 @@ async function control(token,repo,route,method='GET',body){
 async function run(env=process.env){
  const event=JSON.parse(fs.readFileSync(env.GITHUB_EVENT_PATH,'utf8')),repo=env.GITHUB_REPOSITORY,owner=repo.split('/')[0];
  if(!['created','edited'].includes(event.action)||event.comment?.user?.type!=='User'||event.comment.user.login.toLowerCase()!==owner.toLowerCase()||event.issue?.pull_request)return {ignored:true};
- const controlToken=env.GITHUB_TOKEN,apiToken=env.COMMAND_API_TOKEN||controlToken;
+ const controlToken=env.COMMAND_API_TOKEN,apiToken=controlToken;
+ if(!controlToken)throw Error('COMMAND_API_TOKEN is required');
  // Fetch current issue/comment so edited or deleted content never silently substitutes an event.
  const issue=await control(controlToken,repo,'/issues/'+event.issue.number);
  const comment=await control(controlToken,repo,'/issues/comments/'+event.comment.id);
