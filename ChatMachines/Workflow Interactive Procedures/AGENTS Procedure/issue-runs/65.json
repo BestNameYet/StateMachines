@@ -1,8 +1,8 @@
 {
   "state": {
-    "render": 10,
+    "render": 11,
     "verbatimUserPrompt": "Upgrade ChatMachines/SeleniumServer from a test-oriented Selenium runner into a reusable browser-control program for activating existing ChatGPT conversations, submitting instructions, and returning DOM/text and screenshot observations. Preserve the existing Selenium actions and workflow contracts. Add persistent Chromium user-profile restore/save across GitHub Actions runs, command request correlation, and issue-local execution receipts. Read applicable AGENTS.md and current README.md first; use the repository's documented command console for non-Issue operations. Verify workflow activation, code changes, tests, and execution receipts before reporting completion.",
-    "userIntent": "The user wants the existing SeleniumServer code upgraded into a reusable, authenticated Chromium browser-control program that can open dormant ChatGPT conversations, submit instructions, and capture DOM/text and screenshot observations. Preserve current runner capabilities, restore and save browser profiles between GitHub Actions jobs, correlate commands and receipts with their originating GitHub issue, and verify workflow execution, tests, and actual file changes. Execute the work through the repository's documented AGENTS Procedure in normal mode, following applicable repository instructions and issue-local command routing.",
+    "userIntent": "Upgrade the SeleniumServer browser runner to interact with existing ChatGPT conversations, preserve existing actions, retain browser profiles between runs, and report verified outcomes to the originating issue.",
     "exampleMatch": false,
     "minimalResult": null,
     "targetFiles": [
@@ -101,13 +101,25 @@
       7
     ],
     "expectedInputs": {
-      "request": 7,
-      "render": 10,
+      "request": 8,
+      "render": 11,
       "inputs": [
         {
-          "name": "userIntent",
+          "name": "matchedExample",
           "schema": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "example": {
+                "type": "integer"
+              },
+              "promptText": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "example",
+              "promptText"
+            ]
           }
         }
       ]
@@ -118,8 +130,8 @@
     }
   },
   "done": false,
-  "request": 7,
-  "lastCommentId": 6310394843,
+  "request": 8,
+  "lastCommentId": 6310417100,
   "newFiles": [
     "ChatMachines/SeleniumServer/browser-profile.cjs",
     "ChatMachines/SeleniumServer/browser-profile.test.cjs"
@@ -641,6 +653,132 @@
                     "operator"
                   ]
                 }
+              }
+            }
+          ]
+        },
+        "workspace": {
+          "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/65",
+          "manifest": "manifest.json"
+        }
+      }
+    },
+    {
+      "request": 7,
+      "render": 10,
+      "loopNumber": null,
+      "values": {
+        "$userIntent": "Upgrade the SeleniumServer browser runner to interact with existing ChatGPT conversations, preserve existing actions, retain browser profiles between runs, and report verified outcomes to the originating issue."
+      },
+      "state": {
+        "render": 11,
+        "verbatimUserPrompt": "Upgrade ChatMachines/SeleniumServer from a test-oriented Selenium runner into a reusable browser-control program for activating existing ChatGPT conversations, submitting instructions, and returning DOM/text and screenshot observations. Preserve the existing Selenium actions and workflow contracts. Add persistent Chromium user-profile restore/save across GitHub Actions runs, command request correlation, and issue-local execution receipts. Read applicable AGENTS.md and current README.md first; use the repository's documented command console for non-Issue operations. Verify workflow activation, code changes, tests, and execution receipts before reporting completion.",
+        "userIntent": "Upgrade the SeleniumServer browser runner to interact with existing ChatGPT conversations, preserve existing actions, retain browser profiles between runs, and report verified outcomes to the originating issue.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/SeleniumServer/run.cjs",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/runner.test.cjs",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/README.md",
+            "newFile": false
+          },
+          {
+            "filename": ".github/workflows/selenium-server.yml",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.cjs",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.test.cjs",
+            "newFile": true
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/SeleniumServer/run.cjs",
+            "frombyte": 0,
+            "tobyte": 7811,
+            "description": "Extend request parsing and browser action execution with conversation navigation, observations, correlation IDs and profile handling while retaining existing actions.",
+            "intent": "Reusable ChatGPT browser control and issue-correlated receipts",
+            "operator": "modify"
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/runner.test.cjs",
+            "frombyte": 0,
+            "tobyte": 5239,
+            "description": "Add regression coverage for new request fields and actions and preserve existing behavior.",
+            "intent": "Verify backward compatibility and command results",
+            "operator": "modify"
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/README.md",
+            "frombyte": 0,
+            "tobyte": 4480,
+            "description": "Document authenticated browser profile lifecycle, dispatch contract, output artifacts, and security limits.",
+            "intent": "Provide documented reusable browser-control workflow",
+            "operator": "modify"
+          },
+          {
+            "filename": ".github/workflows/selenium-server.yml",
+            "frombyte": 0,
+            "tobyte": 3848,
+            "description": "Restore and persist browser profile artifacts around Selenium job, pass request correlation, and publish verified receipts.",
+            "intent": "Persistence across ephemeral jobs and issue-local verification",
+            "operator": "modify"
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.cjs",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create profile import/export validation and archive lifecycle helper.",
+            "intent": "Persistent Chromium login state between runs",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.test.cjs",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create isolated tests for profile handling and security validation.",
+            "intent": "Test persistence and failure handling",
+            "operator": "create"
+          }
+        ],
+        "matchedExample": null,
+        "mode": null,
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null,
+        "procedureMode": "normal",
+        "workers": [],
+        "renderedRequests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "expectedInputs": {
+          "request": 7,
+          "render": 10,
+          "inputs": [
+            {
+              "name": "userIntent",
+              "schema": {
+                "type": "string"
               }
             }
           ]
