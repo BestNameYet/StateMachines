@@ -94,7 +94,7 @@ jobs:
       - name: Create and bind issues for pending trigger files
         working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.WORKSPACE_API }}
         run: node issue-run-trigger.js
 
   consume-tool-invocation-file:
@@ -118,7 +118,7 @@ jobs:
       - name: Validate committed tool-invocation JSON and advance its issue
         working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.WORKSPACE_API }}
         run: node issue-run-tool-invocations.js
 
   render-issue:
@@ -143,7 +143,7 @@ jobs:
       - name: Advance issue state and render instruction
         working-directory: ChatMachines/Workflow Interactive Procedures/AGENTS Procedure
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.WORKSPACE_API }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
         run: node issue-workflow.js
