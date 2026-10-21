@@ -1,11 +1,36 @@
 {
   "state": {
-    "render": 8,
+    "render": 9,
     "verbatimUserPrompt": "Upgrade ChatMachines/SeleniumServer from a test-oriented Selenium runner into a reusable browser-control program for activating existing ChatGPT conversations, submitting instructions, and returning DOM/text and screenshot observations. Preserve the existing Selenium actions and workflow contracts. Add persistent Chromium user-profile restore/save across GitHub Actions runs, command request correlation, and issue-local execution receipts. Read applicable AGENTS.md and current README.md first; use the repository's documented command console for non-Issue operations. Verify workflow activation, code changes, tests, and execution receipts before reporting completion.",
     "userIntent": "The user wants the existing SeleniumServer code upgraded into a reusable, authenticated Chromium browser-control program that can open dormant ChatGPT conversations, submit instructions, and capture DOM/text and screenshot observations. Preserve current runner capabilities, restore and save browser profiles between GitHub Actions jobs, correlate commands and receipts with their originating GitHub issue, and verify workflow execution, tests, and actual file changes. Execute the work through the repository's documented AGENTS Procedure in normal mode, following applicable repository instructions and issue-local command routing.",
     "exampleMatch": false,
     "minimalResult": null,
-    "targetFiles": null,
+    "targetFiles": [
+      {
+        "filename": "ChatMachines/SeleniumServer/run.cjs",
+        "newFile": false
+      },
+      {
+        "filename": "ChatMachines/SeleniumServer/runner.test.cjs",
+        "newFile": false
+      },
+      {
+        "filename": "ChatMachines/SeleniumServer/README.md",
+        "newFile": false
+      },
+      {
+        "filename": ".github/workflows/selenium-server.yml",
+        "newFile": false
+      },
+      {
+        "filename": "ChatMachines/SeleniumServer/browser-profile.cjs",
+        "newFile": true
+      },
+      {
+        "filename": "ChatMachines/SeleniumServer/browser-profile.test.cjs",
+        "newFile": true
+      }
+    ],
     "requirements": null,
     "matchedExample": null,
     "mode": null,
@@ -25,11 +50,11 @@
       5
     ],
     "expectedInputs": {
-      "request": 5,
-      "render": 8,
+      "request": 6,
+      "render": 9,
       "inputs": [
         {
-          "name": "targetFiles",
+          "name": "requirements",
           "schema": {
             "type": "array",
             "items": {
@@ -39,13 +64,29 @@
                   "type": "string",
                   "format": "file-reference"
                 },
-                "newFile": {
-                  "type": "boolean"
+                "frombyte": {
+                  "type": "integer"
+                },
+                "tobyte": {
+                  "type": "integer"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "intent": {
+                  "type": "string"
+                },
+                "operator": {
+                  "type": "string"
                 }
               },
               "required": [
                 "filename",
-                "newFile"
+                "frombyte",
+                "tobyte",
+                "description",
+                "intent",
+                "operator"
               ]
             }
           }
@@ -58,9 +99,12 @@
     }
   },
   "done": false,
-  "request": 5,
-  "lastCommentId": 6310368474,
-  "newFiles": [],
+  "request": 6,
+  "lastCommentId": 6310383202,
+  "newFiles": [
+    "ChatMachines/SeleniumServer/browser-profile.cjs",
+    "ChatMachines/SeleniumServer/browser-profile.test.cjs"
+  ],
   "history": [
     {
       "request": 1,
@@ -256,6 +300,122 @@
               "name": "exampleMatch",
               "schema": {
                 "type": "boolean"
+              }
+            }
+          ]
+        },
+        "workspace": {
+          "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/65",
+          "manifest": "manifest.json"
+        }
+      }
+    },
+    {
+      "request": 5,
+      "render": 8,
+      "loopNumber": null,
+      "values": {
+        "$targetFiles": [
+          {
+            "filename": "ChatMachines/SeleniumServer/run.cjs",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/runner.test.cjs",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/README.md",
+            "newFile": false
+          },
+          {
+            "filename": ".github/workflows/selenium-server.yml",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.cjs",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.test.cjs",
+            "newFile": true
+          }
+        ]
+      },
+      "state": {
+        "render": 9,
+        "verbatimUserPrompt": "Upgrade ChatMachines/SeleniumServer from a test-oriented Selenium runner into a reusable browser-control program for activating existing ChatGPT conversations, submitting instructions, and returning DOM/text and screenshot observations. Preserve the existing Selenium actions and workflow contracts. Add persistent Chromium user-profile restore/save across GitHub Actions runs, command request correlation, and issue-local execution receipts. Read applicable AGENTS.md and current README.md first; use the repository's documented command console for non-Issue operations. Verify workflow activation, code changes, tests, and execution receipts before reporting completion.",
+        "userIntent": "The user wants the existing SeleniumServer code upgraded into a reusable, authenticated Chromium browser-control program that can open dormant ChatGPT conversations, submit instructions, and capture DOM/text and screenshot observations. Preserve current runner capabilities, restore and save browser profiles between GitHub Actions jobs, correlate commands and receipts with their originating GitHub issue, and verify workflow execution, tests, and actual file changes. Execute the work through the repository's documented AGENTS Procedure in normal mode, following applicable repository instructions and issue-local command routing.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/SeleniumServer/run.cjs",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/runner.test.cjs",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/README.md",
+            "newFile": false
+          },
+          {
+            "filename": ".github/workflows/selenium-server.yml",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.cjs",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.test.cjs",
+            "newFile": true
+          }
+        ],
+        "requirements": null,
+        "matchedExample": null,
+        "mode": null,
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null,
+        "procedureMode": "normal",
+        "workers": [],
+        "renderedRequests": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "expectedInputs": {
+          "request": 5,
+          "render": 8,
+          "inputs": [
+            {
+              "name": "targetFiles",
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "filename": {
+                      "type": "string",
+                      "format": "file-reference"
+                    },
+                    "newFile": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "filename",
+                    "newFile"
+                  ]
+                }
               }
             }
           ]
