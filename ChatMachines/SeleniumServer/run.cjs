@@ -1,6 +1,7 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
+const ID_PATTERN=/^[A-Za-z0-9_-]{1,100}$/;
 const ACTIONS = new Set(['navigate','wait_for','click','type','press_key','assert_text','read_text','read_attribute','screenshot']);
 function httpUrl(value) {
   if (typeof value !== 'string') throw new Error('URL must be a string');
@@ -11,6 +12,8 @@ function httpUrl(value) {
 function validateRequest(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Request must be an object');
   httpUrl(value.url);
+  if(value.correlation_id!==undefined && (typeof value.correlation_id!=='string'||!ID_PATTERN.test(value.correlation_id))) throw new Error('Invalid correlation_id');
+  if(value.issue_number!==undefined && (!Number.isSafeInteger(value.issue_number)||value.issue_number<1)) throw new Error('Invalid issue_number');
   const timeout = value.timeout_ms ?? 10000;
   if (!Number.isInteger(timeout) || timeout < 100 || timeout > 120000) throw new Error('timeout_ms must be an integer from 100 to 120000');
   if (!Array.isArray(value.steps) || value.steps.length > 100) throw new Error('steps must be an array of at most 100 actions');
@@ -78,7 +81,7 @@ async function main() {
   let driver;
   try {
     const request=loadRequest();
-    report.request={url:request.url,timeout_ms:request.timeout_ms,step_count:request.steps.length};
+    report.request={url:request.url,timeout_ms:request.timeout_ms,step_count:request.steps.length,correlation_id:request.correlation_id??null,issue_number:request.issue_number??null};
     const api=require('selenium-webdriver');
     const chrome=require('selenium-webdriver/chrome');
     const prefs=new api.logging.Preferences();prefs.setLevel(api.logging.Type.BROWSER,api.logging.Level.ALL);
