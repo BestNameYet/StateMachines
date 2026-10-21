@@ -1,6 +1,6 @@
 {
   "state": {
-    "render": 13,
+    "render": 14,
     "verbatimUserPrompt": "Upgrade ChatMachines/SeleniumServer from a test-oriented Selenium runner into a reusable browser-control program for activating existing ChatGPT conversations, submitting instructions, and returning DOM/text and screenshot observations. Preserve the existing Selenium actions and workflow contracts. Add persistent Chromium user-profile restore/save across GitHub Actions runs, command request correlation, and issue-local execution receipts. Read applicable AGENTS.md and current README.md first; use the repository's documented command console for non-Issue operations. Verify workflow activation, code changes, tests, and execution receipts before reporting completion.",
     "userIntent": "Upgrade the SeleniumServer browser runner to interact with existing ChatGPT conversations, preserve existing actions, retain browser profiles between runs, and report verified outcomes to the originating issue.",
     "exampleMatch": false,
@@ -107,195 +107,44 @@
       10
     ],
     "expectedInputs": {
-      "request": 10,
-      "render": 13,
+      "request": 11,
+      "render": 14,
       "inputs": [
         {
-          "name": "toolInvocations",
+          "name": "changeList",
           "schema": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "cwd": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "command_line_verbatim": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "tool": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "invocation_verbatim": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "final_output_after_completion_of_tool_call": {},
-                "unavailable_reason": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "new": {
-                  "anyOf": [
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
                 "filename": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "string",
+                  "format": "file-reference"
                 },
                 "frombyte": {
-                  "anyOf": [
-                    {
-                      "type": "integer"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "integer"
                 },
                 "tobyte": {
-                  "anyOf": [
-                    {
-                      "type": "integer"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "integer"
                 },
                 "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "string"
                 },
                 "intent": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
+                  "type": "string"
                 },
                 "operator": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "outcome": {
-                  "anyOf": [
-                    {
-                      "const": "succeeded"
-                    },
-                    {
-                      "const": "failed"
-                    },
-                    {
-                      "const": "blocked"
-                    },
-                    {
-                      "const": "unfinished"
-                    },
-                    {
-                      "const": "unknown"
-                    }
-                  ]
-                },
-                "specifiedOperatorByUser": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "chosenOperator": {
-                  "type": "string"
-                },
-                "http_method": {
-                  "type": "string"
-                },
-                "url": {
                   "type": "string"
                 }
               },
               "required": [
-                "cwd",
-                "command_line_verbatim",
-                "tool",
-                "invocation_verbatim",
-                "final_output_after_completion_of_tool_call",
-                "unavailable_reason",
-                "new",
                 "filename",
                 "frombyte",
                 "tobyte",
                 "description",
                 "intent",
-                "operator",
-                "specifiedOperatorByUser",
-                "chosenOperator",
-                "outcome"
-              ],
-              "toolInvocation": true
+                "operator"
+              ]
             }
           }
         }
@@ -307,7 +156,7 @@
     }
   },
   "done": false,
-  "request": 10,
+  "request": 11,
   "lastCommentId": 6311203132,
   "newFiles": [
     "ChatMachines/SeleniumServer/browser-profile.cjs",
@@ -1322,9 +1171,578 @@
           "manifest": "manifest.json"
         }
       }
+    },
+    {
+      "request": 10,
+      "render": 13,
+      "loopNumber": null,
+      "values": {
+        "$toolInvocations": [
+          {
+            "cwd": null,
+            "command_line_verbatim": null,
+            "tool": "mcp__GitHub__fetch_file",
+            "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/65-tool-invocations.json\"}",
+            "final_output_after_completion_of_tool_call": "Existing file read: procedureIssueNumber 65, toolInvocations null, SHA 08e747784a2e37c17e019449d7e37e6e23022187.",
+            "unavailable_reason": null,
+            "new": false,
+            "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/65-tool-invocations.json",
+            "frombyte": 0,
+            "tobyte": 60,
+            "description": "Read existing invocation log and its SHA.",
+            "intent": "Preserve existing state before append.",
+            "operator": "read",
+            "specifiedOperatorByUser": null,
+            "chosenOperator": "read",
+            "outcome": "succeeded"
+          },
+          {
+            "cwd": null,
+            "command_line_verbatim": null,
+            "tool": null,
+            "invocation_verbatim": null,
+            "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+            "unavailable_reason": "Implementation has not been performed.",
+            "new": false,
+            "filename": "ChatMachines/SeleniumServer/run.cjs",
+            "frombyte": 0,
+            "tobyte": 7811,
+            "description": "Extend browser controls and observations",
+            "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+            "operator": "modify",
+            "specifiedOperatorByUser": null,
+            "chosenOperator": "modify",
+            "outcome": "unfinished"
+          },
+          {
+            "cwd": null,
+            "command_line_verbatim": null,
+            "tool": null,
+            "invocation_verbatim": null,
+            "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+            "unavailable_reason": "Implementation has not been performed.",
+            "new": false,
+            "filename": "ChatMachines/SeleniumServer/runner.test.cjs",
+            "frombyte": 0,
+            "tobyte": 5239,
+            "description": "Add regression tests",
+            "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+            "operator": "modify",
+            "specifiedOperatorByUser": null,
+            "chosenOperator": "modify",
+            "outcome": "unfinished"
+          },
+          {
+            "cwd": null,
+            "command_line_verbatim": null,
+            "tool": null,
+            "invocation_verbatim": null,
+            "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+            "unavailable_reason": "Implementation has not been performed.",
+            "new": false,
+            "filename": "ChatMachines/SeleniumServer/README.md",
+            "frombyte": 0,
+            "tobyte": 4480,
+            "description": "Document profile persistence and receipts",
+            "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+            "operator": "modify",
+            "specifiedOperatorByUser": null,
+            "chosenOperator": "modify",
+            "outcome": "unfinished"
+          },
+          {
+            "cwd": null,
+            "command_line_verbatim": null,
+            "tool": null,
+            "invocation_verbatim": null,
+            "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+            "unavailable_reason": "Implementation has not been performed.",
+            "new": false,
+            "filename": ".github/workflows/selenium-server.yml",
+            "frombyte": 0,
+            "tobyte": 3848,
+            "description": "Persist profiles and publish issue receipts",
+            "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+            "operator": "modify",
+            "specifiedOperatorByUser": null,
+            "chosenOperator": "modify",
+            "outcome": "unfinished"
+          },
+          {
+            "cwd": null,
+            "command_line_verbatim": null,
+            "tool": null,
+            "invocation_verbatim": null,
+            "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+            "unavailable_reason": "Implementation has not been performed.",
+            "new": true,
+            "filename": "ChatMachines/SeleniumServer/browser-profile.cjs",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create browser profile helper",
+            "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+            "operator": "create",
+            "specifiedOperatorByUser": null,
+            "chosenOperator": "create",
+            "outcome": "unfinished"
+          },
+          {
+            "cwd": null,
+            "command_line_verbatim": null,
+            "tool": null,
+            "invocation_verbatim": null,
+            "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+            "unavailable_reason": "Implementation has not been performed.",
+            "new": true,
+            "filename": "ChatMachines/SeleniumServer/browser-profile.test.cjs",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create profile helper tests",
+            "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+            "operator": "create",
+            "specifiedOperatorByUser": null,
+            "chosenOperator": "create",
+            "outcome": "unfinished"
+          }
+        ]
+      },
+      "state": {
+        "render": 14,
+        "verbatimUserPrompt": "Upgrade ChatMachines/SeleniumServer from a test-oriented Selenium runner into a reusable browser-control program for activating existing ChatGPT conversations, submitting instructions, and returning DOM/text and screenshot observations. Preserve the existing Selenium actions and workflow contracts. Add persistent Chromium user-profile restore/save across GitHub Actions runs, command request correlation, and issue-local execution receipts. Read applicable AGENTS.md and current README.md first; use the repository's documented command console for non-Issue operations. Verify workflow activation, code changes, tests, and execution receipts before reporting completion.",
+        "userIntent": "Upgrade the SeleniumServer browser runner to interact with existing ChatGPT conversations, preserve existing actions, retain browser profiles between runs, and report verified outcomes to the originating issue.",
+        "exampleMatch": false,
+        "minimalResult": null,
+        "targetFiles": [
+          {
+            "filename": "ChatMachines/SeleniumServer/run.cjs",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/runner.test.cjs",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/README.md",
+            "newFile": false
+          },
+          {
+            "filename": ".github/workflows/selenium-server.yml",
+            "newFile": false
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.cjs",
+            "newFile": true
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.test.cjs",
+            "newFile": true
+          }
+        ],
+        "requirements": [
+          {
+            "filename": "ChatMachines/SeleniumServer/run.cjs",
+            "frombyte": 0,
+            "tobyte": 7811,
+            "description": "Extend request parsing and browser action execution with conversation navigation, observations, correlation IDs and profile handling while retaining existing actions.",
+            "intent": "Reusable ChatGPT browser control and issue-correlated receipts",
+            "operator": "modify"
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/runner.test.cjs",
+            "frombyte": 0,
+            "tobyte": 5239,
+            "description": "Add regression coverage for new request fields and actions and preserve existing behavior.",
+            "intent": "Verify backward compatibility and command results",
+            "operator": "modify"
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/README.md",
+            "frombyte": 0,
+            "tobyte": 4480,
+            "description": "Document authenticated browser profile lifecycle, dispatch contract, output artifacts, and security limits.",
+            "intent": "Provide documented reusable browser-control workflow",
+            "operator": "modify"
+          },
+          {
+            "filename": ".github/workflows/selenium-server.yml",
+            "frombyte": 0,
+            "tobyte": 3848,
+            "description": "Restore and persist browser profile artifacts around Selenium job, pass request correlation, and publish verified receipts.",
+            "intent": "Persistence across ephemeral jobs and issue-local verification",
+            "operator": "modify"
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.cjs",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create profile import/export validation and archive lifecycle helper.",
+            "intent": "Persistent Chromium login state between runs",
+            "operator": "create"
+          },
+          {
+            "filename": "ChatMachines/SeleniumServer/browser-profile.test.cjs",
+            "frombyte": 0,
+            "tobyte": 0,
+            "description": "Create isolated tests for profile handling and security validation.",
+            "intent": "Test persistence and failure handling",
+            "operator": "create"
+          }
+        ],
+        "matchedExample": {
+          "example": 6,
+          "promptText": "Read the project README, update the JavaScript function, run the existing tests, and commit the working changes."
+        },
+        "mode": "fidelity",
+        "changeList": null,
+        "requirementsCompleted": null,
+        "changeAssessment": null,
+        "completionAssessment": null,
+        "rescissionRequirements": null,
+        "loopNumber": null,
+        "procedureMode": "normal",
+        "workers": [],
+        "renderedRequests": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "expectedInputs": {
+          "request": 10,
+          "render": 13,
+          "inputs": [
+            {
+              "name": "toolInvocations",
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "cwd": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "command_line_verbatim": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tool": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "invocation_verbatim": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "final_output_after_completion_of_tool_call": {},
+                    "unavailable_reason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "new": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "filename": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "frombyte": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tobyte": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "intent": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "operator": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "const": "succeeded"
+                        },
+                        {
+                          "const": "failed"
+                        },
+                        {
+                          "const": "blocked"
+                        },
+                        {
+                          "const": "unfinished"
+                        },
+                        {
+                          "const": "unknown"
+                        }
+                      ]
+                    },
+                    "specifiedOperatorByUser": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "chosenOperator": {
+                      "type": "string"
+                    },
+                    "http_method": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cwd",
+                    "command_line_verbatim",
+                    "tool",
+                    "invocation_verbatim",
+                    "final_output_after_completion_of_tool_call",
+                    "unavailable_reason",
+                    "new",
+                    "filename",
+                    "frombyte",
+                    "tobyte",
+                    "description",
+                    "intent",
+                    "operator",
+                    "specifiedOperatorByUser",
+                    "chosenOperator",
+                    "outcome"
+                  ],
+                  "toolInvocation": true
+                }
+              }
+            }
+          ]
+        },
+        "workspace": {
+          "path": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-workspaces/65",
+          "manifest": "manifest.json"
+        }
+      }
     }
   ],
-  "toolInvocations": [],
+  "toolInvocations": [
+    {
+      "cwd": null,
+      "command_line_verbatim": null,
+      "tool": "mcp__GitHub__fetch_file",
+      "invocation_verbatim": "{\"repository_full_name\":\"BestNameYet/StateMachines\",\"path\":\"ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/65-tool-invocations.json\"}",
+      "final_output_after_completion_of_tool_call": "Existing file read: procedureIssueNumber 65, toolInvocations null, SHA 08e747784a2e37c17e019449d7e37e6e23022187.",
+      "unavailable_reason": null,
+      "new": false,
+      "filename": "ChatMachines/Workflow Interactive Procedures/AGENTS Procedure/issue-runs/65-tool-invocations.json",
+      "frombyte": 0,
+      "tobyte": 60,
+      "description": "Read existing invocation log and its SHA.",
+      "intent": "Preserve existing state before append.",
+      "operator": "read",
+      "specifiedOperatorByUser": null,
+      "chosenOperator": "read",
+      "outcome": "succeeded"
+    },
+    {
+      "cwd": null,
+      "command_line_verbatim": null,
+      "tool": null,
+      "invocation_verbatim": null,
+      "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+      "unavailable_reason": "Implementation has not been performed.",
+      "new": false,
+      "filename": "ChatMachines/SeleniumServer/run.cjs",
+      "frombyte": 0,
+      "tobyte": 7811,
+      "description": "Extend browser controls and observations",
+      "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+      "operator": "modify",
+      "specifiedOperatorByUser": null,
+      "chosenOperator": "modify",
+      "outcome": "unfinished"
+    },
+    {
+      "cwd": null,
+      "command_line_verbatim": null,
+      "tool": null,
+      "invocation_verbatim": null,
+      "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+      "unavailable_reason": "Implementation has not been performed.",
+      "new": false,
+      "filename": "ChatMachines/SeleniumServer/runner.test.cjs",
+      "frombyte": 0,
+      "tobyte": 5239,
+      "description": "Add regression tests",
+      "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+      "operator": "modify",
+      "specifiedOperatorByUser": null,
+      "chosenOperator": "modify",
+      "outcome": "unfinished"
+    },
+    {
+      "cwd": null,
+      "command_line_verbatim": null,
+      "tool": null,
+      "invocation_verbatim": null,
+      "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+      "unavailable_reason": "Implementation has not been performed.",
+      "new": false,
+      "filename": "ChatMachines/SeleniumServer/README.md",
+      "frombyte": 0,
+      "tobyte": 4480,
+      "description": "Document profile persistence and receipts",
+      "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+      "operator": "modify",
+      "specifiedOperatorByUser": null,
+      "chosenOperator": "modify",
+      "outcome": "unfinished"
+    },
+    {
+      "cwd": null,
+      "command_line_verbatim": null,
+      "tool": null,
+      "invocation_verbatim": null,
+      "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+      "unavailable_reason": "Implementation has not been performed.",
+      "new": false,
+      "filename": ".github/workflows/selenium-server.yml",
+      "frombyte": 0,
+      "tobyte": 3848,
+      "description": "Persist profiles and publish issue receipts",
+      "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+      "operator": "modify",
+      "specifiedOperatorByUser": null,
+      "chosenOperator": "modify",
+      "outcome": "unfinished"
+    },
+    {
+      "cwd": null,
+      "command_line_verbatim": null,
+      "tool": null,
+      "invocation_verbatim": null,
+      "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+      "unavailable_reason": "Implementation has not been performed.",
+      "new": true,
+      "filename": "ChatMachines/SeleniumServer/browser-profile.cjs",
+      "frombyte": 0,
+      "tobyte": 0,
+      "description": "Create browser profile helper",
+      "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+      "operator": "create",
+      "specifiedOperatorByUser": null,
+      "chosenOperator": "create",
+      "outcome": "unfinished"
+    },
+    {
+      "cwd": null,
+      "command_line_verbatim": null,
+      "tool": null,
+      "invocation_verbatim": null,
+      "final_output_after_completion_of_tool_call": "Not executed; proposed change only.",
+      "unavailable_reason": "Implementation has not been performed.",
+      "new": true,
+      "filename": "ChatMachines/SeleniumServer/browser-profile.test.cjs",
+      "frombyte": 0,
+      "tobyte": 0,
+      "description": "Create profile helper tests",
+      "intent": "Implement reusable SeleniumServer control of existing ChatGPT conversations.",
+      "operator": "create",
+      "specifiedOperatorByUser": null,
+      "chosenOperator": "create",
+      "outcome": "unfinished"
+    }
+  ],
   "issueNumber": 65,
   "pendingFileCommands": [],
   "publishedParts": {
@@ -1339,5 +1757,17 @@
     "9:0": true,
     "10:0": true
   },
-  "view": "instruction"
+  "view": "instruction",
+  "lastToolInvocationSummary": {
+    "submittedRecords": 7,
+    "totalRecords": 7,
+    "byTool": {
+      "mcp__GitHub__fetch_file": 1,
+      "not specified": 6
+    },
+    "byRuntime": {
+      "not specified": 7
+    },
+    "commandLineRecords": 0
+  }
 }
