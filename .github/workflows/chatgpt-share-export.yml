@@ -1,0 +1,165 @@
+name: Export committed ChatGPT share to Markdown and JSON
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'chatgpt-share.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: chatgpt-share-export
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout the request commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate root JSON request
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          "use strict";
+          const fs=require("node:fs");
+          const req=JSON.parse(fs.readFileSync("chatgpt-share.json","utf8"));
+          if(!req || Array.isArray(req) || typeof req!=="object" ||
+             Object.keys(req).sort().join(",")!=="timestamp,url,write_path") {
+            throw Error("chatgpt-share.json must have exactly write_path, url, timestamp");
+          }
+          if(!["write_path","url","timestamp"].every(k=>typeof req[k]==="string" && req[k].length>0)) {
+            throw Error("All request properties must be nonempty strings");
+          }
+          const url=new URL(req.url);
+          if(url.protocol!=="https:" || url.hostname!=="chatgpt.com" || url.username || url.password ||
+             url.port || !/^\/share\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\/?$/i.test(url.pathname) ||
+             /[\r\n]/.test(req.url)) {
+            throw Error("Only public ChatGPT share URLs are supported");
+          }
+          if(!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,3})?Z$/.test(req.timestamp) ||
+             !Number.isFinite(Date.parse(req.timestamp))) {
+            throw Error("timestamp must be a valid ISO-8601 UTC date-time string");
+          }
+          if(req.write_path.length>240 || req.write_path.startsWith("/") ||
+             req.write_path.includes("\\") ||
+             !req.write_path.split("/").every(s=>/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(s) && s!==".." && s!==".")) {
+            throw Error("write_path must be a safe repository-relative directory");
+          }
+          for (const banned of [".github",".git","config","src","scripts"]) {
+            if(req.write_path.split("/")[0]===banned) throw Error("write_path cannot target source or configuration directories");
+          }
+          fs.appendFileSync(process.env.GITHUB_ENV, "SHARE_URL="+req.url+"\nWRITE_PATH="+req.write_path+"\n");
+          console.log(JSON.stringify({url:req.url,write_path:req.write_path,timestamp:req.timestamp}));
+          NODE
+
+      - name: Fetch shared HTML and extract conversation
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/chatgpt-share-extract.js --url "$SHARE_URL" --out "$RUNNER_TEMP/chatgpt-share"
+
+      - name: Validate and stage Markdown and JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          "use strict";
+          const fs=require("node:fs");
+          const path=require("node:path");
+          const crypto=require("node:crypto");
+          const base=path.join(process.env.RUNNER_TEMP,"chatgpt-share");
+          const raw=JSON.parse(fs.readFileSync("chatgpt-share.json","utf8"));
+          const parsed=JSON.parse(fs.readFileSync(path.join(base,"conversation.json"),"utf8"));
+          const receipt=JSON.parse(fs.readFileSync(path.join(base,"receipt.json"),"utf8"));
+          const markdown=fs.readFileSync(path.join(base,"conversation.md"),"utf8");
+          const counts=parsed.counts;
+          if(parsed.schema!=="chatgpt.shared-conversation.visible.v1" ||
+             parsed.messages.length!==counts.user+counts.commentary+counts.final ||
+             parsed.messages.length<2 ||
+             !parsed.messages.every(m=>(
+               m.role==="user" && m.channel===null ||
+               m.role==="assistant" && ["commentary","final"].includes(m.channel)
+             ) && typeof m.text==="string" && !!m.text.trim())) {
+            throw Error("Invalid conversation JSON roles or counts");
+          }
+          const headings=[...markdown.matchAll(/^(\*\*You\*\*|\*\*Assistant · Commentary\*\*|\*\*Assistant\*\*)$/gm)].map(m=>m[1]);
+          if(!markdown.startsWith("# Conversation\n\n") ||
+             headings.length!==parsed.messages.length ||
+             headings.filter(x=>x==="**You**").length!==counts.user ||
+             headings.filter(x=>x==="**Assistant · Commentary**").length!==counts.commentary ||
+             headings.filter(x=>x==="**Assistant**").length!==counts.final) {
+            throw Error("Markdown/JSON message-count mismatch");
+          }
+          for(const file of ["response.html","conversation.md","conversation.json"]) {
+            const bytes=fs.readFileSync(path.join(base,file));
+            if(crypto.createHash("sha256").update(bytes).digest("hex")!==receipt.files[file].sha256) {
+              throw Error("Hash mismatch: "+file);
+            }
+          }
+          const cwd=process.cwd();
+          const segments=raw.write_path.split("/");
+          let dest=cwd;
+          for(const segment of segments) {
+            dest=path.join(dest,segment);
+            if(fs.existsSync(dest) && fs.lstatSync(dest).isSymbolicLink()) {
+              throw Error("write_path cannot traverse symbolic links");
+            }
+          }
+          if(!dest.startsWith(cwd+path.sep)) throw Error("write_path escapes repository");
+          fs.mkdirSync(dest,{recursive:true});
+          for(const name of ["conversation.md","conversation.json"]) {
+            const output=path.join(dest,name);
+            if(fs.existsSync(output) && fs.lstatSync(output).isSymbolicLink()) {
+              throw Error("Refusing to overwrite symlink: "+name);
+            }
+            fs.copyFileSync(path.join(base,name),output);
+          }
+          receipt.request_timestamp=raw.timestamp;
+          fs.writeFileSync(path.join(base,"receipt.json"),JSON.stringify(receipt,null,2)+"\n");
+          console.log(JSON.stringify({write_path:raw.write_path,message_count:parsed.messages.length,counts}));
+          NODE
+
+      - name: Upload capture and both exported formats
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chatgpt-share-export
+          path: '${{ runner.temp }}/chatgpt-share/'
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Commit the two transcript files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$WRITE_PATH/conversation.md" "$WRITE_PATH/conversation.json"
+          if git diff --cached --quiet; then
+            echo "Both outputs are already identical to the committed versions."
+            exit 0
+          fi
+          git commit -m "Export shared ChatGPT conversation from root JSON request"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "Committed both conversation files to main."
+              exit 0
+            fi
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo "Could not publish output after three attempts" >&2
+          exit 1
