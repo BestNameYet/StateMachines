@@ -1,3 +1,40 @@
+# Commit-triggered ChatGPT shared conversation retrieval
+# Repository: BestNameYet/StateMachines
+#
+# HOW TO RUN — exact instructions
+# 1. Open chatgpt-share.json in the REPOSITORY ROOT on main and supply
+#    EXACTLY the following nonempty JSON string fields:
+#      "write_path": "workspaces/chatgpt-share-exports/<share-uuid>"
+#      "url": "https://chatgpt.com/share/<share-uuid>"
+#      "timestamp": "2026-11-01T00:00:00Z"
+#    Wrap those three properties in a single JSON object. write_path is a
+#    repository-relative OUTPUT DIRECTORY, not a filename. The timestamp
+#    is ISO-8601 UTC. Change it to re-run an unchanged URL/output directory.
+# 2. Commit the modified root chatgpt-share.json to main. This push is
+#    the trigger. The workflow does NOT read the Git commit message.
+# 3. Checkout the triggering commit. Validate all three fields and reject
+#    unsafe write paths, nonpublic/non-ChatGPT URLs and invalid timestamps.
+# 4. Run the local Node.js extractor:
+#      node scripts/chatgpt-share-extract.js --url "$SHARE_URL" --out "$RUNNER_TEMP/chatgpt-share"
+#    The extractor fetches the shared URL via HTTPS, stores response.html,
+#    decodes its serialized conversation mapping, walks parent references
+#    in chronological order and keeps ONLY user / assistant commentary /
+#    assistant final messages.
+# 5. Produce conversation.md (human-readable alternating conversation)
+#    and conversation.json (the same ordered roles, channels, text).
+#    Verify source/output SHA-256 and the Markdown/JSON role counts.
+# 6. Write <write_path>/conversation.md and <write_path>/conversation.json;
+#    update manifest.json and README.md under the existing repository conventions.
+# 7. Upload response.html, both transcripts and receipt.json to the
+#    GitHub Actions run artifact; commit the transcripts plus inventory
+#    changes to main. Read back the two files from remote main.
+# 8. View this run's step summary for links, message counts and receipt.
+#    A Git push without successful execution is NOT a verified retrieval.
+#
+# Requirements: a valid, public, live ChatGPT shared conversation URL;
+# GitHub Actions enabled; GitHub token allowed to write repository contents.
+# This repository has its OWN extractor/workflow. No reusable workflow.
+
 name: Export committed ChatGPT share to Markdown and JSON
 
 on:
@@ -18,7 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout the request commit
+      # 1. Read exactly the root-file version associated with this push.
+      - name: 1 - Check out the share request commit
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -33,7 +71,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate root JSON request
+      # 2. Reject incomplete or unsafe requests before reaching the network.
+      - name: 2 - Validate URL, write directory and UTC timestamp
         shell: bash
         run: |
           set -euo pipefail
@@ -70,13 +109,15 @@ jobs:
           console.log(JSON.stringify({url:req.url,write_path:req.write_path,timestamp:req.timestamp}));
           NODE
 
-      - name: Fetch shared HTML and extract conversation
+      # 3. Fetch real HTML (not an archive or cached pre-extracted JSON).
+      - name: 3 - Retrieve HTML and extract user, commentary and final
         shell: bash
         run: |
           set -euo pipefail
           node scripts/chatgpt-share-extract.js --url "$SHARE_URL" --out "$RUNNER_TEMP/chatgpt-share"
 
-      - name: Validate and stage Markdown and JSON
+      # 4. Verify all message labels and source/output hashes before publishing.
+      - name: 4 - Verify original HTML and matching Markdown and JSON
         shell: bash
         run: |
           set -euo pipefail
@@ -137,7 +178,7 @@ jobs:
           console.log(JSON.stringify({write_path:raw.write_path,message_count:parsed.messages.length,counts}));
           NODE
 
-      - name: Update tracked-file repository manifest
+      - name: Refresh StateMachines manifest and README index
         shell: bash
         run: |
           set -euo pipefail
@@ -145,7 +186,8 @@ jobs:
           python -m unittest discover -s tests -p 'test_repository_manifest.py'
           python scripts/update_repository_manifest.py
 
-      - name: Upload capture and both exported formats
+      # Keep original HTML and SHA-256 receipt accessible in the Actions artifact.
+      - name: Upload source HTML, transcripts and receipt
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -154,7 +196,8 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      - name: Commit the two transcript files
+      # Publish only requested conversation files plus native repository inventory.
+      - name: 5 - Commit verified conversations and repository inventory
         shell: bash
         run: |
           set -euo pipefail
@@ -176,3 +219,43 @@ jobs:
           done
           echo "Could not publish output after three attempts" >&2
           exit 1
+
+      # Explicit published-file readback from the REMOTE main ref. A successful
+      # git commit/push command is not itself proof that the outputs persisted.
+      - name: 6 - Read back published files and show result links
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          for filename in conversation.md conversation.json; do
+            git show "origin/main:$WRITE_PATH/$filename" | cmp - "$WRITE_PATH/$filename" || {
+              echo "Remote file readback failed: $WRITE_PATH/$filename" >&2
+              exit 1
+            }
+          done
+          node <<'NODE'
+          "use strict";
+          const fs=require("node:fs");
+          const path=require("node:path");
+          const request=JSON.parse(fs.readFileSync("chatgpt-share.json","utf8"));
+          const parsed=JSON.parse(fs.readFileSync(path.join(request.write_path,"conversation.json"),"utf8"));
+          const counts=parsed.counts;
+          const href="https://github.com/"+process.env.GITHUB_REPOSITORY+"/blob/main/"+request.write_path;
+          const lines=[
+            "### ChatGPT shared conversation retrieval — verified",
+            "",
+            "- Source: "+request.url,
+            "- Request timestamp: "+request.timestamp,
+            "- Output directory: "+request.write_path,
+            "- [Readable conversation Markdown]("+href+"/conversation.md)",
+            "- [Structured conversation JSON]("+href+"/conversation.json)",
+            "- Message counts: "+parsed.messages.length+
+              " total; "+counts.user+" user; "+counts.commentary+" commentary; "+counts.final+" final.",
+            "- Source HTML and extraction receipt are in the run artifact.",
+            "",
+            "To run again, edit the root chatgpt-share.json and commit it to main.",
+            ""
+          ];
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join("\n"));
+          console.log(JSON.stringify({output_directory:request.write_path,counts,remote_readback:"passed"}));
+          NODE
