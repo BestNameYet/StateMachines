@@ -141,7 +141,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git add -- "$WRITE_PATH/conversation.md" "$WRITE_PATH/conversation.json" manifest.json README.md
+          git add -- "$WRITE_PATH/conversation.md" "$WRITE_PATH/conversation.json"
           python -m unittest discover -s tests -p 'test_repository_manifest.py'
           python scripts/update_repository_manifest.py
 
@@ -160,7 +160,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- "$WRITE_PATH/conversation.md" "$WRITE_PATH/conversation.json"
+          git add -- "$WRITE_PATH/conversation.md" "$WRITE_PATH/conversation.json" manifest.json README.md
           if git diff --cached --quiet; then
             echo "Both outputs are already identical to the committed versions."
             exit 0
