@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: chatgpt-share-export
+  group: repository-manifest-main
   cancel-in-progress: false
 
 jobs:
@@ -27,6 +27,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Set up Python for repository manifest
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Validate root JSON request
         shell: bash
@@ -131,6 +136,14 @@ jobs:
           fs.writeFileSync(path.join(base,"receipt.json"),JSON.stringify(receipt,null,2)+"\n");
           console.log(JSON.stringify({write_path:raw.write_path,message_count:parsed.messages.length,counts}));
           NODE
+
+      - name: Update tracked-file repository manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- "$WRITE_PATH/conversation.md" "$WRITE_PATH/conversation.json" manifest.json README.md
+          python -m unittest discover -s tests -p 'test_repository_manifest.py'
+          python scripts/update_repository_manifest.py
 
       - name: Upload capture and both exported formats
         if: always()
